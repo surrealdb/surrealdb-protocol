@@ -1,0 +1,32 @@
+[package]
+name = "surrealdb-protocol"
+edition.workspace = true
+license-file.workspace = true
+publish = true
+version.workspace = true
+rust-version.workspace = true
+description.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = ["tonic"]
+tonic = ["dep:tonic"]
+
+[dependencies]
+prost.workspace = true
+prost-types.workspace = true
+tonic = { workspace = true, optional = true }
+
+[build-dependencies]
+glob.workspace = true
+prost-build.workspace = true
+
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+rstest.workspace = true

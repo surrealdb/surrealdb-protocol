@@ -1,0 +1,128 @@
+
+syntax = "proto3";
+
+package surrealdb.protocol;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "schema/value.proto";
+
+message MethodPart {
+    string name = 1;
+    repeated surrealdb.protocol.Value args = 2;
+}
+
+message Ident {
+    string value = 1;
+}
+
+
+message Fields {
+    message SingleField {
+        surrealdb.protocol.Value expr = 1;
+        Idiom alias = 2;
+    }
+
+    message Field {
+        oneof field {
+            NullValue all = 1;
+            SingleField single = 2;
+        }
+    }
+
+    bool single = 1;
+    repeated Field fields = 2;
+}
+
+message Idiom {
+    string value = 1;
+}
+
+enum Operator {
+    Neg = 0;
+    Not = 1;
+    Or = 2;
+    And = 3;
+    Tco = 4;
+    Nco = 5;
+    Add = 6;
+    Sub = 7;
+    Mul = 8;
+    Div = 9;
+    Rem = 10;
+    Pow = 11;
+    Inc = 12;
+    Dec = 13;
+    Ext = 14;
+    Equal = 15;
+    Exact = 16;
+    NotEqual = 17;
+    AllEqual = 18;
+    AnyEqual = 19;
+    Like = 20;
+    NotLike = 21;
+    AllLike = 22;
+    AnyLike = 23;
+    LessThan = 24;
+    LessThanOrEqual = 25;
+    GreaterThan = 26;
+    GreaterThanOrEqual = 27;
+    Contain = 28;
+    NotContain = 29;
+    ContainAll = 30;
+    ContainAny = 31;
+    ContainNone = 32;
+    Inside = 33;
+    NotInside = 34;
+    AllInside = 35;
+    AnyInside = 36;
+    NoneInside = 37;
+    Outside = 38;
+    Intersects = 39;
+}
+
+message Data {
+    message SetExpr {
+        Idiom idiom = 1;
+        Operator operator = 2;
+        Value value = 3;
+    }
+
+    message SetMultiExpr {
+        repeated SetExpr items = 1;
+    }
+
+    message UnsetMultiExpr {
+        repeated Idiom items = 1;
+    }
+
+    message IdiomValuePair {
+        Idiom idiom = 1;
+        Value value = 2;
+    }
+
+    message ValuesExpr {
+        repeated IdiomValuePair items = 1;
+    }
+
+    message ValuesMultiExpr {
+        repeated ValuesExpr items = 1;
+    }
+
+    oneof data {
+        NullValue empty = 1;
+        SetMultiExpr set = 2;
+        UnsetMultiExpr unset = 3;
+        Value patch = 4;
+        Value merge = 5;
+        Value replace = 6;
+        Value content = 7;
+        Value value = 8;
+        ValuesMultiExpr values = 9;
+        SetMultiExpr update = 10;
+    }
+}
+
+message Fetchs {
+    repeated Value items = 1;
+}

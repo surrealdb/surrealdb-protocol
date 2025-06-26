@@ -1,0 +1,137 @@
+
+syntax = "proto3";
+
+package surrealdb.protocol;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+message NullValue {}
+
+message BoolValue {
+    bool value = 1;
+}
+
+message Int64Value {
+    int64 value = 1;
+}
+
+message UInt64Value {
+    uint64 value = 1;
+}
+
+message Float64Value {
+    double value = 1;
+}
+
+message StringValue {
+    string value = 1;
+}
+
+message BytesValue {
+    bytes value = 1;
+}
+
+message DecimalValue {
+    string value = 1;
+}
+
+message UuidValue {
+    string value = 1;
+}
+
+
+
+
+// Geometry types
+message Point {
+    double x = 1;
+    double y = 2;
+}
+
+message LineString {
+    repeated Point points = 1;
+}
+
+message Polygon {
+    LineString exterior = 1;
+    repeated LineString interiors = 2;
+}
+
+message MultiPoint {
+    repeated Point points = 1;
+}
+
+message MultiLineString {
+    repeated LineString lines = 1;
+}
+
+message MultiPolygon {
+    repeated Polygon polygons = 1;
+}
+
+message GeometryCollection {
+    repeated Geometry geometries = 1;
+}
+
+message Geometry {
+    oneof geometry {
+        Point point = 1;
+        LineString line_string = 2;
+        Polygon polygon = 3;
+        MultiPoint multi_point = 4;
+        MultiLineString multi_line_string = 5;
+        MultiPolygon multi_polygon = 6;
+        GeometryCollection collection = 7;
+    }
+}
+
+message RecordId {
+    string table = 1;
+    Id id = 2;
+}
+
+message File {
+    string bucket = 1;
+    string key = 2;
+}
+
+message Array {
+    repeated Value values = 1;
+}
+
+message Object {
+    map<string, Value> items = 1;
+}
+
+message Value {
+    oneof value {
+        NullValue null = 1;
+        BoolValue bool = 2;
+        Int64Value int64 = 3;
+        UInt64Value uint64 = 4;
+        Float64Value float64 = 5;
+        StringValue string = 6;
+        BytesValue bytes = 7;
+        DecimalValue decimal = 8;
+        google.protobuf.Duration duration = 9;
+        google.protobuf.Timestamp timestamp = 10;
+        UuidValue uuid = 11;
+        Array array = 12;
+        Object object = 13;
+        Geometry geometry = 14;
+        RecordId record_id = 15;
+        File file = 16;
+    }
+}
+
+message Id {
+    oneof id {
+        Int64Value int64 = 1;
+        StringValue string = 2;
+        UuidValue uuid = 3;
+        Array array = 4;
+    }
+}
+
+
