@@ -1,0 +1,13 @@
+
+# Rust
+/target
+
+# Python
+/venv
+
+# Typescript / Javascript
+/node_modules
+
+# Go
+/go.sum
+/go.mod
