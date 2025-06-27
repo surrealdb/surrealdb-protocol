@@ -194,7 +194,7 @@ message CreateRequest {
 
 // Response to a create request.
 message CreateResponse {
-    surrealdb.protocol.v1.Value document = 1;
+    surrealdb.protocol.v1.Value value = 1;
 }
 
 // Request to select values from the database.
@@ -221,7 +221,7 @@ message SelectRequest {
 
 // Response to a select request.
 message SelectResponse {
-    ValueBatch documents = 1;
+    ValueBatch Values = 1;
 }
 
 // Request to insert a new record.
@@ -239,7 +239,7 @@ message InsertRequest {
 
 // Response to an insert request.
 message InsertResponse {
-    surrealdb.protocol.v1.Value document = 1;
+    surrealdb.protocol.v1.Value Value = 1;
 }
 
 // Request to upsert a record.
@@ -257,7 +257,7 @@ message UpsertRequest {
 
 // Response to an upsert request.
 message UpsertResponse {
-    surrealdb.protocol.v1.Value document = 1;
+    surrealdb.protocol.v1.Value Value = 1;
 }
 
 // Request to update a record.
@@ -275,7 +275,7 @@ message UpdateRequest {
 
 // Response to an update request.
 message UpdateResponse {
-    surrealdb.protocol.v1.Value document = 1;
+    surrealdb.protocol.v1.Value Value = 1;
 }
 
 // Request to delete a record.
@@ -292,7 +292,7 @@ message DeleteRequest {
 
 // Response to a delete request.
 message DeleteResponse {
-    surrealdb.protocol.v1.Value document = 1;
+    surrealdb.protocol.v1.Value Value = 1;
 }
 
 // Request to query the database.
@@ -303,7 +303,7 @@ message QueryRequest {
 
 // Response to a query request.
 message QueryResponse {
-    ValueBatch documents = 1;
+    ValueBatch Values = 1;
 }
 
 // Request to relate two records.
@@ -321,7 +321,7 @@ message RelateRequest {
 
 // Response to a relate request.
 message RelateResponse {
-    surrealdb.protocol.v1.Value document = 1;
+    surrealdb.protocol.v1.Value Value = 1;
 }
 
 // Request to run a function.
@@ -344,12 +344,12 @@ message GraphQlRequest {
 
 // Response to a GraphQL request.
 message GraphQlResponse {
-    ValueBatch documents = 1;
+    ValueBatch Values = 1;
 }
 
 // Batch of values.
 message ValueBatch {
-    repeated surrealdb.protocol.v1.Value documents = 1;
+    repeated surrealdb.protocol.v1.Value Values = 1;
 }
 
 // Root user credentials.
