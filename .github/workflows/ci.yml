@@ -36,7 +36,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - run: cargo test --workspace
+      - run: cargo test
 
   ts-lint:
     runs-on: ubuntu-latest

@@ -1,0 +1,50 @@
+# Release pipeline that publishes the rust crate to crates.io and the typescript package to npm.
+# It also produces a github release with the changelog and the release notes.
+# It is manually triggered by the user.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' 
+
+jobs:
+  publish-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - run: cargo install cargo-release
+      - run: cargo release publish --all-features --no-confirm --no-verify --execute
+
+  publish-ts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: "1.1.17"
+      - run: bun install
+      - run: bun run build
+      - name: Validate publishing
+        run: bun publish --access public --tag stable
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create releases
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for changelog generation
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1

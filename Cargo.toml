@@ -1,8 +1,5 @@
-[workspace]
-members = ["rust"]
-resolver = "3"
-
-[workspace.package]
+[package]
+name = "surrealdb-protocol"
 authors = ["Tobie Morgan Hitchcock <tobie@surrealdb.com>"]
 edition = "2024"
 license-file = "LICENSE"
@@ -22,25 +19,34 @@ keywords = [
     "grpc",
 ]
 categories = ["database-implementations", "data-structures", "embedded"]
-include = ["gen/rust/**/*.rs"]
+include = ["gen/rust/**/*.rs", "rust/**/*.rs"]
 
-[workspace.dependencies]
-glob = { version = "0.3" }
+[lib]
+name = "surrealdb_protocol"
+path = "rust/lib.rs"
+
+[features]
+default = ["tonic"]
+tonic = ["dep:tonic"]
+
+[dependencies]
 prost = { version = "0.13" }
-prost-build = { version = "0.13" }
 prost-types = { version = "0.13" }
-tonic = { version = "0.12" }
+tonic = { version = "0.12", optional = true }
+
+
+[dev-dependencies]
 rstest = { version = "0.24" }
 
-[workspace.lints.rust]
+[lints.rust]
 # Checks for missing documentation on public items.
 missing_docs = "warn"
 
-[workspace.lints.rustdoc]
+[lints.rustdoc]
 # Checks for missing documentation on public items.
 missing_crate_level_docs = "warn"
 
-[workspace.lints.clippy]
+[lints.clippy]
 # Checks for usage of `#[allow]` attribute and suggests replacing it with `#[expect]`.
 # `#[expect]` attributes suppress the lint emission, but emit a warning if the expectation is unfulfilled.
 # This is useful to be notified when the lint is no longer triggered.

@@ -77,7 +77,7 @@ rust-clippy: $(ALL_RUST_SRCS)
 	cargo clippy --all-targets --all-features -- -D warnings
 
 rust-package: $(ALL_RUST_SRCS)
-	cargo package --workspace
+	cargo package --workspace -p surrealdb-protocol
 
 rust-publish: $(ALL_RUST_SRCS)
 	cargo publish --workspace

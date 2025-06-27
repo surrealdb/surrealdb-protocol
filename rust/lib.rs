@@ -3,10 +3,10 @@
 mod v1 {
     #![allow(missing_docs, clippy::allow_attributes)]
 
-    include!("../../gen/rust/surrealdb.protocol.v1.rs");
+    include!("../gen/rust/surrealdb.protocol.v1.rs");
 
     pub mod rpc {
-        include!("../../gen/rust/surrealdb.protocol.rpc.v1.rs");
+        include!("../gen/rust/surrealdb.protocol.rpc.v1.rs");
     }
 }
 

@@ -1,17 +1,13 @@
 version: v2
 clean: true
+
+inputs:
+  - directory: .
+
 plugins:
   # C
   - local: ./plugins/protoc-gen-c
     out: gen/c
-
-  # C#
-  # - remote: buf.build/protocolbuffers/csharp:v31.1
-  #   out: gen/csharp
-  #   opt:
-  #     - base_namespace=SurrealDB.Protocol
-  
-  
   
   # Rust
   - local: ./plugins/protoc-gen-prost
@@ -37,10 +33,3 @@ plugins:
       - outputEncodeMethods=true
       - outputJsonMethods=true
       - useDate=true
-
-  
-  
-
-    
-inputs:
-  - directory: .
