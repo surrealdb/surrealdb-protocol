@@ -282,7 +282,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Cr
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CreateResponse {
     #[prost(message, optional, tag="1")]
-    pub document: ::core::option::Option<super::super::v1::Value>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for CreateResponse {
 const NAME: &'static str = "CreateResponse";
@@ -336,7 +336,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Se
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SelectResponse {
     #[prost(message, optional, tag="1")]
-    pub documents: ::core::option::Option<ValueBatch>,
+    pub values: ::core::option::Option<ValueBatch>,
 }
 impl ::prost::Name for SelectResponse {
 const NAME: &'static str = "SelectResponse";
@@ -372,7 +372,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.In
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InsertResponse {
     #[prost(message, optional, tag="1")]
-    pub document: ::core::option::Option<super::super::v1::Value>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for InsertResponse {
 const NAME: &'static str = "InsertResponse";
@@ -408,7 +408,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Up
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UpsertResponse {
     #[prost(message, optional, tag="1")]
-    pub document: ::core::option::Option<super::super::v1::Value>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for UpsertResponse {
 const NAME: &'static str = "UpsertResponse";
@@ -444,7 +444,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Up
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UpdateResponse {
     #[prost(message, optional, tag="1")]
-    pub document: ::core::option::Option<super::super::v1::Value>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for UpdateResponse {
 const NAME: &'static str = "UpdateResponse";
@@ -478,7 +478,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.De
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DeleteResponse {
     #[prost(message, optional, tag="1")]
-    pub document: ::core::option::Option<super::super::v1::Value>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for DeleteResponse {
 const NAME: &'static str = "DeleteResponse";
@@ -500,7 +500,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryResponse {
     #[prost(message, optional, tag="1")]
-    pub documents: ::core::option::Option<ValueBatch>,
+    pub values: ::core::option::Option<ValueBatch>,
 }
 impl ::prost::Name for QueryResponse {
 const NAME: &'static str = "QueryResponse";
@@ -536,7 +536,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Re
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RelateResponse {
     #[prost(message, optional, tag="1")]
-    pub document: ::core::option::Option<super::super::v1::Value>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for RelateResponse {
 const NAME: &'static str = "RelateResponse";
@@ -582,7 +582,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Gr
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GraphQlResponse {
     #[prost(message, optional, tag="1")]
-    pub documents: ::core::option::Option<ValueBatch>,
+    pub values: ::core::option::Option<ValueBatch>,
 }
 impl ::prost::Name for GraphQlResponse {
 const NAME: &'static str = "GraphQlResponse";
@@ -592,7 +592,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Gr
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValueBatch {
     #[prost(message, repeated, tag="1")]
-    pub documents: ::prost::alloc::vec::Vec<super::super::v1::Value>,
+    pub values: ::prost::alloc::vec::Vec<super::super::v1::Value>,
 }
 impl ::prost::Name for ValueBatch {
 const NAME: &'static str = "ValueBatch";

@@ -11,14 +11,14 @@ plugins:
   
   # Rust
   - local: ./plugins/protoc-gen-prost
-    out: gen/rust
+    out: gen/rust/proto
     opt:
       - btree_map=.
       - bytes=.
       - file_descriptor_set=false
       - enable_type_names=true
   - local: ./plugins/protoc-gen-tonic
-    out: gen/rust
+    out: gen/rust/proto
   
   # Typescript
   - local: ./plugins/protoc-gen-ts_proto

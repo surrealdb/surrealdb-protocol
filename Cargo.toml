@@ -26,14 +26,17 @@ name = "surrealdb_protocol"
 path = "rust/lib.rs"
 
 [features]
-default = ["rpc"]
+default = ["proto", "flatbuffers", "rpc"]
+
+proto = ["dep:prost", "dep:prost-types"]
+flatbuffers = ["dep:flatbuffers"]
 rpc = ["dep:tonic"]
 
 [dependencies]
-prost = { version = "0.13" }
-prost-types = { version = "0.13" }
+flatbuffers = { version = "25.2.10", features = ["serde"], optional = true }
+prost = { version = "0.13", optional = true }
+prost-types = { version = "0.13", optional = true }
 tonic = { version = "0.12", optional = true }
-
 
 [dev-dependencies]
 rstest = { version = "0.24" }

@@ -445,7 +445,7 @@ struct  Surrealdb__Protocol__Rpc__V1__CreateRequest
 struct  Surrealdb__Protocol__Rpc__V1__CreateResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Value *document;
+  Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__CREATE_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__create_response__descriptor) \
@@ -488,7 +488,7 @@ struct  Surrealdb__Protocol__Rpc__V1__SelectRequest
 struct  Surrealdb__Protocol__Rpc__V1__SelectResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__ValueBatch *documents;
+  Surrealdb__Protocol__Rpc__V1__ValueBatch *values;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__SELECT_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__select_response__descriptor) \
@@ -522,7 +522,7 @@ struct  Surrealdb__Protocol__Rpc__V1__InsertRequest
 struct  Surrealdb__Protocol__Rpc__V1__InsertResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Value *document;
+  Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__INSERT_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__insert_response__descriptor) \
@@ -556,7 +556,7 @@ struct  Surrealdb__Protocol__Rpc__V1__UpsertRequest
 struct  Surrealdb__Protocol__Rpc__V1__UpsertResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Value *document;
+  Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__UPSERT_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__upsert_response__descriptor) \
@@ -590,7 +590,7 @@ struct  Surrealdb__Protocol__Rpc__V1__UpdateRequest
 struct  Surrealdb__Protocol__Rpc__V1__UpdateResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Value *document;
+  Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__UPDATE_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__update_response__descriptor) \
@@ -623,7 +623,7 @@ struct  Surrealdb__Protocol__Rpc__V1__DeleteRequest
 struct  Surrealdb__Protocol__Rpc__V1__DeleteResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Value *document;
+  Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__DELETE_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__delete_response__descriptor) \
@@ -650,7 +650,7 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryRequest
 struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__ValueBatch *documents;
+  Surrealdb__Protocol__Rpc__V1__ValueBatch *values;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_response__descriptor) \
@@ -684,7 +684,7 @@ struct  Surrealdb__Protocol__Rpc__V1__RelateRequest
 struct  Surrealdb__Protocol__Rpc__V1__RelateResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Value *document;
+  Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__RELATE_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__relate_response__descriptor) \
@@ -740,7 +740,7 @@ struct  Surrealdb__Protocol__Rpc__V1__GraphQlRequest
 struct  Surrealdb__Protocol__Rpc__V1__GraphQlResponse
 {
   ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__ValueBatch *documents;
+  Surrealdb__Protocol__Rpc__V1__ValueBatch *values;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__GRAPH_QL_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__graph_ql_response__descriptor) \
@@ -753,8 +753,8 @@ struct  Surrealdb__Protocol__Rpc__V1__GraphQlResponse
 struct  Surrealdb__Protocol__Rpc__V1__ValueBatch
 {
   ProtobufCMessage base;
-  size_t n_documents;
-  Surrealdb__Protocol__V1__Value **documents;
+  size_t n_values;
+  Surrealdb__Protocol__V1__Value **values;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__VALUE_BATCH__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__value_batch__descriptor) \

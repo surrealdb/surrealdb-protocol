@@ -207,7 +207,7 @@ export interface CreateRequest {
 
 /** Response to a create request. */
 export interface CreateResponse {
-  document: Value | undefined;
+  value: Value | undefined;
 }
 
 /** Request to select values from the database. */
@@ -234,7 +234,7 @@ export interface SelectRequest {
 
 /** Response to a select request. */
 export interface SelectResponse {
-  documents: ValueBatch | undefined;
+  Values: ValueBatch | undefined;
 }
 
 /** Request to insert a new record. */
@@ -252,7 +252,7 @@ export interface InsertRequest {
 
 /** Response to an insert request. */
 export interface InsertResponse {
-  document: Value | undefined;
+  Value: Value | undefined;
 }
 
 /** Request to upsert a record. */
@@ -270,7 +270,7 @@ export interface UpsertRequest {
 
 /** Response to an upsert request. */
 export interface UpsertResponse {
-  document: Value | undefined;
+  Value: Value | undefined;
 }
 
 /** Request to update a record. */
@@ -288,7 +288,7 @@ export interface UpdateRequest {
 
 /** Response to an update request. */
 export interface UpdateResponse {
-  document: Value | undefined;
+  Value: Value | undefined;
 }
 
 /** Request to delete a record. */
@@ -305,7 +305,7 @@ export interface DeleteRequest {
 
 /** Response to a delete request. */
 export interface DeleteResponse {
-  document: Value | undefined;
+  Value: Value | undefined;
 }
 
 /** Request to query the database. */
@@ -316,7 +316,7 @@ export interface QueryRequest {
 
 /** Response to a query request. */
 export interface QueryResponse {
-  documents: ValueBatch | undefined;
+  Values: ValueBatch | undefined;
 }
 
 /** Request to relate two records. */
@@ -334,7 +334,7 @@ export interface RelateRequest {
 
 /** Response to a relate request. */
 export interface RelateResponse {
-  document: Value | undefined;
+  Value: Value | undefined;
 }
 
 /** Request to run a function. */
@@ -357,12 +357,12 @@ export interface GraphQlRequest {
 
 /** Response to a GraphQL request. */
 export interface GraphQlResponse {
-  documents: ValueBatch | undefined;
+  Values: ValueBatch | undefined;
 }
 
 /** Batch of values. */
 export interface ValueBatch {
-  documents: Value[];
+  Values: Value[];
 }
 
 /** Root user credentials. */
@@ -2127,13 +2127,13 @@ export const CreateRequest: MessageFns<CreateRequest> = {
 };
 
 function createBaseCreateResponse(): CreateResponse {
-  return { document: undefined };
+  return { value: undefined };
 }
 
 export const CreateResponse: MessageFns<CreateResponse> = {
   encode(message: CreateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.document !== undefined) {
-      Value.encode(message.document, writer.uint32(10).fork()).join();
+    if (message.value !== undefined) {
+      Value.encode(message.value, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2150,7 +2150,7 @@ export const CreateResponse: MessageFns<CreateResponse> = {
             break;
           }
 
-          message.document = Value.decode(reader, reader.uint32());
+          message.value = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2163,13 +2163,13 @@ export const CreateResponse: MessageFns<CreateResponse> = {
   },
 
   fromJSON(object: any): CreateResponse {
-    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
+    return { value: isSet(object.value) ? Value.fromJSON(object.value) : undefined };
   },
 
   toJSON(message: CreateResponse): unknown {
     const obj: any = {};
-    if (message.document !== undefined) {
-      obj.document = Value.toJSON(message.document);
+    if (message.value !== undefined) {
+      obj.value = Value.toJSON(message.value);
     }
     return obj;
   },
@@ -2179,9 +2179,7 @@ export const CreateResponse: MessageFns<CreateResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<CreateResponse>, I>>(object: I): CreateResponse {
     const message = createBaseCreateResponse();
-    message.document = (object.document !== undefined && object.document !== null)
-      ? Value.fromPartial(object.document)
-      : undefined;
+    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
     return message;
   },
 };
@@ -2554,13 +2552,13 @@ export const SelectRequest: MessageFns<SelectRequest> = {
 };
 
 function createBaseSelectResponse(): SelectResponse {
-  return { documents: undefined };
+  return { Values: undefined };
 }
 
 export const SelectResponse: MessageFns<SelectResponse> = {
   encode(message: SelectResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.documents !== undefined) {
-      ValueBatch.encode(message.documents, writer.uint32(10).fork()).join();
+    if (message.Values !== undefined) {
+      ValueBatch.encode(message.Values, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2577,7 +2575,7 @@ export const SelectResponse: MessageFns<SelectResponse> = {
             break;
           }
 
-          message.documents = ValueBatch.decode(reader, reader.uint32());
+          message.Values = ValueBatch.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2590,13 +2588,13 @@ export const SelectResponse: MessageFns<SelectResponse> = {
   },
 
   fromJSON(object: any): SelectResponse {
-    return { documents: isSet(object.documents) ? ValueBatch.fromJSON(object.documents) : undefined };
+    return { Values: isSet(object.Values) ? ValueBatch.fromJSON(object.Values) : undefined };
   },
 
   toJSON(message: SelectResponse): unknown {
     const obj: any = {};
-    if (message.documents !== undefined) {
-      obj.documents = ValueBatch.toJSON(message.documents);
+    if (message.Values !== undefined) {
+      obj.Values = ValueBatch.toJSON(message.Values);
     }
     return obj;
   },
@@ -2606,8 +2604,8 @@ export const SelectResponse: MessageFns<SelectResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<SelectResponse>, I>>(object: I): SelectResponse {
     const message = createBaseSelectResponse();
-    message.documents = (object.documents !== undefined && object.documents !== null)
-      ? ValueBatch.fromPartial(object.documents)
+    message.Values = (object.Values !== undefined && object.Values !== null)
+      ? ValueBatch.fromPartial(object.Values)
       : undefined;
     return message;
   },
@@ -2820,13 +2818,13 @@ export const InsertRequest: MessageFns<InsertRequest> = {
 };
 
 function createBaseInsertResponse(): InsertResponse {
-  return { document: undefined };
+  return { Value: undefined };
 }
 
 export const InsertResponse: MessageFns<InsertResponse> = {
   encode(message: InsertResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.document !== undefined) {
-      Value.encode(message.document, writer.uint32(10).fork()).join();
+    if (message.Value !== undefined) {
+      Value.encode(message.Value, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2843,7 +2841,7 @@ export const InsertResponse: MessageFns<InsertResponse> = {
             break;
           }
 
-          message.document = Value.decode(reader, reader.uint32());
+          message.Value = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2856,13 +2854,13 @@ export const InsertResponse: MessageFns<InsertResponse> = {
   },
 
   fromJSON(object: any): InsertResponse {
-    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
+    return { Value: isSet(object.Value) ? Value.fromJSON(object.Value) : undefined };
   },
 
   toJSON(message: InsertResponse): unknown {
     const obj: any = {};
-    if (message.document !== undefined) {
-      obj.document = Value.toJSON(message.document);
+    if (message.Value !== undefined) {
+      obj.Value = Value.toJSON(message.Value);
     }
     return obj;
   },
@@ -2872,9 +2870,7 @@ export const InsertResponse: MessageFns<InsertResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<InsertResponse>, I>>(object: I): InsertResponse {
     const message = createBaseInsertResponse();
-    message.document = (object.document !== undefined && object.document !== null)
-      ? Value.fromPartial(object.document)
-      : undefined;
+    message.Value = (object.Value !== undefined && object.Value !== null) ? Value.fromPartial(object.Value) : undefined;
     return message;
   },
 };
@@ -3084,13 +3080,13 @@ export const UpsertRequest: MessageFns<UpsertRequest> = {
 };
 
 function createBaseUpsertResponse(): UpsertResponse {
-  return { document: undefined };
+  return { Value: undefined };
 }
 
 export const UpsertResponse: MessageFns<UpsertResponse> = {
   encode(message: UpsertResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.document !== undefined) {
-      Value.encode(message.document, writer.uint32(10).fork()).join();
+    if (message.Value !== undefined) {
+      Value.encode(message.Value, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3107,7 +3103,7 @@ export const UpsertResponse: MessageFns<UpsertResponse> = {
             break;
           }
 
-          message.document = Value.decode(reader, reader.uint32());
+          message.Value = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3120,13 +3116,13 @@ export const UpsertResponse: MessageFns<UpsertResponse> = {
   },
 
   fromJSON(object: any): UpsertResponse {
-    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
+    return { Value: isSet(object.Value) ? Value.fromJSON(object.Value) : undefined };
   },
 
   toJSON(message: UpsertResponse): unknown {
     const obj: any = {};
-    if (message.document !== undefined) {
-      obj.document = Value.toJSON(message.document);
+    if (message.Value !== undefined) {
+      obj.Value = Value.toJSON(message.Value);
     }
     return obj;
   },
@@ -3136,9 +3132,7 @@ export const UpsertResponse: MessageFns<UpsertResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<UpsertResponse>, I>>(object: I): UpsertResponse {
     const message = createBaseUpsertResponse();
-    message.document = (object.document !== undefined && object.document !== null)
-      ? Value.fromPartial(object.document)
-      : undefined;
+    message.Value = (object.Value !== undefined && object.Value !== null) ? Value.fromPartial(object.Value) : undefined;
     return message;
   },
 };
@@ -3348,13 +3342,13 @@ export const UpdateRequest: MessageFns<UpdateRequest> = {
 };
 
 function createBaseUpdateResponse(): UpdateResponse {
-  return { document: undefined };
+  return { Value: undefined };
 }
 
 export const UpdateResponse: MessageFns<UpdateResponse> = {
   encode(message: UpdateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.document !== undefined) {
-      Value.encode(message.document, writer.uint32(10).fork()).join();
+    if (message.Value !== undefined) {
+      Value.encode(message.Value, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3371,7 +3365,7 @@ export const UpdateResponse: MessageFns<UpdateResponse> = {
             break;
           }
 
-          message.document = Value.decode(reader, reader.uint32());
+          message.Value = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3384,13 +3378,13 @@ export const UpdateResponse: MessageFns<UpdateResponse> = {
   },
 
   fromJSON(object: any): UpdateResponse {
-    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
+    return { Value: isSet(object.Value) ? Value.fromJSON(object.Value) : undefined };
   },
 
   toJSON(message: UpdateResponse): unknown {
     const obj: any = {};
-    if (message.document !== undefined) {
-      obj.document = Value.toJSON(message.document);
+    if (message.Value !== undefined) {
+      obj.Value = Value.toJSON(message.Value);
     }
     return obj;
   },
@@ -3400,9 +3394,7 @@ export const UpdateResponse: MessageFns<UpdateResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<UpdateResponse>, I>>(object: I): UpdateResponse {
     const message = createBaseUpdateResponse();
-    message.document = (object.document !== undefined && object.document !== null)
-      ? Value.fromPartial(object.document)
-      : undefined;
+    message.Value = (object.Value !== undefined && object.Value !== null) ? Value.fromPartial(object.Value) : undefined;
     return message;
   },
 };
@@ -3595,13 +3587,13 @@ export const DeleteRequest: MessageFns<DeleteRequest> = {
 };
 
 function createBaseDeleteResponse(): DeleteResponse {
-  return { document: undefined };
+  return { Value: undefined };
 }
 
 export const DeleteResponse: MessageFns<DeleteResponse> = {
   encode(message: DeleteResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.document !== undefined) {
-      Value.encode(message.document, writer.uint32(10).fork()).join();
+    if (message.Value !== undefined) {
+      Value.encode(message.Value, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3618,7 +3610,7 @@ export const DeleteResponse: MessageFns<DeleteResponse> = {
             break;
           }
 
-          message.document = Value.decode(reader, reader.uint32());
+          message.Value = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3631,13 +3623,13 @@ export const DeleteResponse: MessageFns<DeleteResponse> = {
   },
 
   fromJSON(object: any): DeleteResponse {
-    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
+    return { Value: isSet(object.Value) ? Value.fromJSON(object.Value) : undefined };
   },
 
   toJSON(message: DeleteResponse): unknown {
     const obj: any = {};
-    if (message.document !== undefined) {
-      obj.document = Value.toJSON(message.document);
+    if (message.Value !== undefined) {
+      obj.Value = Value.toJSON(message.Value);
     }
     return obj;
   },
@@ -3647,9 +3639,7 @@ export const DeleteResponse: MessageFns<DeleteResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<DeleteResponse>, I>>(object: I): DeleteResponse {
     const message = createBaseDeleteResponse();
-    message.document = (object.document !== undefined && object.document !== null)
-      ? Value.fromPartial(object.document)
-      : undefined;
+    message.Value = (object.Value !== undefined && object.Value !== null) ? Value.fromPartial(object.Value) : undefined;
     return message;
   },
 };
@@ -3733,13 +3723,13 @@ export const QueryRequest: MessageFns<QueryRequest> = {
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { documents: undefined };
+  return { Values: undefined };
 }
 
 export const QueryResponse: MessageFns<QueryResponse> = {
   encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.documents !== undefined) {
-      ValueBatch.encode(message.documents, writer.uint32(10).fork()).join();
+    if (message.Values !== undefined) {
+      ValueBatch.encode(message.Values, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3756,7 +3746,7 @@ export const QueryResponse: MessageFns<QueryResponse> = {
             break;
           }
 
-          message.documents = ValueBatch.decode(reader, reader.uint32());
+          message.Values = ValueBatch.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3769,13 +3759,13 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   },
 
   fromJSON(object: any): QueryResponse {
-    return { documents: isSet(object.documents) ? ValueBatch.fromJSON(object.documents) : undefined };
+    return { Values: isSet(object.Values) ? ValueBatch.fromJSON(object.Values) : undefined };
   },
 
   toJSON(message: QueryResponse): unknown {
     const obj: any = {};
-    if (message.documents !== undefined) {
-      obj.documents = ValueBatch.toJSON(message.documents);
+    if (message.Values !== undefined) {
+      obj.Values = ValueBatch.toJSON(message.Values);
     }
     return obj;
   },
@@ -3785,8 +3775,8 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<QueryResponse>, I>>(object: I): QueryResponse {
     const message = createBaseQueryResponse();
-    message.documents = (object.documents !== undefined && object.documents !== null)
-      ? ValueBatch.fromPartial(object.documents)
+    message.Values = (object.Values !== undefined && object.Values !== null)
+      ? ValueBatch.fromPartial(object.Values)
       : undefined;
     return message;
   },
@@ -3995,13 +3985,13 @@ export const RelateRequest: MessageFns<RelateRequest> = {
 };
 
 function createBaseRelateResponse(): RelateResponse {
-  return { document: undefined };
+  return { Value: undefined };
 }
 
 export const RelateResponse: MessageFns<RelateResponse> = {
   encode(message: RelateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.document !== undefined) {
-      Value.encode(message.document, writer.uint32(10).fork()).join();
+    if (message.Value !== undefined) {
+      Value.encode(message.Value, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -4018,7 +4008,7 @@ export const RelateResponse: MessageFns<RelateResponse> = {
             break;
           }
 
-          message.document = Value.decode(reader, reader.uint32());
+          message.Value = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -4031,13 +4021,13 @@ export const RelateResponse: MessageFns<RelateResponse> = {
   },
 
   fromJSON(object: any): RelateResponse {
-    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
+    return { Value: isSet(object.Value) ? Value.fromJSON(object.Value) : undefined };
   },
 
   toJSON(message: RelateResponse): unknown {
     const obj: any = {};
-    if (message.document !== undefined) {
-      obj.document = Value.toJSON(message.document);
+    if (message.Value !== undefined) {
+      obj.Value = Value.toJSON(message.Value);
     }
     return obj;
   },
@@ -4047,9 +4037,7 @@ export const RelateResponse: MessageFns<RelateResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<RelateResponse>, I>>(object: I): RelateResponse {
     const message = createBaseRelateResponse();
-    message.document = (object.document !== undefined && object.document !== null)
-      ? Value.fromPartial(object.document)
-      : undefined;
+    message.Value = (object.Value !== undefined && object.Value !== null) ? Value.fromPartial(object.Value) : undefined;
     return message;
   },
 };
@@ -4283,13 +4271,13 @@ export const GraphQlRequest: MessageFns<GraphQlRequest> = {
 };
 
 function createBaseGraphQlResponse(): GraphQlResponse {
-  return { documents: undefined };
+  return { Values: undefined };
 }
 
 export const GraphQlResponse: MessageFns<GraphQlResponse> = {
   encode(message: GraphQlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.documents !== undefined) {
-      ValueBatch.encode(message.documents, writer.uint32(10).fork()).join();
+    if (message.Values !== undefined) {
+      ValueBatch.encode(message.Values, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -4306,7 +4294,7 @@ export const GraphQlResponse: MessageFns<GraphQlResponse> = {
             break;
           }
 
-          message.documents = ValueBatch.decode(reader, reader.uint32());
+          message.Values = ValueBatch.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -4319,13 +4307,13 @@ export const GraphQlResponse: MessageFns<GraphQlResponse> = {
   },
 
   fromJSON(object: any): GraphQlResponse {
-    return { documents: isSet(object.documents) ? ValueBatch.fromJSON(object.documents) : undefined };
+    return { Values: isSet(object.Values) ? ValueBatch.fromJSON(object.Values) : undefined };
   },
 
   toJSON(message: GraphQlResponse): unknown {
     const obj: any = {};
-    if (message.documents !== undefined) {
-      obj.documents = ValueBatch.toJSON(message.documents);
+    if (message.Values !== undefined) {
+      obj.Values = ValueBatch.toJSON(message.Values);
     }
     return obj;
   },
@@ -4335,20 +4323,20 @@ export const GraphQlResponse: MessageFns<GraphQlResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<GraphQlResponse>, I>>(object: I): GraphQlResponse {
     const message = createBaseGraphQlResponse();
-    message.documents = (object.documents !== undefined && object.documents !== null)
-      ? ValueBatch.fromPartial(object.documents)
+    message.Values = (object.Values !== undefined && object.Values !== null)
+      ? ValueBatch.fromPartial(object.Values)
       : undefined;
     return message;
   },
 };
 
 function createBaseValueBatch(): ValueBatch {
-  return { documents: [] };
+  return { Values: [] };
 }
 
 export const ValueBatch: MessageFns<ValueBatch> = {
   encode(message: ValueBatch, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.documents) {
+    for (const v of message.Values) {
       Value.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
@@ -4366,7 +4354,7 @@ export const ValueBatch: MessageFns<ValueBatch> = {
             break;
           }
 
-          message.documents.push(Value.decode(reader, reader.uint32()));
+          message.Values.push(Value.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -4379,15 +4367,13 @@ export const ValueBatch: MessageFns<ValueBatch> = {
   },
 
   fromJSON(object: any): ValueBatch {
-    return {
-      documents: globalThis.Array.isArray(object?.documents) ? object.documents.map((e: any) => Value.fromJSON(e)) : [],
-    };
+    return { Values: globalThis.Array.isArray(object?.Values) ? object.Values.map((e: any) => Value.fromJSON(e)) : [] };
   },
 
   toJSON(message: ValueBatch): unknown {
     const obj: any = {};
-    if (message.documents?.length) {
-      obj.documents = message.documents.map((e) => Value.toJSON(e));
+    if (message.Values?.length) {
+      obj.Values = message.Values.map((e) => Value.toJSON(e));
     }
     return obj;
   },
@@ -4397,7 +4383,7 @@ export const ValueBatch: MessageFns<ValueBatch> = {
   },
   fromPartial<I extends Exact<DeepPartial<ValueBatch>, I>>(object: I): ValueBatch {
     const message = createBaseValueBatch();
-    message.documents = object.documents?.map((e) => Value.fromPartial(e)) || [];
+    message.Values = object.Values?.map((e) => Value.fromPartial(e)) || [];
     return message;
   },
 };
