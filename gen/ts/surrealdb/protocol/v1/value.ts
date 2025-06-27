@@ -11,72 +11,92 @@ import { Timestamp } from "../../../google/protobuf/timestamp";
 
 export const protobufPackage = "surrealdb.protocol.v1";
 
+/** Null value. */
 export interface NullValue {
 }
 
+/** Boolean value. */
 export interface BoolValue {
   value: boolean;
 }
 
+/** 64-bit signed integer value. */
 export interface Int64Value {
   value: bigint;
 }
 
+/** 64-bit unsigned integer value. */
 export interface UInt64Value {
   value: bigint;
 }
 
+/** 64-bit floating point value. */
 export interface Float64Value {
   value: number;
 }
 
+/** String value. */
 export interface StringValue {
   value: string;
 }
 
+/** Bytes value. */
 export interface BytesValue {
   value: Uint8Array;
 }
 
+/** Decimal value. */
 export interface DecimalValue {
   value: string;
 }
 
+/** UUID value. */
 export interface UuidValue {
   value: string;
 }
 
-/** Geometry types */
+/** Point type. */
 export interface Point {
   x: number;
   y: number;
 }
 
+/** LineString type. */
 export interface LineString {
   points: Point[];
 }
 
+/** Polygon type. */
 export interface Polygon {
-  exterior: LineString | undefined;
+  /** Exterior ring. */
+  exterior:
+    | LineString
+    | undefined;
+  /** Interior rings. */
   interiors: LineString[];
 }
 
+/** MultiPoint type. */
 export interface MultiPoint {
   points: Point[];
 }
 
+/** MultiLineString type. */
 export interface MultiLineString {
   lines: LineString[];
 }
 
+/** MultiPolygon type. */
 export interface MultiPolygon {
   polygons: Polygon[];
 }
 
+/** GeometryCollection type. */
 export interface GeometryCollection {
   geometries: Geometry[];
 }
 
+/** Generic geometry type. */
 export interface Geometry {
   geometry?:
     | { $case: "point"; point: Point }
@@ -89,20 +109,28 @@ export interface Geometry {
     | undefined;
 }
 
+/** Record ID type. */
 export interface RecordId {
+  /** Table name. */
   table: string;
+  /** Record ID. */
   id: Id | undefined;
 }
 
+/** File type. */
 export interface File {
+  /** Bucket name. */
   bucket: string;
+  /** File key. */
   key: string;
 }
 
+/** Array type. */
 export interface Array {
   values: Value[];
 }
 
+/** Object type. */
 export interface Object {
   items: { [key: string]: Value };
 }
@@ -112,6 +140,7 @@ export interface Object_ItemsEntry {
   value: Value | undefined;
 }
 
+/** Value type. */
 export interface Value {
   value?:
     | { $case: "null"; null: NullValue }
@@ -133,6 +162,7 @@ export interface Value {
     | undefined;
 }
 
+/** ID type. */
 export interface Id {
   id?:
     | { $case: "int64"; int64: Int64Value }

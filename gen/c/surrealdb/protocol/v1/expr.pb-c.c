@@ -7,51 +7,6 @@
 #endif
 
 #include "surrealdb/protocol/v1/expr.pb-c.h"
-void   surrealdb__protocol__v1__method_part__init
-                     (Surrealdb__Protocol__V1__MethodPart         *message)
-{
-  static const Surrealdb__Protocol__V1__MethodPart init_value = SURREALDB__PROTOCOL__V1__METHOD_PART__INIT;
-  *message = init_value;
-}
-size_t surrealdb__protocol__v1__method_part__get_packed_size
-                     (const Surrealdb__Protocol__V1__MethodPart *message)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__v1__method_part__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t surrealdb__protocol__v1__method_part__pack
-                     (const Surrealdb__Protocol__V1__MethodPart *message,
-                      uint8_t       *out)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__v1__method_part__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t surrealdb__protocol__v1__method_part__pack_to_buffer
-                     (const Surrealdb__Protocol__V1__MethodPart *message,
-                      ProtobufCBuffer *buffer)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__v1__method_part__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-Surrealdb__Protocol__V1__MethodPart *
-       surrealdb__protocol__v1__method_part__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (Surrealdb__Protocol__V1__MethodPart *)
-     protobuf_c_message_unpack (&surrealdb__protocol__v1__method_part__descriptor,
-                                allocator, len, data);
-}
-void   surrealdb__protocol__v1__method_part__free_unpacked
-                     (Surrealdb__Protocol__V1__MethodPart *message,
-                      ProtobufCAllocator *allocator)
-{
-  if(!message)
-    return;
-  assert(message->base.descriptor == &surrealdb__protocol__v1__method_part__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
 void   surrealdb__protocol__v1__ident__init
                      (Surrealdb__Protocol__V1__Ident         *message)
 {
@@ -325,57 +280,6 @@ void   surrealdb__protocol__v1__fetchs__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__v1__fetchs__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor surrealdb__protocol__v1__method_part__field_descriptors[2] =
-{
-  {
-    "name",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__V1__MethodPart, name),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "args",
-    2,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__V1__MethodPart, n_args),
-    offsetof(Surrealdb__Protocol__V1__MethodPart, args),
-    &surrealdb__protocol__v1__value__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned surrealdb__protocol__v1__method_part__field_indices_by_name[] = {
-  1,   /* field[1] = args */
-  0,   /* field[0] = name */
-};
-static const ProtobufCIntRange surrealdb__protocol__v1__method_part__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 2 }
-};
-const ProtobufCMessageDescriptor surrealdb__protocol__v1__method_part__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.v1.MethodPart",
-  "MethodPart",
-  "Surrealdb__Protocol__V1__MethodPart",
-  "surrealdb.protocol.v1",
-  sizeof(Surrealdb__Protocol__V1__MethodPart),
-  2,
-  surrealdb__protocol__v1__method_part__field_descriptors,
-  surrealdb__protocol__v1__method_part__field_indices_by_name,
-  1,  surrealdb__protocol__v1__method_part__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__v1__method_part__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
 static const ProtobufCFieldDescriptor surrealdb__protocol__v1__ident__field_descriptors[1] =
 {
   {

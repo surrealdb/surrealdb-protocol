@@ -4,65 +4,96 @@ package surrealdb.protocol.rpc.v1;
 
 import "surrealdb/protocol/v1/value.proto";
 import "surrealdb/protocol/v1/expr.proto";
-import "surrealdb/protocol/v1/document.proto";
 import "google/protobuf/duration.proto";
 
-
+// SurrealDB service.
 service SurrealDBService {
+    // Check the health of the database.
     rpc Health(HealthRequest) returns (HealthResponse);
+    // Get the version of the database.
     rpc Version(VersionRequest) returns (VersionResponse);
-
-    rpc Query(QueryRequest) returns (stream QueryResponse);
-    rpc Live(LiveRequest) returns (stream LiveResponse);
-    
+    // Get information about the database.
     rpc Info(InfoRequest) returns (InfoResponse);
+
+    // Query the database and get a stream of Values.
+    rpc Query(QueryRequest) returns (stream QueryResponse);
+    // Issue a live query and get a stream of LiveResponses.
+    rpc Live(LiveRequest) returns (stream LiveResponse);
+
+    // Change the current namespace and database.
     rpc Use(UseRequest) returns (UseResponse);
+    // Sign up a new user.
     rpc Signup(SignupRequest) returns (SignupResponse);
+    // Sign in a user.
     rpc Signin(SigninRequest) returns (SigninResponse);
+    // Authenticate a user.
     rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+    // Invalidate a user.
     rpc Invalidate(InvalidateRequest) returns (InvalidateResponse);
+    // Reset the database.
     rpc Reset(ResetRequest) returns (ResetResponse);
+    // Kill a live query.
     rpc Kill(KillRequest) returns (KillResponse);
+    // Set a value.
     rpc Set(SetRequest) returns (SetResponse);
+    // Unset a value.
     rpc Unset(UnsetRequest) returns (UnsetResponse);
+    // Select values from the database.
     rpc Select(SelectRequest) returns (SelectResponse);
+    // Create a new record.
     rpc Create(CreateRequest) returns (CreateResponse);
+    // Insert a new record.
     rpc Insert(InsertRequest) returns (InsertResponse);
+    // Upsert a record.
     rpc Upsert(UpsertRequest) returns (UpsertResponse);
+    // Update a record.
     rpc Update(UpdateRequest) returns (UpdateResponse);
+    // Delete a record.
     rpc Delete(DeleteRequest) returns (DeleteResponse);
+    // Relate two records.
     rpc Relate(RelateRequest) returns (RelateResponse);
+    // Run a function.
     rpc RunFunction(RunFunctionRequest) returns (RunFunctionResponse);
+    // Run a GraphQL query.
     rpc GraphQl(GraphQlRequest) returns (GraphQlResponse);
 }
 
+// Request to check the health of the database.
 message HealthRequest {}
 
+// Response to a health check request.
 message HealthResponse {
     surrealdb.protocol.v1.Value status = 1;
 }
 
+// Request to get the version of the database.
 message VersionRequest {}
 
+// Response to a version request.
 message VersionResponse {
     surrealdb.protocol.v1.Value version = 1;
 }
 
+// Request to get information about the database.
 message InfoRequest {}
 
+// Response to an info request.
 message InfoResponse {
     surrealdb.protocol.v1.Value info = 1;
 }
 
+// Request to change the current namespace and database.
 message UseRequest {
     string namespace = 1;
     string database = 2;
 }
 
+// Response to a use request.
 message UseResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to sign up a new user.
 message SignupRequest {
     string namespace = 1;
     string database = 2;
@@ -70,46 +101,58 @@ message SignupRequest {
     surrealdb.protocol.v1.Value variables = 4;
 }
 
+// Response to a signup request.
 message SignupResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to sign in a user.
 message SigninRequest {
     AccessMethod access_method = 1;
 }
 
+// Response to a signin request.
 message SigninResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to authenticate a user.
 message AuthenticateRequest {
     string token = 1;
 }
 
+// Response to an authenticate request.
 message AuthenticateResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
-message InvalidateRequest {}
+// Request to invalidate a user.
+    message InvalidateRequest {}
 
+// Response to an invalidate request.
 message InvalidateResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to reset the database.
 message ResetRequest {}
 
+// Response to a reset request.
 message ResetResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to kill a live query.
 message KillRequest {
     string live_id = 1;
 }
 
+// Response to a kill request.
 message KillResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to issue a live query.
 message LiveRequest {
     surrealdb.protocol.v1.Value what = 1;
     surrealdb.protocol.v1.Fields expr = 2;
@@ -117,23 +160,28 @@ message LiveRequest {
     surrealdb.protocol.v1.Value fetch = 4;
 }
 
+// Request to set a value.
 message SetRequest {
     string key = 1;
     surrealdb.protocol.v1.Value value = 2;
 }
 
+// Response to a set request.
 message SetResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to unset a value.
 message UnsetRequest {
     string key = 1;
 }
 
+// Response to an unset request.
 message UnsetResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to create a new record.
 message CreateRequest {
     bool only = 1;
     surrealdb.protocol.v1.Value what = 2;
@@ -144,10 +192,12 @@ message CreateRequest {
     surrealdb.protocol.v1.Value version = 7;
 }
 
+// Response to a create request.
 message CreateResponse {
-    surrealdb.protocol.v1.Document document = 1;
+    surrealdb.protocol.v1.Value document = 1;
 }
 
+// Request to select values from the database.
 message SelectRequest {
     surrealdb.protocol.v1.Fields expr = 1;
     surrealdb.protocol.v1.Value omit = 2;
@@ -169,10 +219,12 @@ message SelectRequest {
     Variables variables = 18;
 }
 
+// Response to a select request.
 message SelectResponse {
-    DocumentBatch documents = 1;
+    ValueBatch documents = 1;
 }
 
+// Request to insert a new record.
 message InsertRequest {
     surrealdb.protocol.v1.Value into = 1;
     surrealdb.protocol.v1.Value data = 2;
@@ -185,10 +237,12 @@ message InsertRequest {
     surrealdb.protocol.v1.Value version = 9;
 }
 
+// Response to an insert request.
 message InsertResponse {
-    surrealdb.protocol.v1.Document document = 1;
+    surrealdb.protocol.v1.Value document = 1;
 }
 
+// Request to upsert a record.
 message UpsertRequest {
     bool only = 1;
     surrealdb.protocol.v1.Value what = 2;
@@ -201,10 +255,12 @@ message UpsertRequest {
     surrealdb.protocol.v1.Value explain = 9;
 }
 
+// Response to an upsert request.
 message UpsertResponse {
-    surrealdb.protocol.v1.Document document = 1;
+    surrealdb.protocol.v1.Value document = 1;
 }
 
+// Request to update a record.
 message UpdateRequest {
     bool only = 1;
     surrealdb.protocol.v1.Value what = 2;
@@ -217,10 +273,12 @@ message UpdateRequest {
     surrealdb.protocol.v1.Value explain = 9;
 }
 
+// Response to an update request.
 message UpdateResponse {
-    surrealdb.protocol.v1.Document document = 1;
+    surrealdb.protocol.v1.Value document = 1;
 }
 
+// Request to delete a record.
 message DeleteRequest {
     bool only = 1;
     surrealdb.protocol.v1.Value what = 2;
@@ -232,19 +290,23 @@ message DeleteRequest {
     surrealdb.protocol.v1.Value explain = 8;
 }
 
+// Response to a delete request.
 message DeleteResponse {
-    surrealdb.protocol.v1.Document document = 1;
+    surrealdb.protocol.v1.Value document = 1;
 }
 
+// Request to query the database.
 message QueryRequest {
     string query = 1;
     Variables variables = 2;
 }
 
+// Response to a query request.
 message QueryResponse {
-    DocumentBatch documents = 1;
+    ValueBatch documents = 1;
 }
 
+// Request to relate two records.
 message RelateRequest {
     bool only = 1;
     surrealdb.protocol.v1.Value kind = 2;
@@ -257,44 +319,53 @@ message RelateRequest {
     bool parallel = 9;
 }
 
+// Response to a relate request.
 message RelateResponse {
-    surrealdb.protocol.v1.Document document = 1;
+    surrealdb.protocol.v1.Value document = 1;
 }
 
+// Request to run a function.
 message RunFunctionRequest {
     string name = 1;
     string version = 2;
     repeated surrealdb.protocol.v1.Value args = 3;
 }
 
+// Response to a run function request.
 message RunFunctionResponse {
     surrealdb.protocol.v1.Value data = 1;
 }
 
+// Request to run a GraphQL query.
 message GraphQlRequest {
     string query = 1;
     Variables variables = 2;
 }
 
+// Response to a GraphQL request.
 message GraphQlResponse {
-    DocumentBatch documents = 1;
+    ValueBatch documents = 1;
 }
 
-message DocumentBatch {
-    repeated surrealdb.protocol.v1.Document documents = 1;
+// Batch of values.
+message ValueBatch {
+    repeated surrealdb.protocol.v1.Value documents = 1;
 }
 
+// Root user credentials.
 message RootUserCredentials {
     string username = 1;
     string password = 2;
 }
 
+// Namespace access credentials.
 message NamespaceAccessCredentials {
     string namespace = 1;
     string access = 2;
     string key = 3;
 }
 
+// Database access credentials.
 message DatabaseAccessCredentials {
     string namespace = 1;
     string database = 2;
@@ -303,12 +374,14 @@ message DatabaseAccessCredentials {
     string refresh = 5;
 }
 
+// Namespace user credentials.
 message NamespaceUserCredentials {
     string namespace = 1;
     string username = 2;
     string password = 3;
 }
 
+// Database user credentials.
 message DatabaseUserCredentials {
     string namespace = 1;
     string database = 2;
@@ -316,6 +389,7 @@ message DatabaseUserCredentials {
     string password = 4;
 }
 
+// Access token.
 message AccessToken {
     string token = 1;
 }
@@ -332,6 +406,7 @@ message AccessMethod {
     }
 }
 
+// Action type.
 enum Action {
     ACTION_UNSPECIFIED = 0;
     ACTION_CREATE = 1;
@@ -340,6 +415,7 @@ enum Action {
     ACTION_KILLED = 4;
 }
 
+// Response to a live query.
 message LiveResponse {
     surrealdb.protocol.v1.UuidValue id = 1;
     Action action = 2;
@@ -347,6 +423,7 @@ message LiveResponse {
     surrealdb.protocol.v1.Value result = 4;
 }
 
+// Variables.
 message Variables {
     map<string, surrealdb.protocol.v1.Value> variables = 1;
 }

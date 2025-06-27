@@ -9,12 +9,12 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import { Duration } from "../../../../google/protobuf/duration";
-import { Document } from "../../v1/document";
 import { Data, Fetchs, Fields } from "../../v1/expr";
 import { UuidValue, Value } from "../../v1/value";
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
 
+/** Action type. */
 export enum Action {
   UNSPECIFIED = 0,
   CREATE = 1,
@@ -66,36 +66,45 @@ export function actionToJSON(object: Action): string {
   }
 }
 
+/** Request to check the health of the database. */
 export interface HealthRequest {
 }
 
+/** Response to a health check request. */
 export interface HealthResponse {
   status: Value | undefined;
 }
 
+/** Request to get the version of the database. */
 export interface VersionRequest {
 }
 
+/** Response to a version request. */
 export interface VersionResponse {
   version: Value | undefined;
 }
 
+/** Request to get information about the database. */
 export interface InfoRequest {
 }
 
+/** Response to an info request. */
 export interface InfoResponse {
   info: Value | undefined;
 }
 
+/** Request to change the current namespace and database. */
 export interface UseRequest {
   namespace: string;
   database: string;
 }
 
+/** Response to a use request. */
 export interface UseResponse {
   data: Value | undefined;
 }
 
+/** Request to sign up a new user. */
 export interface SignupRequest {
   namespace: string;
   database: string;
@@ -103,48 +112,60 @@ export interface SignupRequest {
   variables: Value | undefined;
 }
 
+/** Response to a signup request. */
 export interface SignupResponse {
   data: Value | undefined;
 }
 
+/** Request to sign in a user. */
 export interface SigninRequest {
   accessMethod: AccessMethod | undefined;
 }
 
+/** Response to a signin request. */
 export interface SigninResponse {
   data: Value | undefined;
 }
 
+/** Request to authenticate a user. */
 export interface AuthenticateRequest {
   token: string;
 }
 
+/** Response to an authenticate request. */
 export interface AuthenticateResponse {
   data: Value | undefined;
 }
 
+/** Request to invalidate a user. */
 export interface InvalidateRequest {
 }
 
+/** Response to an invalidate request. */
 export interface InvalidateResponse {
   data: Value | undefined;
 }
 
+/** Request to reset the database. */
 export interface ResetRequest {
 }
 
+/** Response to a reset request. */
 export interface ResetResponse {
   data: Value | undefined;
 }
 
+/** Request to kill a live query. */
 export interface KillRequest {
   liveId: string;
 }
 
+/** Response to a kill request. */
 export interface KillResponse {
   data: Value | undefined;
 }
 
+/** Request to issue a live query. */
 export interface LiveRequest {
   what: Value | undefined;
   expr: Fields | undefined;
@@ -152,23 +173,28 @@ export interface LiveRequest {
   fetch: Value | undefined;
 }
 
+/** Request to set a value. */
 export interface SetRequest {
   key: string;
   value: Value | undefined;
 }
 
+/** Response to a set request. */
 export interface SetResponse {
   data: Value | undefined;
 }
 
+/** Request to unset a value. */
 export interface UnsetRequest {
   key: string;
 }
 
+/** Response to an unset request. */
 export interface UnsetResponse {
   data: Value | undefined;
 }
 
+/** Request to create a new record. */
 export interface CreateRequest {
   only: boolean;
   what: Value | undefined;
@@ -179,10 +205,12 @@ export interface CreateRequest {
   version: Value | undefined;
 }
 
+/** Response to a create request. */
 export interface CreateResponse {
-  document: Document | undefined;
+  document: Value | undefined;
 }
 
+/** Request to select values from the database. */
 export interface SelectRequest {
   expr: Fields | undefined;
   omit: Value | undefined;
@@ -204,10 +232,12 @@ export interface SelectRequest {
   variables: Variables | undefined;
 }
 
+/** Response to a select request. */
 export interface SelectResponse {
-  documents: DocumentBatch | undefined;
+  documents: ValueBatch | undefined;
 }
 
+/** Request to insert a new record. */
 export interface InsertRequest {
   into: Value | undefined;
   data: Value | undefined;
@@ -220,10 +250,12 @@ export interface InsertRequest {
   version: Value | undefined;
 }
 
+/** Response to an insert request. */
 export interface InsertResponse {
-  document: Document | undefined;
+  document: Value | undefined;
 }
 
+/** Request to upsert a record. */
 export interface UpsertRequest {
   only: boolean;
   what: Value | undefined;
@@ -236,10 +268,12 @@ export interface UpsertRequest {
   explain: Value | undefined;
 }
 
+/** Response to an upsert request. */
 export interface UpsertResponse {
-  document: Document | undefined;
+  document: Value | undefined;
 }
 
+/** Request to update a record. */
 export interface UpdateRequest {
   only: boolean;
   what: Value | undefined;
@@ -252,10 +286,12 @@ export interface UpdateRequest {
   explain: Value | undefined;
 }
 
+/** Response to an update request. */
 export interface UpdateResponse {
-  document: Document | undefined;
+  document: Value | undefined;
 }
 
+/** Request to delete a record. */
 export interface DeleteRequest {
   only: boolean;
   what: Value | undefined;
@@ -267,19 +303,23 @@ export interface DeleteRequest {
   explain: Value | undefined;
 }
 
+/** Response to a delete request. */
 export interface DeleteResponse {
-  document: Document | undefined;
+  document: Value | undefined;
 }
 
+/** Request to query the database. */
 export interface QueryRequest {
   query: string;
   variables: Variables | undefined;
 }
 
+/** Response to a query request. */
 export interface QueryResponse {
-  documents: DocumentBatch | undefined;
+  documents: ValueBatch | undefined;
 }
 
+/** Request to relate two records. */
 export interface RelateRequest {
   only: boolean;
   kind: Value | undefined;
@@ -292,44 +332,53 @@ export interface RelateRequest {
   parallel: boolean;
 }
 
+/** Response to a relate request. */
 export interface RelateResponse {
-  document: Document | undefined;
+  document: Value | undefined;
 }
 
+/** Request to run a function. */
 export interface RunFunctionRequest {
   name: string;
   version: string;
   args: Value[];
 }
 
+/** Response to a run function request. */
 export interface RunFunctionResponse {
   data: Value | undefined;
 }
 
+/** Request to run a GraphQL query. */
 export interface GraphQlRequest {
   query: string;
   variables: Variables | undefined;
 }
 
+/** Response to a GraphQL request. */
 export interface GraphQlResponse {
-  documents: DocumentBatch | undefined;
+  documents: ValueBatch | undefined;
 }
 
-export interface DocumentBatch {
-  documents: Document[];
+/** Batch of values. */
+export interface ValueBatch {
+  documents: Value[];
 }
 
+/** Root user credentials. */
 export interface RootUserCredentials {
   username: string;
   password: string;
 }
 
+/** Namespace access credentials. */
 export interface NamespaceAccessCredentials {
   namespace: string;
   access: string;
   key: string;
 }
 
+/** Database access credentials. */
 export interface DatabaseAccessCredentials {
   namespace: string;
   database: string;
@@ -338,12 +387,14 @@ export interface DatabaseAccessCredentials {
   refresh: string;
 }
 
+/** Namespace user credentials. */
 export interface NamespaceUserCredentials {
   namespace: string;
   username: string;
   password: string;
 }
 
+/** Database user credentials. */
 export interface DatabaseUserCredentials {
   namespace: string;
   database: string;
@@ -351,6 +402,7 @@ export interface DatabaseUserCredentials {
   password: string;
 }
 
+/** Access token. */
 export interface AccessToken {
   token: string;
 }
@@ -367,6 +419,7 @@ export interface AccessMethod {
     | undefined;
 }
 
+/** Response to a live query. */
 export interface LiveResponse {
   id: UuidValue | undefined;
   action: Action;
@@ -374,6 +427,7 @@ export interface LiveResponse {
   result: Value | undefined;
 }
 
+/** Variables. */
 export interface Variables {
   variables: { [key: string]: Value };
 }
@@ -2079,7 +2133,7 @@ function createBaseCreateResponse(): CreateResponse {
 export const CreateResponse: MessageFns<CreateResponse> = {
   encode(message: CreateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.document !== undefined) {
-      Document.encode(message.document, writer.uint32(10).fork()).join();
+      Value.encode(message.document, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2096,7 +2150,7 @@ export const CreateResponse: MessageFns<CreateResponse> = {
             break;
           }
 
-          message.document = Document.decode(reader, reader.uint32());
+          message.document = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2109,13 +2163,13 @@ export const CreateResponse: MessageFns<CreateResponse> = {
   },
 
   fromJSON(object: any): CreateResponse {
-    return { document: isSet(object.document) ? Document.fromJSON(object.document) : undefined };
+    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
   },
 
   toJSON(message: CreateResponse): unknown {
     const obj: any = {};
     if (message.document !== undefined) {
-      obj.document = Document.toJSON(message.document);
+      obj.document = Value.toJSON(message.document);
     }
     return obj;
   },
@@ -2126,7 +2180,7 @@ export const CreateResponse: MessageFns<CreateResponse> = {
   fromPartial<I extends Exact<DeepPartial<CreateResponse>, I>>(object: I): CreateResponse {
     const message = createBaseCreateResponse();
     message.document = (object.document !== undefined && object.document !== null)
-      ? Document.fromPartial(object.document)
+      ? Value.fromPartial(object.document)
       : undefined;
     return message;
   },
@@ -2506,7 +2560,7 @@ function createBaseSelectResponse(): SelectResponse {
 export const SelectResponse: MessageFns<SelectResponse> = {
   encode(message: SelectResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.documents !== undefined) {
-      DocumentBatch.encode(message.documents, writer.uint32(10).fork()).join();
+      ValueBatch.encode(message.documents, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2523,7 +2577,7 @@ export const SelectResponse: MessageFns<SelectResponse> = {
             break;
           }
 
-          message.documents = DocumentBatch.decode(reader, reader.uint32());
+          message.documents = ValueBatch.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2536,13 +2590,13 @@ export const SelectResponse: MessageFns<SelectResponse> = {
   },
 
   fromJSON(object: any): SelectResponse {
-    return { documents: isSet(object.documents) ? DocumentBatch.fromJSON(object.documents) : undefined };
+    return { documents: isSet(object.documents) ? ValueBatch.fromJSON(object.documents) : undefined };
   },
 
   toJSON(message: SelectResponse): unknown {
     const obj: any = {};
     if (message.documents !== undefined) {
-      obj.documents = DocumentBatch.toJSON(message.documents);
+      obj.documents = ValueBatch.toJSON(message.documents);
     }
     return obj;
   },
@@ -2553,7 +2607,7 @@ export const SelectResponse: MessageFns<SelectResponse> = {
   fromPartial<I extends Exact<DeepPartial<SelectResponse>, I>>(object: I): SelectResponse {
     const message = createBaseSelectResponse();
     message.documents = (object.documents !== undefined && object.documents !== null)
-      ? DocumentBatch.fromPartial(object.documents)
+      ? ValueBatch.fromPartial(object.documents)
       : undefined;
     return message;
   },
@@ -2772,7 +2826,7 @@ function createBaseInsertResponse(): InsertResponse {
 export const InsertResponse: MessageFns<InsertResponse> = {
   encode(message: InsertResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.document !== undefined) {
-      Document.encode(message.document, writer.uint32(10).fork()).join();
+      Value.encode(message.document, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2789,7 +2843,7 @@ export const InsertResponse: MessageFns<InsertResponse> = {
             break;
           }
 
-          message.document = Document.decode(reader, reader.uint32());
+          message.document = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2802,13 +2856,13 @@ export const InsertResponse: MessageFns<InsertResponse> = {
   },
 
   fromJSON(object: any): InsertResponse {
-    return { document: isSet(object.document) ? Document.fromJSON(object.document) : undefined };
+    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
   },
 
   toJSON(message: InsertResponse): unknown {
     const obj: any = {};
     if (message.document !== undefined) {
-      obj.document = Document.toJSON(message.document);
+      obj.document = Value.toJSON(message.document);
     }
     return obj;
   },
@@ -2819,7 +2873,7 @@ export const InsertResponse: MessageFns<InsertResponse> = {
   fromPartial<I extends Exact<DeepPartial<InsertResponse>, I>>(object: I): InsertResponse {
     const message = createBaseInsertResponse();
     message.document = (object.document !== undefined && object.document !== null)
-      ? Document.fromPartial(object.document)
+      ? Value.fromPartial(object.document)
       : undefined;
     return message;
   },
@@ -3036,7 +3090,7 @@ function createBaseUpsertResponse(): UpsertResponse {
 export const UpsertResponse: MessageFns<UpsertResponse> = {
   encode(message: UpsertResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.document !== undefined) {
-      Document.encode(message.document, writer.uint32(10).fork()).join();
+      Value.encode(message.document, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3053,7 +3107,7 @@ export const UpsertResponse: MessageFns<UpsertResponse> = {
             break;
           }
 
-          message.document = Document.decode(reader, reader.uint32());
+          message.document = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3066,13 +3120,13 @@ export const UpsertResponse: MessageFns<UpsertResponse> = {
   },
 
   fromJSON(object: any): UpsertResponse {
-    return { document: isSet(object.document) ? Document.fromJSON(object.document) : undefined };
+    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
   },
 
   toJSON(message: UpsertResponse): unknown {
     const obj: any = {};
     if (message.document !== undefined) {
-      obj.document = Document.toJSON(message.document);
+      obj.document = Value.toJSON(message.document);
     }
     return obj;
   },
@@ -3083,7 +3137,7 @@ export const UpsertResponse: MessageFns<UpsertResponse> = {
   fromPartial<I extends Exact<DeepPartial<UpsertResponse>, I>>(object: I): UpsertResponse {
     const message = createBaseUpsertResponse();
     message.document = (object.document !== undefined && object.document !== null)
-      ? Document.fromPartial(object.document)
+      ? Value.fromPartial(object.document)
       : undefined;
     return message;
   },
@@ -3300,7 +3354,7 @@ function createBaseUpdateResponse(): UpdateResponse {
 export const UpdateResponse: MessageFns<UpdateResponse> = {
   encode(message: UpdateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.document !== undefined) {
-      Document.encode(message.document, writer.uint32(10).fork()).join();
+      Value.encode(message.document, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3317,7 +3371,7 @@ export const UpdateResponse: MessageFns<UpdateResponse> = {
             break;
           }
 
-          message.document = Document.decode(reader, reader.uint32());
+          message.document = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3330,13 +3384,13 @@ export const UpdateResponse: MessageFns<UpdateResponse> = {
   },
 
   fromJSON(object: any): UpdateResponse {
-    return { document: isSet(object.document) ? Document.fromJSON(object.document) : undefined };
+    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
   },
 
   toJSON(message: UpdateResponse): unknown {
     const obj: any = {};
     if (message.document !== undefined) {
-      obj.document = Document.toJSON(message.document);
+      obj.document = Value.toJSON(message.document);
     }
     return obj;
   },
@@ -3347,7 +3401,7 @@ export const UpdateResponse: MessageFns<UpdateResponse> = {
   fromPartial<I extends Exact<DeepPartial<UpdateResponse>, I>>(object: I): UpdateResponse {
     const message = createBaseUpdateResponse();
     message.document = (object.document !== undefined && object.document !== null)
-      ? Document.fromPartial(object.document)
+      ? Value.fromPartial(object.document)
       : undefined;
     return message;
   },
@@ -3547,7 +3601,7 @@ function createBaseDeleteResponse(): DeleteResponse {
 export const DeleteResponse: MessageFns<DeleteResponse> = {
   encode(message: DeleteResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.document !== undefined) {
-      Document.encode(message.document, writer.uint32(10).fork()).join();
+      Value.encode(message.document, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3564,7 +3618,7 @@ export const DeleteResponse: MessageFns<DeleteResponse> = {
             break;
           }
 
-          message.document = Document.decode(reader, reader.uint32());
+          message.document = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3577,13 +3631,13 @@ export const DeleteResponse: MessageFns<DeleteResponse> = {
   },
 
   fromJSON(object: any): DeleteResponse {
-    return { document: isSet(object.document) ? Document.fromJSON(object.document) : undefined };
+    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
   },
 
   toJSON(message: DeleteResponse): unknown {
     const obj: any = {};
     if (message.document !== undefined) {
-      obj.document = Document.toJSON(message.document);
+      obj.document = Value.toJSON(message.document);
     }
     return obj;
   },
@@ -3594,7 +3648,7 @@ export const DeleteResponse: MessageFns<DeleteResponse> = {
   fromPartial<I extends Exact<DeepPartial<DeleteResponse>, I>>(object: I): DeleteResponse {
     const message = createBaseDeleteResponse();
     message.document = (object.document !== undefined && object.document !== null)
-      ? Document.fromPartial(object.document)
+      ? Value.fromPartial(object.document)
       : undefined;
     return message;
   },
@@ -3685,7 +3739,7 @@ function createBaseQueryResponse(): QueryResponse {
 export const QueryResponse: MessageFns<QueryResponse> = {
   encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.documents !== undefined) {
-      DocumentBatch.encode(message.documents, writer.uint32(10).fork()).join();
+      ValueBatch.encode(message.documents, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3702,7 +3756,7 @@ export const QueryResponse: MessageFns<QueryResponse> = {
             break;
           }
 
-          message.documents = DocumentBatch.decode(reader, reader.uint32());
+          message.documents = ValueBatch.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3715,13 +3769,13 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   },
 
   fromJSON(object: any): QueryResponse {
-    return { documents: isSet(object.documents) ? DocumentBatch.fromJSON(object.documents) : undefined };
+    return { documents: isSet(object.documents) ? ValueBatch.fromJSON(object.documents) : undefined };
   },
 
   toJSON(message: QueryResponse): unknown {
     const obj: any = {};
     if (message.documents !== undefined) {
-      obj.documents = DocumentBatch.toJSON(message.documents);
+      obj.documents = ValueBatch.toJSON(message.documents);
     }
     return obj;
   },
@@ -3732,7 +3786,7 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   fromPartial<I extends Exact<DeepPartial<QueryResponse>, I>>(object: I): QueryResponse {
     const message = createBaseQueryResponse();
     message.documents = (object.documents !== undefined && object.documents !== null)
-      ? DocumentBatch.fromPartial(object.documents)
+      ? ValueBatch.fromPartial(object.documents)
       : undefined;
     return message;
   },
@@ -3947,7 +4001,7 @@ function createBaseRelateResponse(): RelateResponse {
 export const RelateResponse: MessageFns<RelateResponse> = {
   encode(message: RelateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.document !== undefined) {
-      Document.encode(message.document, writer.uint32(10).fork()).join();
+      Value.encode(message.document, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -3964,7 +4018,7 @@ export const RelateResponse: MessageFns<RelateResponse> = {
             break;
           }
 
-          message.document = Document.decode(reader, reader.uint32());
+          message.document = Value.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3977,13 +4031,13 @@ export const RelateResponse: MessageFns<RelateResponse> = {
   },
 
   fromJSON(object: any): RelateResponse {
-    return { document: isSet(object.document) ? Document.fromJSON(object.document) : undefined };
+    return { document: isSet(object.document) ? Value.fromJSON(object.document) : undefined };
   },
 
   toJSON(message: RelateResponse): unknown {
     const obj: any = {};
     if (message.document !== undefined) {
-      obj.document = Document.toJSON(message.document);
+      obj.document = Value.toJSON(message.document);
     }
     return obj;
   },
@@ -3994,7 +4048,7 @@ export const RelateResponse: MessageFns<RelateResponse> = {
   fromPartial<I extends Exact<DeepPartial<RelateResponse>, I>>(object: I): RelateResponse {
     const message = createBaseRelateResponse();
     message.document = (object.document !== undefined && object.document !== null)
-      ? Document.fromPartial(object.document)
+      ? Value.fromPartial(object.document)
       : undefined;
     return message;
   },
@@ -4235,7 +4289,7 @@ function createBaseGraphQlResponse(): GraphQlResponse {
 export const GraphQlResponse: MessageFns<GraphQlResponse> = {
   encode(message: GraphQlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.documents !== undefined) {
-      DocumentBatch.encode(message.documents, writer.uint32(10).fork()).join();
+      ValueBatch.encode(message.documents, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -4252,7 +4306,7 @@ export const GraphQlResponse: MessageFns<GraphQlResponse> = {
             break;
           }
 
-          message.documents = DocumentBatch.decode(reader, reader.uint32());
+          message.documents = ValueBatch.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -4265,13 +4319,13 @@ export const GraphQlResponse: MessageFns<GraphQlResponse> = {
   },
 
   fromJSON(object: any): GraphQlResponse {
-    return { documents: isSet(object.documents) ? DocumentBatch.fromJSON(object.documents) : undefined };
+    return { documents: isSet(object.documents) ? ValueBatch.fromJSON(object.documents) : undefined };
   },
 
   toJSON(message: GraphQlResponse): unknown {
     const obj: any = {};
     if (message.documents !== undefined) {
-      obj.documents = DocumentBatch.toJSON(message.documents);
+      obj.documents = ValueBatch.toJSON(message.documents);
     }
     return obj;
   },
@@ -4282,28 +4336,28 @@ export const GraphQlResponse: MessageFns<GraphQlResponse> = {
   fromPartial<I extends Exact<DeepPartial<GraphQlResponse>, I>>(object: I): GraphQlResponse {
     const message = createBaseGraphQlResponse();
     message.documents = (object.documents !== undefined && object.documents !== null)
-      ? DocumentBatch.fromPartial(object.documents)
+      ? ValueBatch.fromPartial(object.documents)
       : undefined;
     return message;
   },
 };
 
-function createBaseDocumentBatch(): DocumentBatch {
+function createBaseValueBatch(): ValueBatch {
   return { documents: [] };
 }
 
-export const DocumentBatch: MessageFns<DocumentBatch> = {
-  encode(message: DocumentBatch, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ValueBatch: MessageFns<ValueBatch> = {
+  encode(message: ValueBatch, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.documents) {
-      Document.encode(v!, writer.uint32(10).fork()).join();
+      Value.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DocumentBatch {
+  decode(input: BinaryReader | Uint8Array, length?: number): ValueBatch {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDocumentBatch();
+    const message = createBaseValueBatch();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4312,7 +4366,7 @@ export const DocumentBatch: MessageFns<DocumentBatch> = {
             break;
           }
 
-          message.documents.push(Document.decode(reader, reader.uint32()));
+          message.documents.push(Value.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -4324,28 +4378,26 @@ export const DocumentBatch: MessageFns<DocumentBatch> = {
     return message;
   },
 
-  fromJSON(object: any): DocumentBatch {
+  fromJSON(object: any): ValueBatch {
     return {
-      documents: globalThis.Array.isArray(object?.documents)
-        ? object.documents.map((e: any) => Document.fromJSON(e))
-        : [],
+      documents: globalThis.Array.isArray(object?.documents) ? object.documents.map((e: any) => Value.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: DocumentBatch): unknown {
+  toJSON(message: ValueBatch): unknown {
     const obj: any = {};
     if (message.documents?.length) {
-      obj.documents = message.documents.map((e) => Document.toJSON(e));
+      obj.documents = message.documents.map((e) => Value.toJSON(e));
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<DocumentBatch>, I>>(base?: I): DocumentBatch {
-    return DocumentBatch.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ValueBatch>, I>>(base?: I): ValueBatch {
+    return ValueBatch.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<DocumentBatch>, I>>(object: I): DocumentBatch {
-    const message = createBaseDocumentBatch();
-    message.documents = object.documents?.map((e) => Document.fromPartial(e)) || [];
+  fromPartial<I extends Exact<DeepPartial<ValueBatch>, I>>(object: I): ValueBatch {
+    const message = createBaseValueBatch();
+    message.documents = object.documents?.map((e) => Value.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5364,29 +5416,53 @@ export const Variables_VariablesEntry: MessageFns<Variables_VariablesEntry> = {
   },
 };
 
+/** SurrealDB service. */
 export interface SurrealDBService {
+  /** Check the health of the database. */
   Health(request: HealthRequest): Promise<HealthResponse>;
+  /** Get the version of the database. */
   Version(request: VersionRequest): Promise<VersionResponse>;
-  Query(request: QueryRequest): Observable<QueryResponse>;
-  Live(request: LiveRequest): Observable<LiveResponse>;
+  /** Get information about the database. */
   Info(request: InfoRequest): Promise<InfoResponse>;
+  /** Query the database and get a stream of Values. */
+  Query(request: QueryRequest): Observable<QueryResponse>;
+  /** Issue a live query and get a stream of LiveResponses. */
+  Live(request: LiveRequest): Observable<LiveResponse>;
+  /** Change the current namespace and database. */
   Use(request: UseRequest): Promise<UseResponse>;
+  /** Sign up a new user. */
   Signup(request: SignupRequest): Promise<SignupResponse>;
+  /** Sign in a user. */
   Signin(request: SigninRequest): Promise<SigninResponse>;
+  /** Authenticate a user. */
   Authenticate(request: AuthenticateRequest): Promise<AuthenticateResponse>;
+  /** Invalidate a user. */
   Invalidate(request: InvalidateRequest): Promise<InvalidateResponse>;
+  /** Reset the database. */
   Reset(request: ResetRequest): Promise<ResetResponse>;
+  /** Kill a live query. */
   Kill(request: KillRequest): Promise<KillResponse>;
+  /** Set a value. */
   Set(request: SetRequest): Promise<SetResponse>;
+  /** Unset a value. */
   Unset(request: UnsetRequest): Promise<UnsetResponse>;
+  /** Select values from the database. */
   Select(request: SelectRequest): Promise<SelectResponse>;
+  /** Create a new record. */
   Create(request: CreateRequest): Promise<CreateResponse>;
+  /** Insert a new record. */
   Insert(request: InsertRequest): Promise<InsertResponse>;
+  /** Upsert a record. */
   Upsert(request: UpsertRequest): Promise<UpsertResponse>;
+  /** Update a record. */
   Update(request: UpdateRequest): Promise<UpdateResponse>;
+  /** Delete a record. */
   Delete(request: DeleteRequest): Promise<DeleteResponse>;
+  /** Relate two records. */
   Relate(request: RelateRequest): Promise<RelateResponse>;
+  /** Run a function. */
   RunFunction(request: RunFunctionRequest): Promise<RunFunctionResponse>;
+  /** Run a GraphQL query. */
   GraphQl(request: GraphQlRequest): Promise<GraphQlResponse>;
 }
 
@@ -5399,9 +5475,9 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.rpc = rpc;
     this.Health = this.Health.bind(this);
     this.Version = this.Version.bind(this);
+    this.Info = this.Info.bind(this);
     this.Query = this.Query.bind(this);
     this.Live = this.Live.bind(this);
-    this.Info = this.Info.bind(this);
     this.Use = this.Use.bind(this);
     this.Signup = this.Signup.bind(this);
     this.Signin = this.Signin.bind(this);
@@ -5433,6 +5509,12 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return promise.then((data) => VersionResponse.decode(new BinaryReader(data)));
   }
 
+  Info(request: InfoRequest): Promise<InfoResponse> {
+    const data = InfoRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Info", data);
+    return promise.then((data) => InfoResponse.decode(new BinaryReader(data)));
+  }
+
   Query(request: QueryRequest): Observable<QueryResponse> {
     const data = QueryRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "Query", data);
@@ -5443,12 +5525,6 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     const data = LiveRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "Live", data);
     return result.pipe(map((data) => LiveResponse.decode(new BinaryReader(data))));
-  }
-
-  Info(request: InfoRequest): Promise<InfoResponse> {
-    const data = InfoRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Info", data);
-    return promise.then((data) => InfoResponse.decode(new BinaryReader(data)));
   }
 
   Use(request: UseRequest): Promise<UseResponse> {

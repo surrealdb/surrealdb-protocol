@@ -48,6 +48,9 @@ typedef struct Surrealdb__Protocol__V1__Id Surrealdb__Protocol__V1__Id;
 
 /* --- messages --- */
 
+/*
+ * Null value.
+ */
 struct  Surrealdb__Protocol__V1__NullValue
 {
   ProtobufCMessage base;
@@ -57,6 +60,9 @@ struct  Surrealdb__Protocol__V1__NullValue
  }
 
 
+/*
+ * Boolean value.
+ */
 struct  Surrealdb__Protocol__V1__BoolValue
 {
   ProtobufCMessage base;
@@ -67,6 +73,9 @@ struct  Surrealdb__Protocol__V1__BoolValue
 , 0 }
 
 
+/*
+ * 64-bit signed integer value.
+ */
 struct  Surrealdb__Protocol__V1__Int64Value
 {
   ProtobufCMessage base;
@@ -77,6 +86,9 @@ struct  Surrealdb__Protocol__V1__Int64Value
 , 0 }
 
 
+/*
+ * 64-bit unsigned integer value.
+ */
 struct  Surrealdb__Protocol__V1__UInt64Value
 {
   ProtobufCMessage base;
@@ -87,6 +99,9 @@ struct  Surrealdb__Protocol__V1__UInt64Value
 , 0 }
 
 
+/*
+ * 64-bit floating point value.
+ */
 struct  Surrealdb__Protocol__V1__Float64Value
 {
   ProtobufCMessage base;
@@ -97,6 +112,9 @@ struct  Surrealdb__Protocol__V1__Float64Value
 , 0 }
 
 
+/*
+ * String value.
+ */
 struct  Surrealdb__Protocol__V1__StringValue
 {
   ProtobufCMessage base;
@@ -107,6 +125,9 @@ struct  Surrealdb__Protocol__V1__StringValue
 , (char *)protobuf_c_empty_string }
 
 
+/*
+ * Bytes value.
+ */
 struct  Surrealdb__Protocol__V1__BytesValue
 {
   ProtobufCMessage base;
@@ -117,6 +138,9 @@ struct  Surrealdb__Protocol__V1__BytesValue
 , {0,NULL} }
 
 
+/*
+ * Decimal value.
+ */
 struct  Surrealdb__Protocol__V1__DecimalValue
 {
   ProtobufCMessage base;
@@ -127,6 +151,9 @@ struct  Surrealdb__Protocol__V1__DecimalValue
 , (char *)protobuf_c_empty_string }
 
 
+/*
+ * UUID value.
+ */
 struct  Surrealdb__Protocol__V1__UuidValue
 {
   ProtobufCMessage base;
@@ -138,7 +165,7 @@ struct  Surrealdb__Protocol__V1__UuidValue
 
 
 /*
- * Geometry types
+ * Point type.
  */
 struct  Surrealdb__Protocol__V1__Point
 {
@@ -151,6 +178,9 @@ struct  Surrealdb__Protocol__V1__Point
 , 0, 0 }
 
 
+/*
+ * LineString type.
+ */
 struct  Surrealdb__Protocol__V1__LineString
 {
   ProtobufCMessage base;
@@ -162,10 +192,19 @@ struct  Surrealdb__Protocol__V1__LineString
 , 0,NULL }
 
 
+/*
+ * Polygon type.
+ */
 struct  Surrealdb__Protocol__V1__Polygon
 {
   ProtobufCMessage base;
+  /*
+   * Exterior ring.
+   */
   Surrealdb__Protocol__V1__LineString *exterior;
+  /*
+   * Interior rings.
+   */
   size_t n_interiors;
   Surrealdb__Protocol__V1__LineString **interiors;
 };
@@ -174,6 +213,9 @@ struct  Surrealdb__Protocol__V1__Polygon
 , NULL, 0,NULL }
 
 
+/*
+ * MultiPoint type.
+ */
 struct  Surrealdb__Protocol__V1__MultiPoint
 {
   ProtobufCMessage base;
@@ -185,6 +227,9 @@ struct  Surrealdb__Protocol__V1__MultiPoint
 , 0,NULL }
 
 
+/*
+ * MultiLineString type.
+ */
 struct  Surrealdb__Protocol__V1__MultiLineString
 {
   ProtobufCMessage base;
@@ -196,6 +241,9 @@ struct  Surrealdb__Protocol__V1__MultiLineString
 , 0,NULL }
 
 
+/*
+ * MultiPolygon type.
+ */
 struct  Surrealdb__Protocol__V1__MultiPolygon
 {
   ProtobufCMessage base;
@@ -207,6 +255,9 @@ struct  Surrealdb__Protocol__V1__MultiPolygon
 , 0,NULL }
 
 
+/*
+ * GeometryCollection type.
+ */
 struct  Surrealdb__Protocol__V1__GeometryCollection
 {
   ProtobufCMessage base;
@@ -230,6 +281,9 @@ typedef enum {
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__GEOMETRY__GEOMETRY__CASE)
 } Surrealdb__Protocol__V1__Geometry__GeometryCase;
 
+/*
+ * Generic geometry type.
+ */
 struct  Surrealdb__Protocol__V1__Geometry
 {
   ProtobufCMessage base;
@@ -249,10 +303,19 @@ struct  Surrealdb__Protocol__V1__Geometry
 , SURREALDB__PROTOCOL__V1__GEOMETRY__GEOMETRY__NOT_SET, {0} }
 
 
+/*
+ * Record ID type.
+ */
 struct  Surrealdb__Protocol__V1__RecordId
 {
   ProtobufCMessage base;
+  /*
+   * Table name.
+   */
   char *table;
+  /*
+   * Record ID.
+   */
   Surrealdb__Protocol__V1__Id *id;
 };
 #define SURREALDB__PROTOCOL__V1__RECORD_ID__INIT \
@@ -260,10 +323,19 @@ struct  Surrealdb__Protocol__V1__RecordId
 , (char *)protobuf_c_empty_string, NULL }
 
 
+/*
+ * File type.
+ */
 struct  Surrealdb__Protocol__V1__File
 {
   ProtobufCMessage base;
+  /*
+   * Bucket name.
+   */
   char *bucket;
+  /*
+   * File key.
+   */
   char *key;
 };
 #define SURREALDB__PROTOCOL__V1__FILE__INIT \
@@ -271,6 +343,9 @@ struct  Surrealdb__Protocol__V1__File
 , (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string }
 
 
+/*
+ * Array type.
+ */
 struct  Surrealdb__Protocol__V1__Array
 {
   ProtobufCMessage base;
@@ -293,6 +368,9 @@ struct  Surrealdb__Protocol__V1__Object__ItemsEntry
 , (char *)protobuf_c_empty_string, NULL }
 
 
+/*
+ * Object type.
+ */
 struct  Surrealdb__Protocol__V1__Object
 {
   ProtobufCMessage base;
@@ -325,6 +403,9 @@ typedef enum {
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__VALUE__VALUE__CASE)
 } Surrealdb__Protocol__V1__Value__ValueCase;
 
+/*
+ * Value type.
+ */
 struct  Surrealdb__Protocol__V1__Value
 {
   ProtobufCMessage base;
@@ -362,6 +443,9 @@ typedef enum {
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__ID__ID__CASE)
 } Surrealdb__Protocol__V1__Id__IdCase;
 
+/*
+ * ID type.
+ */
 struct  Surrealdb__Protocol__V1__Id
 {
   ProtobufCMessage base;

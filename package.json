@@ -1,60 +1,60 @@
 {
-	"name": "@surrealdb/protocol",
-	"module": "typescript/index.ts",
-	"version": "0.1.0",
-	"type": "module",
-	"license": "Apache-2.0",
-	"description": "The official SurrealDB Client Protocol for TypeScript.",
-	"keywords": [
-		"surrealdb",
-		"surrealdb-protocol",
-		"protobuf",
-		"typescript"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/surrealdb/surrealdb-protocol.git"
-	},
-	"homepage": "https://github.com/surrealdb/surrealdb-protocol",
-	"packageManager": "^bun@1.1.17",
-	"devDependencies": {
-		"@biomejs/biome": "2.0.6",
-		"@types/bun": "latest",
-		"esbuild": "^0.25.5",
-		"esbuild-plugin-tsc": "^0.5.0"
-	},
-	"peerDependencies": {
-		"typescript": "^5"
-	},
-	"dependencies": {
-		"rxjs": "^7.8.2",
-		"ts-proto": "^2.7.5"
-	},
-	"scripts": {
-		"ts": "tsc --watch --noEmit true --emitDeclarationOnly false",
-		"qc": "biome check ./typescript/",
-		"qa": "biome check ./typescript/ --write",
-		"qau": "biome check ./typescript/ --write --unsafe",
-		"build": "bun run scripts/build.ts"
-	},
-	"engines": {
-		"node": ">=18.0.0"
-	},
-	"browser": "./build/ts/index.bundled.mjs",
-	"types": "./build/ts/index.d.ts",
-	"main": "./build/ts/index.mjs",
-	"exports": {
-		".": {
-			"types": "./build/ts/index.d.ts",
-			"browser": "./build/ts/index.bundled.mjs",
-			"require": "./build/ts/index.cjs",
-			"import": "./build/ts/index.mjs"
-		}
-	},
-	"files": [
-		"build/ts",
-		"README.md",
-		"LICENCE",
-		"SECURITY.md"
-	]
+  "name": "@surrealdb/protocol",
+  "module": "typescript/index.ts",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "The official SurrealDB Client Protocol for TypeScript.",
+  "keywords": [
+    "surrealdb",
+    "surrealdb-protocol",
+    "protobuf",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/surrealdb/surrealdb-protocol.git"
+  },
+  "homepage": "https://github.com/surrealdb/surrealdb-protocol",
+  "packageManager": "^bun@1.1.17",
+  "devDependencies": {
+    "@biomejs/biome": "2.0.6",
+    "@types/bun": "latest",
+    "esbuild": "^0.25.5",
+    "esbuild-plugin-tsc": "^0.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.2",
+    "ts-proto": "^2.7.5"
+  },
+  "scripts": {
+    "ts": "tsc --watch --noEmit true --emitDeclarationOnly false",
+    "qc": "biome check ./typescript/",
+    "qa": "biome check ./typescript/ --write",
+    "qau": "biome check ./typescript/ --write --unsafe",
+    "build": "bun run scripts/build.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "browser": "./build/ts/index.bundled.mjs",
+  "types": "./build/ts/index.d.ts",
+  "main": "./build/ts/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./build/ts/index.d.ts",
+      "browser": "./build/ts/index.bundled.mjs",
+      "require": "./build/ts/index.cjs",
+      "import": "./build/ts/index.mjs"
+    }
+  },
+  "files": [
+    "build/ts",
+    "README.md",
+    "LICENCE",
+    "SECURITY.md"
+  ]
 }

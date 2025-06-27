@@ -2032,49 +2032,49 @@ void   surrealdb__protocol__rpc__v1__graph_ql_response__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__graph_ql_response__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__document_batch__init
-                     (Surrealdb__Protocol__Rpc__V1__DocumentBatch         *message)
+void   surrealdb__protocol__rpc__v1__value_batch__init
+                     (Surrealdb__Protocol__Rpc__V1__ValueBatch         *message)
 {
-  static const Surrealdb__Protocol__Rpc__V1__DocumentBatch init_value = SURREALDB__PROTOCOL__RPC__V1__DOCUMENT_BATCH__INIT;
+  static const Surrealdb__Protocol__Rpc__V1__ValueBatch init_value = SURREALDB__PROTOCOL__RPC__V1__VALUE_BATCH__INIT;
   *message = init_value;
 }
-size_t surrealdb__protocol__rpc__v1__document_batch__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__DocumentBatch *message)
+size_t surrealdb__protocol__rpc__v1__value_batch__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ValueBatch *message)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__document_batch__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__value_batch__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t surrealdb__protocol__rpc__v1__document_batch__pack
-                     (const Surrealdb__Protocol__Rpc__V1__DocumentBatch *message,
+size_t surrealdb__protocol__rpc__v1__value_batch__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ValueBatch *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__document_batch__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__value_batch__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t surrealdb__protocol__rpc__v1__document_batch__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__DocumentBatch *message,
+size_t surrealdb__protocol__rpc__v1__value_batch__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ValueBatch *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__document_batch__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__value_batch__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Surrealdb__Protocol__Rpc__V1__DocumentBatch *
-       surrealdb__protocol__rpc__v1__document_batch__unpack
+Surrealdb__Protocol__Rpc__V1__ValueBatch *
+       surrealdb__protocol__rpc__v1__value_batch__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Surrealdb__Protocol__Rpc__V1__DocumentBatch *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__document_batch__descriptor,
+  return (Surrealdb__Protocol__Rpc__V1__ValueBatch *)
+     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__value_batch__descriptor,
                                 allocator, len, data);
 }
-void   surrealdb__protocol__rpc__v1__document_batch__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__DocumentBatch *message,
+void   surrealdb__protocol__rpc__v1__value_batch__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ValueBatch *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__document_batch__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__value_batch__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   surrealdb__protocol__rpc__v1__root_user_credentials__init
@@ -3567,7 +3567,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__create_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__CreateResponse, document),
-    &surrealdb__protocol__v1__document__descriptor,
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -3864,7 +3864,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__select_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__SelectResponse, documents),
-    &surrealdb__protocol__rpc__v1__document_batch__descriptor,
+    &surrealdb__protocol__rpc__v1__value_batch__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -4044,7 +4044,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__insert_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__InsertResponse, document),
-    &surrealdb__protocol__v1__document__descriptor,
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -4224,7 +4224,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__upsert_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__UpsertResponse, document),
-    &surrealdb__protocol__v1__document__descriptor,
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -4404,7 +4404,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__update_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__UpdateResponse, document),
-    &surrealdb__protocol__v1__document__descriptor,
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -4571,7 +4571,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__delete_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__DeleteResponse, document),
-    &surrealdb__protocol__v1__document__descriptor,
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -4660,7 +4660,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_respon
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__QueryResponse, documents),
-    &surrealdb__protocol__rpc__v1__document_batch__descriptor,
+    &surrealdb__protocol__rpc__v1__value_batch__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -4840,7 +4840,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__relate_respo
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__RelateResponse, document),
-    &surrealdb__protocol__v1__document__descriptor,
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -5031,7 +5031,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__graph_ql_res
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__GraphQlResponse, documents),
-    &surrealdb__protocol__rpc__v1__document_batch__descriptor,
+    &surrealdb__protocol__rpc__v1__value_batch__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -5060,42 +5060,42 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__graph_ql_response
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__graph_ql_response__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__document_batch__field_descriptors[1] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__value_batch__field_descriptors[1] =
 {
   {
     "documents",
     1,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__DocumentBatch, n_documents),
-    offsetof(Surrealdb__Protocol__Rpc__V1__DocumentBatch, documents),
-    &surrealdb__protocol__v1__document__descriptor,
+    offsetof(Surrealdb__Protocol__Rpc__V1__ValueBatch, n_documents),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ValueBatch, documents),
+    &surrealdb__protocol__v1__value__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned surrealdb__protocol__rpc__v1__document_batch__field_indices_by_name[] = {
+static const unsigned surrealdb__protocol__rpc__v1__value_batch__field_indices_by_name[] = {
   0,   /* field[0] = documents */
 };
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__document_batch__number_ranges[1 + 1] =
+static const ProtobufCIntRange surrealdb__protocol__rpc__v1__value_batch__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__document_batch__descriptor =
+const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__value_batch__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.DocumentBatch",
-  "DocumentBatch",
-  "Surrealdb__Protocol__Rpc__V1__DocumentBatch",
+  "surrealdb.protocol.rpc.v1.ValueBatch",
+  "ValueBatch",
+  "Surrealdb__Protocol__Rpc__V1__ValueBatch",
   "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__DocumentBatch),
+  sizeof(Surrealdb__Protocol__Rpc__V1__ValueBatch),
   1,
-  surrealdb__protocol__rpc__v1__document_batch__field_descriptors,
-  surrealdb__protocol__rpc__v1__document_batch__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__document_batch__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__document_batch__init,
+  surrealdb__protocol__rpc__v1__value_batch__field_descriptors,
+  surrealdb__protocol__rpc__v1__value_batch__field_indices_by_name,
+  1,  surrealdb__protocol__rpc__v1__value_batch__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__value_batch__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__root_user_credentials__field_descriptors[2] =
@@ -5789,9 +5789,9 @@ static const ProtobufCMethodDescriptor surrealdb__protocol__rpc__v1__surreal_dbs
 {
   { "Health", &surrealdb__protocol__rpc__v1__health_request__descriptor, &surrealdb__protocol__rpc__v1__health_response__descriptor },
   { "Version", &surrealdb__protocol__rpc__v1__version_request__descriptor, &surrealdb__protocol__rpc__v1__version_response__descriptor },
+  { "Info", &surrealdb__protocol__rpc__v1__info_request__descriptor, &surrealdb__protocol__rpc__v1__info_response__descriptor },
   { "Query", &surrealdb__protocol__rpc__v1__query_request__descriptor, &surrealdb__protocol__rpc__v1__query_response__descriptor },
   { "Live", &surrealdb__protocol__rpc__v1__live_request__descriptor, &surrealdb__protocol__rpc__v1__live_response__descriptor },
-  { "Info", &surrealdb__protocol__rpc__v1__info_request__descriptor, &surrealdb__protocol__rpc__v1__info_response__descriptor },
   { "Use", &surrealdb__protocol__rpc__v1__use_request__descriptor, &surrealdb__protocol__rpc__v1__use_response__descriptor },
   { "Signup", &surrealdb__protocol__rpc__v1__signup_request__descriptor, &surrealdb__protocol__rpc__v1__signup_response__descriptor },
   { "Signin", &surrealdb__protocol__rpc__v1__signin_request__descriptor, &surrealdb__protocol__rpc__v1__signin_response__descriptor },
@@ -5817,12 +5817,12 @@ const unsigned surrealdb__protocol__rpc__v1__surreal_dbservice__method_indices_b
   19,        /* Delete */
   22,        /* GraphQl */
   0,        /* Health */
-  4,        /* Info */
+  2,        /* Info */
   16,        /* Insert */
   9,        /* Invalidate */
   11,        /* Kill */
-  3,        /* Live */
-  2,        /* Query */
+  4,        /* Live */
+  3,        /* Query */
   20,        /* Relate */
   10,        /* Reset */
   21,        /* RunFunction */
@@ -5863,25 +5863,25 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__version(ProtobufCService *
   assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
   service->invoke(service, 1, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
 }
+void surrealdb__protocol__rpc__v1__surreal_dbservice__info(ProtobufCService *service,
+                                                           const Surrealdb__Protocol__Rpc__V1__InfoRequest *input,
+                                                           Surrealdb__Protocol__Rpc__V1__InfoResponse_Closure closure,
+                                                           void *closure_data)
+{
+  assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
+  service->invoke(service, 2, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
+}
 void surrealdb__protocol__rpc__v1__surreal_dbservice__query(ProtobufCService *service,
                                                             const Surrealdb__Protocol__Rpc__V1__QueryRequest *input,
                                                             Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure closure,
                                                             void *closure_data)
 {
   assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
-  service->invoke(service, 2, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
+  service->invoke(service, 3, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
 }
 void surrealdb__protocol__rpc__v1__surreal_dbservice__live(ProtobufCService *service,
                                                            const Surrealdb__Protocol__Rpc__V1__LiveRequest *input,
                                                            Surrealdb__Protocol__Rpc__V1__LiveResponse_Closure closure,
-                                                           void *closure_data)
-{
-  assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
-  service->invoke(service, 3, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
-}
-void surrealdb__protocol__rpc__v1__surreal_dbservice__info(ProtobufCService *service,
-                                                           const Surrealdb__Protocol__Rpc__V1__InfoRequest *input,
-                                                           Surrealdb__Protocol__Rpc__V1__InfoResponse_Closure closure,
                                                            void *closure_data)
 {
   assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);

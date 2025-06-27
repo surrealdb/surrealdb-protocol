@@ -5,105 +5,163 @@ package surrealdb.protocol.v1;
 
 import "surrealdb/protocol/v1/value.proto";
 
-message MethodPart {
-    string name = 1;
-    repeated surrealdb.protocol.v1.Value args = 2;
-}
-
+// Identifier.
 message Ident {
     string value = 1;
 }
 
-
+// Fields selection.
 message Fields {
+    // Single field.
     message SingleField {
+        // Expression.
         surrealdb.protocol.v1.Value expr = 1;
+        // Alias.
         Idiom alias = 2;
     }
 
+    // Field selection.
     message Field {
         oneof field {
+            // All fields.
             NullValue all = 1;
+            // Single field.
             SingleField single = 2;
         }
     }
 
+    // Whether this is a single VALUE clause.
     bool single = 1;
+    // Field selection.
     repeated Field fields = 2;
 }
 
+// Idiom which represents a field expression (e.g. `a.b.c` or `a.b[0]`).
 message Idiom {
     string value = 1;
 }
 
+// Supported operators.
+//
+// Note: This is a subset of the operators supported by the SurrealQL parser. This only includes operators that do not take arguments.
 enum Operator {
     OPERATOR_UNSPECIFIED = 0;
+    // `-`
     OPERATOR_NEG = 1;
+    // `!`
     OPERATOR_NOT = 2;
+    // `||`
     OPERATOR_OR = 3;
+    // `&&`
     OPERATOR_AND = 4;
+    // `?:`
     OPERATOR_TCO = 5;
+    // `??`
     OPERATOR_NCO = 6;
+    // `+`
     OPERATOR_ADD = 7;
+    // `-`
     OPERATOR_SUB = 8;
+    // `*`
     OPERATOR_MUL = 9;
+    // `/`
     OPERATOR_DIV = 10;
+    // `%`
     OPERATOR_REM = 11;
+    // `**`
     OPERATOR_POW = 12;
+    // `+=`
     OPERATOR_INC = 13;
+    // `-=`
     OPERATOR_DEC = 14;
+    // `..`
     OPERATOR_EXT = 15;
+    // `=`
     OPERATOR_EQUAL = 16;
+    // `==`
     OPERATOR_EXACT = 17;
+    // `!=`
     OPERATOR_NOT_EQUAL = 18;
+    // `*=`
     OPERATOR_ALL_EQUAL = 19;
+    // `?=`
     OPERATOR_ANY_EQUAL = 20;
+    // `~`
     OPERATOR_LIKE = 21;
+    // `!~`
     OPERATOR_NOT_LIKE = 22;
+    // `*~`
     OPERATOR_ALL_LIKE = 23;
+    // `?~`
     OPERATOR_ANY_LIKE = 24;
+    // `<`
     OPERATOR_LESS_THAN = 25;
+    // `<=`
     OPERATOR_LESS_THAN_OR_EQUAL = 26;
+    // `>`
     OPERATOR_GREATER_THAN = 27;
+    // `>=`
     OPERATOR_GREATER_THAN_OR_EQUAL = 28;
+    // `∋`
     OPERATOR_CONTAIN = 29;
+    // `∌`
     OPERATOR_NOT_CONTAIN = 30;
+    // `⊇`
     OPERATOR_CONTAIN_ALL = 31;
+    // `⊃`
     OPERATOR_CONTAIN_ANY = 32;
+    // `⊅`
     OPERATOR_CONTAIN_NONE = 33;
+    // `∈`
     OPERATOR_INSIDE = 34;
+    // `∉`
     OPERATOR_NOT_INSIDE = 35;
+    // `⊆`
     OPERATOR_ALL_INSIDE = 36;
+    // `⊂`
     OPERATOR_ANY_INSIDE = 37;
+    // `⊄`
     OPERATOR_NONE_INSIDE = 38;
+    // `OUTSIDE`
     OPERATOR_OUTSIDE = 39;
+    // `INTERSECTS`
     OPERATOR_INTERSECTS = 40;
 }
 
+// Data expression.
 message Data {
+    // Set expression (e.g. `a = 1` or `a.b += 1`).
     message SetExpr {
+        // Idiom.
         Idiom idiom = 1;
+        // Operator.
         Operator operator = 2;
+        // Value.
         surrealdb.protocol.v1.Value value = 3;
     }
 
+    // Set multiple expressions.
     message SetMultiExpr {
         repeated SetExpr items = 1;
     }
 
+    // Unset multiple expressions.
     message UnsetMultiExpr {
         repeated Idiom items = 1;
     }
 
+    // Idiom and value pair.
     message IdiomValuePair {
         Idiom idiom = 1;
         surrealdb.protocol.v1.Value value = 2;
     }
 
+    // Values expression.
     message ValuesExpr {
         repeated IdiomValuePair items = 1;
     }
 
+    // Values multiple expressions.
     message ValuesMultiExpr {
         repeated ValuesExpr items = 1;
     }
@@ -122,6 +180,7 @@ message Data {
     }
 }
 
+// Fetchs expression.
 message Fetchs {
     repeated Value items = 1;
 }

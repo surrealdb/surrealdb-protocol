@@ -1,4 +1,7 @@
-//! SurrealDB Protocol
+//! SurrealDB Protobuf and gRPC protocol.
+//!
+//! All common protobuf messages are defined in the `v1` module.
+//! The `rpc` module contains the gRPC messages.
 
 mod v1 {
     #![allow(missing_docs, clippy::allow_attributes)]

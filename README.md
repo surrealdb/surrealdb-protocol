@@ -69,19 +69,13 @@ This repository contains the SurrealDB Network Protocol, which is used to commun
 
 **THIS IS A WORK IN PROGRESS**
 
-## Usage
-
-
 ## Development
 
-Dependencies:
+Generate the protobuf files:
 
 ```bash
-brew install bufbuild/buf/buf
+make gen
 ```
 
-Build:
-
-```bash
-buf build
-```
+Note: These are not currently generated in CI or automatically checked in CI. This is a manual step for the time
+being but in the future we will have a CI step that ensures that the protobuf files are up to date.

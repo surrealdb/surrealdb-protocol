@@ -10,47 +10,92 @@ import { NullValue, Value } from "./value";
 
 export const protobufPackage = "surrealdb.protocol.v1";
 
+/**
+ * Supported operators.
+ *
+ * Note: This is a subset of the operators supported by the SurrealQL parser. This only includes operators that do not take arguments.
+ */
 export enum Operator {
   UNSPECIFIED = 0,
+  /** NEG - `-` */
   NEG = 1,
+  /** NOT - `!` */
   NOT = 2,
+  /** OR - `||` */
   OR = 3,
+  /** AND - `&&` */
   AND = 4,
+  /** TCO - `?:` */
   TCO = 5,
+  /** NCO - `??` */
   NCO = 6,
+  /** ADD - `+` */
   ADD = 7,
+  /** SUB - `-` */
   SUB = 8,
+  /** MUL - `*` */
   MUL = 9,
+  /** DIV - `/` */
   DIV = 10,
+  /** REM - `%` */
   REM = 11,
+  /** POW - `**` */
   POW = 12,
+  /** INC - `+=` */
   INC = 13,
+  /** DEC - `-=` */
   DEC = 14,
+  /** EXT - `..` */
   EXT = 15,
+  /** EQUAL - `=` */
   EQUAL = 16,
+  /** EXACT - `==` */
   EXACT = 17,
+  /** NOT_EQUAL - `!=` */
   NOT_EQUAL = 18,
+  /** ALL_EQUAL - `*=` */
   ALL_EQUAL = 19,
+  /** ANY_EQUAL - `?=` */
   ANY_EQUAL = 20,
+  /** LIKE - `~` */
   LIKE = 21,
+  /** NOT_LIKE - `!~` */
   NOT_LIKE = 22,
+  /** ALL_LIKE - `*~` */
   ALL_LIKE = 23,
+  /** ANY_LIKE - `?~` */
   ANY_LIKE = 24,
+  /** LESS_THAN - `<` */
   LESS_THAN = 25,
+  /** LESS_THAN_OR_EQUAL - `<=` */
   LESS_THAN_OR_EQUAL = 26,
+  /** GREATER_THAN - `>` */
   GREATER_THAN = 27,
+  /** GREATER_THAN_OR_EQUAL - `>=` */
   GREATER_THAN_OR_EQUAL = 28,
+  /** CONTAIN - `∋` */
   CONTAIN = 29,
+  /** NOT_CONTAIN - `∌` */
   NOT_CONTAIN = 30,
+  /** CONTAIN_ALL - `⊇` */
   CONTAIN_ALL = 31,
+  /** CONTAIN_ANY - `⊃` */
   CONTAIN_ANY = 32,
+  /** CONTAIN_NONE - `⊅` */
   CONTAIN_NONE = 33,
+  /** INSIDE - `∈` */
   INSIDE = 34,
+  /** NOT_INSIDE - `∉` */
   NOT_INSIDE = 35,
+  /** ALL_INSIDE - `⊆` */
   ALL_INSIDE = 36,
+  /** ANY_INSIDE - `⊂` */
   ANY_INSIDE = 37,
+  /** NONE_INSIDE - `⊄` */
   NONE_INSIDE = 38,
+  /** OUTSIDE - `OUTSIDE` */
   OUTSIDE = 39,
+  /** INTERSECTS - `INTERSECTS` */
   INTERSECTS = 40,
   UNRECOGNIZED = -1,
 }
@@ -277,33 +322,47 @@ export function operatorToJSON(object: Operator): string {
   }
 }
 
-export interface MethodPart {
-  name: string;
-  args: Value[];
-}
-
+/** Identifier. */
 export interface Ident {
   value: string;
 }
 
+/** Fields selection. */
 export interface Fields {
+  /** Whether this is a single VALUE clause. */
   single: boolean;
+  /** Field selection. */
   fields: Fields_Field[];
 }
 
+/** Single field. */
 export interface Fields_SingleField {
-  expr: Value | undefined;
+  /** Expression. */
+  expr:
+    | Value
+    | undefined;
+  /** Alias. */
   alias: Idiom | undefined;
 }
 
+/** Field selection. */
 export interface Fields_Field {
-  field?: { $case: "all"; all: NullValue } | { $case: "single"; single: Fields_SingleField } | undefined;
+  field?:
+    | //
+    /** All fields. */
+    { $case: "all"; all: NullValue }
+    | //
+    /** Single field. */
+    { $case: "single"; single: Fields_SingleField }
+    | undefined;
 }
 
+/** Idiom which represents a field expression (e.g. `a.b.c` or `a.b[0]`). */
 export interface Idiom {
   value: string;
 }
 
+/** Data expression. */
 export interface Data {
   data?:
     | { $case: "empty"; empty: NullValue }
@@ -319,112 +378,48 @@ export interface Data {
     | undefined;
 }
 
+/** Set expression (e.g. `a = 1` or `a.b += 1`). */
 export interface Data_SetExpr {
-  idiom: Idiom | undefined;
+  /** Idiom. */
+  idiom:
+    | Idiom
+    | undefined;
+  /** Operator. */
   operator: Operator;
+  /** Value. */
   value: Value | undefined;
 }
 
+/** Set multiple expressions. */
 export interface Data_SetMultiExpr {
   items: Data_SetExpr[];
 }
 
+/** Unset multiple expressions. */
 export interface Data_UnsetMultiExpr {
   items: Idiom[];
 }
 
+/** Idiom and value pair. */
 export interface Data_IdiomValuePair {
   idiom: Idiom | undefined;
   value: Value | undefined;
 }
 
+/** Values expression. */
 export interface Data_ValuesExpr {
   items: Data_IdiomValuePair[];
 }
 
+/** Values multiple expressions. */
 export interface Data_ValuesMultiExpr {
   items: Data_ValuesExpr[];
 }
 
+/** Fetchs expression. */
 export interface Fetchs {
   items: Value[];
 }
-
-function createBaseMethodPart(): MethodPart {
-  return { name: "", args: [] };
-}
-
-export const MethodPart: MessageFns<MethodPart> = {
-  encode(message: MethodPart, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    for (const v of message.args) {
-      Value.encode(v!, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): MethodPart {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMethodPart();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.args.push(Value.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MethodPart {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      args: globalThis.Array.isArray(object?.args) ? object.args.map((e: any) => Value.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: MethodPart): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.args?.length) {
-      obj.args = message.args.map((e) => Value.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<MethodPart>, I>>(base?: I): MethodPart {
-    return MethodPart.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<MethodPart>, I>>(object: I): MethodPart {
-    const message = createBaseMethodPart();
-    message.name = object.name ?? "";
-    message.args = object.args?.map((e) => Value.fromPartial(e)) || [];
-    return message;
-  },
-};
 
 function createBaseIdent(): Ident {
   return { value: "" };

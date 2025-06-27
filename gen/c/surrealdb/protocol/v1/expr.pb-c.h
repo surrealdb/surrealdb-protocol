@@ -16,7 +16,6 @@ PROTOBUF_C__BEGIN_DECLS
 
 #include "surrealdb/protocol/v1/value.pb-c.h"
 
-typedef struct Surrealdb__Protocol__V1__MethodPart Surrealdb__Protocol__V1__MethodPart;
 typedef struct Surrealdb__Protocol__V1__Ident Surrealdb__Protocol__V1__Ident;
 typedef struct Surrealdb__Protocol__V1__Fields Surrealdb__Protocol__V1__Fields;
 typedef struct Surrealdb__Protocol__V1__Fields__SingleField Surrealdb__Protocol__V1__Fields__SingleField;
@@ -34,65 +33,180 @@ typedef struct Surrealdb__Protocol__V1__Fetchs Surrealdb__Protocol__V1__Fetchs;
 
 /* --- enums --- */
 
+/*
+ * Supported operators.
+ * Note: This is a subset of the operators supported by the SurrealQL parser. This only includes operators that do not take arguments.
+ */
 typedef enum _Surrealdb__Protocol__V1__Operator {
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_UNSPECIFIED = 0,
+  /*
+   * `-`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NEG = 1,
+  /*
+   * `!`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NOT = 2,
+  /*
+   * `||`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_OR = 3,
+  /*
+   * `&&`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_AND = 4,
+  /*
+   * `?:`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_TCO = 5,
+  /*
+   * `??`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NCO = 6,
+  /*
+   * `+`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ADD = 7,
+  /*
+   * `-`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_SUB = 8,
+  /*
+   * `*`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_MUL = 9,
+  /*
+   * `/`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_DIV = 10,
+  /*
+   * `%`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_REM = 11,
+  /*
+   * `**`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_POW = 12,
+  /*
+   * `+=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_INC = 13,
+  /*
+   * `-=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_DEC = 14,
+  /*
+   * `..`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_EXT = 15,
+  /*
+   * `=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_EQUAL = 16,
+  /*
+   * `==`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_EXACT = 17,
+  /*
+   * `!=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NOT_EQUAL = 18,
+  /*
+   * `*=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ALL_EQUAL = 19,
+  /*
+   * `?=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ANY_EQUAL = 20,
+  /*
+   * `~`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_LIKE = 21,
+  /*
+   * `!~`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NOT_LIKE = 22,
+  /*
+   * `*~`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ALL_LIKE = 23,
+  /*
+   * `?~`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ANY_LIKE = 24,
+  /*
+   * `<`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_LESS_THAN = 25,
+  /*
+   * `<=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_LESS_THAN_OR_EQUAL = 26,
+  /*
+   * `>`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_GREATER_THAN = 27,
+  /*
+   * `>=`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_GREATER_THAN_OR_EQUAL = 28,
+  /*
+   * `∋`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_CONTAIN = 29,
+  /*
+   * `∌`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NOT_CONTAIN = 30,
+  /*
+   * `⊇`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_CONTAIN_ALL = 31,
+  /*
+   * `⊃`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_CONTAIN_ANY = 32,
+  /*
+   * `⊅`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_CONTAIN_NONE = 33,
+  /*
+   * `∈`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_INSIDE = 34,
+  /*
+   * `∉`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NOT_INSIDE = 35,
+  /*
+   * `⊆`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ALL_INSIDE = 36,
+  /*
+   * `⊂`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_ANY_INSIDE = 37,
+  /*
+   * `⊄`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_NONE_INSIDE = 38,
+  /*
+   * `OUTSIDE`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_OUTSIDE = 39,
+  /*
+   * `INTERSECTS`
+   */
   SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_INTERSECTS = 40
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__OPERATOR)
 } Surrealdb__Protocol__V1__Operator;
 
 /* --- messages --- */
 
-struct  Surrealdb__Protocol__V1__MethodPart
-{
-  ProtobufCMessage base;
-  char *name;
-  size_t n_args;
-  Surrealdb__Protocol__V1__Value **args;
-};
-#define SURREALDB__PROTOCOL__V1__METHOD_PART__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__method_part__descriptor) \
-, (char *)protobuf_c_empty_string, 0,NULL }
-
-
+/*
+ * Identifier.
+ */
 struct  Surrealdb__Protocol__V1__Ident
 {
   ProtobufCMessage base;
@@ -103,10 +217,19 @@ struct  Surrealdb__Protocol__V1__Ident
 , (char *)protobuf_c_empty_string }
 
 
+/*
+ * Single field.
+ */
 struct  Surrealdb__Protocol__V1__Fields__SingleField
 {
   ProtobufCMessage base;
+  /*
+   * Expression.
+   */
   Surrealdb__Protocol__V1__Value *expr;
+  /*
+   * Alias.
+   */
   Surrealdb__Protocol__V1__Idiom *alias;
 };
 #define SURREALDB__PROTOCOL__V1__FIELDS__SINGLE_FIELD__INIT \
@@ -121,12 +244,21 @@ typedef enum {
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__FIELDS__FIELD__FIELD__CASE)
 } Surrealdb__Protocol__V1__Fields__Field__FieldCase;
 
+/*
+ * Field selection.
+ */
 struct  Surrealdb__Protocol__V1__Fields__Field
 {
   ProtobufCMessage base;
   Surrealdb__Protocol__V1__Fields__Field__FieldCase field_case;
   union {
+    /*
+     * All fields.
+     */
     Surrealdb__Protocol__V1__NullValue *all;
+    /*
+     * Single field.
+     */
     Surrealdb__Protocol__V1__Fields__SingleField *single;
   };
 };
@@ -135,10 +267,19 @@ struct  Surrealdb__Protocol__V1__Fields__Field
 , SURREALDB__PROTOCOL__V1__FIELDS__FIELD__FIELD__NOT_SET, {0} }
 
 
+/*
+ * Fields selection.
+ */
 struct  Surrealdb__Protocol__V1__Fields
 {
   ProtobufCMessage base;
+  /*
+   * Whether this is a single VALUE clause.
+   */
   protobuf_c_boolean single;
+  /*
+   * Field selection.
+   */
   size_t n_fields;
   Surrealdb__Protocol__V1__Fields__Field **fields;
 };
@@ -147,6 +288,9 @@ struct  Surrealdb__Protocol__V1__Fields
 , 0, 0,NULL }
 
 
+/*
+ * Idiom which represents a field expression (e.g. `a.b.c` or `a.b[0]`).
+ */
 struct  Surrealdb__Protocol__V1__Idiom
 {
   ProtobufCMessage base;
@@ -157,11 +301,23 @@ struct  Surrealdb__Protocol__V1__Idiom
 , (char *)protobuf_c_empty_string }
 
 
+/*
+ * Set expression (e.g. `a = 1` or `a.b += 1`).
+ */
 struct  Surrealdb__Protocol__V1__Data__SetExpr
 {
   ProtobufCMessage base;
+  /*
+   * Idiom.
+   */
   Surrealdb__Protocol__V1__Idiom *idiom;
+  /*
+   * Operator.
+   */
   Surrealdb__Protocol__V1__Operator operator_;
+  /*
+   * Value.
+   */
   Surrealdb__Protocol__V1__Value *value;
 };
 #define SURREALDB__PROTOCOL__V1__DATA__SET_EXPR__INIT \
@@ -169,6 +325,9 @@ struct  Surrealdb__Protocol__V1__Data__SetExpr
 , NULL, SURREALDB__PROTOCOL__V1__OPERATOR__OPERATOR_UNSPECIFIED, NULL }
 
 
+/*
+ * Set multiple expressions.
+ */
 struct  Surrealdb__Protocol__V1__Data__SetMultiExpr
 {
   ProtobufCMessage base;
@@ -180,6 +339,9 @@ struct  Surrealdb__Protocol__V1__Data__SetMultiExpr
 , 0,NULL }
 
 
+/*
+ * Unset multiple expressions.
+ */
 struct  Surrealdb__Protocol__V1__Data__UnsetMultiExpr
 {
   ProtobufCMessage base;
@@ -191,6 +353,9 @@ struct  Surrealdb__Protocol__V1__Data__UnsetMultiExpr
 , 0,NULL }
 
 
+/*
+ * Idiom and value pair.
+ */
 struct  Surrealdb__Protocol__V1__Data__IdiomValuePair
 {
   ProtobufCMessage base;
@@ -202,6 +367,9 @@ struct  Surrealdb__Protocol__V1__Data__IdiomValuePair
 , NULL, NULL }
 
 
+/*
+ * Values expression.
+ */
 struct  Surrealdb__Protocol__V1__Data__ValuesExpr
 {
   ProtobufCMessage base;
@@ -213,6 +381,9 @@ struct  Surrealdb__Protocol__V1__Data__ValuesExpr
 , 0,NULL }
 
 
+/*
+ * Values multiple expressions.
+ */
 struct  Surrealdb__Protocol__V1__Data__ValuesMultiExpr
 {
   ProtobufCMessage base;
@@ -239,6 +410,9 @@ typedef enum {
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__DATA__DATA__CASE)
 } Surrealdb__Protocol__V1__Data__DataCase;
 
+/*
+ * Data expression.
+ */
 struct  Surrealdb__Protocol__V1__Data
 {
   ProtobufCMessage base;
@@ -261,6 +435,9 @@ struct  Surrealdb__Protocol__V1__Data
 , SURREALDB__PROTOCOL__V1__DATA__DATA__NOT_SET, {0} }
 
 
+/*
+ * Fetchs expression.
+ */
 struct  Surrealdb__Protocol__V1__Fetchs
 {
   ProtobufCMessage base;
@@ -272,25 +449,6 @@ struct  Surrealdb__Protocol__V1__Fetchs
 , 0,NULL }
 
 
-/* Surrealdb__Protocol__V1__MethodPart methods */
-void   surrealdb__protocol__v1__method_part__init
-                     (Surrealdb__Protocol__V1__MethodPart         *message);
-size_t surrealdb__protocol__v1__method_part__get_packed_size
-                     (const Surrealdb__Protocol__V1__MethodPart   *message);
-size_t surrealdb__protocol__v1__method_part__pack
-                     (const Surrealdb__Protocol__V1__MethodPart   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__v1__method_part__pack_to_buffer
-                     (const Surrealdb__Protocol__V1__MethodPart   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__V1__MethodPart *
-       surrealdb__protocol__v1__method_part__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__v1__method_part__free_unpacked
-                     (Surrealdb__Protocol__V1__MethodPart *message,
-                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__V1__Ident methods */
 void   surrealdb__protocol__v1__ident__init
                      (Surrealdb__Protocol__V1__Ident         *message);
@@ -412,9 +570,6 @@ void   surrealdb__protocol__v1__fetchs__free_unpacked
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
-typedef void (*Surrealdb__Protocol__V1__MethodPart_Closure)
-                 (const Surrealdb__Protocol__V1__MethodPart *message,
-                  void *closure_data);
 typedef void (*Surrealdb__Protocol__V1__Ident_Closure)
                  (const Surrealdb__Protocol__V1__Ident *message,
                   void *closure_data);
@@ -461,7 +616,6 @@ typedef void (*Surrealdb__Protocol__V1__Fetchs_Closure)
 /* --- descriptors --- */
 
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__v1__operator__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__method_part__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__ident__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__fields__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__fields__single_field__descriptor;
