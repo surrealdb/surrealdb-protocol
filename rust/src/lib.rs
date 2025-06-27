@@ -1,7 +1,7 @@
 //! SurrealDB Protocol
 
 mod v1 {
-    #![allow(missing_docs)]
+    #![allow(missing_docs, clippy::allow_attributes)]
 
     include!("../../gen/rust/surrealdb.protocol.v1.rs");
 
