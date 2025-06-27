@@ -26,8 +26,8 @@ name = "surrealdb_protocol"
 path = "rust/lib.rs"
 
 [features]
-default = ["tonic"]
-tonic = ["dep:tonic"]
+default = ["rpc"]
+rpc = ["dep:tonic"]
 
 [dependencies]
 prost = { version = "0.13" }

@@ -8,6 +8,7 @@ mod v1 {
 
     include!("../gen/rust/surrealdb.protocol.v1.rs");
 
+    #[cfg(feature = "rpc")]
     pub mod rpc {
         include!("../gen/rust/surrealdb.protocol.rpc.v1.rs");
     }
