@@ -1,10 +1,10 @@
-
+# Makefile
+#
+# This Makefile is used to build the SurrealDB Protocol.
+#
+# It is used to generate the Rust and TypeScript code from the SurrealDB Protocol.
 
 SCHEMA_SRCS := $(shell find surrealdb -type f)
-
-
-# Mac dependencies
-# 
 
 ################################################################################
 # Plugins

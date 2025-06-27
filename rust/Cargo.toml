@@ -10,6 +10,7 @@ repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
+include.workspace = true
 
 [features]
 default = ["tonic"]
@@ -24,6 +25,9 @@ tonic = { workspace = true, optional = true }
 glob.workspace = true
 prost-build.workspace = true
 
+[lib]
+name = "surrealdb_protocol"
+path = "src/lib.rs"
 
 [lints]
 workspace = true

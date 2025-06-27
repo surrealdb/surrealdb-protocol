@@ -8,17 +8,21 @@ edition = "2024"
 license-file = "LICENSE"
 version = "0.1.0"
 rust-version = "1.85.0"
-description = "A scalable, distributed, collaborative, document-graph database, for the realtime web"
-repository = "https://github.com/surrealdb/surrealdb"
-homepage = "https://github.com/surrealdb/surrealdb"
+description = "The official SurrealDB Rust Client Protocol used by the SurrealDB Rust SDK."
+repository = "https://github.com/surrealdb/surrealdb-protocol"
+homepage = "https://github.com/surrealdb/surrealdb-protocol"
 keywords = [
     "database",
     "embedded-database",
     "key-value",
     "key-value-store",
     "kv-store",
+    "protobuf",
+    "protocol",
+    "grpc",
 ]
 categories = ["database-implementations", "data-structures", "embedded"]
+include = ["gen/rust/**/*.rs"]
 
 [workspace.dependencies]
 glob = { version = "0.3" }
