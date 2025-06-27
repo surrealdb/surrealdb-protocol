@@ -1,6 +1,61 @@
 
 
-SCHEMA_SRCS := $(shell find schema -type f)
+SCHEMA_SRCS := $(shell find surrealdb -type f)
+
+
+# Mac dependencies
+# 
+
+################################################################################
+# Plugins
+################################################################################
+
+build:
+	mkdir -p build
+
+plugins:
+	mkdir -p plugins
+
+# Rust
+plugins/protoc-gen-prost: plugins
+	rm -f $@
+	cargo install protoc-gen-prost
+	hash -r
+	cp $(shell bash -c "which protoc-gen-prost") $@
+	chmod +x $@
+
+plugins/protoc-gen-tonic: plugins
+	rm -f $@
+	cargo install protoc-gen-tonic
+	hash -r
+	cp $(shell bash -c "which protoc-gen-tonic") $@
+	chmod +x $@
+
+# C
+plugins/protoc-gen-c: plugins
+	rm -f $@
+	brew install protobuf-c
+	hash -r
+	cp $(shell bash -c "which protoc-gen-c") $@
+	chmod +x $@
+
+# Typescript
+plugins/protoc-gen-ts_proto: plugins
+	rm -f $@
+	bun install ts-proto
+	ln -s $(shell pwd)/node_modules/.bin/protoc-gen-ts_proto $(shell pwd)/$@
+	chmod +x $@
+
+
+ALL_PLUGINS := plugins/protoc-gen-prost plugins/protoc-gen-tonic plugins/protoc-gen-c plugins/protoc-gen-ts_proto
+
+################################################################################
+# Code Generation
+################################################################################
+
+gen: buf.yaml buf.gen.yaml $(SCHEMA_SRCS) $(ALL_PLUGINS)
+	buf generate
+
 
 ################################################################################
 # Rust
@@ -26,3 +81,5 @@ rust-package: $(ALL_RUST_SRCS)
 
 rust-publish: $(ALL_RUST_SRCS)
 	cargo publish --workspace
+
+

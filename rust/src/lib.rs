@@ -1,16 +1,16 @@
 //! SurrealDB Protocol
 
-mod proto {
+mod v1 {
     #![allow(missing_docs)]
 
-    include!(concat!(env!("OUT_DIR"), "/surrealdb.protocol.rs"));
+    include!("../../gen/rust/surrealdb.protocol.v1.rs");
 
     pub mod rpc {
-        include!(concat!(env!("OUT_DIR"), "/surrealdb.protocol.rpc.rs"));
+        include!("../../gen/rust/surrealdb.protocol.rpc.v1.rs");
     }
 }
 
-pub use proto::*;
+pub use v1::*;
 
 #[cfg(test)]
 mod tests {
@@ -19,8 +19,8 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(Value::default(), "surrealdb.protocol.Value")]
-    #[case(rpc::QueryRequest::default(), "surrealdb.protocol.rpc.QueryRequest")]
+    #[case(Value::default(), "surrealdb.protocol.v1.Value")]
+    #[case(rpc::QueryRequest::default(), "surrealdb.protocol.rpc.v1.QueryRequest")]
     fn test_type_names<T: prost::Name>(#[case] _proto: T, #[case] expected: &str) {
         assert_eq!(T::full_name(), expected);
     }

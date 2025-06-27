@@ -1,0 +1,46 @@
+version: v2
+clean: true
+plugins:
+  # C
+  - local: ./plugins/protoc-gen-c
+    out: gen/c
+
+  # C#
+  # - remote: buf.build/protocolbuffers/csharp:v31.1
+  #   out: gen/csharp
+  #   opt:
+  #     - base_namespace=SurrealDB.Protocol
+  
+  
+  
+  # Rust
+  - local: ./plugins/protoc-gen-prost
+    out: gen/rust
+    opt:
+      - btree_map=.
+      - bytes=.
+      - file_descriptor_set=false
+      - enable_type_names=true
+  - local: ./plugins/protoc-gen-tonic
+    out: gen/rust
+  
+  # Typescript
+  - local: ./plugins/protoc-gen-ts_proto
+    out: gen/ts
+    strategy: all
+    opt:
+      - oneof=unions
+      - removeEnumPrefix=true
+      - forceLong=bigint
+      - env=both
+      - exportCommonSymbols=true
+      - outputEncodeMethods=true
+      - outputJsonMethods=true
+      - useDate=true
+
+  
+  
+
+    
+inputs:
+  - directory: .

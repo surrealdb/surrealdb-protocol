@@ -1,4 +1,7 @@
 
+# Build
+/build
+
 # Rust
 /target
 

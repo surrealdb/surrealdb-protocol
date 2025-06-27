@@ -1,0 +1,352 @@
+syntax = "proto3";
+
+package surrealdb.protocol.rpc.v1;
+
+import "surrealdb/protocol/v1/value.proto";
+import "surrealdb/protocol/v1/expr.proto";
+import "surrealdb/protocol/v1/document.proto";
+import "google/protobuf/duration.proto";
+
+
+service SurrealDBService {
+    rpc Health(HealthRequest) returns (HealthResponse);
+    rpc Version(VersionRequest) returns (VersionResponse);
+
+    rpc Query(QueryRequest) returns (stream QueryResponse);
+    rpc Live(LiveRequest) returns (stream LiveResponse);
+    
+    rpc Info(InfoRequest) returns (InfoResponse);
+    rpc Use(UseRequest) returns (UseResponse);
+    rpc Signup(SignupRequest) returns (SignupResponse);
+    rpc Signin(SigninRequest) returns (SigninResponse);
+    rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+    rpc Invalidate(InvalidateRequest) returns (InvalidateResponse);
+    rpc Reset(ResetRequest) returns (ResetResponse);
+    rpc Kill(KillRequest) returns (KillResponse);
+    rpc Set(SetRequest) returns (SetResponse);
+    rpc Unset(UnsetRequest) returns (UnsetResponse);
+    rpc Select(SelectRequest) returns (SelectResponse);
+    rpc Create(CreateRequest) returns (CreateResponse);
+    rpc Insert(InsertRequest) returns (InsertResponse);
+    rpc Upsert(UpsertRequest) returns (UpsertResponse);
+    rpc Update(UpdateRequest) returns (UpdateResponse);
+    rpc Delete(DeleteRequest) returns (DeleteResponse);
+    rpc Relate(RelateRequest) returns (RelateResponse);
+    rpc RunFunction(RunFunctionRequest) returns (RunFunctionResponse);
+    rpc GraphQl(GraphQlRequest) returns (GraphQlResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+    surrealdb.protocol.v1.Value status = 1;
+}
+
+message VersionRequest {}
+
+message VersionResponse {
+    surrealdb.protocol.v1.Value version = 1;
+}
+
+message InfoRequest {}
+
+message InfoResponse {
+    surrealdb.protocol.v1.Value info = 1;
+}
+
+message UseRequest {
+    string namespace = 1;
+    string database = 2;
+}
+
+message UseResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message SignupRequest {
+    string namespace = 1;
+    string database = 2;
+    string access_name = 3;
+    surrealdb.protocol.v1.Value variables = 4;
+}
+
+message SignupResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message SigninRequest {
+    AccessMethod access_method = 1;
+}
+
+message SigninResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message AuthenticateRequest {
+    string token = 1;
+}
+
+message AuthenticateResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message InvalidateRequest {}
+
+message InvalidateResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message ResetRequest {}
+
+message ResetResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message KillRequest {
+    string live_id = 1;
+}
+
+message KillResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message LiveRequest {
+    surrealdb.protocol.v1.Value what = 1;
+    surrealdb.protocol.v1.Fields expr = 2;
+    surrealdb.protocol.v1.Value cond = 3;
+    surrealdb.protocol.v1.Value fetch = 4;
+}
+
+message SetRequest {
+    string key = 1;
+    surrealdb.protocol.v1.Value value = 2;
+}
+
+message SetResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message UnsetRequest {
+    string key = 1;
+}
+
+message UnsetResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message CreateRequest {
+    bool only = 1;
+    surrealdb.protocol.v1.Value what = 2;
+    surrealdb.protocol.v1.Value data = 3;
+    surrealdb.protocol.v1.Value output = 4;
+    google.protobuf.Duration timeout = 5;
+    bool parallel = 6;
+    surrealdb.protocol.v1.Value version = 7;
+}
+
+message CreateResponse {
+    surrealdb.protocol.v1.Document document = 1;
+}
+
+message SelectRequest {
+    surrealdb.protocol.v1.Fields expr = 1;
+    surrealdb.protocol.v1.Value omit = 2;
+    bool only = 3;
+    surrealdb.protocol.v1.Value what = 4;
+    surrealdb.protocol.v1.Value with = 5;
+    surrealdb.protocol.v1.Value cond = 6;
+    surrealdb.protocol.v1.Value split = 7;
+    surrealdb.protocol.v1.Value group = 8;
+    surrealdb.protocol.v1.Value order = 9;
+    uint64 start = 10;
+    uint64 limit = 11;
+    surrealdb.protocol.v1.Fetchs fetch = 12;
+    surrealdb.protocol.v1.Value version = 13;
+    google.protobuf.Duration timeout = 14;
+    bool parallel = 15;
+    surrealdb.protocol.v1.Value explain = 16;
+    bool tempfiles = 17;
+    Variables variables = 18;
+}
+
+message SelectResponse {
+    DocumentBatch documents = 1;
+}
+
+message InsertRequest {
+    surrealdb.protocol.v1.Value into = 1;
+    surrealdb.protocol.v1.Value data = 2;
+    bool ignore = 3;
+    surrealdb.protocol.v1.Value update = 4;
+    surrealdb.protocol.v1.Value output = 5;
+    google.protobuf.Duration timeout = 6;
+    bool parallel = 7;
+    bool relation = 8;
+    surrealdb.protocol.v1.Value version = 9;
+}
+
+message InsertResponse {
+    surrealdb.protocol.v1.Document document = 1;
+}
+
+message UpsertRequest {
+    bool only = 1;
+    surrealdb.protocol.v1.Value what = 2;
+    surrealdb.protocol.v1.Value with = 3;
+    surrealdb.protocol.v1.Data data = 4;
+    surrealdb.protocol.v1.Value cond = 5;
+    surrealdb.protocol.v1.Value output = 6;
+    google.protobuf.Duration timeout = 7;
+    bool parallel = 8;
+    surrealdb.protocol.v1.Value explain = 9;
+}
+
+message UpsertResponse {
+    surrealdb.protocol.v1.Document document = 1;
+}
+
+message UpdateRequest {
+    bool only = 1;
+    surrealdb.protocol.v1.Value what = 2;
+    surrealdb.protocol.v1.Value with = 3;
+    surrealdb.protocol.v1.Data data = 4;
+    surrealdb.protocol.v1.Value cond = 5;
+    surrealdb.protocol.v1.Value output = 6;
+    google.protobuf.Duration timeout = 7;
+    bool parallel = 8;
+    surrealdb.protocol.v1.Value explain = 9;
+}
+
+message UpdateResponse {
+    surrealdb.protocol.v1.Document document = 1;
+}
+
+message DeleteRequest {
+    bool only = 1;
+    surrealdb.protocol.v1.Value what = 2;
+    surrealdb.protocol.v1.Value with = 3;
+    surrealdb.protocol.v1.Value cond = 4;
+    surrealdb.protocol.v1.Value output = 5;
+    google.protobuf.Duration timeout = 6;
+    bool parallel = 7;
+    surrealdb.protocol.v1.Value explain = 8;
+}
+
+message DeleteResponse {
+    surrealdb.protocol.v1.Document document = 1;
+}
+
+message QueryRequest {
+    string query = 1;
+    Variables variables = 2;
+}
+
+message QueryResponse {
+    DocumentBatch documents = 1;
+}
+
+message RelateRequest {
+    bool only = 1;
+    surrealdb.protocol.v1.Value kind = 2;
+    surrealdb.protocol.v1.Value from = 3;
+    surrealdb.protocol.v1.Value with = 4;
+    bool uniq = 5;
+    surrealdb.protocol.v1.Value data = 6;
+    surrealdb.protocol.v1.Value output = 7;
+    google.protobuf.Duration timeout = 8;
+    bool parallel = 9;
+}
+
+message RelateResponse {
+    surrealdb.protocol.v1.Document document = 1;
+}
+
+message RunFunctionRequest {
+    string name = 1;
+    string version = 2;
+    repeated surrealdb.protocol.v1.Value args = 3;
+}
+
+message RunFunctionResponse {
+    surrealdb.protocol.v1.Value data = 1;
+}
+
+message GraphQlRequest {
+    string query = 1;
+    Variables variables = 2;
+}
+
+message GraphQlResponse {
+    DocumentBatch documents = 1;
+}
+
+message DocumentBatch {
+    repeated surrealdb.protocol.v1.Document documents = 1;
+}
+
+message RootUserCredentials {
+    string username = 1;
+    string password = 2;
+}
+
+message NamespaceAccessCredentials {
+    string namespace = 1;
+    string access = 2;
+    string key = 3;
+}
+
+message DatabaseAccessCredentials {
+    string namespace = 1;
+    string database = 2;
+    string access = 3;
+    string key = 4;
+    string refresh = 5;
+}
+
+message NamespaceUserCredentials {
+    string namespace = 1;
+    string username = 2;
+    string password = 3;
+}
+
+message DatabaseUserCredentials {
+    string namespace = 1;
+    string database = 2;
+    string username = 3;
+    string password = 4;
+}
+
+message AccessToken {
+    string token = 1;
+}
+
+// Method of authenticating with the database.
+message AccessMethod {
+    oneof method {
+        RootUserCredentials root = 1;
+        NamespaceAccessCredentials namespace = 2;
+        DatabaseAccessCredentials database = 3;
+        NamespaceUserCredentials namespace_user = 4;
+        DatabaseUserCredentials database_user = 5;
+        AccessToken access_token = 6;
+    }
+}
+
+enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_CREATE = 1;
+    ACTION_UPDATE = 2;
+    ACTION_DELETE = 3;
+    ACTION_KILLED = 4;
+}
+
+message LiveResponse {
+    surrealdb.protocol.v1.UuidValue id = 1;
+    Action action = 2;
+    surrealdb.protocol.v1.Value record = 3;
+    surrealdb.protocol.v1.Value result = 4;
+}
+
+message Variables {
+    map<string, surrealdb.protocol.v1.Value> variables = 1;
+}

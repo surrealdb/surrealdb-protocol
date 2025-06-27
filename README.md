@@ -68,3 +68,20 @@
 This repository contains the SurrealDB Network Protocol, which is used to communicate with the SurrealDB server.
 
 **THIS IS A WORK IN PROGRESS**
+
+## Usage
+
+
+## Development
+
+Dependencies:
+
+```bash
+brew install bufbuild/buf/buf
+```
+
+Build:
+
+```bash
+buf build
+```

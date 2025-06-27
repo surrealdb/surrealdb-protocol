@@ -1,7 +1,7 @@
 //! Build script for compiling Protobuf files into Rust code.
 
 fn main() {
-    let files = glob::glob("../schema/**/*.proto").expect("Failed to glob files");
+    let files = glob::glob("../surrealdb/**/*.proto").expect("Failed to glob files");
     let files = files.map(|f| f.unwrap()).collect::<Vec<_>>();
 
     if files.is_empty() {

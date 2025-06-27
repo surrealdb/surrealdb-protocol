@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package surrealdb.protocol.v1;
+
+import "surrealdb/protocol/v1/value.proto";
+
+message Document {
+    surrealdb.protocol.v1.Value data = 1;
+}
