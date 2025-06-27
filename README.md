@@ -69,6 +69,17 @@ This repository contains the SurrealDB Network Protocol, which is used to commun
 
 **THIS IS A WORK IN PROGRESS**
 
+## Language Support
+
+- [x] Rust
+- [x] TypeScript
+- [ ] Python
+- [ ] .NET
+- [ ] PHP
+- [ ] Java
+- [ ] Go
+- [ ] C
+
 ## Development
 
 Generate the protobuf files:
