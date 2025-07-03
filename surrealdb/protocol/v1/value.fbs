@@ -106,7 +106,7 @@ union ValueType {
     Bytes: surrealdb.protocol.v1.Bytes (id: 7),
     Decimal: surrealdb.protocol.v1.Decimal (id: 8),
     Duration: surrealdb.protocol.v1.Duration (id: 9),
-    Timestamp: surrealdb.protocol.v1.Timestamp (id: 10),
+    Datetime: surrealdb.protocol.v1.Timestamp (id: 10),
     Uuid: surrealdb.protocol.v1.Uuid (id: 11),
     Array (id: 12),
     Object (id: 13),

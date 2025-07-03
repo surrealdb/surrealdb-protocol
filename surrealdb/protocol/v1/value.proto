@@ -9,43 +9,13 @@ import "google/protobuf/timestamp.proto";
 // Null value.
 message NullValue {}
 
-// Boolean value.
-message BoolValue {
-    bool value = 1;
-}
-
-// 64-bit signed integer value.
-message Int64Value {
-    int64 value = 1;
-}
-
-// 64-bit unsigned integer value.
-message UInt64Value {
-    uint64 value = 1;
-}
-
-// 64-bit floating point value.
-message Float64Value {
-    double value = 1;
-}
-
-// String value.
-message StringValue {
-    string value = 1;
-}
-
-// Bytes value.
-message BytesValue {
-    bytes value = 1;
-}
-
 // Decimal value.
-message DecimalValue {
+message Decimal {
     string value = 1;
 }
 
 // UUID value.
-message UuidValue {
+message Uuid {
     string value = 1;
 }
 
@@ -55,17 +25,17 @@ message Point {
     double y = 2;
 }
 
-// LineString type.
-message LineString {
+// Line type.
+message Line {
     repeated Point points = 1;
 }
 
 // Polygon type.
 message Polygon {
     // Exterior ring.
-    LineString exterior = 1;
+    Line exterior = 1;
     // Interior rings.
-    repeated LineString interiors = 2;
+    repeated Line interiors = 2;
 }
 
 // MultiPoint type.
@@ -73,9 +43,9 @@ message MultiPoint {
     repeated Point points = 1;
 }
 
-// MultiLineString type.
-message MultiLineString {
-    repeated LineString lines = 1;
+// MultiLine type.
+message MultiLine {
+    repeated Line lines = 1;
 }
 
 // MultiPolygon type.
@@ -92,10 +62,10 @@ message GeometryCollection {
 message Geometry {
     oneof geometry {
         Point point = 1;
-        LineString line_string = 2;
+        Line line = 2;
         Polygon polygon = 3;
         MultiPoint multi_point = 4;
-        MultiLineString multi_line_string = 5;
+        MultiLine multi_line = 5;
         MultiPolygon multi_polygon = 6;
         GeometryCollection collection = 7;
     }
@@ -131,16 +101,16 @@ message Object {
 message Value {
     oneof value {
         NullValue null = 1;
-        BoolValue bool = 2;
-        Int64Value int64 = 3;
-        UInt64Value uint64 = 4;
-        Float64Value float64 = 5;
-        StringValue string = 6;
-        BytesValue bytes = 7;
-        DecimalValue decimal = 8;
+        bool bool = 2;
+        int64 int64 = 3;
+        uint64 uint64 = 4;
+        double float64 = 5;
+        string string = 6;
+        bytes bytes = 7;
+        Decimal decimal = 8;
         google.protobuf.Duration duration = 9;
-        google.protobuf.Timestamp timestamp = 10;
-        UuidValue uuid = 11;
+        google.protobuf.Timestamp datetime = 10;
+        Uuid uuid = 11;
         Array array = 12;
         Object object = 13;
         Geometry geometry = 14;
@@ -152,9 +122,9 @@ message Value {
 // ID type.
 message Id {
     oneof id {
-        Int64Value int64 = 1;
-        StringValue string = 2;
-        UuidValue uuid = 3;
+        int64 int64 = 1;
+        string string = 2;
+        Uuid uuid = 3;
         Array array = 4;
     }
 }

@@ -5,6 +5,7 @@ package surrealdb.protocol.rpc.v1;
 import "surrealdb/protocol/v1/value.proto";
 import "surrealdb/protocol/v1/expr.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 // SurrealDB service.
 service SurrealDBService {
@@ -54,8 +55,6 @@ service SurrealDBService {
     rpc Relate(RelateRequest) returns (RelateResponse);
     // Run a function.
     rpc RunFunction(RunFunctionRequest) returns (RunFunctionResponse);
-    // Run a GraphQL query.
-    rpc GraphQl(GraphQlRequest) returns (GraphQlResponse);
 }
 
 // Request to check the health of the database.
@@ -63,7 +62,6 @@ message HealthRequest {}
 
 // Response to a health check request.
 message HealthResponse {
-    surrealdb.protocol.v1.Value status = 1;
 }
 
 // Request to get the version of the database.
@@ -71,7 +69,7 @@ message VersionRequest {}
 
 // Response to a version request.
 message VersionResponse {
-    surrealdb.protocol.v1.Value version = 1;
+    string version = 1;
 }
 
 // Request to get information about the database.
@@ -79,7 +77,7 @@ message InfoRequest {}
 
 // Response to an info request.
 message InfoResponse {
-    surrealdb.protocol.v1.Value info = 1;
+    ValueBatch values = 1;
 }
 
 // Request to change the current namespace and database.
@@ -90,7 +88,7 @@ message UseRequest {
 
 // Response to a use request.
 message UseResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to sign up a new user.
@@ -98,12 +96,12 @@ message SignupRequest {
     string namespace = 1;
     string database = 2;
     string access_name = 3;
-    surrealdb.protocol.v1.Value variables = 4;
+    Variables variables = 4;
 }
 
 // Response to a signup request.
 message SignupResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to sign in a user.
@@ -113,7 +111,7 @@ message SigninRequest {
 
 // Response to a signin request.
 message SigninResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to authenticate a user.
@@ -123,7 +121,7 @@ message AuthenticateRequest {
 
 // Response to an authenticate request.
 message AuthenticateResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to invalidate a user.
@@ -131,7 +129,7 @@ message AuthenticateResponse {
 
 // Response to an invalidate request.
 message InvalidateResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to reset the database.
@@ -139,7 +137,7 @@ message ResetRequest {}
 
 // Response to a reset request.
 message ResetResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to kill a live query.
@@ -149,7 +147,7 @@ message KillRequest {
 
 // Response to a kill request.
 message KillResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to issue a live query.
@@ -157,7 +155,6 @@ message LiveRequest {
     surrealdb.protocol.v1.Value what = 1;
     surrealdb.protocol.v1.Fields expr = 2;
     surrealdb.protocol.v1.Value cond = 3;
-    surrealdb.protocol.v1.Value fetch = 4;
 }
 
 // Request to set a value.
@@ -168,7 +165,7 @@ message SetRequest {
 
 // Response to a set request.
 message SetResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to unset a value.
@@ -178,121 +175,132 @@ message UnsetRequest {
 
 // Response to an unset request.
 message UnsetResponse {
-    surrealdb.protocol.v1.Value data = 1;
+    ValueBatch values = 1;
 }
 
 // Request to create a new record.
 message CreateRequest {
-    bool only = 1;
-    surrealdb.protocol.v1.Value what = 2;
-    surrealdb.protocol.v1.Value data = 3;
-    surrealdb.protocol.v1.Value output = 4;
-    google.protobuf.Duration timeout = 5;
-    bool parallel = 6;
-    surrealdb.protocol.v1.Value version = 7;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    bool only = 2;
+    repeated surrealdb.protocol.v1.Value what = 3;
+    surrealdb.protocol.v1.Data data = 4;
+    surrealdb.protocol.v1.Output output = 5;
+    google.protobuf.Duration timeout = 6;
+    bool parallel = 7;
+    surrealdb.protocol.v1.Value version = 8;
+    Variables variables = 9;
 }
 
 // Response to a create request.
 message CreateResponse {
-    surrealdb.protocol.v1.Value value = 1;
+    ValueBatch values = 1;
 }
 
 // Request to select values from the database.
 message SelectRequest {
-    surrealdb.protocol.v1.Fields expr = 1;
-    surrealdb.protocol.v1.Value omit = 2;
-    bool only = 3;
-    surrealdb.protocol.v1.Value what = 4;
-    surrealdb.protocol.v1.Value with = 5;
-    surrealdb.protocol.v1.Value cond = 6;
-    surrealdb.protocol.v1.Value split = 7;
-    surrealdb.protocol.v1.Value group = 8;
-    surrealdb.protocol.v1.Value order = 9;
-    uint64 start = 10;
-    uint64 limit = 11;
-    surrealdb.protocol.v1.Fetchs fetch = 12;
-    surrealdb.protocol.v1.Value version = 13;
-    google.protobuf.Duration timeout = 14;
-    bool parallel = 15;
-    surrealdb.protocol.v1.Value explain = 16;
-    bool tempfiles = 17;
-    Variables variables = 18;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    surrealdb.protocol.v1.Fields expr = 2;
+    surrealdb.protocol.v1.Value omit = 3;
+    bool only = 4;
+    repeated surrealdb.protocol.v1.Value what = 5;
+    surrealdb.protocol.v1.Value with = 6;
+    surrealdb.protocol.v1.Value cond = 7;
+    surrealdb.protocol.v1.Value split = 8;
+    surrealdb.protocol.v1.Value group = 9;
+    surrealdb.protocol.v1.Value order = 10;
+    int64 start = 11;
+    int64 limit = 12;
+    surrealdb.protocol.v1.Fetchs fetch = 13;
+    surrealdb.protocol.v1.Value version = 14;
+    google.protobuf.Duration timeout = 15;
+    bool parallel = 16;
+    surrealdb.protocol.v1.Explain explain = 17;
+    bool tempfiles = 18;
+    Variables variables = 19;
 }
 
 // Response to a select request.
 message SelectResponse {
-    ValueBatch Values = 1;
+    ValueBatch values = 1;
 }
 
 // Request to insert a new record.
 message InsertRequest {
-    surrealdb.protocol.v1.Value into = 1;
-    surrealdb.protocol.v1.Value data = 2;
-    bool ignore = 3;
-    surrealdb.protocol.v1.Value update = 4;
-    surrealdb.protocol.v1.Value output = 5;
-    google.protobuf.Duration timeout = 6;
-    bool parallel = 7;
-    bool relation = 8;
-    surrealdb.protocol.v1.Value version = 9;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    surrealdb.protocol.v1.Value into = 2;
+    surrealdb.protocol.v1.Data data = 3;
+    bool ignore = 4;
+    surrealdb.protocol.v1.Value update = 5;
+    surrealdb.protocol.v1.Output output = 6;
+    google.protobuf.Duration timeout = 7;
+    bool parallel = 8;
+    bool relation = 9;
+    surrealdb.protocol.v1.Value version = 10;
+    Variables variables = 11;
 }
 
 // Response to an insert request.
 message InsertResponse {
-    surrealdb.protocol.v1.Value Value = 1;
+    ValueBatch values = 1;
 }
 
 // Request to upsert a record.
 message UpsertRequest {
-    bool only = 1;
-    surrealdb.protocol.v1.Value what = 2;
-    surrealdb.protocol.v1.Value with = 3;
-    surrealdb.protocol.v1.Data data = 4;
-    surrealdb.protocol.v1.Value cond = 5;
-    surrealdb.protocol.v1.Value output = 6;
-    google.protobuf.Duration timeout = 7;
-    bool parallel = 8;
-    surrealdb.protocol.v1.Value explain = 9;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    bool only = 2;
+    repeated surrealdb.protocol.v1.Value what = 3;
+    surrealdb.protocol.v1.With with = 4;
+    surrealdb.protocol.v1.Data data = 5;
+    surrealdb.protocol.v1.Value cond = 6;
+    surrealdb.protocol.v1.Output output = 7;
+    google.protobuf.Duration timeout = 8;
+    bool parallel = 9;
+    surrealdb.protocol.v1.Explain explain = 10;
+    Variables variables = 11;
 }
 
 // Response to an upsert request.
 message UpsertResponse {
-    surrealdb.protocol.v1.Value Value = 1;
+    ValueBatch values = 1;
 }
 
 // Request to update a record.
 message UpdateRequest {
-    bool only = 1;
-    surrealdb.protocol.v1.Value what = 2;
-    surrealdb.protocol.v1.Value with = 3;
-    surrealdb.protocol.v1.Data data = 4;
-    surrealdb.protocol.v1.Value cond = 5;
-    surrealdb.protocol.v1.Value output = 6;
-    google.protobuf.Duration timeout = 7;
-    bool parallel = 8;
-    surrealdb.protocol.v1.Value explain = 9;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    bool only = 2;
+    repeated surrealdb.protocol.v1.Value what = 3;
+    surrealdb.protocol.v1.With with = 4;
+    surrealdb.protocol.v1.Data data = 5;
+    surrealdb.protocol.v1.Value cond = 6;
+    surrealdb.protocol.v1.Output output = 7;
+    google.protobuf.Duration timeout = 9;
+    bool parallel = 10;
+    surrealdb.protocol.v1.Explain explain = 11;
+    Variables variables = 12;
 }
 
 // Response to an update request.
 message UpdateResponse {
-    surrealdb.protocol.v1.Value Value = 1;
+    ValueBatch values = 1;
 }
 
 // Request to delete a record.
 message DeleteRequest {
-    bool only = 1;
-    surrealdb.protocol.v1.Value what = 2;
-    surrealdb.protocol.v1.Value with = 3;
-    surrealdb.protocol.v1.Value cond = 4;
-    surrealdb.protocol.v1.Value output = 5;
-    google.protobuf.Duration timeout = 6;
-    bool parallel = 7;
-    surrealdb.protocol.v1.Value explain = 8;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    bool only = 2;
+    repeated surrealdb.protocol.v1.Value what = 3;
+    surrealdb.protocol.v1.With with = 4;
+    surrealdb.protocol.v1.Value cond = 5;
+    surrealdb.protocol.v1.Output output = 6;
+    google.protobuf.Duration timeout = 7;
+    bool parallel = 8;
+    surrealdb.protocol.v1.Explain explain = 9;
+    Variables variables = 10;
 }
 
 // Response to a delete request.
 message DeleteResponse {
-    surrealdb.protocol.v1.Value Value = 1;
+    ValueBatch values = 1;
 }
 
 // Request to query the database.
@@ -301,27 +309,62 @@ message QueryRequest {
     Variables variables = 2;
 }
 
-// Response to a query request.
+// Streaming response to a query request.
+//
+// When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
+// ID's response can be assumed to be sent in order, but may be interleaved in the future.
+//
+// Expect the first response for each query ID to contain the query stats, subsequent
+// value batches may elide the stats.
+// 
+// Responses are ordered by query index, then batch index. For example:
+//  QueryResponse(query_index=0, batch_index=0)
+//  QueryResponse(query_index=0, batch_index=1)
+//  QueryResponse(query_index=1, batch_index=0)
+//  QueryResponse(query_index=2, batch_index=0)
+//  QueryResponse(query_index=2, batch_index=1)
+//  QueryResponse(query_index=2, batch_index=2)
+//  QueryResponse(query_index=3, batch_index=0)
+//  QueryResponse(query_index=4, batch_index=0)
 message QueryResponse {
-    ValueBatch Values = 1;
+    // The index of the query.
+    uint32 query_index = 1;
+    // The index of the batch within the given query.
+    uint64 batch_index = 2;
+    // The query stats.
+    QueryStats stats = 3;
+    // The value batch.
+    ValueBatch values = 4;
+}
+
+// Query statistics.
+message QueryStats {
+    // The number of records returned. -1 if unknown.
+    int64 num_records = 1;
+    // The start time of the query.
+    google.protobuf.Timestamp start_time = 2;
+    // The duration of the query.
+    google.protobuf.Duration execution_duration = 3;
 }
 
 // Request to relate two records.
 message RelateRequest {
-    bool only = 1;
-    surrealdb.protocol.v1.Value kind = 2;
-    surrealdb.protocol.v1.Value from = 3;
-    surrealdb.protocol.v1.Value with = 4;
-    bool uniq = 5;
-    surrealdb.protocol.v1.Value data = 6;
-    surrealdb.protocol.v1.Value output = 7;
-    google.protobuf.Duration timeout = 8;
-    bool parallel = 9;
+    surrealdb.protocol.v1.Uuid txn = 1;
+    bool only = 2;
+    surrealdb.protocol.v1.Value kind = 3;
+    surrealdb.protocol.v1.Value from = 4;
+    surrealdb.protocol.v1.Value with = 5;
+    bool uniq = 6;
+    surrealdb.protocol.v1.Data data = 7;
+    surrealdb.protocol.v1.Output output = 8;
+    google.protobuf.Duration timeout = 9;
+    bool parallel = 10;
+    Variables variables = 11;
 }
 
 // Response to a relate request.
 message RelateResponse {
-    surrealdb.protocol.v1.Value Value = 1;
+    ValueBatch values = 1;
 }
 
 // Request to run a function.
@@ -333,23 +376,12 @@ message RunFunctionRequest {
 
 // Response to a run function request.
 message RunFunctionResponse {
-    surrealdb.protocol.v1.Value data = 1;
-}
-
-// Request to run a GraphQL query.
-message GraphQlRequest {
-    string query = 1;
-    Variables variables = 2;
-}
-
-// Response to a GraphQL request.
-message GraphQlResponse {
-    ValueBatch Values = 1;
+    ValueBatch values = 1;
 }
 
 // Batch of values.
 message ValueBatch {
-    repeated surrealdb.protocol.v1.Value Values = 1;
+    repeated surrealdb.protocol.v1.Value values = 1;
 }
 
 // Root user credentials.
@@ -417,7 +449,7 @@ enum Action {
 
 // Response to a live query.
 message LiveResponse {
-    surrealdb.protocol.v1.UuidValue id = 1;
+    surrealdb.protocol.v1.Uuid id = 1;
     Action action = 2;
     surrealdb.protocol.v1.Value record = 3;
     surrealdb.protocol.v1.Value result = 4;

@@ -421,6 +421,40 @@ export interface Fetchs {
   items: Value[];
 }
 
+export interface Output {
+  output?:
+    | { $case: "null"; null: NullValue }
+    | { $case: "diff"; diff: NullValue }
+    | { $case: "after"; after: NullValue }
+    | { $case: "before"; before: NullValue }
+    | { $case: "fields"; fields: Fields }
+    | undefined;
+}
+
+/** Wrapper for explain in order to make it optional. */
+export interface Explain {
+  explain: boolean;
+}
+
+/** Wrapper for start in order to make it optional. */
+export interface Start {
+  start: bigint;
+}
+
+/** Wrapper for limit in order to make it optional. */
+export interface Limit {
+  limit: bigint;
+}
+
+export interface Fetch {
+  fetch: Fetchs | undefined;
+}
+
+export interface With {
+  /** Indices to use. If not specified, use no indexes */
+  indexes: string[];
+}
+
 function createBaseIdent(): Ident {
   return { value: "" };
 }
@@ -1503,6 +1537,461 @@ export const Fetchs: MessageFns<Fetchs> = {
   fromPartial<I extends Exact<DeepPartial<Fetchs>, I>>(object: I): Fetchs {
     const message = createBaseFetchs();
     message.items = object.items?.map((e) => Value.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseOutput(): Output {
+  return { output: undefined };
+}
+
+export const Output: MessageFns<Output> = {
+  encode(message: Output, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.output?.$case) {
+      case "null":
+        NullValue.encode(message.output.null, writer.uint32(10).fork()).join();
+        break;
+      case "diff":
+        NullValue.encode(message.output.diff, writer.uint32(18).fork()).join();
+        break;
+      case "after":
+        NullValue.encode(message.output.after, writer.uint32(26).fork()).join();
+        break;
+      case "before":
+        NullValue.encode(message.output.before, writer.uint32(34).fork()).join();
+        break;
+      case "fields":
+        Fields.encode(message.output.fields, writer.uint32(42).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Output {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOutput();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.output = { $case: "null", null: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.output = { $case: "diff", diff: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.output = { $case: "after", after: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.output = { $case: "before", before: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.output = { $case: "fields", fields: Fields.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Output {
+    return {
+      output: isSet(object.null)
+        ? { $case: "null", null: NullValue.fromJSON(object.null) }
+        : isSet(object.diff)
+        ? { $case: "diff", diff: NullValue.fromJSON(object.diff) }
+        : isSet(object.after)
+        ? { $case: "after", after: NullValue.fromJSON(object.after) }
+        : isSet(object.before)
+        ? { $case: "before", before: NullValue.fromJSON(object.before) }
+        : isSet(object.fields)
+        ? { $case: "fields", fields: Fields.fromJSON(object.fields) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: Output): unknown {
+    const obj: any = {};
+    if (message.output?.$case === "null") {
+      obj.null = NullValue.toJSON(message.output.null);
+    } else if (message.output?.$case === "diff") {
+      obj.diff = NullValue.toJSON(message.output.diff);
+    } else if (message.output?.$case === "after") {
+      obj.after = NullValue.toJSON(message.output.after);
+    } else if (message.output?.$case === "before") {
+      obj.before = NullValue.toJSON(message.output.before);
+    } else if (message.output?.$case === "fields") {
+      obj.fields = Fields.toJSON(message.output.fields);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Output>, I>>(base?: I): Output {
+    return Output.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Output>, I>>(object: I): Output {
+    const message = createBaseOutput();
+    switch (object.output?.$case) {
+      case "null": {
+        if (object.output?.null !== undefined && object.output?.null !== null) {
+          message.output = { $case: "null", null: NullValue.fromPartial(object.output.null) };
+        }
+        break;
+      }
+      case "diff": {
+        if (object.output?.diff !== undefined && object.output?.diff !== null) {
+          message.output = { $case: "diff", diff: NullValue.fromPartial(object.output.diff) };
+        }
+        break;
+      }
+      case "after": {
+        if (object.output?.after !== undefined && object.output?.after !== null) {
+          message.output = { $case: "after", after: NullValue.fromPartial(object.output.after) };
+        }
+        break;
+      }
+      case "before": {
+        if (object.output?.before !== undefined && object.output?.before !== null) {
+          message.output = { $case: "before", before: NullValue.fromPartial(object.output.before) };
+        }
+        break;
+      }
+      case "fields": {
+        if (object.output?.fields !== undefined && object.output?.fields !== null) {
+          message.output = { $case: "fields", fields: Fields.fromPartial(object.output.fields) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseExplain(): Explain {
+  return { explain: false };
+}
+
+export const Explain: MessageFns<Explain> = {
+  encode(message: Explain, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.explain !== false) {
+      writer.uint32(8).bool(message.explain);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Explain {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExplain();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.explain = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Explain {
+    return { explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false };
+  },
+
+  toJSON(message: Explain): unknown {
+    const obj: any = {};
+    if (message.explain !== false) {
+      obj.explain = message.explain;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Explain>, I>>(base?: I): Explain {
+    return Explain.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Explain>, I>>(object: I): Explain {
+    const message = createBaseExplain();
+    message.explain = object.explain ?? false;
+    return message;
+  },
+};
+
+function createBaseStart(): Start {
+  return { start: 0n };
+}
+
+export const Start: MessageFns<Start> = {
+  encode(message: Start, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.start !== 0n) {
+      if (BigInt.asUintN(64, message.start) !== message.start) {
+        throw new globalThis.Error("value provided for field message.start of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.start);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Start {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStart();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.start = reader.uint64() as bigint;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Start {
+    return { start: isSet(object.start) ? BigInt(object.start) : 0n };
+  },
+
+  toJSON(message: Start): unknown {
+    const obj: any = {};
+    if (message.start !== 0n) {
+      obj.start = message.start.toString();
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Start>, I>>(base?: I): Start {
+    return Start.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Start>, I>>(object: I): Start {
+    const message = createBaseStart();
+    message.start = object.start ?? 0n;
+    return message;
+  },
+};
+
+function createBaseLimit(): Limit {
+  return { limit: 0n };
+}
+
+export const Limit: MessageFns<Limit> = {
+  encode(message: Limit, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.limit !== 0n) {
+      if (BigInt.asUintN(64, message.limit) !== message.limit) {
+        throw new globalThis.Error("value provided for field message.limit of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.limit);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Limit {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLimit();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.limit = reader.uint64() as bigint;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Limit {
+    return { limit: isSet(object.limit) ? BigInt(object.limit) : 0n };
+  },
+
+  toJSON(message: Limit): unknown {
+    const obj: any = {};
+    if (message.limit !== 0n) {
+      obj.limit = message.limit.toString();
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Limit>, I>>(base?: I): Limit {
+    return Limit.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Limit>, I>>(object: I): Limit {
+    const message = createBaseLimit();
+    message.limit = object.limit ?? 0n;
+    return message;
+  },
+};
+
+function createBaseFetch(): Fetch {
+  return { fetch: undefined };
+}
+
+export const Fetch: MessageFns<Fetch> = {
+  encode(message: Fetch, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fetch !== undefined) {
+      Fetchs.encode(message.fetch, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Fetch {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFetch();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fetch = Fetchs.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Fetch {
+    return { fetch: isSet(object.fetch) ? Fetchs.fromJSON(object.fetch) : undefined };
+  },
+
+  toJSON(message: Fetch): unknown {
+    const obj: any = {};
+    if (message.fetch !== undefined) {
+      obj.fetch = Fetchs.toJSON(message.fetch);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Fetch>, I>>(base?: I): Fetch {
+    return Fetch.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Fetch>, I>>(object: I): Fetch {
+    const message = createBaseFetch();
+    message.fetch = (object.fetch !== undefined && object.fetch !== null)
+      ? Fetchs.fromPartial(object.fetch)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseWith(): With {
+  return { indexes: [] };
+}
+
+export const With: MessageFns<With> = {
+  encode(message: With, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.indexes) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): With {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWith();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.indexes.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): With {
+    return {
+      indexes: globalThis.Array.isArray(object?.indexes) ? object.indexes.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: With): unknown {
+    const obj: any = {};
+    if (message.indexes?.length) {
+      obj.indexes = message.indexes;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<With>, I>>(base?: I): With {
+    return With.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<With>, I>>(object: I): With {
+    const message = createBaseWith();
+    message.indexes = object.indexes?.map((e) => e) || [];
     return message;
   },
 };

@@ -15,43 +15,13 @@ export const protobufPackage = "surrealdb.protocol.v1";
 export interface NullValue {
 }
 
-/** Boolean value. */
-export interface BoolValue {
-  value: boolean;
-}
-
-/** 64-bit signed integer value. */
-export interface Int64Value {
-  value: bigint;
-}
-
-/** 64-bit unsigned integer value. */
-export interface UInt64Value {
-  value: bigint;
-}
-
-/** 64-bit floating point value. */
-export interface Float64Value {
-  value: number;
-}
-
-/** String value. */
-export interface StringValue {
-  value: string;
-}
-
-/** Bytes value. */
-export interface BytesValue {
-  value: Uint8Array;
-}
-
 /** Decimal value. */
-export interface DecimalValue {
+export interface Decimal {
   value: string;
 }
 
 /** UUID value. */
-export interface UuidValue {
+export interface Uuid {
   value: string;
 }
 
@@ -61,8 +31,8 @@ export interface Point {
   y: number;
 }
 
-/** LineString type. */
-export interface LineString {
+/** Line type. */
+export interface Line {
   points: Point[];
 }
 
@@ -70,10 +40,10 @@ export interface LineString {
 export interface Polygon {
   /** Exterior ring. */
   exterior:
-    | LineString
+    | Line
     | undefined;
   /** Interior rings. */
-  interiors: LineString[];
+  interiors: Line[];
 }
 
 /** MultiPoint type. */
@@ -81,9 +51,9 @@ export interface MultiPoint {
   points: Point[];
 }
 
-/** MultiLineString type. */
-export interface MultiLineString {
-  lines: LineString[];
+/** MultiLine type. */
+export interface MultiLine {
+  lines: Line[];
 }
 
 /** MultiPolygon type. */
@@ -100,10 +70,10 @@ export interface GeometryCollection {
 export interface Geometry {
   geometry?:
     | { $case: "point"; point: Point }
-    | { $case: "lineString"; lineString: LineString }
+    | { $case: "line"; line: Line }
     | { $case: "polygon"; polygon: Polygon }
     | { $case: "multiPoint"; multiPoint: MultiPoint }
-    | { $case: "multiLineString"; multiLineString: MultiLineString }
+    | { $case: "multiLine"; multiLine: MultiLine }
     | { $case: "multiPolygon"; multiPolygon: MultiPolygon }
     | { $case: "collection"; collection: GeometryCollection }
     | undefined;
@@ -144,16 +114,16 @@ export interface Object_ItemsEntry {
 export interface Value {
   value?:
     | { $case: "null"; null: NullValue }
-    | { $case: "bool"; bool: BoolValue }
-    | { $case: "int64"; int64: Int64Value }
-    | { $case: "uint64"; uint64: UInt64Value }
-    | { $case: "float64"; float64: Float64Value }
-    | { $case: "string"; string: StringValue }
-    | { $case: "bytes"; bytes: BytesValue }
-    | { $case: "decimal"; decimal: DecimalValue }
+    | { $case: "bool"; bool: boolean }
+    | { $case: "int64"; int64: bigint }
+    | { $case: "uint64"; uint64: bigint }
+    | { $case: "float64"; float64: number }
+    | { $case: "string"; string: string }
+    | { $case: "bytes"; bytes: Uint8Array }
+    | { $case: "decimal"; decimal: Decimal }
     | { $case: "duration"; duration: Duration }
-    | { $case: "timestamp"; timestamp: Date }
-    | { $case: "uuid"; uuid: UuidValue }
+    | { $case: "datetime"; datetime: Date }
+    | { $case: "uuid"; uuid: Uuid }
     | { $case: "array"; array: Array }
     | { $case: "object"; object: Object }
     | { $case: "geometry"; geometry: Geometry }
@@ -164,12 +134,10 @@ export interface Value {
 
 /** ID type. */
 export interface Id {
-  id?:
-    | { $case: "int64"; int64: Int64Value }
-    | { $case: "string"; string: StringValue }
-    | { $case: "uuid"; uuid: UuidValue }
-    | { $case: "array"; array: Array }
-    | undefined;
+  id?: { $case: "int64"; int64: bigint } | { $case: "string"; string: string } | { $case: "uuid"; uuid: Uuid } | {
+    $case: "array";
+    array: Array;
+  } | undefined;
 }
 
 function createBaseNullValue(): NullValue {
@@ -215,260 +183,22 @@ export const NullValue: MessageFns<NullValue> = {
   },
 };
 
-function createBaseBoolValue(): BoolValue {
-  return { value: false };
-}
-
-export const BoolValue: MessageFns<BoolValue> = {
-  encode(message: BoolValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== false) {
-      writer.uint32(8).bool(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): BoolValue {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBoolValue();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.value = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BoolValue {
-    return { value: isSet(object.value) ? globalThis.Boolean(object.value) : false };
-  },
-
-  toJSON(message: BoolValue): unknown {
-    const obj: any = {};
-    if (message.value !== false) {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<BoolValue>, I>>(base?: I): BoolValue {
-    return BoolValue.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<BoolValue>, I>>(object: I): BoolValue {
-    const message = createBaseBoolValue();
-    message.value = object.value ?? false;
-    return message;
-  },
-};
-
-function createBaseInt64Value(): Int64Value {
-  return { value: 0n };
-}
-
-export const Int64Value: MessageFns<Int64Value> = {
-  encode(message: Int64Value, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== 0n) {
-      if (BigInt.asIntN(64, message.value) !== message.value) {
-        throw new globalThis.Error("value provided for field message.value of type int64 too large");
-      }
-      writer.uint32(8).int64(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Int64Value {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseInt64Value();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.value = reader.int64() as bigint;
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Int64Value {
-    return { value: isSet(object.value) ? BigInt(object.value) : 0n };
-  },
-
-  toJSON(message: Int64Value): unknown {
-    const obj: any = {};
-    if (message.value !== 0n) {
-      obj.value = message.value.toString();
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Int64Value>, I>>(base?: I): Int64Value {
-    return Int64Value.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Int64Value>, I>>(object: I): Int64Value {
-    const message = createBaseInt64Value();
-    message.value = object.value ?? 0n;
-    return message;
-  },
-};
-
-function createBaseUInt64Value(): UInt64Value {
-  return { value: 0n };
-}
-
-export const UInt64Value: MessageFns<UInt64Value> = {
-  encode(message: UInt64Value, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== 0n) {
-      if (BigInt.asUintN(64, message.value) !== message.value) {
-        throw new globalThis.Error("value provided for field message.value of type uint64 too large");
-      }
-      writer.uint32(8).uint64(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): UInt64Value {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUInt64Value();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.value = reader.uint64() as bigint;
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UInt64Value {
-    return { value: isSet(object.value) ? BigInt(object.value) : 0n };
-  },
-
-  toJSON(message: UInt64Value): unknown {
-    const obj: any = {};
-    if (message.value !== 0n) {
-      obj.value = message.value.toString();
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<UInt64Value>, I>>(base?: I): UInt64Value {
-    return UInt64Value.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<UInt64Value>, I>>(object: I): UInt64Value {
-    const message = createBaseUInt64Value();
-    message.value = object.value ?? 0n;
-    return message;
-  },
-};
-
-function createBaseFloat64Value(): Float64Value {
-  return { value: 0 };
-}
-
-export const Float64Value: MessageFns<Float64Value> = {
-  encode(message: Float64Value, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== 0) {
-      writer.uint32(9).double(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Float64Value {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFloat64Value();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 9) {
-            break;
-          }
-
-          message.value = reader.double();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Float64Value {
-    return { value: isSet(object.value) ? globalThis.Number(object.value) : 0 };
-  },
-
-  toJSON(message: Float64Value): unknown {
-    const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Float64Value>, I>>(base?: I): Float64Value {
-    return Float64Value.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Float64Value>, I>>(object: I): Float64Value {
-    const message = createBaseFloat64Value();
-    message.value = object.value ?? 0;
-    return message;
-  },
-};
-
-function createBaseStringValue(): StringValue {
+function createBaseDecimal(): Decimal {
   return { value: "" };
 }
 
-export const StringValue: MessageFns<StringValue> = {
-  encode(message: StringValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Decimal: MessageFns<Decimal> = {
+  encode(message: Decimal, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.value !== "") {
       writer.uint32(10).string(message.value);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): StringValue {
+  decode(input: BinaryReader | Uint8Array, length?: number): Decimal {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseStringValue();
+    const message = createBaseDecimal();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -489,11 +219,11 @@ export const StringValue: MessageFns<StringValue> = {
     return message;
   },
 
-  fromJSON(object: any): StringValue {
+  fromJSON(object: any): Decimal {
     return { value: isSet(object.value) ? globalThis.String(object.value) : "" };
   },
 
-  toJSON(message: StringValue): unknown {
+  toJSON(message: Decimal): unknown {
     const obj: any = {};
     if (message.value !== "") {
       obj.value = message.value;
@@ -501,90 +231,32 @@ export const StringValue: MessageFns<StringValue> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<StringValue>, I>>(base?: I): StringValue {
-    return StringValue.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Decimal>, I>>(base?: I): Decimal {
+    return Decimal.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<StringValue>, I>>(object: I): StringValue {
-    const message = createBaseStringValue();
+  fromPartial<I extends Exact<DeepPartial<Decimal>, I>>(object: I): Decimal {
+    const message = createBaseDecimal();
     message.value = object.value ?? "";
     return message;
   },
 };
 
-function createBaseBytesValue(): BytesValue {
-  return { value: new Uint8Array(0) };
-}
-
-export const BytesValue: MessageFns<BytesValue> = {
-  encode(message: BytesValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value.length !== 0) {
-      writer.uint32(10).bytes(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): BytesValue {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBytesValue();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.value = reader.bytes();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BytesValue {
-    return { value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array(0) };
-  },
-
-  toJSON(message: BytesValue): unknown {
-    const obj: any = {};
-    if (message.value.length !== 0) {
-      obj.value = base64FromBytes(message.value);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<BytesValue>, I>>(base?: I): BytesValue {
-    return BytesValue.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<BytesValue>, I>>(object: I): BytesValue {
-    const message = createBaseBytesValue();
-    message.value = object.value ?? new Uint8Array(0);
-    return message;
-  },
-};
-
-function createBaseDecimalValue(): DecimalValue {
+function createBaseUuid(): Uuid {
   return { value: "" };
 }
 
-export const DecimalValue: MessageFns<DecimalValue> = {
-  encode(message: DecimalValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Uuid: MessageFns<Uuid> = {
+  encode(message: Uuid, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.value !== "") {
       writer.uint32(10).string(message.value);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DecimalValue {
+  decode(input: BinaryReader | Uint8Array, length?: number): Uuid {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDecimalValue();
+    const message = createBaseUuid();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -605,11 +277,11 @@ export const DecimalValue: MessageFns<DecimalValue> = {
     return message;
   },
 
-  fromJSON(object: any): DecimalValue {
+  fromJSON(object: any): Uuid {
     return { value: isSet(object.value) ? globalThis.String(object.value) : "" };
   },
 
-  toJSON(message: DecimalValue): unknown {
+  toJSON(message: Uuid): unknown {
     const obj: any = {};
     if (message.value !== "") {
       obj.value = message.value;
@@ -617,69 +289,11 @@ export const DecimalValue: MessageFns<DecimalValue> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<DecimalValue>, I>>(base?: I): DecimalValue {
-    return DecimalValue.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Uuid>, I>>(base?: I): Uuid {
+    return Uuid.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<DecimalValue>, I>>(object: I): DecimalValue {
-    const message = createBaseDecimalValue();
-    message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBaseUuidValue(): UuidValue {
-  return { value: "" };
-}
-
-export const UuidValue: MessageFns<UuidValue> = {
-  encode(message: UuidValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== "") {
-      writer.uint32(10).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): UuidValue {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUuidValue();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UuidValue {
-    return { value: isSet(object.value) ? globalThis.String(object.value) : "" };
-  },
-
-  toJSON(message: UuidValue): unknown {
-    const obj: any = {};
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<UuidValue>, I>>(base?: I): UuidValue {
-    return UuidValue.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<UuidValue>, I>>(object: I): UuidValue {
-    const message = createBaseUuidValue();
+  fromPartial<I extends Exact<DeepPartial<Uuid>, I>>(object: I): Uuid {
+    const message = createBaseUuid();
     message.value = object.value ?? "";
     return message;
   },
@@ -761,22 +375,22 @@ export const Point: MessageFns<Point> = {
   },
 };
 
-function createBaseLineString(): LineString {
+function createBaseLine(): Line {
   return { points: [] };
 }
 
-export const LineString: MessageFns<LineString> = {
-  encode(message: LineString, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Line: MessageFns<Line> = {
+  encode(message: Line, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.points) {
       Point.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): LineString {
+  decode(input: BinaryReader | Uint8Array, length?: number): Line {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLineString();
+    const message = createBaseLine();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -797,11 +411,11 @@ export const LineString: MessageFns<LineString> = {
     return message;
   },
 
-  fromJSON(object: any): LineString {
+  fromJSON(object: any): Line {
     return { points: globalThis.Array.isArray(object?.points) ? object.points.map((e: any) => Point.fromJSON(e)) : [] };
   },
 
-  toJSON(message: LineString): unknown {
+  toJSON(message: Line): unknown {
     const obj: any = {};
     if (message.points?.length) {
       obj.points = message.points.map((e) => Point.toJSON(e));
@@ -809,11 +423,11 @@ export const LineString: MessageFns<LineString> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<LineString>, I>>(base?: I): LineString {
-    return LineString.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Line>, I>>(base?: I): Line {
+    return Line.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<LineString>, I>>(object: I): LineString {
-    const message = createBaseLineString();
+  fromPartial<I extends Exact<DeepPartial<Line>, I>>(object: I): Line {
+    const message = createBaseLine();
     message.points = object.points?.map((e) => Point.fromPartial(e)) || [];
     return message;
   },
@@ -826,10 +440,10 @@ function createBasePolygon(): Polygon {
 export const Polygon: MessageFns<Polygon> = {
   encode(message: Polygon, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.exterior !== undefined) {
-      LineString.encode(message.exterior, writer.uint32(10).fork()).join();
+      Line.encode(message.exterior, writer.uint32(10).fork()).join();
     }
     for (const v of message.interiors) {
-      LineString.encode(v!, writer.uint32(18).fork()).join();
+      Line.encode(v!, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -846,7 +460,7 @@ export const Polygon: MessageFns<Polygon> = {
             break;
           }
 
-          message.exterior = LineString.decode(reader, reader.uint32());
+          message.exterior = Line.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -854,7 +468,7 @@ export const Polygon: MessageFns<Polygon> = {
             break;
           }
 
-          message.interiors.push(LineString.decode(reader, reader.uint32()));
+          message.interiors.push(Line.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -868,20 +482,18 @@ export const Polygon: MessageFns<Polygon> = {
 
   fromJSON(object: any): Polygon {
     return {
-      exterior: isSet(object.exterior) ? LineString.fromJSON(object.exterior) : undefined,
-      interiors: globalThis.Array.isArray(object?.interiors)
-        ? object.interiors.map((e: any) => LineString.fromJSON(e))
-        : [],
+      exterior: isSet(object.exterior) ? Line.fromJSON(object.exterior) : undefined,
+      interiors: globalThis.Array.isArray(object?.interiors) ? object.interiors.map((e: any) => Line.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: Polygon): unknown {
     const obj: any = {};
     if (message.exterior !== undefined) {
-      obj.exterior = LineString.toJSON(message.exterior);
+      obj.exterior = Line.toJSON(message.exterior);
     }
     if (message.interiors?.length) {
-      obj.interiors = message.interiors.map((e) => LineString.toJSON(e));
+      obj.interiors = message.interiors.map((e) => Line.toJSON(e));
     }
     return obj;
   },
@@ -892,9 +504,9 @@ export const Polygon: MessageFns<Polygon> = {
   fromPartial<I extends Exact<DeepPartial<Polygon>, I>>(object: I): Polygon {
     const message = createBasePolygon();
     message.exterior = (object.exterior !== undefined && object.exterior !== null)
-      ? LineString.fromPartial(object.exterior)
+      ? Line.fromPartial(object.exterior)
       : undefined;
-    message.interiors = object.interiors?.map((e) => LineString.fromPartial(e)) || [];
+    message.interiors = object.interiors?.map((e) => Line.fromPartial(e)) || [];
     return message;
   },
 };
@@ -957,22 +569,22 @@ export const MultiPoint: MessageFns<MultiPoint> = {
   },
 };
 
-function createBaseMultiLineString(): MultiLineString {
+function createBaseMultiLine(): MultiLine {
   return { lines: [] };
 }
 
-export const MultiLineString: MessageFns<MultiLineString> = {
-  encode(message: MultiLineString, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const MultiLine: MessageFns<MultiLine> = {
+  encode(message: MultiLine, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.lines) {
-      LineString.encode(v!, writer.uint32(10).fork()).join();
+      Line.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MultiLineString {
+  decode(input: BinaryReader | Uint8Array, length?: number): MultiLine {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMultiLineString();
+    const message = createBaseMultiLine();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -981,7 +593,7 @@ export const MultiLineString: MessageFns<MultiLineString> = {
             break;
           }
 
-          message.lines.push(LineString.decode(reader, reader.uint32()));
+          message.lines.push(Line.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -993,26 +605,24 @@ export const MultiLineString: MessageFns<MultiLineString> = {
     return message;
   },
 
-  fromJSON(object: any): MultiLineString {
-    return {
-      lines: globalThis.Array.isArray(object?.lines) ? object.lines.map((e: any) => LineString.fromJSON(e)) : [],
-    };
+  fromJSON(object: any): MultiLine {
+    return { lines: globalThis.Array.isArray(object?.lines) ? object.lines.map((e: any) => Line.fromJSON(e)) : [] };
   },
 
-  toJSON(message: MultiLineString): unknown {
+  toJSON(message: MultiLine): unknown {
     const obj: any = {};
     if (message.lines?.length) {
-      obj.lines = message.lines.map((e) => LineString.toJSON(e));
+      obj.lines = message.lines.map((e) => Line.toJSON(e));
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<MultiLineString>, I>>(base?: I): MultiLineString {
-    return MultiLineString.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<MultiLine>, I>>(base?: I): MultiLine {
+    return MultiLine.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<MultiLineString>, I>>(object: I): MultiLineString {
-    const message = createBaseMultiLineString();
-    message.lines = object.lines?.map((e) => LineString.fromPartial(e)) || [];
+  fromPartial<I extends Exact<DeepPartial<MultiLine>, I>>(object: I): MultiLine {
+    const message = createBaseMultiLine();
+    message.lines = object.lines?.map((e) => Line.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1149,8 +759,8 @@ export const Geometry: MessageFns<Geometry> = {
       case "point":
         Point.encode(message.geometry.point, writer.uint32(10).fork()).join();
         break;
-      case "lineString":
-        LineString.encode(message.geometry.lineString, writer.uint32(18).fork()).join();
+      case "line":
+        Line.encode(message.geometry.line, writer.uint32(18).fork()).join();
         break;
       case "polygon":
         Polygon.encode(message.geometry.polygon, writer.uint32(26).fork()).join();
@@ -1158,8 +768,8 @@ export const Geometry: MessageFns<Geometry> = {
       case "multiPoint":
         MultiPoint.encode(message.geometry.multiPoint, writer.uint32(34).fork()).join();
         break;
-      case "multiLineString":
-        MultiLineString.encode(message.geometry.multiLineString, writer.uint32(42).fork()).join();
+      case "multiLine":
+        MultiLine.encode(message.geometry.multiLine, writer.uint32(42).fork()).join();
         break;
       case "multiPolygon":
         MultiPolygon.encode(message.geometry.multiPolygon, writer.uint32(50).fork()).join();
@@ -1191,7 +801,7 @@ export const Geometry: MessageFns<Geometry> = {
             break;
           }
 
-          message.geometry = { $case: "lineString", lineString: LineString.decode(reader, reader.uint32()) };
+          message.geometry = { $case: "line", line: Line.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -1215,10 +825,7 @@ export const Geometry: MessageFns<Geometry> = {
             break;
           }
 
-          message.geometry = {
-            $case: "multiLineString",
-            multiLineString: MultiLineString.decode(reader, reader.uint32()),
-          };
+          message.geometry = { $case: "multiLine", multiLine: MultiLine.decode(reader, reader.uint32()) };
           continue;
         }
         case 6: {
@@ -1250,14 +857,14 @@ export const Geometry: MessageFns<Geometry> = {
     return {
       geometry: isSet(object.point)
         ? { $case: "point", point: Point.fromJSON(object.point) }
-        : isSet(object.lineString)
-        ? { $case: "lineString", lineString: LineString.fromJSON(object.lineString) }
+        : isSet(object.line)
+        ? { $case: "line", line: Line.fromJSON(object.line) }
         : isSet(object.polygon)
         ? { $case: "polygon", polygon: Polygon.fromJSON(object.polygon) }
         : isSet(object.multiPoint)
         ? { $case: "multiPoint", multiPoint: MultiPoint.fromJSON(object.multiPoint) }
-        : isSet(object.multiLineString)
-        ? { $case: "multiLineString", multiLineString: MultiLineString.fromJSON(object.multiLineString) }
+        : isSet(object.multiLine)
+        ? { $case: "multiLine", multiLine: MultiLine.fromJSON(object.multiLine) }
         : isSet(object.multiPolygon)
         ? { $case: "multiPolygon", multiPolygon: MultiPolygon.fromJSON(object.multiPolygon) }
         : isSet(object.collection)
@@ -1270,14 +877,14 @@ export const Geometry: MessageFns<Geometry> = {
     const obj: any = {};
     if (message.geometry?.$case === "point") {
       obj.point = Point.toJSON(message.geometry.point);
-    } else if (message.geometry?.$case === "lineString") {
-      obj.lineString = LineString.toJSON(message.geometry.lineString);
+    } else if (message.geometry?.$case === "line") {
+      obj.line = Line.toJSON(message.geometry.line);
     } else if (message.geometry?.$case === "polygon") {
       obj.polygon = Polygon.toJSON(message.geometry.polygon);
     } else if (message.geometry?.$case === "multiPoint") {
       obj.multiPoint = MultiPoint.toJSON(message.geometry.multiPoint);
-    } else if (message.geometry?.$case === "multiLineString") {
-      obj.multiLineString = MultiLineString.toJSON(message.geometry.multiLineString);
+    } else if (message.geometry?.$case === "multiLine") {
+      obj.multiLine = MultiLine.toJSON(message.geometry.multiLine);
     } else if (message.geometry?.$case === "multiPolygon") {
       obj.multiPolygon = MultiPolygon.toJSON(message.geometry.multiPolygon);
     } else if (message.geometry?.$case === "collection") {
@@ -1298,9 +905,9 @@ export const Geometry: MessageFns<Geometry> = {
         }
         break;
       }
-      case "lineString": {
-        if (object.geometry?.lineString !== undefined && object.geometry?.lineString !== null) {
-          message.geometry = { $case: "lineString", lineString: LineString.fromPartial(object.geometry.lineString) };
+      case "line": {
+        if (object.geometry?.line !== undefined && object.geometry?.line !== null) {
+          message.geometry = { $case: "line", line: Line.fromPartial(object.geometry.line) };
         }
         break;
       }
@@ -1316,12 +923,9 @@ export const Geometry: MessageFns<Geometry> = {
         }
         break;
       }
-      case "multiLineString": {
-        if (object.geometry?.multiLineString !== undefined && object.geometry?.multiLineString !== null) {
-          message.geometry = {
-            $case: "multiLineString",
-            multiLineString: MultiLineString.fromPartial(object.geometry.multiLineString),
-          };
+      case "multiLine": {
+        if (object.geometry?.multiLine !== undefined && object.geometry?.multiLine !== null) {
+          message.geometry = { $case: "multiLine", multiLine: MultiLine.fromPartial(object.geometry.multiLine) };
         }
         break;
       }
@@ -1724,34 +1328,40 @@ export const Value: MessageFns<Value> = {
         NullValue.encode(message.value.null, writer.uint32(10).fork()).join();
         break;
       case "bool":
-        BoolValue.encode(message.value.bool, writer.uint32(18).fork()).join();
+        writer.uint32(16).bool(message.value.bool);
         break;
       case "int64":
-        Int64Value.encode(message.value.int64, writer.uint32(26).fork()).join();
+        if (BigInt.asIntN(64, message.value.int64) !== message.value.int64) {
+          throw new globalThis.Error("value provided for field message.value.int64 of type int64 too large");
+        }
+        writer.uint32(24).int64(message.value.int64);
         break;
       case "uint64":
-        UInt64Value.encode(message.value.uint64, writer.uint32(34).fork()).join();
+        if (BigInt.asUintN(64, message.value.uint64) !== message.value.uint64) {
+          throw new globalThis.Error("value provided for field message.value.uint64 of type uint64 too large");
+        }
+        writer.uint32(32).uint64(message.value.uint64);
         break;
       case "float64":
-        Float64Value.encode(message.value.float64, writer.uint32(42).fork()).join();
+        writer.uint32(41).double(message.value.float64);
         break;
       case "string":
-        StringValue.encode(message.value.string, writer.uint32(50).fork()).join();
+        writer.uint32(50).string(message.value.string);
         break;
       case "bytes":
-        BytesValue.encode(message.value.bytes, writer.uint32(58).fork()).join();
+        writer.uint32(58).bytes(message.value.bytes);
         break;
       case "decimal":
-        DecimalValue.encode(message.value.decimal, writer.uint32(66).fork()).join();
+        Decimal.encode(message.value.decimal, writer.uint32(66).fork()).join();
         break;
       case "duration":
         Duration.encode(message.value.duration, writer.uint32(74).fork()).join();
         break;
-      case "timestamp":
-        Timestamp.encode(toTimestamp(message.value.timestamp), writer.uint32(82).fork()).join();
+      case "datetime":
+        Timestamp.encode(toTimestamp(message.value.datetime), writer.uint32(82).fork()).join();
         break;
       case "uuid":
-        UuidValue.encode(message.value.uuid, writer.uint32(90).fork()).join();
+        Uuid.encode(message.value.uuid, writer.uint32(90).fork()).join();
         break;
       case "array":
         Array.encode(message.value.array, writer.uint32(98).fork()).join();
@@ -1788,35 +1398,35 @@ export const Value: MessageFns<Value> = {
           continue;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.value = { $case: "bool", bool: BoolValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "bool", bool: reader.bool() };
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.value = { $case: "int64", int64: Int64Value.decode(reader, reader.uint32()) };
+          message.value = { $case: "int64", int64: reader.int64() as bigint };
           continue;
         }
         case 4: {
-          if (tag !== 34) {
+          if (tag !== 32) {
             break;
           }
 
-          message.value = { $case: "uint64", uint64: UInt64Value.decode(reader, reader.uint32()) };
+          message.value = { $case: "uint64", uint64: reader.uint64() as bigint };
           continue;
         }
         case 5: {
-          if (tag !== 42) {
+          if (tag !== 41) {
             break;
           }
 
-          message.value = { $case: "float64", float64: Float64Value.decode(reader, reader.uint32()) };
+          message.value = { $case: "float64", float64: reader.double() };
           continue;
         }
         case 6: {
@@ -1824,7 +1434,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "string", string: StringValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "string", string: reader.string() };
           continue;
         }
         case 7: {
@@ -1832,7 +1442,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "bytes", bytes: BytesValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "bytes", bytes: reader.bytes() };
           continue;
         }
         case 8: {
@@ -1840,7 +1450,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "decimal", decimal: DecimalValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "decimal", decimal: Decimal.decode(reader, reader.uint32()) };
           continue;
         }
         case 9: {
@@ -1856,7 +1466,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "timestamp", timestamp: fromTimestamp(Timestamp.decode(reader, reader.uint32())) };
+          message.value = { $case: "datetime", datetime: fromTimestamp(Timestamp.decode(reader, reader.uint32())) };
           continue;
         }
         case 11: {
@@ -1864,7 +1474,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "uuid", uuid: UuidValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "uuid", uuid: Uuid.decode(reader, reader.uint32()) };
           continue;
         }
         case 12: {
@@ -1921,25 +1531,25 @@ export const Value: MessageFns<Value> = {
       value: isSet(object.null)
         ? { $case: "null", null: NullValue.fromJSON(object.null) }
         : isSet(object.bool)
-        ? { $case: "bool", bool: BoolValue.fromJSON(object.bool) }
+        ? { $case: "bool", bool: globalThis.Boolean(object.bool) }
         : isSet(object.int64)
-        ? { $case: "int64", int64: Int64Value.fromJSON(object.int64) }
+        ? { $case: "int64", int64: BigInt(object.int64) }
         : isSet(object.uint64)
-        ? { $case: "uint64", uint64: UInt64Value.fromJSON(object.uint64) }
+        ? { $case: "uint64", uint64: BigInt(object.uint64) }
         : isSet(object.float64)
-        ? { $case: "float64", float64: Float64Value.fromJSON(object.float64) }
+        ? { $case: "float64", float64: globalThis.Number(object.float64) }
         : isSet(object.string)
-        ? { $case: "string", string: StringValue.fromJSON(object.string) }
+        ? { $case: "string", string: globalThis.String(object.string) }
         : isSet(object.bytes)
-        ? { $case: "bytes", bytes: BytesValue.fromJSON(object.bytes) }
+        ? { $case: "bytes", bytes: bytesFromBase64(object.bytes) }
         : isSet(object.decimal)
-        ? { $case: "decimal", decimal: DecimalValue.fromJSON(object.decimal) }
+        ? { $case: "decimal", decimal: Decimal.fromJSON(object.decimal) }
         : isSet(object.duration)
         ? { $case: "duration", duration: Duration.fromJSON(object.duration) }
-        : isSet(object.timestamp)
-        ? { $case: "timestamp", timestamp: fromJsonTimestamp(object.timestamp) }
+        : isSet(object.datetime)
+        ? { $case: "datetime", datetime: fromJsonTimestamp(object.datetime) }
         : isSet(object.uuid)
-        ? { $case: "uuid", uuid: UuidValue.fromJSON(object.uuid) }
+        ? { $case: "uuid", uuid: Uuid.fromJSON(object.uuid) }
         : isSet(object.array)
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : isSet(object.object)
@@ -1959,25 +1569,25 @@ export const Value: MessageFns<Value> = {
     if (message.value?.$case === "null") {
       obj.null = NullValue.toJSON(message.value.null);
     } else if (message.value?.$case === "bool") {
-      obj.bool = BoolValue.toJSON(message.value.bool);
+      obj.bool = message.value.bool;
     } else if (message.value?.$case === "int64") {
-      obj.int64 = Int64Value.toJSON(message.value.int64);
+      obj.int64 = message.value.int64.toString();
     } else if (message.value?.$case === "uint64") {
-      obj.uint64 = UInt64Value.toJSON(message.value.uint64);
+      obj.uint64 = message.value.uint64.toString();
     } else if (message.value?.$case === "float64") {
-      obj.float64 = Float64Value.toJSON(message.value.float64);
+      obj.float64 = message.value.float64;
     } else if (message.value?.$case === "string") {
-      obj.string = StringValue.toJSON(message.value.string);
+      obj.string = message.value.string;
     } else if (message.value?.$case === "bytes") {
-      obj.bytes = BytesValue.toJSON(message.value.bytes);
+      obj.bytes = base64FromBytes(message.value.bytes);
     } else if (message.value?.$case === "decimal") {
-      obj.decimal = DecimalValue.toJSON(message.value.decimal);
+      obj.decimal = Decimal.toJSON(message.value.decimal);
     } else if (message.value?.$case === "duration") {
       obj.duration = Duration.toJSON(message.value.duration);
-    } else if (message.value?.$case === "timestamp") {
-      obj.timestamp = message.value.timestamp.toISOString();
+    } else if (message.value?.$case === "datetime") {
+      obj.datetime = message.value.datetime.toISOString();
     } else if (message.value?.$case === "uuid") {
-      obj.uuid = UuidValue.toJSON(message.value.uuid);
+      obj.uuid = Uuid.toJSON(message.value.uuid);
     } else if (message.value?.$case === "array") {
       obj.array = Array.toJSON(message.value.array);
     } else if (message.value?.$case === "object") {
@@ -2006,43 +1616,43 @@ export const Value: MessageFns<Value> = {
       }
       case "bool": {
         if (object.value?.bool !== undefined && object.value?.bool !== null) {
-          message.value = { $case: "bool", bool: BoolValue.fromPartial(object.value.bool) };
+          message.value = { $case: "bool", bool: object.value.bool };
         }
         break;
       }
       case "int64": {
         if (object.value?.int64 !== undefined && object.value?.int64 !== null) {
-          message.value = { $case: "int64", int64: Int64Value.fromPartial(object.value.int64) };
+          message.value = { $case: "int64", int64: object.value.int64 };
         }
         break;
       }
       case "uint64": {
         if (object.value?.uint64 !== undefined && object.value?.uint64 !== null) {
-          message.value = { $case: "uint64", uint64: UInt64Value.fromPartial(object.value.uint64) };
+          message.value = { $case: "uint64", uint64: object.value.uint64 };
         }
         break;
       }
       case "float64": {
         if (object.value?.float64 !== undefined && object.value?.float64 !== null) {
-          message.value = { $case: "float64", float64: Float64Value.fromPartial(object.value.float64) };
+          message.value = { $case: "float64", float64: object.value.float64 };
         }
         break;
       }
       case "string": {
         if (object.value?.string !== undefined && object.value?.string !== null) {
-          message.value = { $case: "string", string: StringValue.fromPartial(object.value.string) };
+          message.value = { $case: "string", string: object.value.string };
         }
         break;
       }
       case "bytes": {
         if (object.value?.bytes !== undefined && object.value?.bytes !== null) {
-          message.value = { $case: "bytes", bytes: BytesValue.fromPartial(object.value.bytes) };
+          message.value = { $case: "bytes", bytes: object.value.bytes };
         }
         break;
       }
       case "decimal": {
         if (object.value?.decimal !== undefined && object.value?.decimal !== null) {
-          message.value = { $case: "decimal", decimal: DecimalValue.fromPartial(object.value.decimal) };
+          message.value = { $case: "decimal", decimal: Decimal.fromPartial(object.value.decimal) };
         }
         break;
       }
@@ -2052,15 +1662,15 @@ export const Value: MessageFns<Value> = {
         }
         break;
       }
-      case "timestamp": {
-        if (object.value?.timestamp !== undefined && object.value?.timestamp !== null) {
-          message.value = { $case: "timestamp", timestamp: object.value.timestamp };
+      case "datetime": {
+        if (object.value?.datetime !== undefined && object.value?.datetime !== null) {
+          message.value = { $case: "datetime", datetime: object.value.datetime };
         }
         break;
       }
       case "uuid": {
         if (object.value?.uuid !== undefined && object.value?.uuid !== null) {
-          message.value = { $case: "uuid", uuid: UuidValue.fromPartial(object.value.uuid) };
+          message.value = { $case: "uuid", uuid: Uuid.fromPartial(object.value.uuid) };
         }
         break;
       }
@@ -2107,13 +1717,16 @@ export const Id: MessageFns<Id> = {
   encode(message: Id, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     switch (message.id?.$case) {
       case "int64":
-        Int64Value.encode(message.id.int64, writer.uint32(10).fork()).join();
+        if (BigInt.asIntN(64, message.id.int64) !== message.id.int64) {
+          throw new globalThis.Error("value provided for field message.id.int64 of type int64 too large");
+        }
+        writer.uint32(8).int64(message.id.int64);
         break;
       case "string":
-        StringValue.encode(message.id.string, writer.uint32(18).fork()).join();
+        writer.uint32(18).string(message.id.string);
         break;
       case "uuid":
-        UuidValue.encode(message.id.uuid, writer.uint32(26).fork()).join();
+        Uuid.encode(message.id.uuid, writer.uint32(26).fork()).join();
         break;
       case "array":
         Array.encode(message.id.array, writer.uint32(34).fork()).join();
@@ -2130,11 +1743,11 @@ export const Id: MessageFns<Id> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.id = { $case: "int64", int64: Int64Value.decode(reader, reader.uint32()) };
+          message.id = { $case: "int64", int64: reader.int64() as bigint };
           continue;
         }
         case 2: {
@@ -2142,7 +1755,7 @@ export const Id: MessageFns<Id> = {
             break;
           }
 
-          message.id = { $case: "string", string: StringValue.decode(reader, reader.uint32()) };
+          message.id = { $case: "string", string: reader.string() };
           continue;
         }
         case 3: {
@@ -2150,7 +1763,7 @@ export const Id: MessageFns<Id> = {
             break;
           }
 
-          message.id = { $case: "uuid", uuid: UuidValue.decode(reader, reader.uint32()) };
+          message.id = { $case: "uuid", uuid: Uuid.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -2173,11 +1786,11 @@ export const Id: MessageFns<Id> = {
   fromJSON(object: any): Id {
     return {
       id: isSet(object.int64)
-        ? { $case: "int64", int64: Int64Value.fromJSON(object.int64) }
+        ? { $case: "int64", int64: BigInt(object.int64) }
         : isSet(object.string)
-        ? { $case: "string", string: StringValue.fromJSON(object.string) }
+        ? { $case: "string", string: globalThis.String(object.string) }
         : isSet(object.uuid)
-        ? { $case: "uuid", uuid: UuidValue.fromJSON(object.uuid) }
+        ? { $case: "uuid", uuid: Uuid.fromJSON(object.uuid) }
         : isSet(object.array)
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : undefined,
@@ -2187,11 +1800,11 @@ export const Id: MessageFns<Id> = {
   toJSON(message: Id): unknown {
     const obj: any = {};
     if (message.id?.$case === "int64") {
-      obj.int64 = Int64Value.toJSON(message.id.int64);
+      obj.int64 = message.id.int64.toString();
     } else if (message.id?.$case === "string") {
-      obj.string = StringValue.toJSON(message.id.string);
+      obj.string = message.id.string;
     } else if (message.id?.$case === "uuid") {
-      obj.uuid = UuidValue.toJSON(message.id.uuid);
+      obj.uuid = Uuid.toJSON(message.id.uuid);
     } else if (message.id?.$case === "array") {
       obj.array = Array.toJSON(message.id.array);
     }
@@ -2206,19 +1819,19 @@ export const Id: MessageFns<Id> = {
     switch (object.id?.$case) {
       case "int64": {
         if (object.id?.int64 !== undefined && object.id?.int64 !== null) {
-          message.id = { $case: "int64", int64: Int64Value.fromPartial(object.id.int64) };
+          message.id = { $case: "int64", int64: object.id.int64 };
         }
         break;
       }
       case "string": {
         if (object.id?.string !== undefined && object.id?.string !== null) {
-          message.id = { $case: "string", string: StringValue.fromPartial(object.id.string) };
+          message.id = { $case: "string", string: object.id.string };
         }
         break;
       }
       case "uuid": {
         if (object.id?.uuid !== undefined && object.id?.uuid !== null) {
-          message.id = { $case: "uuid", uuid: UuidValue.fromPartial(object.id.uuid) };
+          message.id = { $case: "uuid", uuid: Uuid.fromPartial(object.id.uuid) };
         }
         break;
       }

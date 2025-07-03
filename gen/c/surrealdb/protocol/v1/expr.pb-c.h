@@ -29,6 +29,12 @@ typedef struct Surrealdb__Protocol__V1__Data__IdiomValuePair Surrealdb__Protocol
 typedef struct Surrealdb__Protocol__V1__Data__ValuesExpr Surrealdb__Protocol__V1__Data__ValuesExpr;
 typedef struct Surrealdb__Protocol__V1__Data__ValuesMultiExpr Surrealdb__Protocol__V1__Data__ValuesMultiExpr;
 typedef struct Surrealdb__Protocol__V1__Fetchs Surrealdb__Protocol__V1__Fetchs;
+typedef struct Surrealdb__Protocol__V1__Output Surrealdb__Protocol__V1__Output;
+typedef struct Surrealdb__Protocol__V1__Explain Surrealdb__Protocol__V1__Explain;
+typedef struct Surrealdb__Protocol__V1__Start Surrealdb__Protocol__V1__Start;
+typedef struct Surrealdb__Protocol__V1__Limit Surrealdb__Protocol__V1__Limit;
+typedef struct Surrealdb__Protocol__V1__Fetch Surrealdb__Protocol__V1__Fetch;
+typedef struct Surrealdb__Protocol__V1__With Surrealdb__Protocol__V1__With;
 
 
 /* --- enums --- */
@@ -449,6 +455,96 @@ struct  Surrealdb__Protocol__V1__Fetchs
 , 0,NULL }
 
 
+typedef enum {
+  SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT__NOT_SET = 0,
+  SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT_NULL = 1,
+  SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT_DIFF = 2,
+  SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT_AFTER = 3,
+  SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT_BEFORE = 4,
+  SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT_FIELDS = 5
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT__CASE)
+} Surrealdb__Protocol__V1__Output__OutputCase;
+
+struct  Surrealdb__Protocol__V1__Output
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Output__OutputCase output_case;
+  union {
+    Surrealdb__Protocol__V1__NullValue *after;
+    Surrealdb__Protocol__V1__NullValue *before;
+    Surrealdb__Protocol__V1__NullValue *diff;
+    Surrealdb__Protocol__V1__Fields *fields;
+    Surrealdb__Protocol__V1__NullValue *null;
+  };
+};
+#define SURREALDB__PROTOCOL__V1__OUTPUT__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__output__descriptor) \
+, SURREALDB__PROTOCOL__V1__OUTPUT__OUTPUT__NOT_SET, {0} }
+
+
+/*
+ * Wrapper for explain in order to make it optional.
+ */
+struct  Surrealdb__Protocol__V1__Explain
+{
+  ProtobufCMessage base;
+  protobuf_c_boolean explain;
+};
+#define SURREALDB__PROTOCOL__V1__EXPLAIN__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__explain__descriptor) \
+, 0 }
+
+
+/*
+ * Wrapper for start in order to make it optional.
+ */
+struct  Surrealdb__Protocol__V1__Start
+{
+  ProtobufCMessage base;
+  uint64_t start;
+};
+#define SURREALDB__PROTOCOL__V1__START__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__start__descriptor) \
+, 0 }
+
+
+/*
+ * Wrapper for limit in order to make it optional.
+ */
+struct  Surrealdb__Protocol__V1__Limit
+{
+  ProtobufCMessage base;
+  uint64_t limit;
+};
+#define SURREALDB__PROTOCOL__V1__LIMIT__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__limit__descriptor) \
+, 0 }
+
+
+struct  Surrealdb__Protocol__V1__Fetch
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Fetchs *fetch;
+};
+#define SURREALDB__PROTOCOL__V1__FETCH__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__fetch__descriptor) \
+, NULL }
+
+
+struct  Surrealdb__Protocol__V1__With
+{
+  ProtobufCMessage base;
+  /*
+   * Indices to use. If not specified, use no indexes
+   */
+  size_t n_indexes;
+  char **indexes;
+};
+#define SURREALDB__PROTOCOL__V1__WITH__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__with__descriptor) \
+, 0,NULL }
+
+
 /* Surrealdb__Protocol__V1__Ident methods */
 void   surrealdb__protocol__v1__ident__init
                      (Surrealdb__Protocol__V1__Ident         *message);
@@ -568,6 +664,120 @@ Surrealdb__Protocol__V1__Fetchs *
 void   surrealdb__protocol__v1__fetchs__free_unpacked
                      (Surrealdb__Protocol__V1__Fetchs *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Output methods */
+void   surrealdb__protocol__v1__output__init
+                     (Surrealdb__Protocol__V1__Output         *message);
+size_t surrealdb__protocol__v1__output__get_packed_size
+                     (const Surrealdb__Protocol__V1__Output   *message);
+size_t surrealdb__protocol__v1__output__pack
+                     (const Surrealdb__Protocol__V1__Output   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__output__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Output   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Output *
+       surrealdb__protocol__v1__output__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__output__free_unpacked
+                     (Surrealdb__Protocol__V1__Output *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Explain methods */
+void   surrealdb__protocol__v1__explain__init
+                     (Surrealdb__Protocol__V1__Explain         *message);
+size_t surrealdb__protocol__v1__explain__get_packed_size
+                     (const Surrealdb__Protocol__V1__Explain   *message);
+size_t surrealdb__protocol__v1__explain__pack
+                     (const Surrealdb__Protocol__V1__Explain   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__explain__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Explain   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Explain *
+       surrealdb__protocol__v1__explain__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__explain__free_unpacked
+                     (Surrealdb__Protocol__V1__Explain *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Start methods */
+void   surrealdb__protocol__v1__start__init
+                     (Surrealdb__Protocol__V1__Start         *message);
+size_t surrealdb__protocol__v1__start__get_packed_size
+                     (const Surrealdb__Protocol__V1__Start   *message);
+size_t surrealdb__protocol__v1__start__pack
+                     (const Surrealdb__Protocol__V1__Start   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__start__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Start   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Start *
+       surrealdb__protocol__v1__start__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__start__free_unpacked
+                     (Surrealdb__Protocol__V1__Start *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Limit methods */
+void   surrealdb__protocol__v1__limit__init
+                     (Surrealdb__Protocol__V1__Limit         *message);
+size_t surrealdb__protocol__v1__limit__get_packed_size
+                     (const Surrealdb__Protocol__V1__Limit   *message);
+size_t surrealdb__protocol__v1__limit__pack
+                     (const Surrealdb__Protocol__V1__Limit   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__limit__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Limit   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Limit *
+       surrealdb__protocol__v1__limit__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__limit__free_unpacked
+                     (Surrealdb__Protocol__V1__Limit *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Fetch methods */
+void   surrealdb__protocol__v1__fetch__init
+                     (Surrealdb__Protocol__V1__Fetch         *message);
+size_t surrealdb__protocol__v1__fetch__get_packed_size
+                     (const Surrealdb__Protocol__V1__Fetch   *message);
+size_t surrealdb__protocol__v1__fetch__pack
+                     (const Surrealdb__Protocol__V1__Fetch   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__fetch__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Fetch   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Fetch *
+       surrealdb__protocol__v1__fetch__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__fetch__free_unpacked
+                     (Surrealdb__Protocol__V1__Fetch *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__With methods */
+void   surrealdb__protocol__v1__with__init
+                     (Surrealdb__Protocol__V1__With         *message);
+size_t surrealdb__protocol__v1__with__get_packed_size
+                     (const Surrealdb__Protocol__V1__With   *message);
+size_t surrealdb__protocol__v1__with__pack
+                     (const Surrealdb__Protocol__V1__With   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__with__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__With   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__With *
+       surrealdb__protocol__v1__with__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__with__free_unpacked
+                     (Surrealdb__Protocol__V1__With *message,
+                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*Surrealdb__Protocol__V1__Ident_Closure)
@@ -609,6 +819,24 @@ typedef void (*Surrealdb__Protocol__V1__Data_Closure)
 typedef void (*Surrealdb__Protocol__V1__Fetchs_Closure)
                  (const Surrealdb__Protocol__V1__Fetchs *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Output_Closure)
+                 (const Surrealdb__Protocol__V1__Output *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Explain_Closure)
+                 (const Surrealdb__Protocol__V1__Explain *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Start_Closure)
+                 (const Surrealdb__Protocol__V1__Start *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Limit_Closure)
+                 (const Surrealdb__Protocol__V1__Limit *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Fetch_Closure)
+                 (const Surrealdb__Protocol__V1__Fetch *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__With_Closure)
+                 (const Surrealdb__Protocol__V1__With *message,
+                  void *closure_data);
 
 /* --- services --- */
 
@@ -629,6 +857,12 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__data__idiom_val
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__data__values_expr__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__data__values_multi_expr__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__fetchs__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__output__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__explain__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__start__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__limit__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__fetch__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__with__descriptor;
 
 PROTOBUF_C__END_DECLS
 
