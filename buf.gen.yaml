@@ -1,0 +1,44 @@
+version: v2
+clean: true
+
+inputs:
+  - directory: .
+
+plugins:
+  # C
+  - local: ./plugins/protoc-gen-c
+    out: gen/c
+  
+  # Rust
+  - local: ./plugins/protoc-gen-prost
+    out: gen/rust/proto
+    opt:
+      - btree_map=.
+      - bytes=.
+      - file_descriptor_set=false
+      - enable_type_names=true
+      - type_attribute=.=#[derive(serde::Deserialize\,serde::Serialize)]
+      - field_attribute=timeout=#[serde(with = "crate::serde_duration_optional")]
+      - field_attribute=start_time=#[serde(with = "crate::serde_timestamp_optional")]
+      - field_attribute=execution_duration=#[serde(with = "crate::serde_duration_optional")]
+      - field_attribute=surrealdb.protocol.v1.Value.value.duration=#[serde(with = "crate::serde_duration")]
+      - field_attribute=surrealdb.protocol.v1.Value.value.datetime=#[serde(with = "crate::serde_timestamp")]
+      - field_attribute=surrealdb.protocol.v1.Value.value=#[serde(flatten)]
+      - field_attribute=surrealdb.protocol.v1.Geometry.geometry=#[serde(flatten)]
+      - field_attribute=surrealdb.protocol.v1.Object.items=#[serde(flatten)]
+  - local: ./plugins/protoc-gen-tonic
+    out: gen/rust/proto
+  
+  # Typescript
+  - local: ./plugins/protoc-gen-ts_proto
+    out: gen/ts
+    strategy: all
+    opt:
+      - oneof=unions
+      - removeEnumPrefix=true
+      - forceLong=bigint
+      - env=both
+      - exportCommonSymbols=true
+      - outputEncodeMethods=true
+      - outputJsonMethods=true
+      - useDate=true

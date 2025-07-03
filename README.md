@@ -68,3 +68,25 @@
 This repository contains the SurrealDB Network Protocol, which is used to communicate with the SurrealDB server.
 
 **THIS IS A WORK IN PROGRESS**
+
+## Language Support
+
+- [x] Rust
+- [x] TypeScript
+- [ ] Python
+- [ ] .NET
+- [ ] PHP
+- [ ] Java
+- [ ] Go
+- [ ] C
+
+## Development
+
+Generate the protobuf files:
+
+```bash
+make gen
+```
+
+Note: These are not currently generated in CI or automatically checked in CI. This is a manual step for the time
+being but in the future we will have a CI step that ensures that the protobuf files are up to date.

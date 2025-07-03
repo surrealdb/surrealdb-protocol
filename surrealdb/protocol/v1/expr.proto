@@ -1,0 +1,220 @@
+
+syntax = "proto3";
+
+package surrealdb.protocol.v1;
+
+import "surrealdb/protocol/v1/value.proto";
+
+// Identifier.
+message Ident {
+    string value = 1;
+}
+
+// Fields selection.
+message Fields {
+    // Single field.
+    message SingleField {
+        // Expression.
+        Value expr = 1;
+        // Alias.
+        Idiom alias = 2;
+    }
+
+    // Field selection.
+    message Field {
+        oneof field {
+            // All fields.
+            NullValue all = 1;
+            // Single field.
+            SingleField single = 2;
+        }
+    }
+
+    // Whether this is a single VALUE clause.
+    bool single = 1;
+    // Field selection.
+    repeated Field fields = 2;
+}
+
+// Idiom which represents a field expression (e.g. `a.b.c` or `a.b[0]`).
+message Idiom {
+    string value = 1;
+}
+
+// Supported operators.
+//
+// Note: This is a subset of the operators supported by the SurrealQL parser. This only includes operators that do not take arguments.
+enum Operator {
+    OPERATOR_UNSPECIFIED = 0;
+    // `-`
+    OPERATOR_NEG = 1;
+    // `!`
+    OPERATOR_NOT = 2;
+    // `||`
+    OPERATOR_OR = 3;
+    // `&&`
+    OPERATOR_AND = 4;
+    // `?:`
+    OPERATOR_TCO = 5;
+    // `??`
+    OPERATOR_NCO = 6;
+    // `+`
+    OPERATOR_ADD = 7;
+    // `-`
+    OPERATOR_SUB = 8;
+    // `*`
+    OPERATOR_MUL = 9;
+    // `/`
+    OPERATOR_DIV = 10;
+    // `%`
+    OPERATOR_REM = 11;
+    // `**`
+    OPERATOR_POW = 12;
+    // `+=`
+    OPERATOR_INC = 13;
+    // `-=`
+    OPERATOR_DEC = 14;
+    // `..`
+    OPERATOR_EXT = 15;
+    // `=`
+    OPERATOR_EQUAL = 16;
+    // `==`
+    OPERATOR_EXACT = 17;
+    // `!=`
+    OPERATOR_NOT_EQUAL = 18;
+    // `*=`
+    OPERATOR_ALL_EQUAL = 19;
+    // `?=`
+    OPERATOR_ANY_EQUAL = 20;
+    // `~`
+    OPERATOR_LIKE = 21;
+    // `!~`
+    OPERATOR_NOT_LIKE = 22;
+    // `*~`
+    OPERATOR_ALL_LIKE = 23;
+    // `?~`
+    OPERATOR_ANY_LIKE = 24;
+    // `<`
+    OPERATOR_LESS_THAN = 25;
+    // `<=`
+    OPERATOR_LESS_THAN_OR_EQUAL = 26;
+    // `>`
+    OPERATOR_GREATER_THAN = 27;
+    // `>=`
+    OPERATOR_GREATER_THAN_OR_EQUAL = 28;
+    // `∋`
+    OPERATOR_CONTAIN = 29;
+    // `∌`
+    OPERATOR_NOT_CONTAIN = 30;
+    // `⊇`
+    OPERATOR_CONTAIN_ALL = 31;
+    // `⊃`
+    OPERATOR_CONTAIN_ANY = 32;
+    // `⊅`
+    OPERATOR_CONTAIN_NONE = 33;
+    // `∈`
+    OPERATOR_INSIDE = 34;
+    // `∉`
+    OPERATOR_NOT_INSIDE = 35;
+    // `⊆`
+    OPERATOR_ALL_INSIDE = 36;
+    // `⊂`
+    OPERATOR_ANY_INSIDE = 37;
+    // `⊄`
+    OPERATOR_NONE_INSIDE = 38;
+    // `OUTSIDE`
+    OPERATOR_OUTSIDE = 39;
+    // `INTERSECTS`
+    OPERATOR_INTERSECTS = 40;
+}
+
+// Data expression.
+message Data {
+    // Set expression (e.g. `a = 1` or `a.b += 1`).
+    message SetExpr {
+        // Idiom.
+        Idiom idiom = 1;
+        // Operator.
+        Operator operator = 2;
+        // Value.
+        surrealdb.protocol.v1.Value value = 3;
+    }
+
+    // Set multiple expressions.
+    message SetMultiExpr {
+        repeated SetExpr items = 1;
+    }
+
+    // Unset multiple expressions.
+    message UnsetMultiExpr {
+        repeated Idiom items = 1;
+    }
+
+    // Idiom and value pair.
+    message IdiomValuePair {
+        Idiom idiom = 1;
+        surrealdb.protocol.v1.Value value = 2;
+    }
+
+    // Values expression.
+    message ValuesExpr {
+        repeated IdiomValuePair items = 1;
+    }
+
+    // Values multiple expressions.
+    message ValuesMultiExpr {
+        repeated ValuesExpr items = 1;
+    }
+
+    oneof data {
+        NullValue empty = 1;
+        SetMultiExpr set = 2;
+        UnsetMultiExpr unset = 3;
+        Value patch = 4;
+        Value merge = 5;
+        Value replace = 6;
+        Value content = 7;
+        Value value = 8;
+        ValuesMultiExpr values = 9;
+        SetMultiExpr update = 10;
+    }
+}
+
+// Fetchs expression.
+message Fetchs {
+    repeated Value items = 1;
+}
+
+message Output {
+    oneof output {
+        NullValue null = 1;
+        NullValue diff = 2;
+        NullValue after = 3;
+        NullValue before = 4;
+        Fields fields = 5;
+    }
+}
+
+// Wrapper for explain in order to make it optional.
+message Explain {
+    bool explain = 1;
+}
+
+// Wrapper for start in order to make it optional.
+message Start {
+    uint64 start = 1;
+}
+
+// Wrapper for limit in order to make it optional.
+message Limit {
+    uint64 limit = 1;
+}
+
+message Fetch {
+    Fetchs fetch = 1;
+}
+
+message With {
+    // Indices to use. If not specified, use no indexes
+    repeated string indexes = 1;
+}
