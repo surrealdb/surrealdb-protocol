@@ -9,14 +9,10 @@ description = "The official SurrealDB Rust Client Protocol used by the SurrealDB
 repository = "https://github.com/surrealdb/surrealdb-protocol"
 homepage = "https://github.com/surrealdb/surrealdb-protocol"
 keywords = [
-    "database",
-    "embedded-database",
-    "key-value",
-    "key-value-store",
-    "kv-store",
-    "protobuf",
-    "protocol",
+    "api",
     "grpc",
+    "protobuf",
+    "flatbuffers",
 ]
 categories = ["database-implementations", "data-structures", "embedded"]
 include = ["gen/rust/**/*.rs", "rust/**/*.rs"]
