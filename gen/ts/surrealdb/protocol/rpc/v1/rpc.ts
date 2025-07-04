@@ -116,6 +116,58 @@ export interface AuthenticateResponse {
   value: Value | undefined;
 }
 
+/** Request to use a namespace and database. */
+export interface UseRequest {
+  /**
+   * The namespace to use.
+   * An empty namespace will unset the current namespace.
+   */
+  namespace: string;
+  /**
+   * The database to use.
+   * An empty database will unset the current database.
+   */
+  database: string;
+}
+
+/** Response to a use request. */
+export interface UseResponse {
+  /** The namespace that is now in use. */
+  namespace: string;
+  /** The database that is now in use. */
+  database: string;
+}
+
+/** Request to set a global variable for the current session. */
+export interface SetRequest {
+  /** The name of the variable to set. */
+  name: string;
+  /** The value to set the variable to. */
+  value: Value | undefined;
+}
+
+/** Response to a set request. */
+export interface SetResponse {
+}
+
+/** Request to unset a global variable for the current session. */
+export interface UnsetRequest {
+  /** The name of the variable to unset. */
+  name: string;
+}
+
+/** Response to an unset request. */
+export interface UnsetResponse {
+}
+
+/** Request to reset all global variables for the current session. */
+export interface ResetRequest {
+}
+
+/** Response to a reset request. */
+export interface ResetResponse {
+}
+
 /** Request to issue a live query. */
 export interface SubscribeRequest {
   query: string;
@@ -855,6 +907,464 @@ export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
   fromPartial<I extends Exact<DeepPartial<AuthenticateResponse>, I>>(object: I): AuthenticateResponse {
     const message = createBaseAuthenticateResponse();
     message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+    return message;
+  },
+};
+
+function createBaseUseRequest(): UseRequest {
+  return { namespace: "", database: "" };
+}
+
+export const UseRequest: MessageFns<UseRequest> = {
+  encode(message: UseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespace !== "") {
+      writer.uint32(10).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UseRequest {
+    return {
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+    };
+  },
+
+  toJSON(message: UseRequest): unknown {
+    const obj: any = {};
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UseRequest>, I>>(base?: I): UseRequest {
+    return UseRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UseRequest>, I>>(object: I): UseRequest {
+    const message = createBaseUseRequest();
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
+function createBaseUseResponse(): UseResponse {
+  return { namespace: "", database: "" };
+}
+
+export const UseResponse: MessageFns<UseResponse> = {
+  encode(message: UseResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespace !== "") {
+      writer.uint32(10).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UseResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UseResponse {
+    return {
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+    };
+  },
+
+  toJSON(message: UseResponse): unknown {
+    const obj: any = {};
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UseResponse>, I>>(base?: I): UseResponse {
+    return UseResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UseResponse>, I>>(object: I): UseResponse {
+    const message = createBaseUseResponse();
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
+function createBaseSetRequest(): SetRequest {
+  return { name: "", value: undefined };
+}
+
+export const SetRequest: MessageFns<SetRequest> = {
+  encode(message: SetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.value !== undefined) {
+      Value.encode(message.value, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = Value.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
+    };
+  },
+
+  toJSON(message: SetRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.value !== undefined) {
+      obj.value = Value.toJSON(message.value);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetRequest>, I>>(base?: I): SetRequest {
+    return SetRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetRequest>, I>>(object: I): SetRequest {
+    const message = createBaseSetRequest();
+    message.name = object.name ?? "";
+    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+    return message;
+  },
+};
+
+function createBaseSetResponse(): SetResponse {
+  return {};
+}
+
+export const SetResponse: MessageFns<SetResponse> = {
+  encode(_: SetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): SetResponse {
+    return {};
+  },
+
+  toJSON(_: SetResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetResponse>, I>>(base?: I): SetResponse {
+    return SetResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetResponse>, I>>(_: I): SetResponse {
+    const message = createBaseSetResponse();
+    return message;
+  },
+};
+
+function createBaseUnsetRequest(): UnsetRequest {
+  return { name: "" };
+}
+
+export const UnsetRequest: MessageFns<UnsetRequest> = {
+  encode(message: UnsetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsetRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnsetRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnsetRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: UnsetRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnsetRequest>, I>>(base?: I): UnsetRequest {
+    return UnsetRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnsetRequest>, I>>(object: I): UnsetRequest {
+    const message = createBaseUnsetRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUnsetResponse(): UnsetResponse {
+  return {};
+}
+
+export const UnsetResponse: MessageFns<UnsetResponse> = {
+  encode(_: UnsetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsetResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnsetResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): UnsetResponse {
+    return {};
+  },
+
+  toJSON(_: UnsetResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnsetResponse>, I>>(base?: I): UnsetResponse {
+    return UnsetResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnsetResponse>, I>>(_: I): UnsetResponse {
+    const message = createBaseUnsetResponse();
+    return message;
+  },
+};
+
+function createBaseResetRequest(): ResetRequest {
+  return {};
+}
+
+export const ResetRequest: MessageFns<ResetRequest> = {
+  encode(_: ResetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ResetRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResetRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ResetRequest {
+    return {};
+  },
+
+  toJSON(_: ResetRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ResetRequest>, I>>(base?: I): ResetRequest {
+    return ResetRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ResetRequest>, I>>(_: I): ResetRequest {
+    const message = createBaseResetRequest();
+    return message;
+  },
+};
+
+function createBaseResetResponse(): ResetResponse {
+  return {};
+}
+
+export const ResetResponse: MessageFns<ResetResponse> = {
+  encode(_: ResetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ResetResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResetResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ResetResponse {
+    return {};
+  },
+
+  toJSON(_: ResetResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ResetResponse>, I>>(base?: I): ResetResponse {
+    return ResetResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ResetResponse>, I>>(_: I): ResetResponse {
+    const message = createBaseResetResponse();
     return message;
   },
 };
@@ -2472,6 +2982,14 @@ export interface SurrealDBService {
   Signin(request: SigninRequest): Promise<SigninResponse>;
   /** Authenticate a user with a token. */
   Authenticate(request: AuthenticateRequest): Promise<AuthenticateResponse>;
+  /** Use a namespace and database. */
+  Use(request: UseRequest): Promise<UseResponse>;
+  /** Set a global variable for the current session. */
+  Set(request: SetRequest): Promise<SetResponse>;
+  /** Unset a global variable for the current session. */
+  Unset(request: UnsetRequest): Promise<UnsetResponse>;
+  /** Reset all global variables for the current session. */
+  Reset(request: ResetRequest): Promise<ResetResponse>;
   /** Query the database and get a stream of Values. */
   Query(request: QueryRequest): Observable<QueryResponse>;
   /** Issue a live query and get a stream of LiveResponses. */
@@ -2490,6 +3008,10 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.Signup = this.Signup.bind(this);
     this.Signin = this.Signin.bind(this);
     this.Authenticate = this.Authenticate.bind(this);
+    this.Use = this.Use.bind(this);
+    this.Set = this.Set.bind(this);
+    this.Unset = this.Unset.bind(this);
+    this.Reset = this.Reset.bind(this);
     this.Query = this.Query.bind(this);
     this.Subscribe = this.Subscribe.bind(this);
   }
@@ -2521,6 +3043,30 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     const data = AuthenticateRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Authenticate", data);
     return promise.then((data) => AuthenticateResponse.decode(new BinaryReader(data)));
+  }
+
+  Use(request: UseRequest): Promise<UseResponse> {
+    const data = UseRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Use", data);
+    return promise.then((data) => UseResponse.decode(new BinaryReader(data)));
+  }
+
+  Set(request: SetRequest): Promise<SetResponse> {
+    const data = SetRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Set", data);
+    return promise.then((data) => SetResponse.decode(new BinaryReader(data)));
+  }
+
+  Unset(request: UnsetRequest): Promise<UnsetResponse> {
+    const data = UnsetRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Unset", data);
+    return promise.then((data) => UnsetResponse.decode(new BinaryReader(data)));
+  }
+
+  Reset(request: ResetRequest): Promise<ResetResponse> {
+    const data = ResetRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Reset", data);
+    return promise.then((data) => ResetResponse.decode(new BinaryReader(data)));
   }
 
   Query(request: QueryRequest): Observable<QueryResponse> {

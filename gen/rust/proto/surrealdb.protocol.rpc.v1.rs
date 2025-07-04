@@ -110,6 +110,101 @@ impl ::prost::Name for AuthenticateResponse {
 const NAME: &'static str = "AuthenticateResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.AuthenticateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.AuthenticateResponse".into() }}
+/// Request to use a namespace and database.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UseRequest {
+    /// The namespace to use.
+    /// An empty namespace will unset the current namespace.
+    #[prost(string, tag="1")]
+    pub namespace: ::prost::alloc::string::String,
+    /// The database to use.
+    /// An empty database will unset the current database.
+    #[prost(string, tag="2")]
+    pub database: ::prost::alloc::string::String,
+}
+impl ::prost::Name for UseRequest {
+const NAME: &'static str = "UseRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UseRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UseRequest".into() }}
+/// Response to a use request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UseResponse {
+    /// The namespace that is now in use.
+    #[prost(string, tag="1")]
+    pub namespace: ::prost::alloc::string::String,
+    /// The database that is now in use.
+    #[prost(string, tag="2")]
+    pub database: ::prost::alloc::string::String,
+}
+impl ::prost::Name for UseResponse {
+const NAME: &'static str = "UseResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UseResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UseResponse".into() }}
+/// Request to set a global variable for the current session.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SetRequest {
+    /// The name of the variable to set.
+    #[prost(string, tag="1")]
+    pub name: ::prost::alloc::string::String,
+    /// The value to set the variable to.
+    #[prost(message, optional, tag="2")]
+    pub value: ::core::option::Option<super::super::v1::Value>,
+}
+impl ::prost::Name for SetRequest {
+const NAME: &'static str = "SetRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SetRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SetRequest".into() }}
+/// Response to a set request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct SetResponse {
+}
+impl ::prost::Name for SetResponse {
+const NAME: &'static str = "SetResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SetResponse".into() }}
+/// Request to unset a global variable for the current session.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnsetRequest {
+    /// The name of the variable to unset.
+    #[prost(string, tag="1")]
+    pub name: ::prost::alloc::string::String,
+}
+impl ::prost::Name for UnsetRequest {
+const NAME: &'static str = "UnsetRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UnsetRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UnsetRequest".into() }}
+/// Response to an unset request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct UnsetResponse {
+}
+impl ::prost::Name for UnsetResponse {
+const NAME: &'static str = "UnsetResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UnsetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UnsetResponse".into() }}
+/// Request to reset all global variables for the current session.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ResetRequest {
+}
+impl ::prost::Name for ResetRequest {
+const NAME: &'static str = "ResetRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ResetRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ResetRequest".into() }}
+/// Response to a reset request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ResetResponse {
+}
+impl ::prost::Name for ResetResponse {
+const NAME: &'static str = "ResetResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ResetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ResetResponse".into() }}
 /// Request to issue a live query.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

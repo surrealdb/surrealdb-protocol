@@ -19,6 +19,14 @@ service SurrealDBService {
     rpc Signin(SigninRequest) returns (SigninResponse);
     // Authenticate a user with a token.
     rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+    // Use a namespace and database.
+    rpc Use(UseRequest) returns (UseResponse);
+    // Set a global variable for the current session.
+    rpc Set(SetRequest) returns (SetResponse);
+    // Unset a global variable for the current session.
+    rpc Unset(UnsetRequest) returns (UnsetResponse);
+    // Reset all global variables for the current session.
+    rpc Reset(ResetRequest) returns (ResetResponse);
 
     // Query the database and get a stream of Values.
     rpc Query(QueryRequest) returns (stream QueryResponse);
@@ -73,6 +81,50 @@ message AuthenticateRequest {
 message AuthenticateResponse {
     surrealdb.protocol.v1.Value value = 1;
 }
+
+// Request to use a namespace and database.
+message UseRequest {
+    // The namespace to use.
+    // An empty namespace will unset the current namespace.
+    string namespace = 1;
+    // The database to use.
+    // An empty database will unset the current database.
+    string database = 2;
+}
+
+// Response to a use request.
+message UseResponse {
+    // The namespace that is now in use.
+    string namespace = 1;
+    // The database that is now in use.
+    string database = 2;
+}
+
+// Request to set a global variable for the current session.
+message SetRequest {
+    // The name of the variable to set.
+    string name = 1;
+    // The value to set the variable to.
+    surrealdb.protocol.v1.Value value = 2;
+}
+
+// Response to a set request.
+message SetResponse {}
+
+// Request to unset a global variable for the current session.
+message UnsetRequest {
+    // The name of the variable to unset.
+    string name = 1;
+}
+
+// Response to an unset request.
+message UnsetResponse {}
+
+// Request to reset all global variables for the current session.
+message ResetRequest {}
+
+// Response to a reset request.
+message ResetResponse {}
 
 // Request to issue a live query.
 message SubscribeRequest {
