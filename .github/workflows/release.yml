@@ -16,6 +16,8 @@ jobs:
           override: true
       - run: cargo install cargo-release
       - run: cargo release publish --all-features --no-confirm --no-verify --execute
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   publish-ts:
     runs-on: ubuntu-latest
