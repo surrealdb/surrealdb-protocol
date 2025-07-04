@@ -26,7 +26,7 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 17] = [
   ValueType::Bytes,
   ValueType::Decimal,
   ValueType::Duration,
-  ValueType::Timestamp,
+  ValueType::Datetime,
   ValueType::Uuid,
   ValueType::Array,
   ValueType::Object,
@@ -50,7 +50,7 @@ impl ValueType {
   pub const Bytes: Self = Self(7);
   pub const Decimal: Self = Self(8);
   pub const Duration: Self = Self(9);
-  pub const Timestamp: Self = Self(10);
+  pub const Datetime: Self = Self(10);
   pub const Uuid: Self = Self(11);
   pub const Array: Self = Self(12);
   pub const Object: Self = Self(13);
@@ -71,7 +71,7 @@ impl ValueType {
     Self::Bytes,
     Self::Decimal,
     Self::Duration,
-    Self::Timestamp,
+    Self::Datetime,
     Self::Uuid,
     Self::Array,
     Self::Object,
@@ -92,7 +92,7 @@ impl ValueType {
       Self::Bytes => Some("Bytes"),
       Self::Decimal => Some("Decimal"),
       Self::Duration => Some("Duration"),
-      Self::Timestamp => Some("Timestamp"),
+      Self::Datetime => Some("Datetime"),
       Self::Uuid => Some("Uuid"),
       Self::Array => Some("Array"),
       Self::Object => Some("Object"),

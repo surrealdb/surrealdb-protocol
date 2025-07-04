@@ -195,8 +195,8 @@ impl<'a> Value<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
-  pub fn value_as_timestamp(&self) -> Option<Timestamp<'a>> {
-    if self.value_type() == ValueType::Timestamp {
+  pub fn value_as_datetime(&self) -> Option<Timestamp<'a>> {
+    if self.value_type() == ValueType::Datetime {
       self.value().map(|t| {
        // Safety:
        // Created from a valid Table for this object
@@ -318,7 +318,7 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::Bytes => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Bytes>>("ValueType::Bytes", pos),
           ValueType::Decimal => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Decimal>>("ValueType::Decimal", pos),
           ValueType::Duration => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Duration>>("ValueType::Duration", pos),
-          ValueType::Timestamp => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Timestamp>>("ValueType::Timestamp", pos),
+          ValueType::Datetime => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Timestamp>>("ValueType::Datetime", pos),
           ValueType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("ValueType::Uuid", pos),
           ValueType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
           ValueType::Object => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Object>>("ValueType::Object", pos),
@@ -442,8 +442,8 @@ impl core::fmt::Debug for Value<'_> {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        ValueType::Timestamp => {
-          if let Some(x) = self.value_as_timestamp() {
+        ValueType::Datetime => {
+          if let Some(x) = self.value_as_datetime() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

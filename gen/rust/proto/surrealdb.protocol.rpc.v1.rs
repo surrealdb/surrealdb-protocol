@@ -38,50 +38,6 @@ impl ::prost::Name for VersionResponse {
 const NAME: &'static str = "VersionResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.VersionResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.VersionResponse".into() }}
-/// Request to get information about the database.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct InfoRequest {
-}
-impl ::prost::Name for InfoRequest {
-const NAME: &'static str = "InfoRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InfoRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InfoRequest".into() }}
-/// Response to an info request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct InfoResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for InfoResponse {
-const NAME: &'static str = "InfoResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InfoResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InfoResponse".into() }}
-/// Request to change the current namespace and database.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UseRequest {
-    #[prost(string, tag="1")]
-    pub namespace: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub database: ::prost::alloc::string::String,
-}
-impl ::prost::Name for UseRequest {
-const NAME: &'static str = "UseRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UseRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UseRequest".into() }}
-/// Response to a use request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UseResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for UseResponse {
-const NAME: &'static str = "UseResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UseResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UseResponse".into() }}
 /// Request to sign up a new user.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -104,7 +60,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Si
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignupResponse {
     #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for SignupResponse {
 const NAME: &'static str = "SignupResponse";
@@ -126,7 +82,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Si
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SigninResponse {
     #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for SigninResponse {
 const NAME: &'static str = "SigninResponse";
@@ -148,403 +104,53 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Au
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthenticateResponse {
     #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
+    pub value: ::core::option::Option<super::super::v1::Value>,
 }
 impl ::prost::Name for AuthenticateResponse {
 const NAME: &'static str = "AuthenticateResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.AuthenticateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.AuthenticateResponse".into() }}
-/// Request to invalidate a user.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct InvalidateRequest {
-}
-impl ::prost::Name for InvalidateRequest {
-const NAME: &'static str = "InvalidateRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InvalidateRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InvalidateRequest".into() }}
-/// Response to an invalidate request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct InvalidateResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for InvalidateResponse {
-const NAME: &'static str = "InvalidateResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InvalidateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InvalidateResponse".into() }}
-/// Request to reset the database.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct ResetRequest {
-}
-impl ::prost::Name for ResetRequest {
-const NAME: &'static str = "ResetRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ResetRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ResetRequest".into() }}
-/// Response to a reset request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResetResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for ResetResponse {
-const NAME: &'static str = "ResetResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ResetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ResetResponse".into() }}
-/// Request to kill a live query.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct KillRequest {
-    #[prost(string, tag="1")]
-    pub live_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for KillRequest {
-const NAME: &'static str = "KillRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.KillRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.KillRequest".into() }}
-/// Response to a kill request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct KillResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for KillResponse {
-const NAME: &'static str = "KillResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.KillResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.KillResponse".into() }}
 /// Request to issue a live query.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LiveRequest {
-    #[prost(message, optional, tag="1")]
-    pub what: ::core::option::Option<super::super::v1::Value>,
+pub struct SubscribeRequest {
+    #[prost(string, tag="1")]
+    pub query: ::prost::alloc::string::String,
     #[prost(message, optional, tag="2")]
-    pub expr: ::core::option::Option<super::super::v1::Fields>,
-    #[prost(message, optional, tag="3")]
-    pub cond: ::core::option::Option<super::super::v1::Value>,
+    pub variables: ::core::option::Option<Variables>,
 }
-impl ::prost::Name for LiveRequest {
-const NAME: &'static str = "LiveRequest";
+impl ::prost::Name for SubscribeRequest {
+const NAME: &'static str = "SubscribeRequest";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.LiveRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.LiveRequest".into() }}
-/// Request to set a value.
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SubscribeRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SubscribeRequest".into() }}
+/// Response to a live query.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SetRequest {
-    #[prost(string, tag="1")]
-    pub key: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
+pub struct SubscribeResponse {
+    #[prost(message, optional, tag="1")]
+    pub notification: ::core::option::Option<Notification>,
+}
+impl ::prost::Name for SubscribeResponse {
+const NAME: &'static str = "SubscribeResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SubscribeResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SubscribeResponse".into() }}
+/// A notification from a live query.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Notification {
+    #[prost(message, optional, tag="1")]
+    pub live_query_id: ::core::option::Option<super::super::v1::Uuid>,
+    #[prost(enumeration="Action", tag="2")]
+    pub action: i32,
+    #[prost(message, optional, tag="3")]
+    pub record_id: ::core::option::Option<super::super::v1::RecordId>,
+    #[prost(message, optional, tag="4")]
     pub value: ::core::option::Option<super::super::v1::Value>,
 }
-impl ::prost::Name for SetRequest {
-const NAME: &'static str = "SetRequest";
+impl ::prost::Name for Notification {
+const NAME: &'static str = "Notification";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SetRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SetRequest".into() }}
-/// Response to a set request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SetResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for SetResponse {
-const NAME: &'static str = "SetResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SetResponse".into() }}
-/// Request to unset a value.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UnsetRequest {
-    #[prost(string, tag="1")]
-    pub key: ::prost::alloc::string::String,
-}
-impl ::prost::Name for UnsetRequest {
-const NAME: &'static str = "UnsetRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UnsetRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UnsetRequest".into() }}
-/// Response to an unset request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UnsetResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for UnsetResponse {
-const NAME: &'static str = "UnsetResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UnsetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UnsetResponse".into() }}
-/// Request to create a new record.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CreateRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(bool, tag="2")]
-    pub only: bool,
-    #[prost(message, repeated, tag="3")]
-    pub what: ::prost::alloc::vec::Vec<super::super::v1::Value>,
-    #[prost(message, optional, tag="4")]
-    pub data: ::core::option::Option<super::super::v1::Data>,
-    #[prost(message, optional, tag="5")]
-    pub output: ::core::option::Option<super::super::v1::Output>,
-    #[prost(message, optional, tag="6")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="7")]
-    pub parallel: bool,
-    #[prost(message, optional, tag="8")]
-    pub version: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="9")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for CreateRequest {
-const NAME: &'static str = "CreateRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.CreateRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.CreateRequest".into() }}
-/// Response to a create request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CreateResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for CreateResponse {
-const NAME: &'static str = "CreateResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.CreateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.CreateResponse".into() }}
-/// Request to select values from the database.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SelectRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(message, optional, tag="2")]
-    pub expr: ::core::option::Option<super::super::v1::Fields>,
-    #[prost(message, optional, tag="3")]
-    pub omit: ::core::option::Option<super::super::v1::Value>,
-    #[prost(bool, tag="4")]
-    pub only: bool,
-    #[prost(message, repeated, tag="5")]
-    pub what: ::prost::alloc::vec::Vec<super::super::v1::Value>,
-    #[prost(message, optional, tag="6")]
-    pub with: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="7")]
-    pub cond: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="8")]
-    pub split: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="9")]
-    pub group: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="10")]
-    pub order: ::core::option::Option<super::super::v1::Value>,
-    #[prost(int64, tag="11")]
-    pub start: i64,
-    #[prost(int64, tag="12")]
-    pub limit: i64,
-    #[prost(message, optional, tag="13")]
-    pub fetch: ::core::option::Option<super::super::v1::Fetchs>,
-    #[prost(message, optional, tag="14")]
-    pub version: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="15")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="16")]
-    pub parallel: bool,
-    #[prost(message, optional, tag="17")]
-    pub explain: ::core::option::Option<super::super::v1::Explain>,
-    #[prost(bool, tag="18")]
-    pub tempfiles: bool,
-    #[prost(message, optional, tag="19")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for SelectRequest {
-const NAME: &'static str = "SelectRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SelectRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SelectRequest".into() }}
-/// Response to a select request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SelectResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for SelectResponse {
-const NAME: &'static str = "SelectResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SelectResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SelectResponse".into() }}
-/// Request to insert a new record.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct InsertRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(message, optional, tag="2")]
-    pub into: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="3")]
-    pub data: ::core::option::Option<super::super::v1::Data>,
-    #[prost(bool, tag="4")]
-    pub ignore: bool,
-    #[prost(message, optional, tag="5")]
-    pub update: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="6")]
-    pub output: ::core::option::Option<super::super::v1::Output>,
-    #[prost(message, optional, tag="7")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="8")]
-    pub parallel: bool,
-    #[prost(bool, tag="9")]
-    pub relation: bool,
-    #[prost(message, optional, tag="10")]
-    pub version: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="11")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for InsertRequest {
-const NAME: &'static str = "InsertRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InsertRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InsertRequest".into() }}
-/// Response to an insert request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct InsertResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for InsertResponse {
-const NAME: &'static str = "InsertResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InsertResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InsertResponse".into() }}
-/// Request to upsert a record.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UpsertRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(bool, tag="2")]
-    pub only: bool,
-    #[prost(message, repeated, tag="3")]
-    pub what: ::prost::alloc::vec::Vec<super::super::v1::Value>,
-    #[prost(message, optional, tag="4")]
-    pub with: ::core::option::Option<super::super::v1::With>,
-    #[prost(message, optional, tag="5")]
-    pub data: ::core::option::Option<super::super::v1::Data>,
-    #[prost(message, optional, tag="6")]
-    pub cond: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="7")]
-    pub output: ::core::option::Option<super::super::v1::Output>,
-    #[prost(message, optional, tag="8")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="9")]
-    pub parallel: bool,
-    #[prost(message, optional, tag="10")]
-    pub explain: ::core::option::Option<super::super::v1::Explain>,
-    #[prost(message, optional, tag="11")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for UpsertRequest {
-const NAME: &'static str = "UpsertRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UpsertRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UpsertRequest".into() }}
-/// Response to an upsert request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UpsertResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for UpsertResponse {
-const NAME: &'static str = "UpsertResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UpsertResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UpsertResponse".into() }}
-/// Request to update a record.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UpdateRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(bool, tag="2")]
-    pub only: bool,
-    #[prost(message, repeated, tag="3")]
-    pub what: ::prost::alloc::vec::Vec<super::super::v1::Value>,
-    #[prost(message, optional, tag="4")]
-    pub with: ::core::option::Option<super::super::v1::With>,
-    #[prost(message, optional, tag="5")]
-    pub data: ::core::option::Option<super::super::v1::Data>,
-    #[prost(message, optional, tag="6")]
-    pub cond: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="7")]
-    pub output: ::core::option::Option<super::super::v1::Output>,
-    #[prost(message, optional, tag="9")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="10")]
-    pub parallel: bool,
-    #[prost(message, optional, tag="11")]
-    pub explain: ::core::option::Option<super::super::v1::Explain>,
-    #[prost(message, optional, tag="12")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for UpdateRequest {
-const NAME: &'static str = "UpdateRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UpdateRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UpdateRequest".into() }}
-/// Response to an update request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UpdateResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for UpdateResponse {
-const NAME: &'static str = "UpdateResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UpdateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UpdateResponse".into() }}
-/// Request to delete a record.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DeleteRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(bool, tag="2")]
-    pub only: bool,
-    #[prost(message, repeated, tag="3")]
-    pub what: ::prost::alloc::vec::Vec<super::super::v1::Value>,
-    #[prost(message, optional, tag="4")]
-    pub with: ::core::option::Option<super::super::v1::With>,
-    #[prost(message, optional, tag="5")]
-    pub cond: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="6")]
-    pub output: ::core::option::Option<super::super::v1::Output>,
-    #[prost(message, optional, tag="7")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="8")]
-    pub parallel: bool,
-    #[prost(message, optional, tag="9")]
-    pub explain: ::core::option::Option<super::super::v1::Explain>,
-    #[prost(message, optional, tag="10")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for DeleteRequest {
-const NAME: &'static str = "DeleteRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.DeleteRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.DeleteRequest".into() }}
-/// Response to a delete request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DeleteResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for DeleteResponse {
-const NAME: &'static str = "DeleteResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.DeleteResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.DeleteResponse".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Notification".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.Notification".into() }}
 /// Request to query the database.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -567,14 +173,14 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 /// value batches may elide the stats.
 /// 
 /// Responses are ordered by query index, then batch index. For example:
-///   QueryResponse(query_index=0, batch_index=0)
-///   QueryResponse(query_index=0, batch_index=1)
-///   QueryResponse(query_index=1, batch_index=0)
-///   QueryResponse(query_index=2, batch_index=0)
-///   QueryResponse(query_index=2, batch_index=1)
-///   QueryResponse(query_index=2, batch_index=2)
-///   QueryResponse(query_index=3, batch_index=0)
-///   QueryResponse(query_index=4, batch_index=0)
+///   QueryResponse(query_index=0, batch_index=0, stats=None)
+///   QueryResponse(query_index=0, batch_index=1, stats=Some(..))
+///   QueryResponse(query_index=1, batch_index=0, stats=Some(..))
+///   QueryResponse(query_index=2, batch_index=0, stats=None)
+///   QueryResponse(query_index=2, batch_index=1, stats=None)
+///   QueryResponse(query_index=2, batch_index=2, stats=Some(..))
+///   QueryResponse(query_index=3, batch_index=0, stats=Some(..))
+///   QueryResponse(query_index=4, batch_index=0, stats=Some(..))
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryResponse {
@@ -585,11 +191,15 @@ pub struct QueryResponse {
     #[prost(uint64, tag="2")]
     pub batch_index: u64,
     /// The query stats.
+    /// This is only expected to be present in the last batch of each query.
     #[prost(message, optional, tag="3")]
     pub stats: ::core::option::Option<QueryStats>,
-    /// The value batch.
+    /// The error, if any.
     #[prost(message, optional, tag="4")]
-    pub values: ::core::option::Option<ValueBatch>,
+    pub error: ::core::option::Option<QueryError>,
+    /// A batch of values.
+    #[prost(message, repeated, tag="5")]
+    pub values: ::prost::alloc::vec::Vec<super::super::v1::Value>,
 }
 impl ::prost::Name for QueryResponse {
 const NAME: &'static str = "QueryResponse";
@@ -601,13 +211,22 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 pub struct QueryStats {
     /// The number of records returned. -1 if unknown.
     #[prost(int64, tag="1")]
-    pub num_records: i64,
+    pub records_returned: i64,
+    /// The number of bytes returned. -1 if unknown.
+    #[prost(int64, tag="2")]
+    pub bytes_returned: i64,
+    /// The number of records scanned. -1 if unknown.
+    #[prost(int64, tag="3")]
+    pub records_scanned: i64,
+    /// The number of bytes scanned. -1 if unknown.
+    #[prost(int64, tag="4")]
+    pub bytes_scanned: i64,
     /// The start time of the query.
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag="5")]
     #[serde(with = "crate::serde_timestamp_optional")]
     pub start_time: ::core::option::Option<::prost_types::Timestamp>,
     /// The duration of the query.
-    #[prost(message, optional, tag="3")]
+    #[prost(message, optional, tag="6")]
     #[serde(with = "crate::serde_duration_optional")]
     pub execution_duration: ::core::option::Option<::prost_types::Duration>,
 }
@@ -615,86 +234,21 @@ impl ::prost::Name for QueryStats {
 const NAME: &'static str = "QueryStats";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.QueryStats".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.QueryStats".into() }}
-/// Request to relate two records.
+/// Query error.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RelateRequest {
-    #[prost(message, optional, tag="1")]
-    pub txn: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(bool, tag="2")]
-    pub only: bool,
-    #[prost(message, optional, tag="3")]
-    pub kind: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="4")]
-    pub from: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="5")]
-    pub with: ::core::option::Option<super::super::v1::Value>,
-    #[prost(bool, tag="6")]
-    pub uniq: bool,
-    #[prost(message, optional, tag="7")]
-    pub data: ::core::option::Option<super::super::v1::Data>,
-    #[prost(message, optional, tag="8")]
-    pub output: ::core::option::Option<super::super::v1::Output>,
-    #[prost(message, optional, tag="9")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
-    #[prost(bool, tag="10")]
-    pub parallel: bool,
-    #[prost(message, optional, tag="11")]
-    pub variables: ::core::option::Option<Variables>,
-}
-impl ::prost::Name for RelateRequest {
-const NAME: &'static str = "RelateRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.RelateRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.RelateRequest".into() }}
-/// Response to a relate request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RelateResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for RelateResponse {
-const NAME: &'static str = "RelateResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.RelateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.RelateResponse".into() }}
-/// Request to run a function.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RunFunctionRequest {
-    #[prost(string, tag="1")]
-    pub name: ::prost::alloc::string::String,
+pub struct QueryError {
+    /// The error code.
+    #[prost(int64, tag="1")]
+    pub code: i64,
+    /// The error message.
     #[prost(string, tag="2")]
-    pub version: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag="3")]
-    pub args: ::prost::alloc::vec::Vec<super::super::v1::Value>,
+    pub message: ::prost::alloc::string::String,
 }
-impl ::prost::Name for RunFunctionRequest {
-const NAME: &'static str = "RunFunctionRequest";
+impl ::prost::Name for QueryError {
+const NAME: &'static str = "QueryError";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.RunFunctionRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.RunFunctionRequest".into() }}
-/// Response to a run function request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RunFunctionResponse {
-    #[prost(message, optional, tag="1")]
-    pub values: ::core::option::Option<ValueBatch>,
-}
-impl ::prost::Name for RunFunctionResponse {
-const NAME: &'static str = "RunFunctionResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.RunFunctionResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.RunFunctionResponse".into() }}
-/// Batch of values.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValueBatch {
-    #[prost(message, repeated, tag="1")]
-    pub values: ::prost::alloc::vec::Vec<super::super::v1::Value>,
-}
-impl ::prost::Name for ValueBatch {
-const NAME: &'static str = "ValueBatch";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ValueBatch".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ValueBatch".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.QueryError".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.QueryError".into() }}
 /// Root user credentials.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -815,23 +369,6 @@ impl ::prost::Name for AccessMethod {
 const NAME: &'static str = "AccessMethod";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.AccessMethod".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.AccessMethod".into() }}
-/// Response to a live query.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LiveResponse {
-    #[prost(message, optional, tag="1")]
-    pub id: ::core::option::Option<super::super::v1::Uuid>,
-    #[prost(enumeration="Action", tag="2")]
-    pub action: i32,
-    #[prost(message, optional, tag="3")]
-    pub record: ::core::option::Option<super::super::v1::Value>,
-    #[prost(message, optional, tag="4")]
-    pub result: ::core::option::Option<super::super::v1::Value>,
-}
-impl ::prost::Name for LiveResponse {
-const NAME: &'static str = "LiveResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.LiveResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.LiveResponse".into() }}
 /// Variables.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -849,9 +386,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Va
 #[repr(i32)]
 pub enum Action {
     Unspecified = 0,
-    Create = 1,
-    Update = 2,
-    Delete = 3,
+    Created = 1,
+    Updated = 2,
+    Deleted = 3,
     Killed = 4,
 }
 impl Action {
@@ -862,9 +399,9 @@ impl Action {
     pub fn as_str_name(&self) -> &'static str {
         match self {
             Self::Unspecified => "ACTION_UNSPECIFIED",
-            Self::Create => "ACTION_CREATE",
-            Self::Update => "ACTION_UPDATE",
-            Self::Delete => "ACTION_DELETE",
+            Self::Created => "ACTION_CREATED",
+            Self::Updated => "ACTION_UPDATED",
+            Self::Deleted => "ACTION_DELETED",
             Self::Killed => "ACTION_KILLED",
         }
     }
@@ -872,9 +409,9 @@ impl Action {
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
             "ACTION_UNSPECIFIED" => Some(Self::Unspecified),
-            "ACTION_CREATE" => Some(Self::Create),
-            "ACTION_UPDATE" => Some(Self::Update),
-            "ACTION_DELETE" => Some(Self::Delete),
+            "ACTION_CREATED" => Some(Self::Created),
+            "ACTION_UPDATED" => Some(Self::Updated),
+            "ACTION_DELETED" => Some(Self::Deleted),
             "ACTION_KILLED" => Some(Self::Killed),
             _ => None,
         }
