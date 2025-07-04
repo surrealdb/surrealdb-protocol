@@ -145,107 +145,6 @@ pub mod surreal_db_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn info(
-            &mut self,
-            request: impl tonic::IntoRequest<super::InfoRequest>,
-        ) -> std::result::Result<tonic::Response<super::InfoResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Info",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("surrealdb.protocol.rpc.v1.SurrealDBService", "Info"),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn query(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryRequest>,
-        ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::QueryResponse>>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Query",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Query",
-                    ),
-                );
-            self.inner.server_streaming(req, path, codec).await
-        }
-        pub async fn live(
-            &mut self,
-            request: impl tonic::IntoRequest<super::LiveRequest>,
-        ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::LiveResponse>>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Live",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("surrealdb.protocol.rpc.v1.SurrealDBService", "Live"),
-                );
-            self.inner.server_streaming(req, path, codec).await
-        }
-        pub async fn r#use(
-            &mut self,
-            request: impl tonic::IntoRequest<super::UseRequest>,
-        ) -> std::result::Result<tonic::Response<super::UseResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Use",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("surrealdb.protocol.rpc.v1.SurrealDBService", "Use"),
-                );
-            self.inner.unary(req, path, codec).await
-        }
         pub async fn signup(
             &mut self,
             request: impl tonic::IntoRequest<super::SignupRequest>,
@@ -327,11 +226,11 @@ pub mod surreal_db_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn invalidate(
+        pub async fn query(
             &mut self,
-            request: impl tonic::IntoRequest<super::InvalidateRequest>,
+            request: impl tonic::IntoRequest<super::QueryRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::InvalidateResponse>,
+            tonic::Response<tonic::codec::Streaming<super::QueryResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -344,303 +243,23 @@ pub mod surreal_db_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Invalidate",
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/Query",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Invalidate",
+                        "Query",
                     ),
                 );
-            self.inner.unary(req, path, codec).await
+            self.inner.server_streaming(req, path, codec).await
         }
-        pub async fn reset(
+        pub async fn subscribe(
             &mut self,
-            request: impl tonic::IntoRequest<super::ResetRequest>,
-        ) -> std::result::Result<tonic::Response<super::ResetResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Reset",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Reset",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn kill(
-            &mut self,
-            request: impl tonic::IntoRequest<super::KillRequest>,
-        ) -> std::result::Result<tonic::Response<super::KillResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Kill",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("surrealdb.protocol.rpc.v1.SurrealDBService", "Kill"),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn set(
-            &mut self,
-            request: impl tonic::IntoRequest<super::SetRequest>,
-        ) -> std::result::Result<tonic::Response<super::SetResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Set",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("surrealdb.protocol.rpc.v1.SurrealDBService", "Set"),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn unset(
-            &mut self,
-            request: impl tonic::IntoRequest<super::UnsetRequest>,
-        ) -> std::result::Result<tonic::Response<super::UnsetResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Unset",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Unset",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn select(
-            &mut self,
-            request: impl tonic::IntoRequest<super::SelectRequest>,
-        ) -> std::result::Result<tonic::Response<super::SelectResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Select",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Select",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn create(
-            &mut self,
-            request: impl tonic::IntoRequest<super::CreateRequest>,
-        ) -> std::result::Result<tonic::Response<super::CreateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Create",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Create",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn insert(
-            &mut self,
-            request: impl tonic::IntoRequest<super::InsertRequest>,
-        ) -> std::result::Result<tonic::Response<super::InsertResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Insert",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Insert",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn upsert(
-            &mut self,
-            request: impl tonic::IntoRequest<super::UpsertRequest>,
-        ) -> std::result::Result<tonic::Response<super::UpsertResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Upsert",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Upsert",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn update(
-            &mut self,
-            request: impl tonic::IntoRequest<super::UpdateRequest>,
-        ) -> std::result::Result<tonic::Response<super::UpdateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Update",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Update",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn delete(
-            &mut self,
-            request: impl tonic::IntoRequest<super::DeleteRequest>,
-        ) -> std::result::Result<tonic::Response<super::DeleteResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Delete",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Delete",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn relate(
-            &mut self,
-            request: impl tonic::IntoRequest<super::RelateRequest>,
-        ) -> std::result::Result<tonic::Response<super::RelateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Relate",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "Relate",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn run_function(
-            &mut self,
-            request: impl tonic::IntoRequest<super::RunFunctionRequest>,
+            request: impl tonic::IntoRequest<super::SubscribeRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::RunFunctionResponse>,
+            tonic::Response<tonic::codec::Streaming<super::SubscribeResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -653,17 +272,17 @@ pub mod surreal_db_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/RunFunction",
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/Subscribe",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "RunFunction",
+                        "Subscribe",
                     ),
                 );
-            self.inner.unary(req, path, codec).await
+            self.inner.server_streaming(req, path, codec).await
         }
     }
 }
@@ -688,34 +307,6 @@ pub mod surreal_db_service_server {
             &self,
             request: tonic::Request<super::VersionRequest>,
         ) -> std::result::Result<tonic::Response<super::VersionResponse>, tonic::Status>;
-        async fn info(
-            &self,
-            request: tonic::Request<super::InfoRequest>,
-        ) -> std::result::Result<tonic::Response<super::InfoResponse>, tonic::Status>;
-        /// Server streaming response type for the Query method.
-        type QueryStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::QueryResponse, tonic::Status>,
-            >
-            + std::marker::Send
-            + 'static;
-        async fn query(
-            &self,
-            request: tonic::Request<super::QueryRequest>,
-        ) -> std::result::Result<tonic::Response<Self::QueryStream>, tonic::Status>;
-        /// Server streaming response type for the Live method.
-        type LiveStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::LiveResponse, tonic::Status>,
-            >
-            + std::marker::Send
-            + 'static;
-        async fn live(
-            &self,
-            request: tonic::Request<super::LiveRequest>,
-        ) -> std::result::Result<tonic::Response<Self::LiveStream>, tonic::Status>;
-        async fn r#use(
-            &self,
-            request: tonic::Request<super::UseRequest>,
-        ) -> std::result::Result<tonic::Response<super::UseResponse>, tonic::Status>;
         async fn signup(
             &self,
             request: tonic::Request<super::SignupRequest>,
@@ -731,64 +322,26 @@ pub mod surreal_db_service_server {
             tonic::Response<super::AuthenticateResponse>,
             tonic::Status,
         >;
-        async fn invalidate(
+        /// Server streaming response type for the Query method.
+        type QueryStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::QueryResponse, tonic::Status>,
+            >
+            + std::marker::Send
+            + 'static;
+        async fn query(
             &self,
-            request: tonic::Request<super::InvalidateRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::InvalidateResponse>,
-            tonic::Status,
-        >;
-        async fn reset(
+            request: tonic::Request<super::QueryRequest>,
+        ) -> std::result::Result<tonic::Response<Self::QueryStream>, tonic::Status>;
+        /// Server streaming response type for the Subscribe method.
+        type SubscribeStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::SubscribeResponse, tonic::Status>,
+            >
+            + std::marker::Send
+            + 'static;
+        async fn subscribe(
             &self,
-            request: tonic::Request<super::ResetRequest>,
-        ) -> std::result::Result<tonic::Response<super::ResetResponse>, tonic::Status>;
-        async fn kill(
-            &self,
-            request: tonic::Request<super::KillRequest>,
-        ) -> std::result::Result<tonic::Response<super::KillResponse>, tonic::Status>;
-        async fn set(
-            &self,
-            request: tonic::Request<super::SetRequest>,
-        ) -> std::result::Result<tonic::Response<super::SetResponse>, tonic::Status>;
-        async fn unset(
-            &self,
-            request: tonic::Request<super::UnsetRequest>,
-        ) -> std::result::Result<tonic::Response<super::UnsetResponse>, tonic::Status>;
-        async fn select(
-            &self,
-            request: tonic::Request<super::SelectRequest>,
-        ) -> std::result::Result<tonic::Response<super::SelectResponse>, tonic::Status>;
-        async fn create(
-            &self,
-            request: tonic::Request<super::CreateRequest>,
-        ) -> std::result::Result<tonic::Response<super::CreateResponse>, tonic::Status>;
-        async fn insert(
-            &self,
-            request: tonic::Request<super::InsertRequest>,
-        ) -> std::result::Result<tonic::Response<super::InsertResponse>, tonic::Status>;
-        async fn upsert(
-            &self,
-            request: tonic::Request<super::UpsertRequest>,
-        ) -> std::result::Result<tonic::Response<super::UpsertResponse>, tonic::Status>;
-        async fn update(
-            &self,
-            request: tonic::Request<super::UpdateRequest>,
-        ) -> std::result::Result<tonic::Response<super::UpdateResponse>, tonic::Status>;
-        async fn delete(
-            &self,
-            request: tonic::Request<super::DeleteRequest>,
-        ) -> std::result::Result<tonic::Response<super::DeleteResponse>, tonic::Status>;
-        async fn relate(
-            &self,
-            request: tonic::Request<super::RelateRequest>,
-        ) -> std::result::Result<tonic::Response<super::RelateResponse>, tonic::Status>;
-        async fn run_function(
-            &self,
-            request: tonic::Request<super::RunFunctionRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::RunFunctionResponse>,
-            tonic::Status,
-        >;
+            request: tonic::Request<super::SubscribeRequest>,
+        ) -> std::result::Result<tonic::Response<Self::SubscribeStream>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct SurrealDbServiceServer<T> {
@@ -956,186 +509,6 @@ pub mod surreal_db_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Info" => {
-                    #[allow(non_camel_case_types)]
-                    struct InfoSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::InfoRequest> for InfoSvc<T> {
-                        type Response = super::InfoResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::InfoRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::info(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = InfoSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Query" => {
-                    #[allow(non_camel_case_types)]
-                    struct QuerySvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::ServerStreamingService<super::QueryRequest>
-                    for QuerySvc<T> {
-                        type Response = super::QueryResponse;
-                        type ResponseStream = T::QueryStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::QueryRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::query(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = QuerySvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Live" => {
-                    #[allow(non_camel_case_types)]
-                    struct LiveSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::ServerStreamingService<super::LiveRequest>
-                    for LiveSvc<T> {
-                        type Response = super::LiveResponse;
-                        type ResponseStream = T::LiveStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::LiveRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::live(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = LiveSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Use" => {
-                    #[allow(non_camel_case_types)]
-                    struct UseSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::UseRequest> for UseSvc<T> {
-                        type Response = super::UseResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::UseRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::r#use(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = UseSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Signup" => {
                     #[allow(non_camel_case_types)]
                     struct SignupSvc<T: SurrealDbService>(pub Arc<T>);
@@ -1271,25 +644,26 @@ pub mod surreal_db_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Invalidate" => {
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/Query" => {
                     #[allow(non_camel_case_types)]
-                    struct InvalidateSvc<T: SurrealDbService>(pub Arc<T>);
+                    struct QuerySvc<T: SurrealDbService>(pub Arc<T>);
                     impl<
                         T: SurrealDbService,
-                    > tonic::server::UnaryService<super::InvalidateRequest>
-                    for InvalidateSvc<T> {
-                        type Response = super::InvalidateResponse;
+                    > tonic::server::ServerStreamingService<super::QueryRequest>
+                    for QuerySvc<T> {
+                        type Response = super::QueryResponse;
+                        type ResponseStream = T::QueryStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::InvalidateRequest>,
+                            request: tonic::Request<super::QueryRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SurrealDbService>::invalidate(&inner, request).await
+                                <T as SurrealDbService>::query(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1300,7 +674,7 @@ pub mod surreal_db_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = InvalidateSvc(inner);
+                        let method = QuerySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1311,29 +685,31 @@ pub mod surreal_db_service_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Reset" => {
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/Subscribe" => {
                     #[allow(non_camel_case_types)]
-                    struct ResetSvc<T: SurrealDbService>(pub Arc<T>);
+                    struct SubscribeSvc<T: SurrealDbService>(pub Arc<T>);
                     impl<
                         T: SurrealDbService,
-                    > tonic::server::UnaryService<super::ResetRequest> for ResetSvc<T> {
-                        type Response = super::ResetResponse;
+                    > tonic::server::ServerStreamingService<super::SubscribeRequest>
+                    for SubscribeSvc<T> {
+                        type Response = super::SubscribeResponse;
+                        type ResponseStream = T::SubscribeStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ResetRequest>,
+                            request: tonic::Request<super::SubscribeRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SurrealDbService>::reset(&inner, request).await
+                                <T as SurrealDbService>::subscribe(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1344,7 +720,7 @@ pub mod surreal_db_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = ResetSvc(inner);
+                        let method = SubscribeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1355,499 +731,7 @@ pub mod surreal_db_service_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Kill" => {
-                    #[allow(non_camel_case_types)]
-                    struct KillSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::KillRequest> for KillSvc<T> {
-                        type Response = super::KillResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::KillRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::kill(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = KillSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Set" => {
-                    #[allow(non_camel_case_types)]
-                    struct SetSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::SetRequest> for SetSvc<T> {
-                        type Response = super::SetResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::SetRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::set(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = SetSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Unset" => {
-                    #[allow(non_camel_case_types)]
-                    struct UnsetSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::UnsetRequest> for UnsetSvc<T> {
-                        type Response = super::UnsetResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::UnsetRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::unset(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = UnsetSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Select" => {
-                    #[allow(non_camel_case_types)]
-                    struct SelectSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::SelectRequest>
-                    for SelectSvc<T> {
-                        type Response = super::SelectResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::SelectRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::select(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = SelectSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Create" => {
-                    #[allow(non_camel_case_types)]
-                    struct CreateSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::CreateRequest>
-                    for CreateSvc<T> {
-                        type Response = super::CreateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::CreateRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::create(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = CreateSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Insert" => {
-                    #[allow(non_camel_case_types)]
-                    struct InsertSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::InsertRequest>
-                    for InsertSvc<T> {
-                        type Response = super::InsertResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::InsertRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::insert(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = InsertSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Upsert" => {
-                    #[allow(non_camel_case_types)]
-                    struct UpsertSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::UpsertRequest>
-                    for UpsertSvc<T> {
-                        type Response = super::UpsertResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::UpsertRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::upsert(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = UpsertSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Update" => {
-                    #[allow(non_camel_case_types)]
-                    struct UpdateSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::UpdateRequest>
-                    for UpdateSvc<T> {
-                        type Response = super::UpdateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::UpdateRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::update(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = UpdateSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Delete" => {
-                    #[allow(non_camel_case_types)]
-                    struct DeleteSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::DeleteRequest>
-                    for DeleteSvc<T> {
-                        type Response = super::DeleteResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::DeleteRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::delete(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = DeleteSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/Relate" => {
-                    #[allow(non_camel_case_types)]
-                    struct RelateSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::RelateRequest>
-                    for RelateSvc<T> {
-                        type Response = super::RelateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::RelateRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::relate(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = RelateSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/RunFunction" => {
-                    #[allow(non_camel_case_types)]
-                    struct RunFunctionSvc<T: SurrealDbService>(pub Arc<T>);
-                    impl<
-                        T: SurrealDbService,
-                    > tonic::server::UnaryService<super::RunFunctionRequest>
-                    for RunFunctionSvc<T> {
-                        type Response = super::RunFunctionResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::RunFunctionRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SurrealDbService>::run_function(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = RunFunctionSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
