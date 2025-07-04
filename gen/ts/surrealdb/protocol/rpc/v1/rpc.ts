@@ -2990,9 +2990,9 @@ export interface SurrealDBService {
   Unset(request: UnsetRequest): Promise<UnsetResponse>;
   /** Reset all global variables for the current session. */
   Reset(request: ResetRequest): Promise<ResetResponse>;
-  /** Query the database and get a stream of Values. */
+  /** Query the database and get a stream of values. */
   Query(request: QueryRequest): Observable<QueryResponse>;
-  /** Issue a live query and get a stream of LiveResponses. */
+  /** Issue a live query and get a stream of notifications. */
   Subscribe(request: SubscribeRequest): Observable<SubscribeResponse>;
 }
 

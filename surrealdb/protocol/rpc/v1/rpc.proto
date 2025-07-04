@@ -28,9 +28,9 @@ service SurrealDBService {
     // Reset all global variables for the current session.
     rpc Reset(ResetRequest) returns (ResetResponse);
 
-    // Query the database and get a stream of Values.
+    // Query the database and get a stream of values.
     rpc Query(QueryRequest) returns (stream QueryResponse);
-    // Issue a live query and get a stream of LiveResponses.
+    // Issue a live query and get a stream of notifications.
     rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
 }
 
