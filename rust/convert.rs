@@ -32,14 +32,12 @@ impl TryFrom<v1::Uuid> for Uuid {
     }
 }
 
-impl TryFrom<Uuid> for v1::Uuid {
-    type Error = Infallible;
-
+impl From<Uuid> for v1::Uuid {
     #[inline]
-    fn try_from(value: Uuid) -> Result<Self, Self::Error> {
-        Ok(v1::Uuid {
+    fn from(value: Uuid) -> Self {
+        v1::Uuid {
             value: value.to_string(),
-        })
+        }
     }
 }
 
