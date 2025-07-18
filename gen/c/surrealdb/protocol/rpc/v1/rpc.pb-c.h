@@ -60,8 +60,6 @@ typedef struct Surrealdb__Protocol__Rpc__V1__NamespaceUserCredentials Surrealdb_
 typedef struct Surrealdb__Protocol__Rpc__V1__DatabaseUserCredentials Surrealdb__Protocol__Rpc__V1__DatabaseUserCredentials;
 typedef struct Surrealdb__Protocol__Rpc__V1__AccessToken Surrealdb__Protocol__Rpc__V1__AccessToken;
 typedef struct Surrealdb__Protocol__Rpc__V1__AccessMethod Surrealdb__Protocol__Rpc__V1__AccessMethod;
-typedef struct Surrealdb__Protocol__Rpc__V1__Variables Surrealdb__Protocol__Rpc__V1__Variables;
-typedef struct Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry;
 
 
 /* --- enums --- */
@@ -138,7 +136,7 @@ struct  Surrealdb__Protocol__Rpc__V1__SignupRequest
   char *namespace_;
   char *database;
   char *access_name;
-  Surrealdb__Protocol__Rpc__V1__Variables *variables;
+  Surrealdb__Protocol__V1__Variables *variables;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__SIGNUP_REQUEST__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__signup_request__descriptor) \
@@ -487,7 +485,7 @@ struct  Surrealdb__Protocol__Rpc__V1__SubscribeRequest
 {
   ProtobufCMessage base;
   char *query;
-  Surrealdb__Protocol__Rpc__V1__Variables *variables;
+  Surrealdb__Protocol__V1__Variables *variables;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__subscribe_request__descriptor) \
@@ -530,7 +528,7 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryRequest
 {
   ProtobufCMessage base;
   char *query;
-  Surrealdb__Protocol__Rpc__V1__Variables *variables;
+  Surrealdb__Protocol__V1__Variables *variables;
   Surrealdb__Protocol__V1__Uuid *txn_id;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_REQUEST__INIT \
@@ -762,31 +760,6 @@ struct  Surrealdb__Protocol__Rpc__V1__AccessMethod
 #define SURREALDB__PROTOCOL__RPC__V1__ACCESS_METHOD__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__access_method__descriptor) \
 , SURREALDB__PROTOCOL__RPC__V1__ACCESS_METHOD__METHOD__NOT_SET, {0} }
-
-
-struct  Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry
-{
-  ProtobufCMessage base;
-  char *key;
-  Surrealdb__Protocol__V1__Value *value;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__VARIABLES__VARIABLES_ENTRY__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__variables__variables_entry__descriptor) \
-, (char *)protobuf_c_empty_string, NULL }
-
-
-/*
- * Variables.
- */
-struct  Surrealdb__Protocol__Rpc__V1__Variables
-{
-  ProtobufCMessage base;
-  size_t n_variables;
-  Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry **variables;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__VARIABLES__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__variables__descriptor) \
-, 0,NULL }
 
 
 /* Surrealdb__Protocol__Rpc__V1__HealthRequest methods */
@@ -1555,28 +1528,6 @@ Surrealdb__Protocol__Rpc__V1__AccessMethod *
 void   surrealdb__protocol__rpc__v1__access_method__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__AccessMethod *message,
                       ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry methods */
-void   surrealdb__protocol__rpc__v1__variables__variables_entry__init
-                     (Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry         *message);
-/* Surrealdb__Protocol__Rpc__V1__Variables methods */
-void   surrealdb__protocol__rpc__v1__variables__init
-                     (Surrealdb__Protocol__Rpc__V1__Variables         *message);
-size_t surrealdb__protocol__rpc__v1__variables__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__Variables   *message);
-size_t surrealdb__protocol__rpc__v1__variables__pack
-                     (const Surrealdb__Protocol__Rpc__V1__Variables   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__variables__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__Variables   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__Variables *
-       surrealdb__protocol__rpc__v1__variables__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__variables__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__Variables *message,
-                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*Surrealdb__Protocol__Rpc__V1__HealthRequest_Closure)
@@ -1704,12 +1655,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__AccessToken_Closure)
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__AccessMethod_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__AccessMethod *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__Variables__VariablesEntry *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__Variables_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__Variables *message,
                   void *closure_data);
 
 /* --- services --- */
@@ -1907,8 +1852,6 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__namespace_
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__database_user_credentials__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__access_token__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__access_method__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__variables__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__variables__variables_entry__descriptor;
 extern const ProtobufCServiceDescriptor surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor;
 
 PROTOBUF_C__END_DECLS

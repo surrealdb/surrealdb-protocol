@@ -9,8 +9,14 @@ use crate::proto::v1::value::Value as ValueEnum;
 use bytes::Bytes;
 use prost_types::{Duration, Timestamp};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 
 impl Value {
+    /// Creates a new `Value` with a `None` value.
+    pub fn none() -> Self {
+        Self { value: None }
+    }
+
     /// Creates a new `Value` with a `Null` value.
     pub fn null() -> Self {
         Self {
@@ -122,12 +128,48 @@ impl Value {
             value: Some(ValueEnum::File(value)),
         }
     }
+
+    /// Returns `true` if the `Value` is `None`.
+    pub fn is_none(&self) -> bool {
+        self.value.is_none()
+    }
+
+    /// Returns `true` if the `Value` is `Null`.
+    pub fn is_null(&self) -> bool {
+        self.value.is_some() && matches!(self.value, Some(ValueEnum::Null(_)))
+    }
+
+    /// Gets a value from the `Value` by key.
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        match self.value {
+            Some(ValueEnum::Object(ref obj)) => obj.get(key),
+            _ => None,
+        }
+    }
+
+    /// Removes a value from the `Value` by key.
+    pub fn remove(&mut self, key: &str) -> Option<Value> {
+        match self.value {
+            Some(ValueEnum::Object(ref mut obj)) => obj.items.remove(key),
+            _ => None,
+        }
+    }
 }
 
 impl Decimal {
     /// Creates a new `Decimal` with a `value` value.
     pub fn new(value: String) -> Self {
         Self { value }
+    }
+
+    /// Converts the `Decimal` to an `i64` if possible.
+    pub fn to_i64(&self) -> Option<i64> {
+        self.value.parse::<i64>().ok()
+    }
+
+    /// Converts the `Decimal` to an `f64` if possible.
+    pub fn to_f64(&self) -> Option<f64> {
+        self.value.parse::<f64>().ok()
     }
 }
 
@@ -138,10 +180,29 @@ impl Uuid {
     }
 }
 
+impl Display for Uuid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 impl Array {
     /// Creates a new `Array` with a `values` value.
     pub fn new(values: Vec<Value>) -> Self {
         Self { values }
+    }
+
+    /// Returns an iterator over the `Array` values.
+    pub fn iter(&self) -> impl Iterator<Item = &Value> {
+        self.values.iter()
+    }
+}
+
+impl IntoIterator for Array {
+    type Item = Value;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.into_iter()
     }
 }
 
@@ -149,6 +210,11 @@ impl Object {
     /// Creates a new `Object` with a `values` value.
     pub fn new(items: BTreeMap<String, Value>) -> Self {
         Self { items }
+    }
+
+    /// Gets a value from the `Object` by key.
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.items.get(key)
     }
 }
 

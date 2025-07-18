@@ -2,6 +2,9 @@
 
 mod convert;
 mod methods;
+
+pub use convert::{TryFromValue, TryIntoValue};
+
 #[cfg(feature = "rpc")]
 mod rpc_methods;
 

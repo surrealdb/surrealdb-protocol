@@ -1386,6 +1386,7 @@ dependencies = [
  "prost-types",
  "rstest",
  "rust_decimal",
+ "semver",
  "serde",
  "serde_json",
  "tonic",

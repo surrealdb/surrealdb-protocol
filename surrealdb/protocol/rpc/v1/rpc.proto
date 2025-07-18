@@ -65,7 +65,7 @@ message SignupRequest {
     string namespace = 1;
     string database = 2;
     string access_name = 3;
-    Variables variables = 4;
+    surrealdb.protocol.v1.Variables variables = 4;
 }
 
 // Response to a signup request.
@@ -195,7 +195,7 @@ message ExportMlModelResponse {
 // Request to issue a live query.
 message SubscribeRequest {
     string query = 1;
-    Variables variables = 2;
+    surrealdb.protocol.v1.Variables variables = 2;
 }
 
 // Action type.
@@ -223,7 +223,7 @@ message Notification {
 // Request to query the database.
 message QueryRequest {
     string query = 1;
-    Variables variables = 2;
+    surrealdb.protocol.v1.Variables variables = 2;
     surrealdb.protocol.v1.Uuid txn_id = 3;
 }
 
@@ -336,7 +336,3 @@ message AccessMethod {
     }
 }
 
-// Variables.
-message Variables {
-    map<string, surrealdb.protocol.v1.Value> variables = 1;
-}

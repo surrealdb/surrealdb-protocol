@@ -10,7 +10,7 @@ import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import { Duration } from "../../../../google/protobuf/duration";
 import { Timestamp } from "../../../../google/protobuf/timestamp";
-import { NullValue, RecordId, Uuid, Value } from "../../v1/value";
+import { NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
 
@@ -368,16 +368,6 @@ export interface AccessMethod {
     | { $case: "databaseUser"; databaseUser: DatabaseUserCredentials }
     | { $case: "accessToken"; accessToken: AccessToken }
     | undefined;
-}
-
-/** Variables. */
-export interface Variables {
-  variables: { [key: string]: Value };
-}
-
-export interface Variables_VariablesEntry {
-  key: string;
-  value: Value | undefined;
 }
 
 function createBaseHealthRequest(): HealthRequest {
@@ -3649,161 +3639,6 @@ export const AccessMethod: MessageFns<AccessMethod> = {
   },
 };
 
-function createBaseVariables(): Variables {
-  return { variables: {} };
-}
-
-export const Variables: MessageFns<Variables> = {
-  encode(message: Variables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    Object.entries(message.variables).forEach(([key, value]) => {
-      Variables_VariablesEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
-    });
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Variables {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVariables();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          const entry1 = Variables_VariablesEntry.decode(reader, reader.uint32());
-          if (entry1.value !== undefined) {
-            message.variables[entry1.key] = entry1.value;
-          }
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Variables {
-    return {
-      variables: isObject(object.variables)
-        ? Object.entries(object.variables).reduce<{ [key: string]: Value }>((acc, [key, value]) => {
-          acc[key] = Value.fromJSON(value);
-          return acc;
-        }, {})
-        : {},
-    };
-  },
-
-  toJSON(message: Variables): unknown {
-    const obj: any = {};
-    if (message.variables) {
-      const entries = Object.entries(message.variables);
-      if (entries.length > 0) {
-        obj.variables = {};
-        entries.forEach(([k, v]) => {
-          obj.variables[k] = Value.toJSON(v);
-        });
-      }
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Variables>, I>>(base?: I): Variables {
-    return Variables.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Variables>, I>>(object: I): Variables {
-    const message = createBaseVariables();
-    message.variables = Object.entries(object.variables ?? {}).reduce<{ [key: string]: Value }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = Value.fromPartial(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBaseVariables_VariablesEntry(): Variables_VariablesEntry {
-  return { key: "", value: undefined };
-}
-
-export const Variables_VariablesEntry: MessageFns<Variables_VariablesEntry> = {
-  encode(message: Variables_VariablesEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Variables_VariablesEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVariables_VariablesEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Variables_VariablesEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
-    };
-  },
-
-  toJSON(message: Variables_VariablesEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Variables_VariablesEntry>, I>>(base?: I): Variables_VariablesEntry {
-    return Variables_VariablesEntry.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Variables_VariablesEntry>, I>>(object: I): Variables_VariablesEntry {
-    const message = createBaseVariables_VariablesEntry();
-    message.key = object.key ?? "";
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
-    return message;
-  },
-};
-
 /** SurrealDB service. */
 export interface SurrealDBService {
   /** Check the health of the database. */
@@ -4020,10 +3855,6 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

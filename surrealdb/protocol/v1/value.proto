@@ -128,3 +128,8 @@ message Id {
         Array array = 4;
     }
 }
+
+// Variables.
+message Variables {
+    map<string, Value> variables = 1;
+}

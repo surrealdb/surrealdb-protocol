@@ -57,46 +57,38 @@ export enum Operator {
   ALL_EQUAL = 19,
   /** ANY_EQUAL - `?=` */
   ANY_EQUAL = 20,
-  /** LIKE - `~` */
-  LIKE = 21,
-  /** NOT_LIKE - `!~` */
-  NOT_LIKE = 22,
-  /** ALL_LIKE - `*~` */
-  ALL_LIKE = 23,
-  /** ANY_LIKE - `?~` */
-  ANY_LIKE = 24,
   /** LESS_THAN - `<` */
-  LESS_THAN = 25,
+  LESS_THAN = 21,
   /** LESS_THAN_OR_EQUAL - `<=` */
-  LESS_THAN_OR_EQUAL = 26,
+  LESS_THAN_OR_EQUAL = 22,
   /** GREATER_THAN - `>` */
-  GREATER_THAN = 27,
+  GREATER_THAN = 23,
   /** GREATER_THAN_OR_EQUAL - `>=` */
-  GREATER_THAN_OR_EQUAL = 28,
+  GREATER_THAN_OR_EQUAL = 24,
   /** CONTAIN - `∋` */
-  CONTAIN = 29,
+  CONTAIN = 25,
   /** NOT_CONTAIN - `∌` */
-  NOT_CONTAIN = 30,
+  NOT_CONTAIN = 26,
   /** CONTAIN_ALL - `⊇` */
-  CONTAIN_ALL = 31,
+  CONTAIN_ALL = 27,
   /** CONTAIN_ANY - `⊃` */
-  CONTAIN_ANY = 32,
+  CONTAIN_ANY = 28,
   /** CONTAIN_NONE - `⊅` */
-  CONTAIN_NONE = 33,
+  CONTAIN_NONE = 29,
   /** INSIDE - `∈` */
-  INSIDE = 34,
+  INSIDE = 30,
   /** NOT_INSIDE - `∉` */
-  NOT_INSIDE = 35,
+  NOT_INSIDE = 31,
   /** ALL_INSIDE - `⊆` */
-  ALL_INSIDE = 36,
+  ALL_INSIDE = 32,
   /** ANY_INSIDE - `⊂` */
-  ANY_INSIDE = 37,
+  ANY_INSIDE = 33,
   /** NONE_INSIDE - `⊄` */
-  NONE_INSIDE = 38,
+  NONE_INSIDE = 34,
   /** OUTSIDE - `OUTSIDE` */
-  OUTSIDE = 39,
+  OUTSIDE = 35,
   /** INTERSECTS - `INTERSECTS` */
-  INTERSECTS = 40,
+  INTERSECTS = 36,
   UNRECOGNIZED = -1,
 }
 
@@ -166,63 +158,51 @@ export function operatorFromJSON(object: any): Operator {
     case "OPERATOR_ANY_EQUAL":
       return Operator.ANY_EQUAL;
     case 21:
-    case "OPERATOR_LIKE":
-      return Operator.LIKE;
-    case 22:
-    case "OPERATOR_NOT_LIKE":
-      return Operator.NOT_LIKE;
-    case 23:
-    case "OPERATOR_ALL_LIKE":
-      return Operator.ALL_LIKE;
-    case 24:
-    case "OPERATOR_ANY_LIKE":
-      return Operator.ANY_LIKE;
-    case 25:
     case "OPERATOR_LESS_THAN":
       return Operator.LESS_THAN;
-    case 26:
+    case 22:
     case "OPERATOR_LESS_THAN_OR_EQUAL":
       return Operator.LESS_THAN_OR_EQUAL;
-    case 27:
+    case 23:
     case "OPERATOR_GREATER_THAN":
       return Operator.GREATER_THAN;
-    case 28:
+    case 24:
     case "OPERATOR_GREATER_THAN_OR_EQUAL":
       return Operator.GREATER_THAN_OR_EQUAL;
-    case 29:
+    case 25:
     case "OPERATOR_CONTAIN":
       return Operator.CONTAIN;
-    case 30:
+    case 26:
     case "OPERATOR_NOT_CONTAIN":
       return Operator.NOT_CONTAIN;
-    case 31:
+    case 27:
     case "OPERATOR_CONTAIN_ALL":
       return Operator.CONTAIN_ALL;
-    case 32:
+    case 28:
     case "OPERATOR_CONTAIN_ANY":
       return Operator.CONTAIN_ANY;
-    case 33:
+    case 29:
     case "OPERATOR_CONTAIN_NONE":
       return Operator.CONTAIN_NONE;
-    case 34:
+    case 30:
     case "OPERATOR_INSIDE":
       return Operator.INSIDE;
-    case 35:
+    case 31:
     case "OPERATOR_NOT_INSIDE":
       return Operator.NOT_INSIDE;
-    case 36:
+    case 32:
     case "OPERATOR_ALL_INSIDE":
       return Operator.ALL_INSIDE;
-    case 37:
+    case 33:
     case "OPERATOR_ANY_INSIDE":
       return Operator.ANY_INSIDE;
-    case 38:
+    case 34:
     case "OPERATOR_NONE_INSIDE":
       return Operator.NONE_INSIDE;
-    case 39:
+    case 35:
     case "OPERATOR_OUTSIDE":
       return Operator.OUTSIDE;
-    case 40:
+    case 36:
     case "OPERATOR_INTERSECTS":
       return Operator.INTERSECTS;
     case -1:
@@ -276,14 +256,6 @@ export function operatorToJSON(object: Operator): string {
       return "OPERATOR_ALL_EQUAL";
     case Operator.ANY_EQUAL:
       return "OPERATOR_ANY_EQUAL";
-    case Operator.LIKE:
-      return "OPERATOR_LIKE";
-    case Operator.NOT_LIKE:
-      return "OPERATOR_NOT_LIKE";
-    case Operator.ALL_LIKE:
-      return "OPERATOR_ALL_LIKE";
-    case Operator.ANY_LIKE:
-      return "OPERATOR_ANY_LIKE";
     case Operator.LESS_THAN:
       return "OPERATOR_LESS_THAN";
     case Operator.LESS_THAN_OR_EQUAL:

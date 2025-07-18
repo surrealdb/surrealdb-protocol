@@ -49,7 +49,7 @@ pub struct SignupRequest {
     #[prost(string, tag="3")]
     pub access_name: ::prost::alloc::string::String,
     #[prost(message, optional, tag="4")]
-    pub variables: ::core::option::Option<Variables>,
+    pub variables: ::core::option::Option<super::super::v1::Variables>,
 }
 impl ::prost::Name for SignupRequest {
 const NAME: &'static str = "SignupRequest";
@@ -348,7 +348,7 @@ pub struct SubscribeRequest {
     #[prost(string, tag="1")]
     pub query: ::prost::alloc::string::String,
     #[prost(message, optional, tag="2")]
-    pub variables: ::core::option::Option<Variables>,
+    pub variables: ::core::option::Option<super::super::v1::Variables>,
 }
 impl ::prost::Name for SubscribeRequest {
 const NAME: &'static str = "SubscribeRequest";
@@ -389,7 +389,7 @@ pub struct QueryRequest {
     #[prost(string, tag="1")]
     pub query: ::prost::alloc::string::String,
     #[prost(message, optional, tag="2")]
-    pub variables: ::core::option::Option<Variables>,
+    pub variables: ::core::option::Option<super::super::v1::Variables>,
     #[prost(message, optional, tag="3")]
     pub txn_id: ::core::option::Option<super::super::v1::Uuid>,
 }
@@ -602,17 +602,6 @@ impl ::prost::Name for AccessMethod {
 const NAME: &'static str = "AccessMethod";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.AccessMethod".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.AccessMethod".into() }}
-/// Variables.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Variables {
-    #[prost(btree_map="string, message", tag="1")]
-    pub variables: ::prost::alloc::collections::BTreeMap<::prost::alloc::string::String, super::super::v1::Value>,
-}
-impl ::prost::Name for Variables {
-const NAME: &'static str = "Variables";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Variables".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.Variables".into() }}
 /// Action type.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

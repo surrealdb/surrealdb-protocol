@@ -1,8 +1,11 @@
-use std::{collections::VecDeque, error::Error, fmt::Display, pin::Pin};
+use std::{collections::VecDeque, fmt::Display, pin::Pin};
 
-use crate::proto::{
-    rpc::v1::{QueryError, QueryResponse, export_sql_request},
-    v1::Value,
+use crate::{
+    convert::TryFromValue,
+    proto::{
+        rpc::v1::{QueryError, QueryResponse, export_sql_request},
+        v1::Value,
+    },
 };
 use anyhow::{Result, anyhow};
 use futures::{Stream, StreamExt};
@@ -137,51 +140,60 @@ impl std::error::Error for QueryError {}
 
 /// A trait for converting a stream of query responses into a specific type.
 #[async_trait]
-pub trait TryFromQueryStream<T> {
-    /// The error type returned by the `try_from_query_stream` method.
-    type Error;
-
+pub trait TryFromQueryStream {
     /// Converts a stream of query responses into a specific type.
-    async fn try_from_query_stream(stream: Streaming<QueryResponse>) -> Result<Self, Self::Error>
+    async fn try_from_query_stream(stream: Streaming<QueryResponse>) -> Result<Self, anyhow::Error>
     where
         Self: Sized;
 }
 
 #[async_trait]
-impl<T> TryFromQueryStream<T> for T
+impl<T> TryFromQueryStream for Option<T>
 where
-    T: TryFrom<Value>,
-    T::Error: Error + Send + Sync + 'static,
+    T: TryFromValue + Send,
 {
-    type Error = anyhow::Error;
-
-    async fn try_from_query_stream(stream: Streaming<QueryResponse>) -> Result<Self, Self::Error> {
+    async fn try_from_query_stream(
+        stream: Streaming<QueryResponse>,
+    ) -> Result<Self, anyhow::Error> {
         let mut stream = QueryResponseValueStream::new(stream);
         let value = match stream.next().await {
             Some(Ok(value)) => value,
             Some(Err(e)) => return Err(e),
-            None => return Err(anyhow!("No value returned")),
+            None => return Ok(None),
         };
-        let value = T::try_from(value)?;
-        Ok(value)
+        let value = T::try_from_value(value)?;
+        Ok(Some(value))
     }
 }
 
 #[async_trait]
-impl<T> TryFromQueryStream<Vec<T>> for Vec<T>
+impl<T> TryFromQueryStream for Vec<T>
 where
-    T: TryFrom<Value> + Send,
-    T::Error: Error + Send + Sync + 'static,
+    T: TryFromValue + Send,
 {
-    type Error = anyhow::Error;
-
-    async fn try_from_query_stream(stream: Streaming<QueryResponse>) -> Result<Self, Self::Error> {
+    async fn try_from_query_stream(
+        stream: Streaming<QueryResponse>,
+    ) -> Result<Self, anyhow::Error> {
         let mut stream = QueryResponseValueStream::new(stream);
         let mut values = Vec::new();
         while let Some(value) = stream.next().await {
-            let value = T::try_from(value?)?;
+            let value = T::try_from_value(value?)?;
             values.push(value);
         }
         Ok(values)
+    }
+}
+
+impl From<Vec<&str>> for export_sql_request::Tables {
+    fn from(values: Vec<&str>) -> Self {
+        let mut selected_tables = export_sql_request::SelectedTables::default();
+        for v in values {
+            selected_tables.tables.push(v.to_string());
+        }
+        export_sql_request::Tables {
+            selection: Some(export_sql_request::tables::Selection::Selected(
+                selected_tables,
+            )),
+        }
     }
 }

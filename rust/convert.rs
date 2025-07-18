@@ -1,7 +1,265 @@
-use crate::proto::{rpc, v1};
+use crate::proto::v1::value::Value as ValueInner;
+use crate::proto::v1::{self};
+use anyhow::Result;
 use rust_decimal::Decimal;
+use std::str::FromStr;
 use std::{collections::BTreeMap, convert::Infallible};
 use uuid::Uuid;
+
+/// A trait for converting a type into a `v1::Value` protobuf type.
+pub trait TryIntoValue {
+    /// Try to convert this type into a `v1::Value` protobuf type.
+    fn try_into_value(self) -> Result<v1::Value>;
+}
+
+impl TryIntoValue for serde_json::Value {
+    fn try_into_value(self) -> Result<v1::Value> {
+        use serde_json::Value as JsonValue;
+        match self {
+            JsonValue::Null => Ok(v1::Value::null()),
+            JsonValue::Bool(b) => Ok(v1::Value::bool(b)),
+            JsonValue::Number(n) => {
+                if n.is_u64() {
+                    Ok(v1::Value::uint64(n.as_u64().unwrap()))
+                } else if n.is_i64() {
+                    Ok(v1::Value::int64(n.as_i64().unwrap()))
+                } else {
+                    Err(anyhow::anyhow!("Invalid number: {n:?}"))
+                }
+            }
+            JsonValue::String(s) => Ok(v1::Value::string(s)),
+            JsonValue::Array(a) => {
+                let mut values = Vec::new();
+                for value in a {
+                    values.push(value.try_into_value()?);
+                }
+                Ok(v1::Value::array(v1::Array::new(values)))
+            }
+            JsonValue::Object(o) => {
+                let mut values = BTreeMap::new();
+                for (k, v) in o {
+                    values.insert(k, v.try_into_value()?);
+                }
+                Ok(v1::Value::object(v1::Object::new(values)))
+            }
+        }
+    }
+}
+
+/// A trait for converting a `v1::Value` protobuf type into a type.
+pub trait TryFromValue: Sized {
+    /// Try to convert a `v1::Value` protobuf type into this type.
+    fn try_from_value(value: v1::Value) -> Result<Self>;
+}
+
+impl<T> TryFromValue for Option<T>
+where
+    T: TryFromValue,
+{
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Ok(None);
+        };
+        match inner {
+            ValueInner::Null(_) => Ok(None),
+            v => T::try_from_value(v1::Value { value: Some(v) }).map(Some),
+        }
+    }
+}
+
+impl TryFromValue for v1::Value {
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        Ok(value)
+    }
+}
+
+impl TryFromValue for semver::Version {
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Err(anyhow::anyhow!("Invalid Version: missing value"));
+        };
+        match inner {
+            ValueInner::String(s) => Ok(semver::Version::parse(&s)?),
+            _ => Err(anyhow::anyhow!(
+                "Invalid Version: expected string, got {:?}",
+                inner
+            )),
+        }
+    }
+}
+
+impl TryFromValue for String {
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Err(anyhow::anyhow!("Invalid String: missing value"));
+        };
+        match inner {
+            ValueInner::String(s) => Ok(s),
+            ValueInner::Uuid(u) => Ok(u.to_string()),
+            ValueInner::Datetime(d) => Ok(d.to_string()),
+            v => Err(anyhow::anyhow!(
+                "Invalid String: expected string, got {v:?}"
+            )),
+        }
+    }
+}
+
+impl TryFromValue for uuid::Uuid {
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Err(anyhow::anyhow!("Invalid UUID: missing value"));
+        };
+        match inner {
+            ValueInner::Uuid(u) => Ok(uuid::Uuid::from_str(&u.value)?),
+            unexpected => Err(anyhow::anyhow!(
+                "Invalid UUID: expected uuid, got {unexpected:?}"
+            )),
+        }
+    }
+}
+
+macro_rules! impl_try_from_value_for_int {
+	($t:ty) => {
+		impl TryFromValue for $t {
+			#[inline]
+			fn try_from_value(value: v1::Value) -> Result<Self> {
+				let Some(inner) = value.value else {
+					return Err(anyhow::anyhow!("Invalid Int: missing value"));
+				};
+				match inner {
+					ValueInner::Int64(v) => Ok(v as Self),
+					ValueInner::Uint64(v) => Ok(v as Self),
+					ValueInner::Float64(v) => Ok(v as Self),
+					ValueInner::Decimal(v) => Ok(v.to_i64().unwrap() as Self),
+					v => Err(anyhow::anyhow!("Invalid Int: expected int, got {v:?}")),
+				}
+			}
+		}
+	};
+	($($t:ty),+ $(,)?) => {
+		$(impl_try_from_value_for_int!($t);)+
+	};
+}
+
+macro_rules! impl_try_from_value_for_float {
+	($t:ty) => {
+		impl TryFromValue for $t {
+			#[inline]
+			fn try_from_value(value: v1::Value) -> Result<Self> {
+				let Some(inner) = value.value else {
+					return Err(anyhow::anyhow!("Invalid Float: missing value"));
+				};
+				match inner {
+					ValueInner::Float64(v) => Ok(v as Self),
+					ValueInner::Int64(v) => Ok(v as Self),
+					ValueInner::Uint64(v) => Ok(v as Self),
+					ValueInner::Decimal(v) => Ok(v.to_f64().unwrap() as Self),
+					v => Err(anyhow::anyhow!("Invalid Float: expected float, got {v:?}")),
+				}
+			}
+		}
+	};
+	($($t:ty),+ $(,)?) => {
+		$(impl_try_from_value_for_float!($t);)+
+	};
+}
+
+impl TryFromValue for bool {
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Err(anyhow::anyhow!("Invalid Bool: missing value"));
+        };
+        match inner {
+            ValueInner::Bool(b) => Ok(b),
+            v => Err(anyhow::anyhow!("Invalid Bool: expected bool, got {v:?}")),
+        }
+    }
+}
+
+impl_try_from_value_for_int!(i8, i16, i32, i64, isize);
+impl_try_from_value_for_int!(u8, u16, u32, u64, usize);
+impl_try_from_value_for_float!(f32, f64);
+
+impl TryFromValue for () {
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Err(anyhow::anyhow!("Invalid Unit: missing value"));
+        };
+        match inner {
+            ValueInner::Null(_) => Ok(()),
+            v => Err(anyhow::anyhow!("Invalid Unit: expected unit, got {v:?}")),
+        }
+    }
+}
+
+impl<T> TryFromValue for Vec<T>
+where
+    T: TryFromValue,
+{
+    #[inline]
+    fn try_from_value(value: v1::Value) -> Result<Self> {
+        let Some(inner) = value.value else {
+            return Err(anyhow::anyhow!("Invalid Array: missing value"));
+        };
+        match inner {
+            ValueInner::Array(arr) => arr
+                .into_iter()
+                .map(T::try_from_value)
+                .collect::<Result<Vec<_>>>(),
+            ValueInner::Null(_) => Ok(Vec::new()),
+            v => Err(anyhow::anyhow!("Invalid Array: expected array, got {v:?}")),
+        }
+    }
+}
+
+impl From<bool> for v1::Value {
+    #[inline]
+    fn from(value: bool) -> Self {
+        Self::bool(value)
+    }
+}
+
+impl From<i64> for v1::Value {
+    #[inline]
+    fn from(value: i64) -> Self {
+        Self::int64(value)
+    }
+}
+
+impl From<f64> for v1::Value {
+    #[inline]
+    fn from(value: f64) -> Self {
+        Self::float64(value)
+    }
+}
+
+impl From<String> for v1::Value {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self::string(value)
+    }
+}
+
+impl From<&str> for v1::Value {
+    #[inline]
+    fn from(value: &str) -> Self {
+        Self::string(value.to_string())
+    }
+}
+
+impl From<Vec<bool>> for v1::Value {
+    #[inline]
+    fn from(value: Vec<bool>) -> Self {
+        Self::array(v1::Array::new(value.into_iter().map(Into::into).collect()))
+    }
+}
 
 impl TryFrom<v1::Decimal> for Decimal {
     type Error = rust_decimal::Error;
@@ -210,14 +468,24 @@ where
     }
 }
 
-impl<T> TryFrom<rpc::v1::Variables> for BTreeMap<String, T>
+impl FromIterator<(String, v1::Value)> for v1::Variables {
+    fn from_iter<T: IntoIterator<Item = (String, v1::Value)>>(iter: T) -> Self {
+        let mut variables = v1::Variables::default();
+        for (key, value) in iter {
+            variables.variables.insert(key, value);
+        }
+        variables
+    }
+}
+
+impl<T> TryFrom<v1::Variables> for BTreeMap<String, T>
 where
     T: TryFrom<v1::Value>,
 {
     type Error = T::Error;
 
     #[inline]
-    fn try_from(value: rpc::v1::Variables) -> Result<Self, Self::Error> {
+    fn try_from(value: v1::Variables) -> Result<Self, Self::Error> {
         let mut map = BTreeMap::new();
         for (key, value) in value.variables {
             map.insert(key, T::try_from(value)?);
@@ -226,7 +494,7 @@ where
     }
 }
 
-impl<T> TryFrom<BTreeMap<String, T>> for rpc::v1::Variables
+impl<T> TryFrom<BTreeMap<String, T>> for v1::Variables
 where
     T: TryInto<v1::Value>,
 {
@@ -240,5 +508,12 @@ where
         }
 
         Ok(Self { variables: map })
+    }
+}
+
+impl From<BTreeMap<String, v1::Value>> for v1::Object {
+    #[inline]
+    fn from(value: BTreeMap<String, v1::Value>) -> Self {
+        Self { items: value }
     }
 }
