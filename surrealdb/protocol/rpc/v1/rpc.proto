@@ -25,8 +25,19 @@ service SurrealDBService {
     rpc Set(SetRequest) returns (SetResponse);
     // Unset a global variable for the current session.
     rpc Unset(UnsetRequest) returns (UnsetResponse);
-    // Reset all global variables for the current session.
+    // Clear the current IAM session info.
+    rpc Invalidate(InvalidateRequest) returns (InvalidateResponse);
+    // Clear the current IAM session info and reset all global variables for the current session (ns, db, vars).
     rpc Reset(ResetRequest) returns (ResetResponse);
+
+    // Import data into the database.
+    // All statements are executed in the same transaction.
+    rpc ImportSql(stream ImportSqlRequest) returns (ImportSqlResponse);
+    // Export data from the database.
+    rpc ExportSql(ExportSqlRequest) returns (stream ExportSqlResponse);
+
+    // Export the ML model.
+    rpc ExportMlModel(ExportMlModelRequest) returns (stream ExportMlModelResponse);
 
     // Query the database and get a stream of values.
     rpc Query(QueryRequest) returns (stream QueryResponse);
@@ -54,7 +65,7 @@ message SignupRequest {
     string namespace = 1;
     string database = 2;
     string access_name = 3;
-    Variables variables = 4;
+    surrealdb.protocol.v1.Variables variables = 4;
 }
 
 // Response to a signup request.
@@ -120,16 +131,71 @@ message UnsetRequest {
 // Response to an unset request.
 message UnsetResponse {}
 
+// Request to invalidate the current session.
+message InvalidateRequest {}
+
+// Response to an invalidate request.
+message InvalidateResponse {}
+
 // Request to reset all global variables for the current session.
 message ResetRequest {}
 
 // Response to a reset request.
 message ResetResponse {}
 
+// Request to import data into the database.
+message ImportSqlRequest {
+    string statement = 1;
+}
+
+// Response to an import request.
+message ImportSqlResponse {}
+
+// Request to export data from the database.
+message ExportSqlRequest {
+    message SelectedTables {
+        repeated string tables = 1;
+    }
+
+    message Tables {
+        oneof selection {
+            surrealdb.protocol.v1.NullValue all = 1;
+            surrealdb.protocol.v1.NullValue none = 2;
+            SelectedTables selected = 3;
+        }
+    }
+
+    bool users = 1;
+    bool accesses = 2;
+    bool params = 3;
+    bool functions = 4;
+    bool analyzers = 5;
+    Tables tables = 6;
+    bool versions = 7;
+    bool records = 8;
+    bool sequences = 9;
+}
+
+// Response to an export request.
+message ExportSqlResponse {
+    string statement = 1;
+}
+
+// Request to export the ML model.
+message ExportMlModelRequest {
+    string name = 1;
+    string version = 2;
+}
+
+// Response to an export request.
+message ExportMlModelResponse {
+    bytes model = 1;
+}
+
 // Request to issue a live query.
 message SubscribeRequest {
     string query = 1;
-    Variables variables = 2;
+    surrealdb.protocol.v1.Variables variables = 2;
 }
 
 // Action type.
@@ -157,7 +223,8 @@ message Notification {
 // Request to query the database.
 message QueryRequest {
     string query = 1;
-    Variables variables = 2;
+    surrealdb.protocol.v1.Variables variables = 2;
+    surrealdb.protocol.v1.Uuid txn_id = 3;
 }
 
 // Streaming response to a query request.
@@ -269,7 +336,3 @@ message AccessMethod {
     }
 }
 
-// Variables.
-message Variables {
-    map<string, surrealdb.protocol.v1.Value> variables = 1;
-}

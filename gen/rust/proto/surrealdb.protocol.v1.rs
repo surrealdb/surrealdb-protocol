@@ -279,6 +279,17 @@ impl ::prost::Name for Id {
 const NAME: &'static str = "Id";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Id".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Id".into() }}
+/// Variables.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Variables {
+    #[prost(btree_map="string, message", tag="1")]
+    pub variables: ::prost::alloc::collections::BTreeMap<::prost::alloc::string::String, Value>,
+}
+impl ::prost::Name for Variables {
+const NAME: &'static str = "Variables";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Variables".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Variables".into() }}
 /// Identifier.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -611,46 +622,38 @@ pub enum Operator {
     AllEqual = 19,
     /// `?=`
     AnyEqual = 20,
-    /// `~`
-    Like = 21,
-    /// `!~`
-    NotLike = 22,
-    /// `*~`
-    AllLike = 23,
-    /// `?~`
-    AnyLike = 24,
     /// `<`
-    LessThan = 25,
+    LessThan = 21,
     /// `<=`
-    LessThanOrEqual = 26,
+    LessThanOrEqual = 22,
     /// `>`
-    GreaterThan = 27,
+    GreaterThan = 23,
     /// `>=`
-    GreaterThanOrEqual = 28,
+    GreaterThanOrEqual = 24,
     /// `∋`
-    Contain = 29,
+    Contain = 25,
     /// `∌`
-    NotContain = 30,
+    NotContain = 26,
     /// `⊇`
-    ContainAll = 31,
+    ContainAll = 27,
     /// `⊃`
-    ContainAny = 32,
+    ContainAny = 28,
     /// `⊅`
-    ContainNone = 33,
+    ContainNone = 29,
     /// `∈`
-    Inside = 34,
+    Inside = 30,
     /// `∉`
-    NotInside = 35,
+    NotInside = 31,
     /// `⊆`
-    AllInside = 36,
+    AllInside = 32,
     /// `⊂`
-    AnyInside = 37,
+    AnyInside = 33,
     /// `⊄`
-    NoneInside = 38,
+    NoneInside = 34,
     /// `OUTSIDE`
-    Outside = 39,
+    Outside = 35,
     /// `INTERSECTS`
-    Intersects = 40,
+    Intersects = 36,
 }
 impl Operator {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -680,10 +683,6 @@ impl Operator {
             Self::NotEqual => "OPERATOR_NOT_EQUAL",
             Self::AllEqual => "OPERATOR_ALL_EQUAL",
             Self::AnyEqual => "OPERATOR_ANY_EQUAL",
-            Self::Like => "OPERATOR_LIKE",
-            Self::NotLike => "OPERATOR_NOT_LIKE",
-            Self::AllLike => "OPERATOR_ALL_LIKE",
-            Self::AnyLike => "OPERATOR_ANY_LIKE",
             Self::LessThan => "OPERATOR_LESS_THAN",
             Self::LessThanOrEqual => "OPERATOR_LESS_THAN_OR_EQUAL",
             Self::GreaterThan => "OPERATOR_GREATER_THAN",
@@ -726,10 +725,6 @@ impl Operator {
             "OPERATOR_NOT_EQUAL" => Some(Self::NotEqual),
             "OPERATOR_ALL_EQUAL" => Some(Self::AllEqual),
             "OPERATOR_ANY_EQUAL" => Some(Self::AnyEqual),
-            "OPERATOR_LIKE" => Some(Self::Like),
-            "OPERATOR_NOT_LIKE" => Some(Self::NotLike),
-            "OPERATOR_ALL_LIKE" => Some(Self::AllLike),
-            "OPERATOR_ANY_LIKE" => Some(Self::AnyLike),
             "OPERATOR_LESS_THAN" => Some(Self::LessThan),
             "OPERATOR_LESS_THAN_OR_EQUAL" => Some(Self::LessThanOrEqual),
             "OPERATOR_GREATER_THAN" => Some(Self::GreaterThan),

@@ -35,6 +35,8 @@ typedef struct Surrealdb__Protocol__V1__Object Surrealdb__Protocol__V1__Object;
 typedef struct Surrealdb__Protocol__V1__Object__ItemsEntry Surrealdb__Protocol__V1__Object__ItemsEntry;
 typedef struct Surrealdb__Protocol__V1__Value Surrealdb__Protocol__V1__Value;
 typedef struct Surrealdb__Protocol__V1__Id Surrealdb__Protocol__V1__Id;
+typedef struct Surrealdb__Protocol__V1__Variables Surrealdb__Protocol__V1__Variables;
+typedef struct Surrealdb__Protocol__V1__Variables__VariablesEntry Surrealdb__Protocol__V1__Variables__VariablesEntry;
 
 
 /* --- enums --- */
@@ -378,6 +380,31 @@ struct  Surrealdb__Protocol__V1__Id
 , SURREALDB__PROTOCOL__V1__ID__ID__NOT_SET, {0} }
 
 
+struct  Surrealdb__Protocol__V1__Variables__VariablesEntry
+{
+  ProtobufCMessage base;
+  char *key;
+  Surrealdb__Protocol__V1__Value *value;
+};
+#define SURREALDB__PROTOCOL__V1__VARIABLES__VARIABLES_ENTRY__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__variables__variables_entry__descriptor) \
+, (char *)protobuf_c_empty_string, NULL }
+
+
+/*
+ * Variables.
+ */
+struct  Surrealdb__Protocol__V1__Variables
+{
+  ProtobufCMessage base;
+  size_t n_variables;
+  Surrealdb__Protocol__V1__Variables__VariablesEntry **variables;
+};
+#define SURREALDB__PROTOCOL__V1__VARIABLES__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__variables__descriptor) \
+, 0,NULL }
+
+
 /* Surrealdb__Protocol__V1__NullValue methods */
 void   surrealdb__protocol__v1__null_value__init
                      (Surrealdb__Protocol__V1__NullValue         *message);
@@ -704,6 +731,28 @@ Surrealdb__Protocol__V1__Id *
 void   surrealdb__protocol__v1__id__free_unpacked
                      (Surrealdb__Protocol__V1__Id *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Variables__VariablesEntry methods */
+void   surrealdb__protocol__v1__variables__variables_entry__init
+                     (Surrealdb__Protocol__V1__Variables__VariablesEntry         *message);
+/* Surrealdb__Protocol__V1__Variables methods */
+void   surrealdb__protocol__v1__variables__init
+                     (Surrealdb__Protocol__V1__Variables         *message);
+size_t surrealdb__protocol__v1__variables__get_packed_size
+                     (const Surrealdb__Protocol__V1__Variables   *message);
+size_t surrealdb__protocol__v1__variables__pack
+                     (const Surrealdb__Protocol__V1__Variables   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__variables__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Variables   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Variables *
+       surrealdb__protocol__v1__variables__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__variables__free_unpacked
+                     (Surrealdb__Protocol__V1__Variables *message,
+                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*Surrealdb__Protocol__V1__NullValue_Closure)
@@ -760,6 +809,12 @@ typedef void (*Surrealdb__Protocol__V1__Value_Closure)
 typedef void (*Surrealdb__Protocol__V1__Id_Closure)
                  (const Surrealdb__Protocol__V1__Id *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Variables__VariablesEntry_Closure)
+                 (const Surrealdb__Protocol__V1__Variables__VariablesEntry *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Variables_Closure)
+                 (const Surrealdb__Protocol__V1__Variables *message,
+                  void *closure_data);
 
 /* --- services --- */
 
@@ -784,6 +839,8 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__object__descrip
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__object__items_entry__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__id__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__variables__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__variables__variables_entry__descriptor;
 
 PROTOBUF_C__END_DECLS
 

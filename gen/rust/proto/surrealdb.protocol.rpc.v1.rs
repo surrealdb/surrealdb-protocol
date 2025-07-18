@@ -49,7 +49,7 @@ pub struct SignupRequest {
     #[prost(string, tag="3")]
     pub access_name: ::prost::alloc::string::String,
     #[prost(message, optional, tag="4")]
-    pub variables: ::core::option::Option<Variables>,
+    pub variables: ::core::option::Option<super::super::v1::Variables>,
 }
 impl ::prost::Name for SignupRequest {
 const NAME: &'static str = "SignupRequest";
@@ -187,6 +187,24 @@ impl ::prost::Name for UnsetResponse {
 const NAME: &'static str = "UnsetResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.UnsetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.UnsetResponse".into() }}
+/// Request to invalidate the current session.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct InvalidateRequest {
+}
+impl ::prost::Name for InvalidateRequest {
+const NAME: &'static str = "InvalidateRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InvalidateRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InvalidateRequest".into() }}
+/// Response to an invalidate request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct InvalidateResponse {
+}
+impl ::prost::Name for InvalidateResponse {
+const NAME: &'static str = "InvalidateResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.InvalidateResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.InvalidateResponse".into() }}
 /// Request to reset all global variables for the current session.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -205,6 +223,124 @@ impl ::prost::Name for ResetResponse {
 const NAME: &'static str = "ResetResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ResetResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ResetResponse".into() }}
+/// Request to import data into the database.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ImportSqlRequest {
+    #[prost(string, tag="1")]
+    pub statement: ::prost::alloc::string::String,
+}
+impl ::prost::Name for ImportSqlRequest {
+const NAME: &'static str = "ImportSqlRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSqlRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSqlRequest".into() }}
+/// Response to an import request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ImportSqlResponse {
+}
+impl ::prost::Name for ImportSqlResponse {
+const NAME: &'static str = "ImportSqlResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSqlResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSqlResponse".into() }}
+/// Request to export data from the database.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExportSqlRequest {
+    #[prost(bool, tag="1")]
+    pub users: bool,
+    #[prost(bool, tag="2")]
+    pub accesses: bool,
+    #[prost(bool, tag="3")]
+    pub params: bool,
+    #[prost(bool, tag="4")]
+    pub functions: bool,
+    #[prost(bool, tag="5")]
+    pub analyzers: bool,
+    #[prost(message, optional, tag="6")]
+    pub tables: ::core::option::Option<export_sql_request::Tables>,
+    #[prost(bool, tag="7")]
+    pub versions: bool,
+    #[prost(bool, tag="8")]
+    pub records: bool,
+    #[prost(bool, tag="9")]
+    pub sequences: bool,
+}
+/// Nested message and enum types in `ExportSqlRequest`.
+pub mod export_sql_request {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct SelectedTables {
+        #[prost(string, repeated, tag="1")]
+        pub tables: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    }
+impl ::prost::Name for SelectedTables {
+const NAME: &'static str = "SelectedTables";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSqlRequest.SelectedTables".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSqlRequest.SelectedTables".into() }}
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Tables {
+        #[prost(oneof="tables::Selection", tags="1, 2, 3")]
+        pub selection: ::core::option::Option<tables::Selection>,
+    }
+    /// Nested message and enum types in `Tables`.
+    pub mod tables {
+        #[derive(serde::Deserialize,serde::Serialize)]
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum Selection {
+            #[prost(message, tag="1")]
+            All(super::super::super::super::v1::NullValue),
+            #[prost(message, tag="2")]
+            None(super::super::super::super::v1::NullValue),
+            #[prost(message, tag="3")]
+            Selected(super::SelectedTables),
+        }
+    }
+impl ::prost::Name for Tables {
+const NAME: &'static str = "Tables";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSqlRequest.Tables".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSqlRequest.Tables".into() }}
+}
+impl ::prost::Name for ExportSqlRequest {
+const NAME: &'static str = "ExportSqlRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSqlRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSqlRequest".into() }}
+/// Response to an export request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExportSqlResponse {
+    #[prost(string, tag="1")]
+    pub statement: ::prost::alloc::string::String,
+}
+impl ::prost::Name for ExportSqlResponse {
+const NAME: &'static str = "ExportSqlResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSqlResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSqlResponse".into() }}
+/// Request to export the ML model.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExportMlModelRequest {
+    #[prost(string, tag="1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub version: ::prost::alloc::string::String,
+}
+impl ::prost::Name for ExportMlModelRequest {
+const NAME: &'static str = "ExportMlModelRequest";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportMlModelRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportMlModelRequest".into() }}
+/// Response to an export request.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExportMlModelResponse {
+    #[prost(bytes="bytes", tag="1")]
+    pub model: ::prost::bytes::Bytes,
+}
+impl ::prost::Name for ExportMlModelResponse {
+const NAME: &'static str = "ExportMlModelResponse";
+const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportMlModelResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportMlModelResponse".into() }}
 /// Request to issue a live query.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -212,7 +348,7 @@ pub struct SubscribeRequest {
     #[prost(string, tag="1")]
     pub query: ::prost::alloc::string::String,
     #[prost(message, optional, tag="2")]
-    pub variables: ::core::option::Option<Variables>,
+    pub variables: ::core::option::Option<super::super::v1::Variables>,
 }
 impl ::prost::Name for SubscribeRequest {
 const NAME: &'static str = "SubscribeRequest";
@@ -253,7 +389,9 @@ pub struct QueryRequest {
     #[prost(string, tag="1")]
     pub query: ::prost::alloc::string::String,
     #[prost(message, optional, tag="2")]
-    pub variables: ::core::option::Option<Variables>,
+    pub variables: ::core::option::Option<super::super::v1::Variables>,
+    #[prost(message, optional, tag="3")]
+    pub txn_id: ::core::option::Option<super::super::v1::Uuid>,
 }
 impl ::prost::Name for QueryRequest {
 const NAME: &'static str = "QueryRequest";
@@ -464,17 +602,6 @@ impl ::prost::Name for AccessMethod {
 const NAME: &'static str = "AccessMethod";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.AccessMethod".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.AccessMethod".into() }}
-/// Variables.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Variables {
-    #[prost(btree_map="string, message", tag="1")]
-    pub variables: ::prost::alloc::collections::BTreeMap<::prost::alloc::string::String, super::super::v1::Value>,
-}
-impl ::prost::Name for Variables {
-const NAME: &'static str = "Variables";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Variables".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.Variables".into() }}
 /// Action type.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

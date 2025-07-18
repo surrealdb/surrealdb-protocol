@@ -10,7 +10,7 @@ import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import { Duration } from "../../../../google/protobuf/duration";
 import { Timestamp } from "../../../../google/protobuf/timestamp";
-import { RecordId, Uuid, Value } from "../../v1/value";
+import { NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
 
@@ -160,12 +160,69 @@ export interface UnsetRequest {
 export interface UnsetResponse {
 }
 
+/** Request to invalidate the current session. */
+export interface InvalidateRequest {
+}
+
+/** Response to an invalidate request. */
+export interface InvalidateResponse {
+}
+
 /** Request to reset all global variables for the current session. */
 export interface ResetRequest {
 }
 
 /** Response to a reset request. */
 export interface ResetResponse {
+}
+
+/** Request to import data into the database. */
+export interface ImportSqlRequest {
+  statement: string;
+}
+
+/** Response to an import request. */
+export interface ImportSqlResponse {
+}
+
+/** Request to export data from the database. */
+export interface ExportSqlRequest {
+  users: boolean;
+  accesses: boolean;
+  params: boolean;
+  functions: boolean;
+  analyzers: boolean;
+  tables: ExportSqlRequest_Tables | undefined;
+  versions: boolean;
+  records: boolean;
+  sequences: boolean;
+}
+
+export interface ExportSqlRequest_SelectedTables {
+  tables: string[];
+}
+
+export interface ExportSqlRequest_Tables {
+  selection?: { $case: "all"; all: NullValue } | { $case: "none"; none: NullValue } | {
+    $case: "selected";
+    selected: ExportSqlRequest_SelectedTables;
+  } | undefined;
+}
+
+/** Response to an export request. */
+export interface ExportSqlResponse {
+  statement: string;
+}
+
+/** Request to export the ML model. */
+export interface ExportMlModelRequest {
+  name: string;
+  version: string;
+}
+
+/** Response to an export request. */
+export interface ExportMlModelResponse {
+  model: Uint8Array;
 }
 
 /** Request to issue a live query. */
@@ -191,6 +248,7 @@ export interface Notification {
 export interface QueryRequest {
   query: string;
   variables: Variables | undefined;
+  txnId: Uuid | undefined;
 }
 
 /**
@@ -310,16 +368,6 @@ export interface AccessMethod {
     | { $case: "databaseUser"; databaseUser: DatabaseUserCredentials }
     | { $case: "accessToken"; accessToken: AccessToken }
     | undefined;
-}
-
-/** Variables. */
-export interface Variables {
-  variables: { [key: string]: Value };
-}
-
-export interface Variables_VariablesEntry {
-  key: string;
-  value: Value | undefined;
 }
 
 function createBaseHealthRequest(): HealthRequest {
@@ -1283,6 +1331,92 @@ export const UnsetResponse: MessageFns<UnsetResponse> = {
   },
 };
 
+function createBaseInvalidateRequest(): InvalidateRequest {
+  return {};
+}
+
+export const InvalidateRequest: MessageFns<InvalidateRequest> = {
+  encode(_: InvalidateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InvalidateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInvalidateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): InvalidateRequest {
+    return {};
+  },
+
+  toJSON(_: InvalidateRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InvalidateRequest>, I>>(base?: I): InvalidateRequest {
+    return InvalidateRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InvalidateRequest>, I>>(_: I): InvalidateRequest {
+    const message = createBaseInvalidateRequest();
+    return message;
+  },
+};
+
+function createBaseInvalidateResponse(): InvalidateResponse {
+  return {};
+}
+
+export const InvalidateResponse: MessageFns<InvalidateResponse> = {
+  encode(_: InvalidateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InvalidateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInvalidateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): InvalidateResponse {
+    return {};
+  },
+
+  toJSON(_: InvalidateResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InvalidateResponse>, I>>(base?: I): InvalidateResponse {
+    return InvalidateResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InvalidateResponse>, I>>(_: I): InvalidateResponse {
+    const message = createBaseInvalidateResponse();
+    return message;
+  },
+};
+
 function createBaseResetRequest(): ResetRequest {
   return {};
 }
@@ -1365,6 +1499,680 @@ export const ResetResponse: MessageFns<ResetResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<ResetResponse>, I>>(_: I): ResetResponse {
     const message = createBaseResetResponse();
+    return message;
+  },
+};
+
+function createBaseImportSqlRequest(): ImportSqlRequest {
+  return { statement: "" };
+}
+
+export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
+  encode(message: ImportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.statement !== "") {
+      writer.uint32(10).string(message.statement);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportSqlRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportSqlRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportSqlRequest {
+    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
+  },
+
+  toJSON(message: ImportSqlRequest): unknown {
+    const obj: any = {};
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ImportSqlRequest>, I>>(base?: I): ImportSqlRequest {
+    return ImportSqlRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ImportSqlRequest>, I>>(object: I): ImportSqlRequest {
+    const message = createBaseImportSqlRequest();
+    message.statement = object.statement ?? "";
+    return message;
+  },
+};
+
+function createBaseImportSqlResponse(): ImportSqlResponse {
+  return {};
+}
+
+export const ImportSqlResponse: MessageFns<ImportSqlResponse> = {
+  encode(_: ImportSqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportSqlResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportSqlResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ImportSqlResponse {
+    return {};
+  },
+
+  toJSON(_: ImportSqlResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ImportSqlResponse>, I>>(base?: I): ImportSqlResponse {
+    return ImportSqlResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ImportSqlResponse>, I>>(_: I): ImportSqlResponse {
+    const message = createBaseImportSqlResponse();
+    return message;
+  },
+};
+
+function createBaseExportSqlRequest(): ExportSqlRequest {
+  return {
+    users: false,
+    accesses: false,
+    params: false,
+    functions: false,
+    analyzers: false,
+    tables: undefined,
+    versions: false,
+    records: false,
+    sequences: false,
+  };
+}
+
+export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
+  encode(message: ExportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.users !== false) {
+      writer.uint32(8).bool(message.users);
+    }
+    if (message.accesses !== false) {
+      writer.uint32(16).bool(message.accesses);
+    }
+    if (message.params !== false) {
+      writer.uint32(24).bool(message.params);
+    }
+    if (message.functions !== false) {
+      writer.uint32(32).bool(message.functions);
+    }
+    if (message.analyzers !== false) {
+      writer.uint32(40).bool(message.analyzers);
+    }
+    if (message.tables !== undefined) {
+      ExportSqlRequest_Tables.encode(message.tables, writer.uint32(50).fork()).join();
+    }
+    if (message.versions !== false) {
+      writer.uint32(56).bool(message.versions);
+    }
+    if (message.records !== false) {
+      writer.uint32(64).bool(message.records);
+    }
+    if (message.sequences !== false) {
+      writer.uint32(72).bool(message.sequences);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportSqlRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.users = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accesses = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.params = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.functions = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.analyzers = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.tables = ExportSqlRequest_Tables.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.versions = reader.bool();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.records = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.sequences = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportSqlRequest {
+    return {
+      users: isSet(object.users) ? globalThis.Boolean(object.users) : false,
+      accesses: isSet(object.accesses) ? globalThis.Boolean(object.accesses) : false,
+      params: isSet(object.params) ? globalThis.Boolean(object.params) : false,
+      functions: isSet(object.functions) ? globalThis.Boolean(object.functions) : false,
+      analyzers: isSet(object.analyzers) ? globalThis.Boolean(object.analyzers) : false,
+      tables: isSet(object.tables) ? ExportSqlRequest_Tables.fromJSON(object.tables) : undefined,
+      versions: isSet(object.versions) ? globalThis.Boolean(object.versions) : false,
+      records: isSet(object.records) ? globalThis.Boolean(object.records) : false,
+      sequences: isSet(object.sequences) ? globalThis.Boolean(object.sequences) : false,
+    };
+  },
+
+  toJSON(message: ExportSqlRequest): unknown {
+    const obj: any = {};
+    if (message.users !== false) {
+      obj.users = message.users;
+    }
+    if (message.accesses !== false) {
+      obj.accesses = message.accesses;
+    }
+    if (message.params !== false) {
+      obj.params = message.params;
+    }
+    if (message.functions !== false) {
+      obj.functions = message.functions;
+    }
+    if (message.analyzers !== false) {
+      obj.analyzers = message.analyzers;
+    }
+    if (message.tables !== undefined) {
+      obj.tables = ExportSqlRequest_Tables.toJSON(message.tables);
+    }
+    if (message.versions !== false) {
+      obj.versions = message.versions;
+    }
+    if (message.records !== false) {
+      obj.records = message.records;
+    }
+    if (message.sequences !== false) {
+      obj.sequences = message.sequences;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(base?: I): ExportSqlRequest {
+    return ExportSqlRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(object: I): ExportSqlRequest {
+    const message = createBaseExportSqlRequest();
+    message.users = object.users ?? false;
+    message.accesses = object.accesses ?? false;
+    message.params = object.params ?? false;
+    message.functions = object.functions ?? false;
+    message.analyzers = object.analyzers ?? false;
+    message.tables = (object.tables !== undefined && object.tables !== null)
+      ? ExportSqlRequest_Tables.fromPartial(object.tables)
+      : undefined;
+    message.versions = object.versions ?? false;
+    message.records = object.records ?? false;
+    message.sequences = object.sequences ?? false;
+    return message;
+  },
+};
+
+function createBaseExportSqlRequest_SelectedTables(): ExportSqlRequest_SelectedTables {
+  return { tables: [] };
+}
+
+export const ExportSqlRequest_SelectedTables: MessageFns<ExportSqlRequest_SelectedTables> = {
+  encode(message: ExportSqlRequest_SelectedTables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.tables) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest_SelectedTables {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportSqlRequest_SelectedTables();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tables.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportSqlRequest_SelectedTables {
+    return {
+      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: ExportSqlRequest_SelectedTables): unknown {
+    const obj: any = {};
+    if (message.tables?.length) {
+      obj.tables = message.tables;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportSqlRequest_SelectedTables>, I>>(base?: I): ExportSqlRequest_SelectedTables {
+    return ExportSqlRequest_SelectedTables.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest_SelectedTables>, I>>(
+    object: I,
+  ): ExportSqlRequest_SelectedTables {
+    const message = createBaseExportSqlRequest_SelectedTables();
+    message.tables = object.tables?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseExportSqlRequest_Tables(): ExportSqlRequest_Tables {
+  return { selection: undefined };
+}
+
+export const ExportSqlRequest_Tables: MessageFns<ExportSqlRequest_Tables> = {
+  encode(message: ExportSqlRequest_Tables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.selection?.$case) {
+      case "all":
+        NullValue.encode(message.selection.all, writer.uint32(10).fork()).join();
+        break;
+      case "none":
+        NullValue.encode(message.selection.none, writer.uint32(18).fork()).join();
+        break;
+      case "selected":
+        ExportSqlRequest_SelectedTables.encode(message.selection.selected, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest_Tables {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportSqlRequest_Tables();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.selection = { $case: "all", all: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.selection = { $case: "none", none: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.selection = {
+            $case: "selected",
+            selected: ExportSqlRequest_SelectedTables.decode(reader, reader.uint32()),
+          };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportSqlRequest_Tables {
+    return {
+      selection: isSet(object.all)
+        ? { $case: "all", all: NullValue.fromJSON(object.all) }
+        : isSet(object.none)
+        ? { $case: "none", none: NullValue.fromJSON(object.none) }
+        : isSet(object.selected)
+        ? { $case: "selected", selected: ExportSqlRequest_SelectedTables.fromJSON(object.selected) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ExportSqlRequest_Tables): unknown {
+    const obj: any = {};
+    if (message.selection?.$case === "all") {
+      obj.all = NullValue.toJSON(message.selection.all);
+    } else if (message.selection?.$case === "none") {
+      obj.none = NullValue.toJSON(message.selection.none);
+    } else if (message.selection?.$case === "selected") {
+      obj.selected = ExportSqlRequest_SelectedTables.toJSON(message.selection.selected);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportSqlRequest_Tables>, I>>(base?: I): ExportSqlRequest_Tables {
+    return ExportSqlRequest_Tables.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest_Tables>, I>>(object: I): ExportSqlRequest_Tables {
+    const message = createBaseExportSqlRequest_Tables();
+    switch (object.selection?.$case) {
+      case "all": {
+        if (object.selection?.all !== undefined && object.selection?.all !== null) {
+          message.selection = { $case: "all", all: NullValue.fromPartial(object.selection.all) };
+        }
+        break;
+      }
+      case "none": {
+        if (object.selection?.none !== undefined && object.selection?.none !== null) {
+          message.selection = { $case: "none", none: NullValue.fromPartial(object.selection.none) };
+        }
+        break;
+      }
+      case "selected": {
+        if (object.selection?.selected !== undefined && object.selection?.selected !== null) {
+          message.selection = {
+            $case: "selected",
+            selected: ExportSqlRequest_SelectedTables.fromPartial(object.selection.selected),
+          };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseExportSqlResponse(): ExportSqlResponse {
+  return { statement: "" };
+}
+
+export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
+  encode(message: ExportSqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.statement !== "") {
+      writer.uint32(10).string(message.statement);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportSqlResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportSqlResponse {
+    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
+  },
+
+  toJSON(message: ExportSqlResponse): unknown {
+    const obj: any = {};
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(base?: I): ExportSqlResponse {
+    return ExportSqlResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(object: I): ExportSqlResponse {
+    const message = createBaseExportSqlResponse();
+    message.statement = object.statement ?? "";
+    return message;
+  },
+};
+
+function createBaseExportMlModelRequest(): ExportMlModelRequest {
+  return { name: "", version: "" };
+}
+
+export const ExportMlModelRequest: MessageFns<ExportMlModelRequest> = {
+  encode(message: ExportMlModelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.version !== "") {
+      writer.uint32(18).string(message.version);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportMlModelRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportMlModelRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportMlModelRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+    };
+  },
+
+  toJSON(message: ExportMlModelRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportMlModelRequest>, I>>(base?: I): ExportMlModelRequest {
+    return ExportMlModelRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportMlModelRequest>, I>>(object: I): ExportMlModelRequest {
+    const message = createBaseExportMlModelRequest();
+    message.name = object.name ?? "";
+    message.version = object.version ?? "";
+    return message;
+  },
+};
+
+function createBaseExportMlModelResponse(): ExportMlModelResponse {
+  return { model: new Uint8Array(0) };
+}
+
+export const ExportMlModelResponse: MessageFns<ExportMlModelResponse> = {
+  encode(message: ExportMlModelResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.model.length !== 0) {
+      writer.uint32(10).bytes(message.model);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportMlModelResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportMlModelResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.model = reader.bytes();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportMlModelResponse {
+    return { model: isSet(object.model) ? bytesFromBase64(object.model) : new Uint8Array(0) };
+  },
+
+  toJSON(message: ExportMlModelResponse): unknown {
+    const obj: any = {};
+    if (message.model.length !== 0) {
+      obj.model = base64FromBytes(message.model);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportMlModelResponse>, I>>(base?: I): ExportMlModelResponse {
+    return ExportMlModelResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportMlModelResponse>, I>>(object: I): ExportMlModelResponse {
+    const message = createBaseExportMlModelResponse();
+    message.model = object.model ?? new Uint8Array(0);
     return message;
   },
 };
@@ -1620,7 +2428,7 @@ export const Notification: MessageFns<Notification> = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { query: "", variables: undefined };
+  return { query: "", variables: undefined, txnId: undefined };
 }
 
 export const QueryRequest: MessageFns<QueryRequest> = {
@@ -1630,6 +2438,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     }
     if (message.variables !== undefined) {
       Variables.encode(message.variables, writer.uint32(18).fork()).join();
+    }
+    if (message.txnId !== undefined) {
+      Uuid.encode(message.txnId, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -1657,6 +2468,14 @@ export const QueryRequest: MessageFns<QueryRequest> = {
           message.variables = Variables.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.txnId = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1670,6 +2489,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     return {
       query: isSet(object.query) ? globalThis.String(object.query) : "",
       variables: isSet(object.variables) ? Variables.fromJSON(object.variables) : undefined,
+      txnId: isSet(object.txnId) ? Uuid.fromJSON(object.txnId) : undefined,
     };
   },
 
@@ -1680,6 +2500,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     }
     if (message.variables !== undefined) {
       obj.variables = Variables.toJSON(message.variables);
+    }
+    if (message.txnId !== undefined) {
+      obj.txnId = Uuid.toJSON(message.txnId);
     }
     return obj;
   },
@@ -1693,6 +2516,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     message.variables = (object.variables !== undefined && object.variables !== null)
       ? Variables.fromPartial(object.variables)
       : undefined;
+    message.txnId = (object.txnId !== undefined && object.txnId !== null) ? Uuid.fromPartial(object.txnId) : undefined;
     return message;
   },
 };
@@ -2815,161 +3639,6 @@ export const AccessMethod: MessageFns<AccessMethod> = {
   },
 };
 
-function createBaseVariables(): Variables {
-  return { variables: {} };
-}
-
-export const Variables: MessageFns<Variables> = {
-  encode(message: Variables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    Object.entries(message.variables).forEach(([key, value]) => {
-      Variables_VariablesEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
-    });
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Variables {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVariables();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          const entry1 = Variables_VariablesEntry.decode(reader, reader.uint32());
-          if (entry1.value !== undefined) {
-            message.variables[entry1.key] = entry1.value;
-          }
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Variables {
-    return {
-      variables: isObject(object.variables)
-        ? Object.entries(object.variables).reduce<{ [key: string]: Value }>((acc, [key, value]) => {
-          acc[key] = Value.fromJSON(value);
-          return acc;
-        }, {})
-        : {},
-    };
-  },
-
-  toJSON(message: Variables): unknown {
-    const obj: any = {};
-    if (message.variables) {
-      const entries = Object.entries(message.variables);
-      if (entries.length > 0) {
-        obj.variables = {};
-        entries.forEach(([k, v]) => {
-          obj.variables[k] = Value.toJSON(v);
-        });
-      }
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Variables>, I>>(base?: I): Variables {
-    return Variables.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Variables>, I>>(object: I): Variables {
-    const message = createBaseVariables();
-    message.variables = Object.entries(object.variables ?? {}).reduce<{ [key: string]: Value }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = Value.fromPartial(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBaseVariables_VariablesEntry(): Variables_VariablesEntry {
-  return { key: "", value: undefined };
-}
-
-export const Variables_VariablesEntry: MessageFns<Variables_VariablesEntry> = {
-  encode(message: Variables_VariablesEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Variables_VariablesEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVariables_VariablesEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Variables_VariablesEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
-    };
-  },
-
-  toJSON(message: Variables_VariablesEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Variables_VariablesEntry>, I>>(base?: I): Variables_VariablesEntry {
-    return Variables_VariablesEntry.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Variables_VariablesEntry>, I>>(object: I): Variables_VariablesEntry {
-    const message = createBaseVariables_VariablesEntry();
-    message.key = object.key ?? "";
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
-    return message;
-  },
-};
-
 /** SurrealDB service. */
 export interface SurrealDBService {
   /** Check the health of the database. */
@@ -2988,8 +3657,19 @@ export interface SurrealDBService {
   Set(request: SetRequest): Promise<SetResponse>;
   /** Unset a global variable for the current session. */
   Unset(request: UnsetRequest): Promise<UnsetResponse>;
-  /** Reset all global variables for the current session. */
+  /** Clear the current IAM session info. */
+  Invalidate(request: InvalidateRequest): Promise<InvalidateResponse>;
+  /** Clear the current IAM session info and reset all global variables for the current session (ns, db, vars). */
   Reset(request: ResetRequest): Promise<ResetResponse>;
+  /**
+   * Import data into the database.
+   * All statements are executed in the same transaction.
+   */
+  ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse>;
+  /** Export data from the database. */
+  ExportSql(request: ExportSqlRequest): Observable<ExportSqlResponse>;
+  /** Export the ML model. */
+  ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse>;
   /** Query the database and get a stream of values. */
   Query(request: QueryRequest): Observable<QueryResponse>;
   /** Issue a live query and get a stream of notifications. */
@@ -3011,7 +3691,11 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.Use = this.Use.bind(this);
     this.Set = this.Set.bind(this);
     this.Unset = this.Unset.bind(this);
+    this.Invalidate = this.Invalidate.bind(this);
     this.Reset = this.Reset.bind(this);
+    this.ImportSql = this.ImportSql.bind(this);
+    this.ExportSql = this.ExportSql.bind(this);
+    this.ExportMlModel = this.ExportMlModel.bind(this);
     this.Query = this.Query.bind(this);
     this.Subscribe = this.Subscribe.bind(this);
   }
@@ -3063,10 +3747,34 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return promise.then((data) => UnsetResponse.decode(new BinaryReader(data)));
   }
 
+  Invalidate(request: InvalidateRequest): Promise<InvalidateResponse> {
+    const data = InvalidateRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Invalidate", data);
+    return promise.then((data) => InvalidateResponse.decode(new BinaryReader(data)));
+  }
+
   Reset(request: ResetRequest): Promise<ResetResponse> {
     const data = ResetRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Reset", data);
     return promise.then((data) => ResetResponse.decode(new BinaryReader(data)));
+  }
+
+  ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse> {
+    const data = request.pipe(map((request) => ImportSqlRequest.encode(request).finish()));
+    const promise = this.rpc.clientStreamingRequest(this.service, "ImportSql", data);
+    return promise.then((data) => ImportSqlResponse.decode(new BinaryReader(data)));
+  }
+
+  ExportSql(request: ExportSqlRequest): Observable<ExportSqlResponse> {
+    const data = ExportSqlRequest.encode(request).finish();
+    const result = this.rpc.serverStreamingRequest(this.service, "ExportSql", data);
+    return result.pipe(map((data) => ExportSqlResponse.decode(new BinaryReader(data))));
+  }
+
+  ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse> {
+    const data = ExportMlModelRequest.encode(request).finish();
+    const result = this.rpc.serverStreamingRequest(this.service, "ExportMlModel", data);
+    return result.pipe(map((data) => ExportMlModelResponse.decode(new BinaryReader(data))));
   }
 
   Query(request: QueryRequest): Observable<QueryResponse> {
@@ -3087,6 +3795,31 @@ interface Rpc {
   clientStreamingRequest(service: string, method: string, data: Observable<Uint8Array>): Promise<Uint8Array>;
   serverStreamingRequest(service: string, method: string, data: Uint8Array): Observable<Uint8Array>;
   bidirectionalStreamingRequest(service: string, method: string, data: Observable<Uint8Array>): Observable<Uint8Array>;
+}
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if ((globalThis as any).Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if ((globalThis as any).Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(globalThis.String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | bigint | undefined;
@@ -3122,10 +3855,6 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

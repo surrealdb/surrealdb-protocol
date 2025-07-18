@@ -1,10 +1,15 @@
-//! SurrealDB Protobuf and gRPC protocol.
-//!
-//! All common protobuf messages are defined in the `v1` module.
-//! The `rpc` module contains the gRPC messages.
+#![doc = include_str!("../README.md")]
 
 mod convert;
 mod methods;
+
+pub use convert::{TryFromValue, TryIntoValue};
+
+#[cfg(feature = "rpc")]
+mod rpc_methods;
+
+#[cfg(feature = "rpc")]
+pub use rpc_methods::{QueryResponseValueStream, TryFromQueryStream};
 
 #[cfg(feature = "proto")]
 pub mod proto {
