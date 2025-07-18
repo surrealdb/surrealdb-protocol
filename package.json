@@ -1,9 +1,15 @@
 {
   "name": "@surrealdb/protocol",
   "module": "typescript/index.ts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
-  "license": "Apache-2.0",
+  "license": "BUSL-1.1",
+  "licenses": [
+    {
+      "type": "BUSL-1.1",
+      "url": "https://github.com/surrealdb/surrealdb-protocol/blob/main/LICENSE"
+    }
+  ],
   "description": "The official SurrealDB Client Protocol for TypeScript.",
   "keywords": [
     "surrealdb",
