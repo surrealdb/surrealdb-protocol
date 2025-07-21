@@ -2011,7 +2011,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor =
   (ProtobufCMessageInit) surrealdb__protocol__v1__value__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__v1__id__field_descriptors[4] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__id__field_descriptors[5] =
 {
   {
     "int64",
@@ -2061,17 +2061,30 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__id__field_descrip
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "range",
+    5,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Id, id_case),
+    offsetof(Surrealdb__Protocol__V1__Id, range),
+    &surrealdb__protocol__v1__range__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned surrealdb__protocol__v1__id__field_indices_by_name[] = {
   3,   /* field[3] = array */
   0,   /* field[0] = int64 */
+  4,   /* field[4] = range */
   1,   /* field[1] = string */
   2,   /* field[2] = uuid */
 };
 static const ProtobufCIntRange surrealdb__protocol__v1__id__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 4 }
+  { 0, 5 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__v1__id__descriptor =
 {
@@ -2081,7 +2094,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__id__descriptor =
   "Surrealdb__Protocol__V1__Id",
   "surrealdb.protocol.v1",
   sizeof(Surrealdb__Protocol__V1__Id),
-  4,
+  5,
   surrealdb__protocol__v1__id__field_descriptors,
   surrealdb__protocol__v1__id__field_indices_by_name,
   1,  surrealdb__protocol__v1__id__number_ranges,

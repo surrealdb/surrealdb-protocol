@@ -143,6 +143,7 @@ message Id {
         string string = 2;
         Uuid uuid = 3;
         Array array = 4;
+        Range range = 5;
     }
 }
 

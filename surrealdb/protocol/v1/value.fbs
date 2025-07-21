@@ -136,7 +136,8 @@ union IdType {
     Int64: Int64Value (id: 1),
     String: StringValue (id: 2),
     Uuid: surrealdb.protocol.v1.Uuid (id: 3),
-    Array (id: 4)
+    Array (id: 4),
+    Range (id: 5),
 }
 
 table Id {

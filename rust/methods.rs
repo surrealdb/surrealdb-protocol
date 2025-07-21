@@ -118,7 +118,7 @@ impl Value {
     /// Creates a new `Value` with a `RecordId` value.
     pub fn record_id(value: RecordId) -> Self {
         Self {
-            value: Some(ValueEnum::RecordId(value)),
+            value: Some(ValueEnum::RecordId(Box::new(value))),
         }
     }
 
@@ -324,7 +324,10 @@ impl MultiPolygon {
 impl RecordId {
     /// Creates a new `RecordId` with a `table` and `id` value.
     pub fn new(table: String, id: Option<Id>) -> Self {
-        Self { table, id }
+        Self {
+            table,
+            id: id.map(Box::new),
+        }
     }
 }
 

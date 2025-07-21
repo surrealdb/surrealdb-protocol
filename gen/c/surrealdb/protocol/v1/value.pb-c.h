@@ -401,7 +401,8 @@ typedef enum {
   SURREALDB__PROTOCOL__V1__ID__ID_INT64 = 1,
   SURREALDB__PROTOCOL__V1__ID__ID_STRING = 2,
   SURREALDB__PROTOCOL__V1__ID__ID_UUID = 3,
-  SURREALDB__PROTOCOL__V1__ID__ID_ARRAY = 4
+  SURREALDB__PROTOCOL__V1__ID__ID_ARRAY = 4,
+  SURREALDB__PROTOCOL__V1__ID__ID_RANGE = 5
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__ID__ID__CASE)
 } Surrealdb__Protocol__V1__Id__IdCase;
 
@@ -416,6 +417,7 @@ struct  Surrealdb__Protocol__V1__Id
     int64_t int64;
     char *string;
     Surrealdb__Protocol__V1__Array *array;
+    Surrealdb__Protocol__V1__Range *range;
     Surrealdb__Protocol__V1__Uuid *uuid;
   };
 };

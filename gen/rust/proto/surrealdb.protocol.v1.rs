@@ -155,8 +155,8 @@ pub struct RecordId {
     #[prost(string, tag="1")]
     pub table: ::prost::alloc::string::String,
     /// Record ID.
-    #[prost(message, optional, tag="2")]
-    pub id: ::core::option::Option<Id>,
+    #[prost(message, optional, boxed, tag="2")]
+    pub id: ::core::option::Option<::prost::alloc::boxed::Box<Id>>,
 }
 impl ::prost::Name for RecordId {
 const NAME: &'static str = "RecordId";
@@ -281,7 +281,7 @@ pub mod value {
         #[prost(message, tag="14")]
         Geometry(super::Geometry),
         #[prost(message, tag="15")]
-        RecordId(super::RecordId),
+        RecordId(::prost::alloc::boxed::Box<super::RecordId>),
         #[prost(message, tag="16")]
         File(super::File),
         #[prost(message, tag="17")]
@@ -296,7 +296,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Value"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Id {
-    #[prost(oneof="id::Id", tags="1, 2, 3, 4")]
+    #[prost(oneof="id::Id", tags="1, 2, 3, 4, 5")]
     pub id: ::core::option::Option<id::Id>,
 }
 /// Nested message and enum types in `Id`.
@@ -312,6 +312,8 @@ pub mod id {
         Uuid(super::Uuid),
         #[prost(message, tag="4")]
         Array(super::Array),
+        #[prost(message, tag="5")]
+        Range(::prost::alloc::boxed::Box<super::Range>),
     }
 }
 impl ::prost::Name for Id {

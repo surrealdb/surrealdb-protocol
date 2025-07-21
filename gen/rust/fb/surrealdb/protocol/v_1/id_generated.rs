@@ -118,6 +118,21 @@ impl<'a> Id<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn id_as_range(&self) -> Option<Range<'a>> {
+    if self.id_type() == IdType::Range {
+      self.id().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Range::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl flatbuffers::Verifiable for Id<'_> {
@@ -133,6 +148,7 @@ impl flatbuffers::Verifiable for Id<'_> {
           IdType::String => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("IdType::String", pos),
           IdType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("IdType::Uuid", pos),
           IdType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("IdType::Array", pos),
+          IdType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Range>>("IdType::Range", pos),
           _ => Ok(()),
         }
      })?
@@ -210,6 +226,13 @@ impl core::fmt::Debug for Id<'_> {
         },
         IdType::Array => {
           if let Some(x) = self.id_as_array() {
+            ds.field("id", &x)
+          } else {
+            ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        IdType::Range => {
+          if let Some(x) = self.id_as_range() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")

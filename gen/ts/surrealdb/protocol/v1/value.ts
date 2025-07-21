@@ -149,10 +149,13 @@ export interface Value {
 
 /** ID type. */
 export interface Id {
-  id?: { $case: "int64"; int64: bigint } | { $case: "string"; string: string } | { $case: "uuid"; uuid: Uuid } | {
-    $case: "array";
-    array: Array;
-  } | undefined;
+  id?:
+    | { $case: "int64"; int64: bigint }
+    | { $case: "string"; string: string }
+    | { $case: "uuid"; uuid: Uuid }
+    | { $case: "array"; array: Array }
+    | { $case: "range"; range: Range }
+    | undefined;
 }
 
 /** Variables. */
@@ -1968,6 +1971,9 @@ export const Id: MessageFns<Id> = {
       case "array":
         Array.encode(message.id.array, writer.uint32(34).fork()).join();
         break;
+      case "range":
+        Range.encode(message.id.range, writer.uint32(42).fork()).join();
+        break;
     }
     return writer;
   },
@@ -2011,6 +2017,14 @@ export const Id: MessageFns<Id> = {
           message.id = { $case: "array", array: Array.decode(reader, reader.uint32()) };
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.id = { $case: "range", range: Range.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2030,6 +2044,8 @@ export const Id: MessageFns<Id> = {
         ? { $case: "uuid", uuid: Uuid.fromJSON(object.uuid) }
         : isSet(object.array)
         ? { $case: "array", array: Array.fromJSON(object.array) }
+        : isSet(object.range)
+        ? { $case: "range", range: Range.fromJSON(object.range) }
         : undefined,
     };
   },
@@ -2044,6 +2060,8 @@ export const Id: MessageFns<Id> = {
       obj.uuid = Uuid.toJSON(message.id.uuid);
     } else if (message.id?.$case === "array") {
       obj.array = Array.toJSON(message.id.array);
+    } else if (message.id?.$case === "range") {
+      obj.range = Range.toJSON(message.id.range);
     }
     return obj;
   },
@@ -2075,6 +2093,12 @@ export const Id: MessageFns<Id> = {
       case "array": {
         if (object.id?.array !== undefined && object.id?.array !== null) {
           message.id = { $case: "array", array: Array.fromPartial(object.id.array) };
+        }
+        break;
+      }
+      case "range": {
+        if (object.id?.range !== undefined && object.id?.range !== null) {
+          message.id = { $case: "range", range: Range.fromPartial(object.id.range) };
         }
         break;
       }
