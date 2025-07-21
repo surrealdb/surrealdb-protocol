@@ -200,11 +200,48 @@ impl ::prost::Name for Object {
 const NAME: &'static str = "Object";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Object".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Object".into() }}
+/// Value bound type.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValueBound {
+    #[prost(oneof="value_bound::Bound", tags="1, 2, 3")]
+    pub bound: ::core::option::Option<value_bound::Bound>,
+}
+/// Nested message and enum types in `ValueBound`.
+pub mod value_bound {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Bound {
+        #[prost(message, tag="1")]
+        Inclusive(::prost::alloc::boxed::Box<super::Value>),
+        #[prost(message, tag="2")]
+        Exclusive(::prost::alloc::boxed::Box<super::Value>),
+        #[prost(message, tag="3")]
+        Unbounded(super::NullValue),
+    }
+}
+impl ::prost::Name for ValueBound {
+const NAME: &'static str = "ValueBound";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ValueBound".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.ValueBound".into() }}
+/// Range type.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Range {
+    #[prost(message, optional, boxed, tag="1")]
+    pub start: ::core::option::Option<::prost::alloc::boxed::Box<ValueBound>>,
+    #[prost(message, optional, boxed, tag="2")]
+    pub end: ::core::option::Option<::prost::alloc::boxed::Box<ValueBound>>,
+}
+impl ::prost::Name for Range {
+const NAME: &'static str = "Range";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Range".into() }}
 /// Value type.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16")]
+    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -247,6 +284,8 @@ pub mod value {
         RecordId(super::RecordId),
         #[prost(message, tag="16")]
         File(super::File),
+        #[prost(message, tag="17")]
+        Range(::prost::alloc::boxed::Box<super::Range>),
     }
 }
 impl ::prost::Name for Value {

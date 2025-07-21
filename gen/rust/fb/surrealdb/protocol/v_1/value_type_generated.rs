@@ -12,10 +12,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 16;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 17;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 17] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 18] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -33,6 +33,7 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 17] = [
   ValueType::Geometry,
   ValueType::RecordId,
   ValueType::File,
+  ValueType::Range,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -57,9 +58,10 @@ impl ValueType {
   pub const Geometry: Self = Self(14);
   pub const RecordId: Self = Self(15);
   pub const File: Self = Self(16);
+  pub const Range: Self = Self(17);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 16;
+  pub const ENUM_MAX: u8 = 17;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -78,6 +80,7 @@ impl ValueType {
     Self::Geometry,
     Self::RecordId,
     Self::File,
+    Self::Range,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -99,6 +102,7 @@ impl ValueType {
       Self::Geometry => Some("Geometry"),
       Self::RecordId => Some("RecordId"),
       Self::File => Some("File"),
+      Self::Range => Some("Range"),
       _ => None,
     }
   }

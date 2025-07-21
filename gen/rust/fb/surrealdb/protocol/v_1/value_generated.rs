@@ -298,6 +298,21 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_range(&self) -> Option<Range<'a>> {
+    if self.value_type() == ValueType::Range {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Range::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl flatbuffers::Verifiable for Value<'_> {
@@ -325,6 +340,7 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::Geometry => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Geometry>>("ValueType::Geometry", pos),
           ValueType::RecordId => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordId>>("ValueType::RecordId", pos),
           ValueType::File => v.verify_union_variant::<flatbuffers::ForwardsUOffset<File>>("ValueType::File", pos),
+          ValueType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Range>>("ValueType::Range", pos),
           _ => Ok(()),
         }
      })?
@@ -486,6 +502,13 @@ impl core::fmt::Debug for Value<'_> {
         },
         ValueType::File => {
           if let Some(x) = self.value_as_file() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Range => {
+          if let Some(x) = self.value_as_range() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

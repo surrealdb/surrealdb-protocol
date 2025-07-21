@@ -8,6 +8,8 @@ pub mod surrealdb {
       use super::*;
       mod geometry_type_generated;
       pub use self::geometry_type_generated::*;
+      mod value_bound_generated;
+      pub use self::value_bound_generated::*;
       mod value_type_generated;
       pub use self::value_type_generated::*;
       mod id_type_generated;
@@ -60,6 +62,8 @@ pub mod surrealdb {
       pub use self::key_value_generated::*;
       mod object_generated;
       pub use self::object_generated::*;
+      mod range_generated;
+      pub use self::range_generated::*;
       mod value_generated;
       pub use self::value_generated::*;
       mod id_generated;

@@ -33,6 +33,8 @@ typedef struct Surrealdb__Protocol__V1__File Surrealdb__Protocol__V1__File;
 typedef struct Surrealdb__Protocol__V1__Array Surrealdb__Protocol__V1__Array;
 typedef struct Surrealdb__Protocol__V1__Object Surrealdb__Protocol__V1__Object;
 typedef struct Surrealdb__Protocol__V1__Object__ItemsEntry Surrealdb__Protocol__V1__Object__ItemsEntry;
+typedef struct Surrealdb__Protocol__V1__ValueBound Surrealdb__Protocol__V1__ValueBound;
+typedef struct Surrealdb__Protocol__V1__Range Surrealdb__Protocol__V1__Range;
 typedef struct Surrealdb__Protocol__V1__Value Surrealdb__Protocol__V1__Value;
 typedef struct Surrealdb__Protocol__V1__Id Surrealdb__Protocol__V1__Id;
 typedef struct Surrealdb__Protocol__V1__Variables Surrealdb__Protocol__V1__Variables;
@@ -301,6 +303,46 @@ struct  Surrealdb__Protocol__V1__Object
 
 
 typedef enum {
+  SURREALDB__PROTOCOL__V1__VALUE_BOUND__BOUND__NOT_SET = 0,
+  SURREALDB__PROTOCOL__V1__VALUE_BOUND__BOUND_INCLUSIVE = 1,
+  SURREALDB__PROTOCOL__V1__VALUE_BOUND__BOUND_EXCLUSIVE = 2,
+  SURREALDB__PROTOCOL__V1__VALUE_BOUND__BOUND_UNBOUNDED = 3
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__VALUE_BOUND__BOUND__CASE)
+} Surrealdb__Protocol__V1__ValueBound__BoundCase;
+
+/*
+ * Value bound type.
+ */
+struct  Surrealdb__Protocol__V1__ValueBound
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__ValueBound__BoundCase bound_case;
+  union {
+    Surrealdb__Protocol__V1__Value *exclusive;
+    Surrealdb__Protocol__V1__Value *inclusive;
+    Surrealdb__Protocol__V1__NullValue *unbounded;
+  };
+};
+#define SURREALDB__PROTOCOL__V1__VALUE_BOUND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__value_bound__descriptor) \
+, SURREALDB__PROTOCOL__V1__VALUE_BOUND__BOUND__NOT_SET, {0} }
+
+
+/*
+ * Range type.
+ */
+struct  Surrealdb__Protocol__V1__Range
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__ValueBound *start;
+  Surrealdb__Protocol__V1__ValueBound *end;
+};
+#define SURREALDB__PROTOCOL__V1__RANGE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__range__descriptor) \
+, NULL, NULL }
+
+
+typedef enum {
   SURREALDB__PROTOCOL__V1__VALUE__VALUE__NOT_SET = 0,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_NULL = 1,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_BOOL = 2,
@@ -317,7 +359,8 @@ typedef enum {
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_OBJECT = 13,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_GEOMETRY = 14,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_RECORD_ID = 15,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_FILE = 16
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_FILE = 16,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_RANGE = 17
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__VALUE__VALUE__CASE)
 } Surrealdb__Protocol__V1__Value__ValueCase;
 
@@ -342,6 +385,7 @@ struct  Surrealdb__Protocol__V1__Value
     Surrealdb__Protocol__V1__Geometry *geometry;
     Surrealdb__Protocol__V1__NullValue *null;
     Surrealdb__Protocol__V1__Object *object;
+    Surrealdb__Protocol__V1__Range *range;
     Surrealdb__Protocol__V1__RecordId *record_id;
     Surrealdb__Protocol__V1__Uuid *uuid;
     protobuf_c_boolean bool_;
@@ -693,6 +737,44 @@ Surrealdb__Protocol__V1__Object *
 void   surrealdb__protocol__v1__object__free_unpacked
                      (Surrealdb__Protocol__V1__Object *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__ValueBound methods */
+void   surrealdb__protocol__v1__value_bound__init
+                     (Surrealdb__Protocol__V1__ValueBound         *message);
+size_t surrealdb__protocol__v1__value_bound__get_packed_size
+                     (const Surrealdb__Protocol__V1__ValueBound   *message);
+size_t surrealdb__protocol__v1__value_bound__pack
+                     (const Surrealdb__Protocol__V1__ValueBound   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__value_bound__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__ValueBound   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__ValueBound *
+       surrealdb__protocol__v1__value_bound__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__value_bound__free_unpacked
+                     (Surrealdb__Protocol__V1__ValueBound *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Range methods */
+void   surrealdb__protocol__v1__range__init
+                     (Surrealdb__Protocol__V1__Range         *message);
+size_t surrealdb__protocol__v1__range__get_packed_size
+                     (const Surrealdb__Protocol__V1__Range   *message);
+size_t surrealdb__protocol__v1__range__pack
+                     (const Surrealdb__Protocol__V1__Range   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__range__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Range   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Range *
+       surrealdb__protocol__v1__range__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__range__free_unpacked
+                     (Surrealdb__Protocol__V1__Range *message,
+                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__V1__Value methods */
 void   surrealdb__protocol__v1__value__init
                      (Surrealdb__Protocol__V1__Value         *message);
@@ -803,6 +885,12 @@ typedef void (*Surrealdb__Protocol__V1__Object__ItemsEntry_Closure)
 typedef void (*Surrealdb__Protocol__V1__Object_Closure)
                  (const Surrealdb__Protocol__V1__Object *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__ValueBound_Closure)
+                 (const Surrealdb__Protocol__V1__ValueBound *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Range_Closure)
+                 (const Surrealdb__Protocol__V1__Range *message,
+                  void *closure_data);
 typedef void (*Surrealdb__Protocol__V1__Value_Closure)
                  (const Surrealdb__Protocol__V1__Value *message,
                   void *closure_data);
@@ -837,6 +925,8 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__file__descripto
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__array__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__object__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__object__items_entry__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__value_bound__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__range__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__id__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__variables__descriptor;

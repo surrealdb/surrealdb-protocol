@@ -95,6 +95,17 @@ table Object {
     items:[KeyValue] (id: 0);
 }
 
+union ValueBound {
+    Inclusive: Value (id: 1),
+    Exclusive: Value (id: 2),
+    Unbounded: NullValue (id: 3),
+}
+
+table Range {
+    start: ValueBound (id: 1);
+    end: ValueBound (id: 3);
+}
+
 // Main Value union
 union ValueType {
     Null: NullValue (id: 1),
@@ -113,6 +124,7 @@ union ValueType {
     Geometry (id: 14),
     RecordId (id: 15),
     File (id: 16),
+    Range (id: 17),
 }
 
 table Value {
