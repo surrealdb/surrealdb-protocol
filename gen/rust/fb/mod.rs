@@ -12,8 +12,10 @@ pub mod surrealdb {
       pub use self::value_bound_generated::*;
       mod value_type_generated;
       pub use self::value_type_generated::*;
-      mod id_type_generated;
-      pub use self::id_type_generated::*;
+      mod record_id_key_bound_generated;
+      pub use self::record_id_key_bound_generated::*;
+      mod record_id_key_type_generated;
+      pub use self::record_id_key_type_generated::*;
       mod decimal_generated;
       pub use self::decimal_generated::*;
       mod bytes_generated;
@@ -66,8 +68,10 @@ pub mod surrealdb {
       pub use self::range_generated::*;
       mod value_generated;
       pub use self::value_generated::*;
-      mod id_generated;
-      pub use self::id_generated::*;
+      mod record_id_key_range_generated;
+      pub use self::record_id_key_range_generated::*;
+      mod record_id_key_generated;
+      pub use self::record_id_key_generated::*;
     } // v_1
   } // protocol
 } // surrealdb

@@ -84,7 +84,7 @@ export interface RecordId {
   /** Table name. */
   table: string;
   /** Record ID. */
-  id: Id | undefined;
+  id: RecordIdKey | undefined;
 }
 
 /** File type. */
@@ -147,14 +147,27 @@ export interface Value {
     | undefined;
 }
 
+export interface RecordIdKeyBound {
+  bound?: { $case: "inclusive"; inclusive: RecordIdKey } | { $case: "exclusive"; exclusive: RecordIdKey } | {
+    $case: "unbounded";
+    unbounded: NullValue;
+  } | undefined;
+}
+
+/** ID range type. */
+export interface RecordIdKeyRange {
+  start: RecordIdKeyBound | undefined;
+  end: RecordIdKeyBound | undefined;
+}
+
 /** ID type. */
-export interface Id {
+export interface RecordIdKey {
   id?:
     | { $case: "int64"; int64: bigint }
     | { $case: "string"; string: string }
     | { $case: "uuid"; uuid: Uuid }
     | { $case: "array"; array: Array }
-    | { $case: "range"; range: Range }
+    | { $case: "range"; range: RecordIdKeyRange }
     | undefined;
 }
 
@@ -990,7 +1003,7 @@ export const RecordId: MessageFns<RecordId> = {
       writer.uint32(10).string(message.table);
     }
     if (message.id !== undefined) {
-      Id.encode(message.id, writer.uint32(18).fork()).join();
+      RecordIdKey.encode(message.id, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -1015,7 +1028,7 @@ export const RecordId: MessageFns<RecordId> = {
             break;
           }
 
-          message.id = Id.decode(reader, reader.uint32());
+          message.id = RecordIdKey.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1030,7 +1043,7 @@ export const RecordId: MessageFns<RecordId> = {
   fromJSON(object: any): RecordId {
     return {
       table: isSet(object.table) ? globalThis.String(object.table) : "",
-      id: isSet(object.id) ? Id.fromJSON(object.id) : undefined,
+      id: isSet(object.id) ? RecordIdKey.fromJSON(object.id) : undefined,
     };
   },
 
@@ -1040,7 +1053,7 @@ export const RecordId: MessageFns<RecordId> = {
       obj.table = message.table;
     }
     if (message.id !== undefined) {
-      obj.id = Id.toJSON(message.id);
+      obj.id = RecordIdKey.toJSON(message.id);
     }
     return obj;
   },
@@ -1051,7 +1064,7 @@ export const RecordId: MessageFns<RecordId> = {
   fromPartial<I extends Exact<DeepPartial<RecordId>, I>>(object: I): RecordId {
     const message = createBaseRecordId();
     message.table = object.table ?? "";
-    message.id = (object.id !== undefined && object.id !== null) ? Id.fromPartial(object.id) : undefined;
+    message.id = (object.id !== undefined && object.id !== null) ? RecordIdKey.fromPartial(object.id) : undefined;
     return message;
   },
 };
@@ -1949,12 +1962,205 @@ export const Value: MessageFns<Value> = {
   },
 };
 
-function createBaseId(): Id {
+function createBaseRecordIdKeyBound(): RecordIdKeyBound {
+  return { bound: undefined };
+}
+
+export const RecordIdKeyBound: MessageFns<RecordIdKeyBound> = {
+  encode(message: RecordIdKeyBound, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.bound?.$case) {
+      case "inclusive":
+        RecordIdKey.encode(message.bound.inclusive, writer.uint32(10).fork()).join();
+        break;
+      case "exclusive":
+        RecordIdKey.encode(message.bound.exclusive, writer.uint32(18).fork()).join();
+        break;
+      case "unbounded":
+        NullValue.encode(message.bound.unbounded, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RecordIdKeyBound {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecordIdKeyBound();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.bound = { $case: "inclusive", inclusive: RecordIdKey.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.bound = { $case: "exclusive", exclusive: RecordIdKey.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.bound = { $case: "unbounded", unbounded: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RecordIdKeyBound {
+    return {
+      bound: isSet(object.inclusive)
+        ? { $case: "inclusive", inclusive: RecordIdKey.fromJSON(object.inclusive) }
+        : isSet(object.exclusive)
+        ? { $case: "exclusive", exclusive: RecordIdKey.fromJSON(object.exclusive) }
+        : isSet(object.unbounded)
+        ? { $case: "unbounded", unbounded: NullValue.fromJSON(object.unbounded) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: RecordIdKeyBound): unknown {
+    const obj: any = {};
+    if (message.bound?.$case === "inclusive") {
+      obj.inclusive = RecordIdKey.toJSON(message.bound.inclusive);
+    } else if (message.bound?.$case === "exclusive") {
+      obj.exclusive = RecordIdKey.toJSON(message.bound.exclusive);
+    } else if (message.bound?.$case === "unbounded") {
+      obj.unbounded = NullValue.toJSON(message.bound.unbounded);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RecordIdKeyBound>, I>>(base?: I): RecordIdKeyBound {
+    return RecordIdKeyBound.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RecordIdKeyBound>, I>>(object: I): RecordIdKeyBound {
+    const message = createBaseRecordIdKeyBound();
+    switch (object.bound?.$case) {
+      case "inclusive": {
+        if (object.bound?.inclusive !== undefined && object.bound?.inclusive !== null) {
+          message.bound = { $case: "inclusive", inclusive: RecordIdKey.fromPartial(object.bound.inclusive) };
+        }
+        break;
+      }
+      case "exclusive": {
+        if (object.bound?.exclusive !== undefined && object.bound?.exclusive !== null) {
+          message.bound = { $case: "exclusive", exclusive: RecordIdKey.fromPartial(object.bound.exclusive) };
+        }
+        break;
+      }
+      case "unbounded": {
+        if (object.bound?.unbounded !== undefined && object.bound?.unbounded !== null) {
+          message.bound = { $case: "unbounded", unbounded: NullValue.fromPartial(object.bound.unbounded) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseRecordIdKeyRange(): RecordIdKeyRange {
+  return { start: undefined, end: undefined };
+}
+
+export const RecordIdKeyRange: MessageFns<RecordIdKeyRange> = {
+  encode(message: RecordIdKeyRange, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.start !== undefined) {
+      RecordIdKeyBound.encode(message.start, writer.uint32(10).fork()).join();
+    }
+    if (message.end !== undefined) {
+      RecordIdKeyBound.encode(message.end, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RecordIdKeyRange {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecordIdKeyRange();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.start = RecordIdKeyBound.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.end = RecordIdKeyBound.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RecordIdKeyRange {
+    return {
+      start: isSet(object.start) ? RecordIdKeyBound.fromJSON(object.start) : undefined,
+      end: isSet(object.end) ? RecordIdKeyBound.fromJSON(object.end) : undefined,
+    };
+  },
+
+  toJSON(message: RecordIdKeyRange): unknown {
+    const obj: any = {};
+    if (message.start !== undefined) {
+      obj.start = RecordIdKeyBound.toJSON(message.start);
+    }
+    if (message.end !== undefined) {
+      obj.end = RecordIdKeyBound.toJSON(message.end);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RecordIdKeyRange>, I>>(base?: I): RecordIdKeyRange {
+    return RecordIdKeyRange.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RecordIdKeyRange>, I>>(object: I): RecordIdKeyRange {
+    const message = createBaseRecordIdKeyRange();
+    message.start = (object.start !== undefined && object.start !== null)
+      ? RecordIdKeyBound.fromPartial(object.start)
+      : undefined;
+    message.end = (object.end !== undefined && object.end !== null)
+      ? RecordIdKeyBound.fromPartial(object.end)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRecordIdKey(): RecordIdKey {
   return { id: undefined };
 }
 
-export const Id: MessageFns<Id> = {
-  encode(message: Id, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const RecordIdKey: MessageFns<RecordIdKey> = {
+  encode(message: RecordIdKey, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     switch (message.id?.$case) {
       case "int64":
         if (BigInt.asIntN(64, message.id.int64) !== message.id.int64) {
@@ -1972,16 +2178,16 @@ export const Id: MessageFns<Id> = {
         Array.encode(message.id.array, writer.uint32(34).fork()).join();
         break;
       case "range":
-        Range.encode(message.id.range, writer.uint32(42).fork()).join();
+        RecordIdKeyRange.encode(message.id.range, writer.uint32(42).fork()).join();
         break;
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): Id {
+  decode(input: BinaryReader | Uint8Array, length?: number): RecordIdKey {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseId();
+    const message = createBaseRecordIdKey();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2022,7 +2228,7 @@ export const Id: MessageFns<Id> = {
             break;
           }
 
-          message.id = { $case: "range", range: Range.decode(reader, reader.uint32()) };
+          message.id = { $case: "range", range: RecordIdKeyRange.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -2034,7 +2240,7 @@ export const Id: MessageFns<Id> = {
     return message;
   },
 
-  fromJSON(object: any): Id {
+  fromJSON(object: any): RecordIdKey {
     return {
       id: isSet(object.int64)
         ? { $case: "int64", int64: BigInt(object.int64) }
@@ -2045,12 +2251,12 @@ export const Id: MessageFns<Id> = {
         : isSet(object.array)
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : isSet(object.range)
-        ? { $case: "range", range: Range.fromJSON(object.range) }
+        ? { $case: "range", range: RecordIdKeyRange.fromJSON(object.range) }
         : undefined,
     };
   },
 
-  toJSON(message: Id): unknown {
+  toJSON(message: RecordIdKey): unknown {
     const obj: any = {};
     if (message.id?.$case === "int64") {
       obj.int64 = message.id.int64.toString();
@@ -2061,16 +2267,16 @@ export const Id: MessageFns<Id> = {
     } else if (message.id?.$case === "array") {
       obj.array = Array.toJSON(message.id.array);
     } else if (message.id?.$case === "range") {
-      obj.range = Range.toJSON(message.id.range);
+      obj.range = RecordIdKeyRange.toJSON(message.id.range);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<Id>, I>>(base?: I): Id {
-    return Id.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<RecordIdKey>, I>>(base?: I): RecordIdKey {
+    return RecordIdKey.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<Id>, I>>(object: I): Id {
-    const message = createBaseId();
+  fromPartial<I extends Exact<DeepPartial<RecordIdKey>, I>>(object: I): RecordIdKey {
+    const message = createBaseRecordIdKey();
     switch (object.id?.$case) {
       case "int64": {
         if (object.id?.int64 !== undefined && object.id?.int64 !== null) {
@@ -2098,7 +2304,7 @@ export const Id: MessageFns<Id> = {
       }
       case "range": {
         if (object.id?.range !== undefined && object.id?.range !== null) {
-          message.id = { $case: "range", range: Range.fromPartial(object.id.range) };
+          message.id = { $case: "range", range: RecordIdKeyRange.fromPartial(object.id.range) };
         }
         break;
       }

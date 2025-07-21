@@ -10,25 +10,25 @@ use core::cmp::Ordering;
 use self::flatbuffers::{EndianScalar, Follow};
 use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_ID_TYPE: u8 = 0;
+pub const ENUM_MIN_RECORD_ID_KEY_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_ID_TYPE: u8 = 5;
+pub const ENUM_MAX_RECORD_ID_KEY_TYPE: u8 = 5;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_ID_TYPE: [IdType; 6] = [
-  IdType::NONE,
-  IdType::Int64,
-  IdType::String,
-  IdType::Uuid,
-  IdType::Array,
-  IdType::Range,
+pub const ENUM_VALUES_RECORD_ID_KEY_TYPE: [RecordIdKeyType; 6] = [
+  RecordIdKeyType::NONE,
+  RecordIdKeyType::Int64,
+  RecordIdKeyType::String,
+  RecordIdKeyType::Uuid,
+  RecordIdKeyType::Array,
+  RecordIdKeyType::Range,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
-pub struct IdType(pub u8);
+pub struct RecordIdKeyType(pub u8);
 #[allow(non_upper_case_globals)]
-impl IdType {
+impl RecordIdKeyType {
   pub const NONE: Self = Self(0);
   pub const Int64: Self = Self(1);
   pub const String: Self = Self(2);
@@ -59,7 +59,7 @@ impl IdType {
     }
   }
 }
-impl core::fmt::Debug for IdType {
+impl core::fmt::Debug for RecordIdKeyType {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     if let Some(name) = self.variant_name() {
       f.write_str(name)
@@ -68,7 +68,7 @@ impl core::fmt::Debug for IdType {
     }
   }
 }
-impl<'a> flatbuffers::Follow<'a> for IdType {
+impl<'a> flatbuffers::Follow<'a> for RecordIdKeyType {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
@@ -77,15 +77,15 @@ impl<'a> flatbuffers::Follow<'a> for IdType {
   }
 }
 
-impl flatbuffers::Push for IdType {
-    type Output = IdType;
+impl flatbuffers::Push for RecordIdKeyType {
+    type Output = RecordIdKeyType;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
         flatbuffers::emplace_scalar::<u8>(dst, self.0);
     }
 }
 
-impl flatbuffers::EndianScalar for IdType {
+impl flatbuffers::EndianScalar for RecordIdKeyType {
   type Scalar = u8;
   #[inline]
   fn to_little_endian(self) -> u8 {
@@ -99,7 +99,7 @@ impl flatbuffers::EndianScalar for IdType {
   }
 }
 
-impl<'a> flatbuffers::Verifiable for IdType {
+impl<'a> flatbuffers::Verifiable for RecordIdKeyType {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
@@ -109,6 +109,6 @@ impl<'a> flatbuffers::Verifiable for IdType {
   }
 }
 
-impl flatbuffers::SimpleToVerifyInSlice for IdType {}
-pub struct IdTypeUnionTableOffset {}
+impl flatbuffers::SimpleToVerifyInSlice for RecordIdKeyType {}
+pub struct RecordIdKeyTypeUnionTableOffset {}
 

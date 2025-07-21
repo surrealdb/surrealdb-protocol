@@ -76,7 +76,7 @@ message RecordId {
     // Table name.
     string table = 1;
     // Record ID.
-    Id id = 2;
+    RecordIdKey id = 2;
 }
 
 // File type.
@@ -136,14 +136,28 @@ message Value {
     }
 }
 
+message RecordIdKeyBound {
+    oneof bound {
+        RecordIdKey inclusive = 1;
+        RecordIdKey exclusive = 2;
+        NullValue unbounded = 3;
+    }
+}
+
+// ID range type.
+message RecordIdKeyRange {
+    RecordIdKeyBound start = 1;
+    RecordIdKeyBound end = 2;
+}
+
 // ID type.
-message Id {
+message RecordIdKey {
     oneof id {
         int64 int64 = 1;
         string string = 2;
         Uuid uuid = 3;
         Array array = 4;
-        Range range = 5;
+        RecordIdKeyRange range = 5;
     }
 }
 

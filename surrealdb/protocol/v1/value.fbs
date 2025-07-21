@@ -72,7 +72,7 @@ table Geometry {
 
 table RecordId {
     table: string (id: 0);
-    id: Id (id: 1);
+    id: RecordIdKey (id: 1);
 }
 
 // File type
@@ -131,15 +131,27 @@ table Value {
     value: ValueType (id: 1);
 }
 
+
+union RecordIdKeyBound {
+    Inclusive: RecordIdKey (id: 1),
+    Exclusive: RecordIdKey (id: 2),
+    Unbounded: NullValue (id: 3),
+}
+
+table RecordIdKeyRange {
+    start: RecordIdKeyBound (id: 1);
+    end: RecordIdKeyBound (id: 3);
+}
+
 // ID types
-union IdType {
+union RecordIdKeyType {
     Int64: Int64Value (id: 1),
     String: StringValue (id: 2),
     Uuid: surrealdb.protocol.v1.Uuid (id: 3),
     Array (id: 4),
-    Range (id: 5),
+    Range: RecordIdKeyRange (id: 5),
 }
 
-table Id {
-    id: IdType (id: 1);
+table RecordIdKey {
+    id: RecordIdKeyType (id: 1);
 }

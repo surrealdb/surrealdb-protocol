@@ -1,7 +1,7 @@
 use crate::proto::v1::geometry::Geometry as GeometryEnum;
 use crate::proto::v1::{
-    Array, Decimal, File, Geometry, GeometryCollection, Id, NullValue, Object, RecordId, Uuid,
-    Value,
+    Array, Decimal, File, Geometry, GeometryCollection, NullValue, Object, RecordId, RecordIdKey,
+    Uuid, Value,
 };
 use crate::proto::v1::{Line, MultiLine, MultiPoint, MultiPolygon, Point, Polygon};
 
@@ -118,7 +118,7 @@ impl Value {
     /// Creates a new `Value` with a `RecordId` value.
     pub fn record_id(value: RecordId) -> Self {
         Self {
-            value: Some(ValueEnum::RecordId(Box::new(value))),
+            value: Some(ValueEnum::RecordId(value)),
         }
     }
 
@@ -323,11 +323,8 @@ impl MultiPolygon {
 
 impl RecordId {
     /// Creates a new `RecordId` with a `table` and `id` value.
-    pub fn new(table: String, id: Option<Id>) -> Self {
-        Self {
-            table,
-            id: id.map(Box::new),
-        }
+    pub fn new(table: String, id: Option<RecordIdKey>) -> Self {
+        Self { table, id }
     }
 }
 

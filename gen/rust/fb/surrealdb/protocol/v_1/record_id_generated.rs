@@ -52,11 +52,11 @@ impl<'a> RecordId<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(RecordId::VT_TABLE, None)}
   }
   #[inline]
-  pub fn id(&self) -> Option<Id<'a>> {
+  pub fn id(&self) -> Option<RecordIdKey<'a>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<Id>>(RecordId::VT_ID, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<RecordIdKey>>(RecordId::VT_ID, None)}
   }
 }
 
@@ -68,14 +68,14 @@ impl flatbuffers::Verifiable for RecordId<'_> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("table", Self::VT_TABLE, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<Id>>("id", Self::VT_ID, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<RecordIdKey>>("id", Self::VT_ID, false)?
      .finish();
     Ok(())
   }
 }
 pub struct RecordIdArgs<'a> {
     pub table: Option<flatbuffers::WIPOffset<&'a str>>,
-    pub id: Option<flatbuffers::WIPOffset<Id<'a>>>,
+    pub id: Option<flatbuffers::WIPOffset<RecordIdKey<'a>>>,
 }
 impl<'a> Default for RecordIdArgs<'a> {
   #[inline]
@@ -97,8 +97,8 @@ impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> RecordIdBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(RecordId::VT_TABLE, table);
   }
   #[inline]
-  pub fn add_id(&mut self, id: flatbuffers::WIPOffset<Id<'b >>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Id>>(RecordId::VT_ID, id);
+  pub fn add_id(&mut self, id: flatbuffers::WIPOffset<RecordIdKey<'b >>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<RecordIdKey>>(RecordId::VT_ID, id);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> RecordIdBuilder<'a, 'b, A> {
