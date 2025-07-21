@@ -10,52 +10,48 @@ use core::cmp::Ordering;
 use self::flatbuffers::{EndianScalar, Follow};
 use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_DESTRUCTURE_PART_TYPE: u8 = 0;
+pub const ENUM_MIN_RECORD_ID_KEY_BOUND: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_DESTRUCTURE_PART_TYPE: u8 = 4;
+pub const ENUM_MAX_RECORD_ID_KEY_BOUND: u8 = 3;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_DESTRUCTURE_PART_TYPE: [DestructurePartType; 5] = [
-  DestructurePartType::NONE,
-  DestructurePartType::All,
-  DestructurePartType::Field,
-  DestructurePartType::Aliased,
-  DestructurePartType::Destructure,
+pub const ENUM_VALUES_RECORD_ID_KEY_BOUND: [RecordIdKeyBound; 4] = [
+  RecordIdKeyBound::NONE,
+  RecordIdKeyBound::Inclusive,
+  RecordIdKeyBound::Exclusive,
+  RecordIdKeyBound::Unbounded,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
-pub struct DestructurePartType(pub u8);
+pub struct RecordIdKeyBound(pub u8);
 #[allow(non_upper_case_globals)]
-impl DestructurePartType {
+impl RecordIdKeyBound {
   pub const NONE: Self = Self(0);
-  pub const All: Self = Self(1);
-  pub const Field: Self = Self(2);
-  pub const Aliased: Self = Self(3);
-  pub const Destructure: Self = Self(4);
+  pub const Inclusive: Self = Self(1);
+  pub const Exclusive: Self = Self(2);
+  pub const Unbounded: Self = Self(3);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 4;
+  pub const ENUM_MAX: u8 = 3;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
-    Self::All,
-    Self::Field,
-    Self::Aliased,
-    Self::Destructure,
+    Self::Inclusive,
+    Self::Exclusive,
+    Self::Unbounded,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
     match self {
       Self::NONE => Some("NONE"),
-      Self::All => Some("All"),
-      Self::Field => Some("Field"),
-      Self::Aliased => Some("Aliased"),
-      Self::Destructure => Some("Destructure"),
+      Self::Inclusive => Some("Inclusive"),
+      Self::Exclusive => Some("Exclusive"),
+      Self::Unbounded => Some("Unbounded"),
       _ => None,
     }
   }
 }
-impl core::fmt::Debug for DestructurePartType {
+impl core::fmt::Debug for RecordIdKeyBound {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     if let Some(name) = self.variant_name() {
       f.write_str(name)
@@ -64,7 +60,7 @@ impl core::fmt::Debug for DestructurePartType {
     }
   }
 }
-impl<'a> flatbuffers::Follow<'a> for DestructurePartType {
+impl<'a> flatbuffers::Follow<'a> for RecordIdKeyBound {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
@@ -73,15 +69,15 @@ impl<'a> flatbuffers::Follow<'a> for DestructurePartType {
   }
 }
 
-impl flatbuffers::Push for DestructurePartType {
-    type Output = DestructurePartType;
+impl flatbuffers::Push for RecordIdKeyBound {
+    type Output = RecordIdKeyBound;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
         flatbuffers::emplace_scalar::<u8>(dst, self.0);
     }
 }
 
-impl flatbuffers::EndianScalar for DestructurePartType {
+impl flatbuffers::EndianScalar for RecordIdKeyBound {
   type Scalar = u8;
   #[inline]
   fn to_little_endian(self) -> u8 {
@@ -95,7 +91,7 @@ impl flatbuffers::EndianScalar for DestructurePartType {
   }
 }
 
-impl<'a> flatbuffers::Verifiable for DestructurePartType {
+impl<'a> flatbuffers::Verifiable for RecordIdKeyBound {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
@@ -105,6 +101,6 @@ impl<'a> flatbuffers::Verifiable for DestructurePartType {
   }
 }
 
-impl flatbuffers::SimpleToVerifyInSlice for DestructurePartType {}
-pub struct DestructurePartTypeUnionTableOffset {}
+impl flatbuffers::SimpleToVerifyInSlice for RecordIdKeyBound {}
+pub struct RecordIdKeyBoundUnionTableOffset {}
 

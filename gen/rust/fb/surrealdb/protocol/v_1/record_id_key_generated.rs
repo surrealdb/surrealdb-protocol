@@ -9,35 +9,35 @@ use core::mem;
 use core::cmp::Ordering;
 use self::flatbuffers::{EndianScalar, Follow};
 use super::*;
-pub enum IdOffset {}
+pub enum RecordIdKeyOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-pub struct Id<'a> {
+pub struct RecordIdKey<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
 
-impl<'a> flatbuffers::Follow<'a> for Id<'a> {
-  type Inner = Id<'a>;
+impl<'a> flatbuffers::Follow<'a> for RecordIdKey<'a> {
+  type Inner = RecordIdKey<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
     Self { _tab: flatbuffers::Table::new(buf, loc) }
   }
 }
 
-impl<'a> Id<'a> {
+impl<'a> RecordIdKey<'a> {
   pub const VT_ID_TYPE: flatbuffers::VOffsetT = 4;
   pub const VT_ID: flatbuffers::VOffsetT = 6;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    Id { _tab: table }
+    RecordIdKey { _tab: table }
   }
   #[allow(unused_mut)]
   pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
     _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
-    args: &'args IdArgs
-  ) -> flatbuffers::WIPOffset<Id<'bldr>> {
-    let mut builder = IdBuilder::new(_fbb);
+    args: &'args RecordIdKeyArgs
+  ) -> flatbuffers::WIPOffset<RecordIdKey<'bldr>> {
+    let mut builder = RecordIdKeyBuilder::new(_fbb);
     if let Some(x) = args.id { builder.add_id(x); }
     builder.add_id_type(args.id_type);
     builder.finish()
@@ -45,23 +45,23 @@ impl<'a> Id<'a> {
 
 
   #[inline]
-  pub fn id_type(&self) -> IdType {
+  pub fn id_type(&self) -> RecordIdKeyType {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<IdType>(Id::VT_ID_TYPE, Some(IdType::NONE)).unwrap()}
+    unsafe { self._tab.get::<RecordIdKeyType>(RecordIdKey::VT_ID_TYPE, Some(RecordIdKeyType::NONE)).unwrap()}
   }
   #[inline]
   pub fn id(&self) -> Option<flatbuffers::Table<'a>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Table<'a>>>(Id::VT_ID, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Table<'a>>>(RecordIdKey::VT_ID, None)}
   }
   #[inline]
   #[allow(non_snake_case)]
   pub fn id_as_int_64(&self) -> Option<Int64Value<'a>> {
-    if self.id_type() == IdType::Int64 {
+    if self.id_type() == RecordIdKeyType::Int64 {
       self.id().map(|t| {
        // Safety:
        // Created from a valid Table for this object
@@ -76,7 +76,7 @@ impl<'a> Id<'a> {
   #[inline]
   #[allow(non_snake_case)]
   pub fn id_as_string(&self) -> Option<StringValue<'a>> {
-    if self.id_type() == IdType::String {
+    if self.id_type() == RecordIdKeyType::String {
       self.id().map(|t| {
        // Safety:
        // Created from a valid Table for this object
@@ -91,7 +91,7 @@ impl<'a> Id<'a> {
   #[inline]
   #[allow(non_snake_case)]
   pub fn id_as_uuid(&self) -> Option<Uuid<'a>> {
-    if self.id_type() == IdType::Uuid {
+    if self.id_type() == RecordIdKeyType::Uuid {
       self.id().map(|t| {
        // Safety:
        // Created from a valid Table for this object
@@ -106,7 +106,7 @@ impl<'a> Id<'a> {
   #[inline]
   #[allow(non_snake_case)]
   pub fn id_as_array(&self) -> Option<Array<'a>> {
-    if self.id_type() == IdType::Array {
+    if self.id_type() == RecordIdKeyType::Array {
       self.id().map(|t| {
        // Safety:
        // Created from a valid Table for this object
@@ -118,21 +118,37 @@ impl<'a> Id<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn id_as_range(&self) -> Option<RecordIdKeyRange<'a>> {
+    if self.id_type() == RecordIdKeyType::Range {
+      self.id().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { RecordIdKeyRange::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
-impl flatbuffers::Verifiable for Id<'_> {
+impl flatbuffers::Verifiable for RecordIdKey<'_> {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
   ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
-     .visit_union::<IdType, _>("id_type", Self::VT_ID_TYPE, "id", Self::VT_ID, false, |key, v, pos| {
+     .visit_union::<RecordIdKeyType, _>("id_type", Self::VT_ID_TYPE, "id", Self::VT_ID, false, |key, v, pos| {
         match key {
-          IdType::Int64 => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Int64Value>>("IdType::Int64", pos),
-          IdType::String => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("IdType::String", pos),
-          IdType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("IdType::Uuid", pos),
-          IdType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("IdType::Array", pos),
+          RecordIdKeyType::Int64 => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Int64Value>>("RecordIdKeyType::Int64", pos),
+          RecordIdKeyType::String => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("RecordIdKeyType::String", pos),
+          RecordIdKeyType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("RecordIdKeyType::Uuid", pos),
+          RecordIdKeyType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("RecordIdKeyType::Array", pos),
+          RecordIdKeyType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordIdKeyRange>>("RecordIdKeyType::Range", pos),
           _ => Ok(()),
         }
      })?
@@ -140,76 +156,83 @@ impl flatbuffers::Verifiable for Id<'_> {
     Ok(())
   }
 }
-pub struct IdArgs {
-    pub id_type: IdType,
+pub struct RecordIdKeyArgs {
+    pub id_type: RecordIdKeyType,
     pub id: Option<flatbuffers::WIPOffset<flatbuffers::UnionWIPOffset>>,
 }
-impl<'a> Default for IdArgs {
+impl<'a> Default for RecordIdKeyArgs {
   #[inline]
   fn default() -> Self {
-    IdArgs {
-      id_type: IdType::NONE,
+    RecordIdKeyArgs {
+      id_type: RecordIdKeyType::NONE,
       id: None,
     }
   }
 }
 
-pub struct IdBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+pub struct RecordIdKeyBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
   fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> IdBuilder<'a, 'b, A> {
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> RecordIdKeyBuilder<'a, 'b, A> {
   #[inline]
-  pub fn add_id_type(&mut self, id_type: IdType) {
-    self.fbb_.push_slot::<IdType>(Id::VT_ID_TYPE, id_type, IdType::NONE);
+  pub fn add_id_type(&mut self, id_type: RecordIdKeyType) {
+    self.fbb_.push_slot::<RecordIdKeyType>(RecordIdKey::VT_ID_TYPE, id_type, RecordIdKeyType::NONE);
   }
   #[inline]
   pub fn add_id(&mut self, id: flatbuffers::WIPOffset<flatbuffers::UnionWIPOffset>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Id::VT_ID, id);
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(RecordIdKey::VT_ID, id);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> IdBuilder<'a, 'b, A> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> RecordIdKeyBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
-    IdBuilder {
+    RecordIdKeyBuilder {
       fbb_: _fbb,
       start_: start,
     }
   }
   #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<Id<'a>> {
+  pub fn finish(self) -> flatbuffers::WIPOffset<RecordIdKey<'a>> {
     let o = self.fbb_.end_table(self.start_);
     flatbuffers::WIPOffset::new(o.value())
   }
 }
 
-impl core::fmt::Debug for Id<'_> {
+impl core::fmt::Debug for RecordIdKey<'_> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("Id");
+    let mut ds = f.debug_struct("RecordIdKey");
       ds.field("id_type", &self.id_type());
       match self.id_type() {
-        IdType::Int64 => {
+        RecordIdKeyType::Int64 => {
           if let Some(x) = self.id_as_int_64() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        IdType::String => {
+        RecordIdKeyType::String => {
           if let Some(x) = self.id_as_string() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        IdType::Uuid => {
+        RecordIdKeyType::Uuid => {
           if let Some(x) = self.id_as_uuid() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        IdType::Array => {
+        RecordIdKeyType::Array => {
           if let Some(x) = self.id_as_array() {
+            ds.field("id", &x)
+          } else {
+            ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        RecordIdKeyType::Range => {
+          if let Some(x) = self.id_as_range() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")

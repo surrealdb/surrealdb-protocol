@@ -76,7 +76,7 @@ message RecordId {
     // Table name.
     string table = 1;
     // Record ID.
-    Id id = 2;
+    RecordIdKey id = 2;
 }
 
 // File type.
@@ -95,6 +95,22 @@ message Array {
 // Object type.
 message Object {
     map<string, Value> items = 1;
+}
+
+
+// Value bound type.
+message ValueBound {
+    oneof bound {
+        Value inclusive = 1;
+        Value exclusive = 2;
+        NullValue unbounded = 3;
+    }
+}
+
+// Range type.
+message Range {
+    ValueBound start = 1;
+    ValueBound end = 2;
 }
 
 // Value type.
@@ -116,16 +132,32 @@ message Value {
         Geometry geometry = 14;
         RecordId record_id = 15;
         File file = 16;
+        Range range = 17;
     }
 }
 
+message RecordIdKeyBound {
+    oneof bound {
+        RecordIdKey inclusive = 1;
+        RecordIdKey exclusive = 2;
+        NullValue unbounded = 3;
+    }
+}
+
+// ID range type.
+message RecordIdKeyRange {
+    RecordIdKeyBound start = 1;
+    RecordIdKeyBound end = 2;
+}
+
 // ID type.
-message Id {
+message RecordIdKey {
     oneof id {
         int64 int64 = 1;
         string string = 2;
         Uuid uuid = 3;
         Array array = 4;
+        RecordIdKeyRange range = 5;
     }
 }
 

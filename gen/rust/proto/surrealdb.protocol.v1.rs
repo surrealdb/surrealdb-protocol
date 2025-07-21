@@ -156,7 +156,7 @@ pub struct RecordId {
     pub table: ::prost::alloc::string::String,
     /// Record ID.
     #[prost(message, optional, tag="2")]
-    pub id: ::core::option::Option<Id>,
+    pub id: ::core::option::Option<RecordIdKey>,
 }
 impl ::prost::Name for RecordId {
 const NAME: &'static str = "RecordId";
@@ -200,11 +200,48 @@ impl ::prost::Name for Object {
 const NAME: &'static str = "Object";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Object".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Object".into() }}
+/// Value bound type.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValueBound {
+    #[prost(oneof="value_bound::Bound", tags="1, 2, 3")]
+    pub bound: ::core::option::Option<value_bound::Bound>,
+}
+/// Nested message and enum types in `ValueBound`.
+pub mod value_bound {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Bound {
+        #[prost(message, tag="1")]
+        Inclusive(::prost::alloc::boxed::Box<super::Value>),
+        #[prost(message, tag="2")]
+        Exclusive(::prost::alloc::boxed::Box<super::Value>),
+        #[prost(message, tag="3")]
+        Unbounded(super::NullValue),
+    }
+}
+impl ::prost::Name for ValueBound {
+const NAME: &'static str = "ValueBound";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ValueBound".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.ValueBound".into() }}
+/// Range type.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Range {
+    #[prost(message, optional, boxed, tag="1")]
+    pub start: ::core::option::Option<::prost::alloc::boxed::Box<ValueBound>>,
+    #[prost(message, optional, boxed, tag="2")]
+    pub end: ::core::option::Option<::prost::alloc::boxed::Box<ValueBound>>,
+}
+impl ::prost::Name for Range {
+const NAME: &'static str = "Range";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Range".into() }}
 /// Value type.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16")]
+    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -247,21 +284,59 @@ pub mod value {
         RecordId(super::RecordId),
         #[prost(message, tag="16")]
         File(super::File),
+        #[prost(message, tag="17")]
+        Range(::prost::alloc::boxed::Box<super::Range>),
     }
 }
 impl ::prost::Name for Value {
 const NAME: &'static str = "Value";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Value".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Value".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RecordIdKeyBound {
+    #[prost(oneof="record_id_key_bound::Bound", tags="1, 2, 3")]
+    pub bound: ::core::option::Option<record_id_key_bound::Bound>,
+}
+/// Nested message and enum types in `RecordIdKeyBound`.
+pub mod record_id_key_bound {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Bound {
+        #[prost(message, tag="1")]
+        Inclusive(::prost::alloc::boxed::Box<super::RecordIdKey>),
+        #[prost(message, tag="2")]
+        Exclusive(::prost::alloc::boxed::Box<super::RecordIdKey>),
+        #[prost(message, tag="3")]
+        Unbounded(super::NullValue),
+    }
+}
+impl ::prost::Name for RecordIdKeyBound {
+const NAME: &'static str = "RecordIdKeyBound";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RecordIdKeyBound".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RecordIdKeyBound".into() }}
+/// ID range type.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RecordIdKeyRange {
+    #[prost(message, optional, boxed, tag="1")]
+    pub start: ::core::option::Option<::prost::alloc::boxed::Box<RecordIdKeyBound>>,
+    #[prost(message, optional, boxed, tag="2")]
+    pub end: ::core::option::Option<::prost::alloc::boxed::Box<RecordIdKeyBound>>,
+}
+impl ::prost::Name for RecordIdKeyRange {
+const NAME: &'static str = "RecordIdKeyRange";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RecordIdKeyRange".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RecordIdKeyRange".into() }}
 /// ID type.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Id {
-    #[prost(oneof="id::Id", tags="1, 2, 3, 4")]
-    pub id: ::core::option::Option<id::Id>,
+pub struct RecordIdKey {
+    #[prost(oneof="record_id_key::Id", tags="1, 2, 3, 4, 5")]
+    pub id: ::core::option::Option<record_id_key::Id>,
 }
-/// Nested message and enum types in `Id`.
-pub mod id {
+/// Nested message and enum types in `RecordIdKey`.
+pub mod record_id_key {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Id {
@@ -273,12 +348,14 @@ pub mod id {
         Uuid(super::Uuid),
         #[prost(message, tag="4")]
         Array(super::Array),
+        #[prost(message, tag="5")]
+        Range(::prost::alloc::boxed::Box<super::RecordIdKeyRange>),
     }
 }
-impl ::prost::Name for Id {
-const NAME: &'static str = "Id";
+impl ::prost::Name for RecordIdKey {
+const NAME: &'static str = "RecordIdKey";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Id".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Id".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RecordIdKey".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RecordIdKey".into() }}
 /// Variables.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -10,44 +10,48 @@ use core::cmp::Ordering;
 use self::flatbuffers::{EndianScalar, Follow};
 use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_GRAPH_SUBJECT_TYPE: u8 = 0;
+pub const ENUM_MIN_VALUE_BOUND: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_GRAPH_SUBJECT_TYPE: u8 = 2;
+pub const ENUM_MAX_VALUE_BOUND: u8 = 3;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_GRAPH_SUBJECT_TYPE: [GraphSubjectType; 3] = [
-  GraphSubjectType::NONE,
-  GraphSubjectType::Table,
-  GraphSubjectType::Range,
+pub const ENUM_VALUES_VALUE_BOUND: [ValueBound; 4] = [
+  ValueBound::NONE,
+  ValueBound::Inclusive,
+  ValueBound::Exclusive,
+  ValueBound::Unbounded,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
-pub struct GraphSubjectType(pub u8);
+pub struct ValueBound(pub u8);
 #[allow(non_upper_case_globals)]
-impl GraphSubjectType {
+impl ValueBound {
   pub const NONE: Self = Self(0);
-  pub const Table: Self = Self(1);
-  pub const Range: Self = Self(2);
+  pub const Inclusive: Self = Self(1);
+  pub const Exclusive: Self = Self(2);
+  pub const Unbounded: Self = Self(3);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 2;
+  pub const ENUM_MAX: u8 = 3;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
-    Self::Table,
-    Self::Range,
+    Self::Inclusive,
+    Self::Exclusive,
+    Self::Unbounded,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
     match self {
       Self::NONE => Some("NONE"),
-      Self::Table => Some("Table"),
-      Self::Range => Some("Range"),
+      Self::Inclusive => Some("Inclusive"),
+      Self::Exclusive => Some("Exclusive"),
+      Self::Unbounded => Some("Unbounded"),
       _ => None,
     }
   }
 }
-impl core::fmt::Debug for GraphSubjectType {
+impl core::fmt::Debug for ValueBound {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     if let Some(name) = self.variant_name() {
       f.write_str(name)
@@ -56,7 +60,7 @@ impl core::fmt::Debug for GraphSubjectType {
     }
   }
 }
-impl<'a> flatbuffers::Follow<'a> for GraphSubjectType {
+impl<'a> flatbuffers::Follow<'a> for ValueBound {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
@@ -65,15 +69,15 @@ impl<'a> flatbuffers::Follow<'a> for GraphSubjectType {
   }
 }
 
-impl flatbuffers::Push for GraphSubjectType {
-    type Output = GraphSubjectType;
+impl flatbuffers::Push for ValueBound {
+    type Output = ValueBound;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
         flatbuffers::emplace_scalar::<u8>(dst, self.0);
     }
 }
 
-impl flatbuffers::EndianScalar for GraphSubjectType {
+impl flatbuffers::EndianScalar for ValueBound {
   type Scalar = u8;
   #[inline]
   fn to_little_endian(self) -> u8 {
@@ -87,7 +91,7 @@ impl flatbuffers::EndianScalar for GraphSubjectType {
   }
 }
 
-impl<'a> flatbuffers::Verifiable for GraphSubjectType {
+impl<'a> flatbuffers::Verifiable for ValueBound {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
@@ -97,6 +101,6 @@ impl<'a> flatbuffers::Verifiable for GraphSubjectType {
   }
 }
 
-impl flatbuffers::SimpleToVerifyInSlice for GraphSubjectType {}
-pub struct GraphSubjectTypeUnionTableOffset {}
+impl flatbuffers::SimpleToVerifyInSlice for ValueBound {}
+pub struct ValueBoundUnionTableOffset {}
 
