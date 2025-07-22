@@ -181,6 +181,159 @@ export interface Variables_VariablesEntry {
   value: Value | undefined;
 }
 
+/** Kind system messages */
+export interface AnyKind {
+}
+
+export interface NullKind {
+}
+
+export interface BoolKind {
+}
+
+export interface BytesKind {
+}
+
+export interface DatetimeKind {
+}
+
+export interface DecimalKind {
+}
+
+export interface DurationKind {
+}
+
+export interface FloatKind {
+}
+
+export interface IntKind {
+}
+
+export interface NumberKind {
+}
+
+export interface ObjectKind {
+}
+
+export interface PointKind {
+}
+
+export interface StringKind {
+}
+
+export interface UuidKind {
+}
+
+export interface RegexKind {
+}
+
+export interface RangeKind {
+}
+
+export interface TableName {
+  name: string;
+}
+
+export interface RecordKind {
+  tables: TableName[];
+}
+
+export interface GeometryKind {
+  types: string[];
+}
+
+export interface FileKind {
+  buckets: string[];
+}
+
+export interface OptionKind {
+  inner: Kind | undefined;
+}
+
+export interface EitherKind {
+  kinds: Kind[];
+}
+
+export interface SetKind {
+  inner: Kind | undefined;
+  size: bigint;
+}
+
+export interface ArrayKind {
+  inner: Kind | undefined;
+  size: bigint;
+}
+
+export interface FunctionKind {
+  args: Kind[];
+  returnType: Kind | undefined;
+}
+
+/** Literal types */
+export interface LiteralArray {
+  kinds: Kind[];
+}
+
+export interface ObjectField {
+  key: string;
+  kind: Kind | undefined;
+}
+
+export interface LiteralObject {
+  fields: ObjectField[];
+}
+
+export interface LiteralDiscriminatedObject {
+  discriminantKey: string;
+  variants: LiteralObject[];
+}
+
+export interface LiteralKind {
+  literal?:
+    | { $case: "stringValue"; stringValue: string }
+    | { $case: "int64Value"; int64Value: bigint }
+    | { $case: "uint64Value"; uint64Value: bigint }
+    | { $case: "float64Value"; float64Value: number }
+    | { $case: "decimalValue"; decimalValue: Decimal }
+    | { $case: "durationValue"; durationValue: Duration }
+    | { $case: "boolValue"; boolValue: boolean }
+    | { $case: "arrayValue"; arrayValue: LiteralArray }
+    | { $case: "objectValue"; objectValue: LiteralObject }
+    | { $case: "discriminatedObjectValue"; discriminatedObjectValue: LiteralDiscriminatedObject }
+    | undefined;
+}
+
+/** Main Kind message */
+export interface Kind {
+  kind?:
+    | { $case: "any"; any: AnyKind }
+    | { $case: "null"; null: NullKind }
+    | { $case: "bool"; bool: BoolKind }
+    | { $case: "bytes"; bytes: BytesKind }
+    | { $case: "datetime"; datetime: DatetimeKind }
+    | { $case: "decimal"; decimal: DecimalKind }
+    | { $case: "duration"; duration: DurationKind }
+    | { $case: "float"; float: FloatKind }
+    | { $case: "int"; int: IntKind }
+    | { $case: "number"; number: NumberKind }
+    | { $case: "object"; object: ObjectKind }
+    | { $case: "point"; point: PointKind }
+    | { $case: "string"; string: StringKind }
+    | { $case: "uuid"; uuid: UuidKind }
+    | { $case: "regex"; regex: RegexKind }
+    | { $case: "record"; record: RecordKind }
+    | { $case: "geometry"; geometry: GeometryKind }
+    | { $case: "option"; option: OptionKind }
+    | { $case: "either"; either: EitherKind }
+    | { $case: "set"; set: SetKind }
+    | { $case: "array"; array: ArrayKind }
+    | { $case: "function"; function: FunctionKind }
+    | { $case: "range"; range: RangeKind }
+    | { $case: "literal"; literal: LiteralKind }
+    | { $case: "file"; file: FileKind }
+    | undefined;
+}
+
 function createBaseNullValue(): NullValue {
   return {};
 }
@@ -2464,6 +2617,2412 @@ export const Variables_VariablesEntry: MessageFns<Variables_VariablesEntry> = {
     const message = createBaseVariables_VariablesEntry();
     message.key = object.key ?? "";
     message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+    return message;
+  },
+};
+
+function createBaseAnyKind(): AnyKind {
+  return {};
+}
+
+export const AnyKind: MessageFns<AnyKind> = {
+  encode(_: AnyKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AnyKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnyKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): AnyKind {
+    return {};
+  },
+
+  toJSON(_: AnyKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AnyKind>, I>>(base?: I): AnyKind {
+    return AnyKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AnyKind>, I>>(_: I): AnyKind {
+    const message = createBaseAnyKind();
+    return message;
+  },
+};
+
+function createBaseNullKind(): NullKind {
+  return {};
+}
+
+export const NullKind: MessageFns<NullKind> = {
+  encode(_: NullKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NullKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNullKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): NullKind {
+    return {};
+  },
+
+  toJSON(_: NullKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NullKind>, I>>(base?: I): NullKind {
+    return NullKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NullKind>, I>>(_: I): NullKind {
+    const message = createBaseNullKind();
+    return message;
+  },
+};
+
+function createBaseBoolKind(): BoolKind {
+  return {};
+}
+
+export const BoolKind: MessageFns<BoolKind> = {
+  encode(_: BoolKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BoolKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBoolKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): BoolKind {
+    return {};
+  },
+
+  toJSON(_: BoolKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BoolKind>, I>>(base?: I): BoolKind {
+    return BoolKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BoolKind>, I>>(_: I): BoolKind {
+    const message = createBaseBoolKind();
+    return message;
+  },
+};
+
+function createBaseBytesKind(): BytesKind {
+  return {};
+}
+
+export const BytesKind: MessageFns<BytesKind> = {
+  encode(_: BytesKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BytesKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBytesKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): BytesKind {
+    return {};
+  },
+
+  toJSON(_: BytesKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BytesKind>, I>>(base?: I): BytesKind {
+    return BytesKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BytesKind>, I>>(_: I): BytesKind {
+    const message = createBaseBytesKind();
+    return message;
+  },
+};
+
+function createBaseDatetimeKind(): DatetimeKind {
+  return {};
+}
+
+export const DatetimeKind: MessageFns<DatetimeKind> = {
+  encode(_: DatetimeKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DatetimeKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatetimeKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DatetimeKind {
+    return {};
+  },
+
+  toJSON(_: DatetimeKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DatetimeKind>, I>>(base?: I): DatetimeKind {
+    return DatetimeKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DatetimeKind>, I>>(_: I): DatetimeKind {
+    const message = createBaseDatetimeKind();
+    return message;
+  },
+};
+
+function createBaseDecimalKind(): DecimalKind {
+  return {};
+}
+
+export const DecimalKind: MessageFns<DecimalKind> = {
+  encode(_: DecimalKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DecimalKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDecimalKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DecimalKind {
+    return {};
+  },
+
+  toJSON(_: DecimalKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DecimalKind>, I>>(base?: I): DecimalKind {
+    return DecimalKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DecimalKind>, I>>(_: I): DecimalKind {
+    const message = createBaseDecimalKind();
+    return message;
+  },
+};
+
+function createBaseDurationKind(): DurationKind {
+  return {};
+}
+
+export const DurationKind: MessageFns<DurationKind> = {
+  encode(_: DurationKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DurationKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDurationKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DurationKind {
+    return {};
+  },
+
+  toJSON(_: DurationKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DurationKind>, I>>(base?: I): DurationKind {
+    return DurationKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DurationKind>, I>>(_: I): DurationKind {
+    const message = createBaseDurationKind();
+    return message;
+  },
+};
+
+function createBaseFloatKind(): FloatKind {
+  return {};
+}
+
+export const FloatKind: MessageFns<FloatKind> = {
+  encode(_: FloatKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FloatKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFloatKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): FloatKind {
+    return {};
+  },
+
+  toJSON(_: FloatKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FloatKind>, I>>(base?: I): FloatKind {
+    return FloatKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FloatKind>, I>>(_: I): FloatKind {
+    const message = createBaseFloatKind();
+    return message;
+  },
+};
+
+function createBaseIntKind(): IntKind {
+  return {};
+}
+
+export const IntKind: MessageFns<IntKind> = {
+  encode(_: IntKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IntKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIntKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): IntKind {
+    return {};
+  },
+
+  toJSON(_: IntKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntKind>, I>>(base?: I): IntKind {
+    return IntKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<IntKind>, I>>(_: I): IntKind {
+    const message = createBaseIntKind();
+    return message;
+  },
+};
+
+function createBaseNumberKind(): NumberKind {
+  return {};
+}
+
+export const NumberKind: MessageFns<NumberKind> = {
+  encode(_: NumberKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NumberKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNumberKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): NumberKind {
+    return {};
+  },
+
+  toJSON(_: NumberKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NumberKind>, I>>(base?: I): NumberKind {
+    return NumberKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NumberKind>, I>>(_: I): NumberKind {
+    const message = createBaseNumberKind();
+    return message;
+  },
+};
+
+function createBaseObjectKind(): ObjectKind {
+  return {};
+}
+
+export const ObjectKind: MessageFns<ObjectKind> = {
+  encode(_: ObjectKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ObjectKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ObjectKind {
+    return {};
+  },
+
+  toJSON(_: ObjectKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectKind>, I>>(base?: I): ObjectKind {
+    return ObjectKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ObjectKind>, I>>(_: I): ObjectKind {
+    const message = createBaseObjectKind();
+    return message;
+  },
+};
+
+function createBasePointKind(): PointKind {
+  return {};
+}
+
+export const PointKind: MessageFns<PointKind> = {
+  encode(_: PointKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PointKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePointKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): PointKind {
+    return {};
+  },
+
+  toJSON(_: PointKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PointKind>, I>>(base?: I): PointKind {
+    return PointKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PointKind>, I>>(_: I): PointKind {
+    const message = createBasePointKind();
+    return message;
+  },
+};
+
+function createBaseStringKind(): StringKind {
+  return {};
+}
+
+export const StringKind: MessageFns<StringKind> = {
+  encode(_: StringKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StringKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStringKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): StringKind {
+    return {};
+  },
+
+  toJSON(_: StringKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<StringKind>, I>>(base?: I): StringKind {
+    return StringKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<StringKind>, I>>(_: I): StringKind {
+    const message = createBaseStringKind();
+    return message;
+  },
+};
+
+function createBaseUuidKind(): UuidKind {
+  return {};
+}
+
+export const UuidKind: MessageFns<UuidKind> = {
+  encode(_: UuidKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UuidKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUuidKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): UuidKind {
+    return {};
+  },
+
+  toJSON(_: UuidKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UuidKind>, I>>(base?: I): UuidKind {
+    return UuidKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UuidKind>, I>>(_: I): UuidKind {
+    const message = createBaseUuidKind();
+    return message;
+  },
+};
+
+function createBaseRegexKind(): RegexKind {
+  return {};
+}
+
+export const RegexKind: MessageFns<RegexKind> = {
+  encode(_: RegexKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RegexKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegexKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): RegexKind {
+    return {};
+  },
+
+  toJSON(_: RegexKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RegexKind>, I>>(base?: I): RegexKind {
+    return RegexKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RegexKind>, I>>(_: I): RegexKind {
+    const message = createBaseRegexKind();
+    return message;
+  },
+};
+
+function createBaseRangeKind(): RangeKind {
+  return {};
+}
+
+export const RangeKind: MessageFns<RangeKind> = {
+  encode(_: RangeKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RangeKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRangeKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): RangeKind {
+    return {};
+  },
+
+  toJSON(_: RangeKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RangeKind>, I>>(base?: I): RangeKind {
+    return RangeKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RangeKind>, I>>(_: I): RangeKind {
+    const message = createBaseRangeKind();
+    return message;
+  },
+};
+
+function createBaseTableName(): TableName {
+  return { name: "" };
+}
+
+export const TableName: MessageFns<TableName> = {
+  encode(message: TableName, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TableName {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableName();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableName {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: TableName): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TableName>, I>>(base?: I): TableName {
+    return TableName.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TableName>, I>>(object: I): TableName {
+    const message = createBaseTableName();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseRecordKind(): RecordKind {
+  return { tables: [] };
+}
+
+export const RecordKind: MessageFns<RecordKind> = {
+  encode(message: RecordKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.tables) {
+      TableName.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RecordKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecordKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tables.push(TableName.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RecordKind {
+    return {
+      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableName.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: RecordKind): unknown {
+    const obj: any = {};
+    if (message.tables?.length) {
+      obj.tables = message.tables.map((e) => TableName.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RecordKind>, I>>(base?: I): RecordKind {
+    return RecordKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RecordKind>, I>>(object: I): RecordKind {
+    const message = createBaseRecordKind();
+    message.tables = object.tables?.map((e) => TableName.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGeometryKind(): GeometryKind {
+  return { types: [] };
+}
+
+export const GeometryKind: MessageFns<GeometryKind> = {
+  encode(message: GeometryKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.types) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GeometryKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGeometryKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.types.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GeometryKind {
+    return { types: globalThis.Array.isArray(object?.types) ? object.types.map((e: any) => globalThis.String(e)) : [] };
+  },
+
+  toJSON(message: GeometryKind): unknown {
+    const obj: any = {};
+    if (message.types?.length) {
+      obj.types = message.types;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GeometryKind>, I>>(base?: I): GeometryKind {
+    return GeometryKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GeometryKind>, I>>(object: I): GeometryKind {
+    const message = createBaseGeometryKind();
+    message.types = object.types?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseFileKind(): FileKind {
+  return { buckets: [] };
+}
+
+export const FileKind: MessageFns<FileKind> = {
+  encode(message: FileKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.buckets) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FileKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFileKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.buckets.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FileKind {
+    return {
+      buckets: globalThis.Array.isArray(object?.buckets) ? object.buckets.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: FileKind): unknown {
+    const obj: any = {};
+    if (message.buckets?.length) {
+      obj.buckets = message.buckets;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FileKind>, I>>(base?: I): FileKind {
+    return FileKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FileKind>, I>>(object: I): FileKind {
+    const message = createBaseFileKind();
+    message.buckets = object.buckets?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseOptionKind(): OptionKind {
+  return { inner: undefined };
+}
+
+export const OptionKind: MessageFns<OptionKind> = {
+  encode(message: OptionKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.inner !== undefined) {
+      Kind.encode(message.inner, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OptionKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOptionKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.inner = Kind.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OptionKind {
+    return { inner: isSet(object.inner) ? Kind.fromJSON(object.inner) : undefined };
+  },
+
+  toJSON(message: OptionKind): unknown {
+    const obj: any = {};
+    if (message.inner !== undefined) {
+      obj.inner = Kind.toJSON(message.inner);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OptionKind>, I>>(base?: I): OptionKind {
+    return OptionKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<OptionKind>, I>>(object: I): OptionKind {
+    const message = createBaseOptionKind();
+    message.inner = (object.inner !== undefined && object.inner !== null) ? Kind.fromPartial(object.inner) : undefined;
+    return message;
+  },
+};
+
+function createBaseEitherKind(): EitherKind {
+  return { kinds: [] };
+}
+
+export const EitherKind: MessageFns<EitherKind> = {
+  encode(message: EitherKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.kinds) {
+      Kind.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EitherKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEitherKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.kinds.push(Kind.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EitherKind {
+    return { kinds: globalThis.Array.isArray(object?.kinds) ? object.kinds.map((e: any) => Kind.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: EitherKind): unknown {
+    const obj: any = {};
+    if (message.kinds?.length) {
+      obj.kinds = message.kinds.map((e) => Kind.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EitherKind>, I>>(base?: I): EitherKind {
+    return EitherKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EitherKind>, I>>(object: I): EitherKind {
+    const message = createBaseEitherKind();
+    message.kinds = object.kinds?.map((e) => Kind.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSetKind(): SetKind {
+  return { inner: undefined, size: 0n };
+}
+
+export const SetKind: MessageFns<SetKind> = {
+  encode(message: SetKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.inner !== undefined) {
+      Kind.encode(message.inner, writer.uint32(10).fork()).join();
+    }
+    if (message.size !== 0n) {
+      if (BigInt.asUintN(64, message.size) !== message.size) {
+        throw new globalThis.Error("value provided for field message.size of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.size);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.inner = Kind.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.size = reader.uint64() as bigint;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetKind {
+    return {
+      inner: isSet(object.inner) ? Kind.fromJSON(object.inner) : undefined,
+      size: isSet(object.size) ? BigInt(object.size) : 0n,
+    };
+  },
+
+  toJSON(message: SetKind): unknown {
+    const obj: any = {};
+    if (message.inner !== undefined) {
+      obj.inner = Kind.toJSON(message.inner);
+    }
+    if (message.size !== 0n) {
+      obj.size = message.size.toString();
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetKind>, I>>(base?: I): SetKind {
+    return SetKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetKind>, I>>(object: I): SetKind {
+    const message = createBaseSetKind();
+    message.inner = (object.inner !== undefined && object.inner !== null) ? Kind.fromPartial(object.inner) : undefined;
+    message.size = object.size ?? 0n;
+    return message;
+  },
+};
+
+function createBaseArrayKind(): ArrayKind {
+  return { inner: undefined, size: 0n };
+}
+
+export const ArrayKind: MessageFns<ArrayKind> = {
+  encode(message: ArrayKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.inner !== undefined) {
+      Kind.encode(message.inner, writer.uint32(10).fork()).join();
+    }
+    if (message.size !== 0n) {
+      if (BigInt.asUintN(64, message.size) !== message.size) {
+        throw new globalThis.Error("value provided for field message.size of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.size);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ArrayKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseArrayKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.inner = Kind.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.size = reader.uint64() as bigint;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ArrayKind {
+    return {
+      inner: isSet(object.inner) ? Kind.fromJSON(object.inner) : undefined,
+      size: isSet(object.size) ? BigInt(object.size) : 0n,
+    };
+  },
+
+  toJSON(message: ArrayKind): unknown {
+    const obj: any = {};
+    if (message.inner !== undefined) {
+      obj.inner = Kind.toJSON(message.inner);
+    }
+    if (message.size !== 0n) {
+      obj.size = message.size.toString();
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ArrayKind>, I>>(base?: I): ArrayKind {
+    return ArrayKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ArrayKind>, I>>(object: I): ArrayKind {
+    const message = createBaseArrayKind();
+    message.inner = (object.inner !== undefined && object.inner !== null) ? Kind.fromPartial(object.inner) : undefined;
+    message.size = object.size ?? 0n;
+    return message;
+  },
+};
+
+function createBaseFunctionKind(): FunctionKind {
+  return { args: [], returnType: undefined };
+}
+
+export const FunctionKind: MessageFns<FunctionKind> = {
+  encode(message: FunctionKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.args) {
+      Kind.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.returnType !== undefined) {
+      Kind.encode(message.returnType, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FunctionKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFunctionKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.args.push(Kind.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.returnType = Kind.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FunctionKind {
+    return {
+      args: globalThis.Array.isArray(object?.args) ? object.args.map((e: any) => Kind.fromJSON(e)) : [],
+      returnType: isSet(object.returnType) ? Kind.fromJSON(object.returnType) : undefined,
+    };
+  },
+
+  toJSON(message: FunctionKind): unknown {
+    const obj: any = {};
+    if (message.args?.length) {
+      obj.args = message.args.map((e) => Kind.toJSON(e));
+    }
+    if (message.returnType !== undefined) {
+      obj.returnType = Kind.toJSON(message.returnType);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FunctionKind>, I>>(base?: I): FunctionKind {
+    return FunctionKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FunctionKind>, I>>(object: I): FunctionKind {
+    const message = createBaseFunctionKind();
+    message.args = object.args?.map((e) => Kind.fromPartial(e)) || [];
+    message.returnType = (object.returnType !== undefined && object.returnType !== null)
+      ? Kind.fromPartial(object.returnType)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseLiteralArray(): LiteralArray {
+  return { kinds: [] };
+}
+
+export const LiteralArray: MessageFns<LiteralArray> = {
+  encode(message: LiteralArray, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.kinds) {
+      Kind.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiteralArray {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiteralArray();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.kinds.push(Kind.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiteralArray {
+    return { kinds: globalThis.Array.isArray(object?.kinds) ? object.kinds.map((e: any) => Kind.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: LiteralArray): unknown {
+    const obj: any = {};
+    if (message.kinds?.length) {
+      obj.kinds = message.kinds.map((e) => Kind.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiteralArray>, I>>(base?: I): LiteralArray {
+    return LiteralArray.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiteralArray>, I>>(object: I): LiteralArray {
+    const message = createBaseLiteralArray();
+    message.kinds = object.kinds?.map((e) => Kind.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseObjectField(): ObjectField {
+  return { key: "", kind: undefined };
+}
+
+export const ObjectField: MessageFns<ObjectField> = {
+  encode(message: ObjectField, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.kind !== undefined) {
+      Kind.encode(message.kind, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ObjectField {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectField();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = Kind.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectField {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      kind: isSet(object.kind) ? Kind.fromJSON(object.kind) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectField): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.kind !== undefined) {
+      obj.kind = Kind.toJSON(message.kind);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectField>, I>>(base?: I): ObjectField {
+    return ObjectField.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ObjectField>, I>>(object: I): ObjectField {
+    const message = createBaseObjectField();
+    message.key = object.key ?? "";
+    message.kind = (object.kind !== undefined && object.kind !== null) ? Kind.fromPartial(object.kind) : undefined;
+    return message;
+  },
+};
+
+function createBaseLiteralObject(): LiteralObject {
+  return { fields: [] };
+}
+
+export const LiteralObject: MessageFns<LiteralObject> = {
+  encode(message: LiteralObject, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.fields) {
+      ObjectField.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiteralObject {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiteralObject();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fields.push(ObjectField.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiteralObject {
+    return {
+      fields: globalThis.Array.isArray(object?.fields) ? object.fields.map((e: any) => ObjectField.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: LiteralObject): unknown {
+    const obj: any = {};
+    if (message.fields?.length) {
+      obj.fields = message.fields.map((e) => ObjectField.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiteralObject>, I>>(base?: I): LiteralObject {
+    return LiteralObject.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiteralObject>, I>>(object: I): LiteralObject {
+    const message = createBaseLiteralObject();
+    message.fields = object.fields?.map((e) => ObjectField.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLiteralDiscriminatedObject(): LiteralDiscriminatedObject {
+  return { discriminantKey: "", variants: [] };
+}
+
+export const LiteralDiscriminatedObject: MessageFns<LiteralDiscriminatedObject> = {
+  encode(message: LiteralDiscriminatedObject, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.discriminantKey !== "") {
+      writer.uint32(10).string(message.discriminantKey);
+    }
+    for (const v of message.variants) {
+      LiteralObject.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiteralDiscriminatedObject {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiteralDiscriminatedObject();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.discriminantKey = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.variants.push(LiteralObject.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiteralDiscriminatedObject {
+    return {
+      discriminantKey: isSet(object.discriminantKey) ? globalThis.String(object.discriminantKey) : "",
+      variants: globalThis.Array.isArray(object?.variants)
+        ? object.variants.map((e: any) => LiteralObject.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: LiteralDiscriminatedObject): unknown {
+    const obj: any = {};
+    if (message.discriminantKey !== "") {
+      obj.discriminantKey = message.discriminantKey;
+    }
+    if (message.variants?.length) {
+      obj.variants = message.variants.map((e) => LiteralObject.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiteralDiscriminatedObject>, I>>(base?: I): LiteralDiscriminatedObject {
+    return LiteralDiscriminatedObject.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiteralDiscriminatedObject>, I>>(object: I): LiteralDiscriminatedObject {
+    const message = createBaseLiteralDiscriminatedObject();
+    message.discriminantKey = object.discriminantKey ?? "";
+    message.variants = object.variants?.map((e) => LiteralObject.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLiteralKind(): LiteralKind {
+  return { literal: undefined };
+}
+
+export const LiteralKind: MessageFns<LiteralKind> = {
+  encode(message: LiteralKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.literal?.$case) {
+      case "stringValue":
+        writer.uint32(10).string(message.literal.stringValue);
+        break;
+      case "int64Value":
+        if (BigInt.asIntN(64, message.literal.int64Value) !== message.literal.int64Value) {
+          throw new globalThis.Error("value provided for field message.literal.int64Value of type int64 too large");
+        }
+        writer.uint32(16).int64(message.literal.int64Value);
+        break;
+      case "uint64Value":
+        if (BigInt.asUintN(64, message.literal.uint64Value) !== message.literal.uint64Value) {
+          throw new globalThis.Error("value provided for field message.literal.uint64Value of type uint64 too large");
+        }
+        writer.uint32(24).uint64(message.literal.uint64Value);
+        break;
+      case "float64Value":
+        writer.uint32(33).double(message.literal.float64Value);
+        break;
+      case "decimalValue":
+        Decimal.encode(message.literal.decimalValue, writer.uint32(42).fork()).join();
+        break;
+      case "durationValue":
+        Duration.encode(message.literal.durationValue, writer.uint32(50).fork()).join();
+        break;
+      case "boolValue":
+        writer.uint32(56).bool(message.literal.boolValue);
+        break;
+      case "arrayValue":
+        LiteralArray.encode(message.literal.arrayValue, writer.uint32(66).fork()).join();
+        break;
+      case "objectValue":
+        LiteralObject.encode(message.literal.objectValue, writer.uint32(74).fork()).join();
+        break;
+      case "discriminatedObjectValue":
+        LiteralDiscriminatedObject.encode(message.literal.discriminatedObjectValue, writer.uint32(82).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiteralKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiteralKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.literal = { $case: "stringValue", stringValue: reader.string() };
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.literal = { $case: "int64Value", int64Value: reader.int64() as bigint };
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.literal = { $case: "uint64Value", uint64Value: reader.uint64() as bigint };
+          continue;
+        }
+        case 4: {
+          if (tag !== 33) {
+            break;
+          }
+
+          message.literal = { $case: "float64Value", float64Value: reader.double() };
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.literal = { $case: "decimalValue", decimalValue: Decimal.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.literal = { $case: "durationValue", durationValue: Duration.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.literal = { $case: "boolValue", boolValue: reader.bool() };
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.literal = { $case: "arrayValue", arrayValue: LiteralArray.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.literal = { $case: "objectValue", objectValue: LiteralObject.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.literal = {
+            $case: "discriminatedObjectValue",
+            discriminatedObjectValue: LiteralDiscriminatedObject.decode(reader, reader.uint32()),
+          };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiteralKind {
+    return {
+      literal: isSet(object.stringValue)
+        ? { $case: "stringValue", stringValue: globalThis.String(object.stringValue) }
+        : isSet(object.int64Value)
+        ? { $case: "int64Value", int64Value: BigInt(object.int64Value) }
+        : isSet(object.uint64Value)
+        ? { $case: "uint64Value", uint64Value: BigInt(object.uint64Value) }
+        : isSet(object.float64Value)
+        ? { $case: "float64Value", float64Value: globalThis.Number(object.float64Value) }
+        : isSet(object.decimalValue)
+        ? { $case: "decimalValue", decimalValue: Decimal.fromJSON(object.decimalValue) }
+        : isSet(object.durationValue)
+        ? { $case: "durationValue", durationValue: Duration.fromJSON(object.durationValue) }
+        : isSet(object.boolValue)
+        ? { $case: "boolValue", boolValue: globalThis.Boolean(object.boolValue) }
+        : isSet(object.arrayValue)
+        ? { $case: "arrayValue", arrayValue: LiteralArray.fromJSON(object.arrayValue) }
+        : isSet(object.objectValue)
+        ? { $case: "objectValue", objectValue: LiteralObject.fromJSON(object.objectValue) }
+        : isSet(object.discriminatedObjectValue)
+        ? {
+          $case: "discriminatedObjectValue",
+          discriminatedObjectValue: LiteralDiscriminatedObject.fromJSON(object.discriminatedObjectValue),
+        }
+        : undefined,
+    };
+  },
+
+  toJSON(message: LiteralKind): unknown {
+    const obj: any = {};
+    if (message.literal?.$case === "stringValue") {
+      obj.stringValue = message.literal.stringValue;
+    } else if (message.literal?.$case === "int64Value") {
+      obj.int64Value = message.literal.int64Value.toString();
+    } else if (message.literal?.$case === "uint64Value") {
+      obj.uint64Value = message.literal.uint64Value.toString();
+    } else if (message.literal?.$case === "float64Value") {
+      obj.float64Value = message.literal.float64Value;
+    } else if (message.literal?.$case === "decimalValue") {
+      obj.decimalValue = Decimal.toJSON(message.literal.decimalValue);
+    } else if (message.literal?.$case === "durationValue") {
+      obj.durationValue = Duration.toJSON(message.literal.durationValue);
+    } else if (message.literal?.$case === "boolValue") {
+      obj.boolValue = message.literal.boolValue;
+    } else if (message.literal?.$case === "arrayValue") {
+      obj.arrayValue = LiteralArray.toJSON(message.literal.arrayValue);
+    } else if (message.literal?.$case === "objectValue") {
+      obj.objectValue = LiteralObject.toJSON(message.literal.objectValue);
+    } else if (message.literal?.$case === "discriminatedObjectValue") {
+      obj.discriminatedObjectValue = LiteralDiscriminatedObject.toJSON(message.literal.discriminatedObjectValue);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiteralKind>, I>>(base?: I): LiteralKind {
+    return LiteralKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiteralKind>, I>>(object: I): LiteralKind {
+    const message = createBaseLiteralKind();
+    switch (object.literal?.$case) {
+      case "stringValue": {
+        if (object.literal?.stringValue !== undefined && object.literal?.stringValue !== null) {
+          message.literal = { $case: "stringValue", stringValue: object.literal.stringValue };
+        }
+        break;
+      }
+      case "int64Value": {
+        if (object.literal?.int64Value !== undefined && object.literal?.int64Value !== null) {
+          message.literal = { $case: "int64Value", int64Value: object.literal.int64Value };
+        }
+        break;
+      }
+      case "uint64Value": {
+        if (object.literal?.uint64Value !== undefined && object.literal?.uint64Value !== null) {
+          message.literal = { $case: "uint64Value", uint64Value: object.literal.uint64Value };
+        }
+        break;
+      }
+      case "float64Value": {
+        if (object.literal?.float64Value !== undefined && object.literal?.float64Value !== null) {
+          message.literal = { $case: "float64Value", float64Value: object.literal.float64Value };
+        }
+        break;
+      }
+      case "decimalValue": {
+        if (object.literal?.decimalValue !== undefined && object.literal?.decimalValue !== null) {
+          message.literal = { $case: "decimalValue", decimalValue: Decimal.fromPartial(object.literal.decimalValue) };
+        }
+        break;
+      }
+      case "durationValue": {
+        if (object.literal?.durationValue !== undefined && object.literal?.durationValue !== null) {
+          message.literal = {
+            $case: "durationValue",
+            durationValue: Duration.fromPartial(object.literal.durationValue),
+          };
+        }
+        break;
+      }
+      case "boolValue": {
+        if (object.literal?.boolValue !== undefined && object.literal?.boolValue !== null) {
+          message.literal = { $case: "boolValue", boolValue: object.literal.boolValue };
+        }
+        break;
+      }
+      case "arrayValue": {
+        if (object.literal?.arrayValue !== undefined && object.literal?.arrayValue !== null) {
+          message.literal = { $case: "arrayValue", arrayValue: LiteralArray.fromPartial(object.literal.arrayValue) };
+        }
+        break;
+      }
+      case "objectValue": {
+        if (object.literal?.objectValue !== undefined && object.literal?.objectValue !== null) {
+          message.literal = {
+            $case: "objectValue",
+            objectValue: LiteralObject.fromPartial(object.literal.objectValue),
+          };
+        }
+        break;
+      }
+      case "discriminatedObjectValue": {
+        if (
+          object.literal?.discriminatedObjectValue !== undefined && object.literal?.discriminatedObjectValue !== null
+        ) {
+          message.literal = {
+            $case: "discriminatedObjectValue",
+            discriminatedObjectValue: LiteralDiscriminatedObject.fromPartial(object.literal.discriminatedObjectValue),
+          };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseKind(): Kind {
+  return { kind: undefined };
+}
+
+export const Kind: MessageFns<Kind> = {
+  encode(message: Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.kind?.$case) {
+      case "any":
+        AnyKind.encode(message.kind.any, writer.uint32(10).fork()).join();
+        break;
+      case "null":
+        NullKind.encode(message.kind.null, writer.uint32(18).fork()).join();
+        break;
+      case "bool":
+        BoolKind.encode(message.kind.bool, writer.uint32(26).fork()).join();
+        break;
+      case "bytes":
+        BytesKind.encode(message.kind.bytes, writer.uint32(34).fork()).join();
+        break;
+      case "datetime":
+        DatetimeKind.encode(message.kind.datetime, writer.uint32(42).fork()).join();
+        break;
+      case "decimal":
+        DecimalKind.encode(message.kind.decimal, writer.uint32(50).fork()).join();
+        break;
+      case "duration":
+        DurationKind.encode(message.kind.duration, writer.uint32(58).fork()).join();
+        break;
+      case "float":
+        FloatKind.encode(message.kind.float, writer.uint32(66).fork()).join();
+        break;
+      case "int":
+        IntKind.encode(message.kind.int, writer.uint32(74).fork()).join();
+        break;
+      case "number":
+        NumberKind.encode(message.kind.number, writer.uint32(82).fork()).join();
+        break;
+      case "object":
+        ObjectKind.encode(message.kind.object, writer.uint32(90).fork()).join();
+        break;
+      case "point":
+        PointKind.encode(message.kind.point, writer.uint32(98).fork()).join();
+        break;
+      case "string":
+        StringKind.encode(message.kind.string, writer.uint32(106).fork()).join();
+        break;
+      case "uuid":
+        UuidKind.encode(message.kind.uuid, writer.uint32(114).fork()).join();
+        break;
+      case "regex":
+        RegexKind.encode(message.kind.regex, writer.uint32(122).fork()).join();
+        break;
+      case "record":
+        RecordKind.encode(message.kind.record, writer.uint32(130).fork()).join();
+        break;
+      case "geometry":
+        GeometryKind.encode(message.kind.geometry, writer.uint32(138).fork()).join();
+        break;
+      case "option":
+        OptionKind.encode(message.kind.option, writer.uint32(146).fork()).join();
+        break;
+      case "either":
+        EitherKind.encode(message.kind.either, writer.uint32(154).fork()).join();
+        break;
+      case "set":
+        SetKind.encode(message.kind.set, writer.uint32(162).fork()).join();
+        break;
+      case "array":
+        ArrayKind.encode(message.kind.array, writer.uint32(170).fork()).join();
+        break;
+      case "function":
+        FunctionKind.encode(message.kind.function, writer.uint32(178).fork()).join();
+        break;
+      case "range":
+        RangeKind.encode(message.kind.range, writer.uint32(186).fork()).join();
+        break;
+      case "literal":
+        LiteralKind.encode(message.kind.literal, writer.uint32(194).fork()).join();
+        break;
+      case "file":
+        FileKind.encode(message.kind.file, writer.uint32(202).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.kind = { $case: "any", any: AnyKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = { $case: "null", null: NullKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.kind = { $case: "bool", bool: BoolKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.kind = { $case: "bytes", bytes: BytesKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.kind = { $case: "datetime", datetime: DatetimeKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.kind = { $case: "decimal", decimal: DecimalKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.kind = { $case: "duration", duration: DurationKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.kind = { $case: "float", float: FloatKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.kind = { $case: "int", int: IntKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.kind = { $case: "number", number: NumberKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.kind = { $case: "object", object: ObjectKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.kind = { $case: "point", point: PointKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.kind = { $case: "string", string: StringKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.kind = { $case: "uuid", uuid: UuidKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.kind = { $case: "regex", regex: RegexKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.kind = { $case: "record", record: RecordKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.kind = { $case: "geometry", geometry: GeometryKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.kind = { $case: "option", option: OptionKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.kind = { $case: "either", either: EitherKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.kind = { $case: "set", set: SetKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.kind = { $case: "array", array: ArrayKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.kind = { $case: "function", function: FunctionKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.kind = { $case: "range", range: RangeKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.kind = { $case: "literal", literal: LiteralKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.kind = { $case: "file", file: FileKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Kind {
+    return {
+      kind: isSet(object.any)
+        ? { $case: "any", any: AnyKind.fromJSON(object.any) }
+        : isSet(object.null)
+        ? { $case: "null", null: NullKind.fromJSON(object.null) }
+        : isSet(object.bool)
+        ? { $case: "bool", bool: BoolKind.fromJSON(object.bool) }
+        : isSet(object.bytes)
+        ? { $case: "bytes", bytes: BytesKind.fromJSON(object.bytes) }
+        : isSet(object.datetime)
+        ? { $case: "datetime", datetime: DatetimeKind.fromJSON(object.datetime) }
+        : isSet(object.decimal)
+        ? { $case: "decimal", decimal: DecimalKind.fromJSON(object.decimal) }
+        : isSet(object.duration)
+        ? { $case: "duration", duration: DurationKind.fromJSON(object.duration) }
+        : isSet(object.float)
+        ? { $case: "float", float: FloatKind.fromJSON(object.float) }
+        : isSet(object.int)
+        ? { $case: "int", int: IntKind.fromJSON(object.int) }
+        : isSet(object.number)
+        ? { $case: "number", number: NumberKind.fromJSON(object.number) }
+        : isSet(object.object)
+        ? { $case: "object", object: ObjectKind.fromJSON(object.object) }
+        : isSet(object.point)
+        ? { $case: "point", point: PointKind.fromJSON(object.point) }
+        : isSet(object.string)
+        ? { $case: "string", string: StringKind.fromJSON(object.string) }
+        : isSet(object.uuid)
+        ? { $case: "uuid", uuid: UuidKind.fromJSON(object.uuid) }
+        : isSet(object.regex)
+        ? { $case: "regex", regex: RegexKind.fromJSON(object.regex) }
+        : isSet(object.record)
+        ? { $case: "record", record: RecordKind.fromJSON(object.record) }
+        : isSet(object.geometry)
+        ? { $case: "geometry", geometry: GeometryKind.fromJSON(object.geometry) }
+        : isSet(object.option)
+        ? { $case: "option", option: OptionKind.fromJSON(object.option) }
+        : isSet(object.either)
+        ? { $case: "either", either: EitherKind.fromJSON(object.either) }
+        : isSet(object.set)
+        ? { $case: "set", set: SetKind.fromJSON(object.set) }
+        : isSet(object.array)
+        ? { $case: "array", array: ArrayKind.fromJSON(object.array) }
+        : isSet(object.function)
+        ? { $case: "function", function: FunctionKind.fromJSON(object.function) }
+        : isSet(object.range)
+        ? { $case: "range", range: RangeKind.fromJSON(object.range) }
+        : isSet(object.literal)
+        ? { $case: "literal", literal: LiteralKind.fromJSON(object.literal) }
+        : isSet(object.file)
+        ? { $case: "file", file: FileKind.fromJSON(object.file) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: Kind): unknown {
+    const obj: any = {};
+    if (message.kind?.$case === "any") {
+      obj.any = AnyKind.toJSON(message.kind.any);
+    } else if (message.kind?.$case === "null") {
+      obj.null = NullKind.toJSON(message.kind.null);
+    } else if (message.kind?.$case === "bool") {
+      obj.bool = BoolKind.toJSON(message.kind.bool);
+    } else if (message.kind?.$case === "bytes") {
+      obj.bytes = BytesKind.toJSON(message.kind.bytes);
+    } else if (message.kind?.$case === "datetime") {
+      obj.datetime = DatetimeKind.toJSON(message.kind.datetime);
+    } else if (message.kind?.$case === "decimal") {
+      obj.decimal = DecimalKind.toJSON(message.kind.decimal);
+    } else if (message.kind?.$case === "duration") {
+      obj.duration = DurationKind.toJSON(message.kind.duration);
+    } else if (message.kind?.$case === "float") {
+      obj.float = FloatKind.toJSON(message.kind.float);
+    } else if (message.kind?.$case === "int") {
+      obj.int = IntKind.toJSON(message.kind.int);
+    } else if (message.kind?.$case === "number") {
+      obj.number = NumberKind.toJSON(message.kind.number);
+    } else if (message.kind?.$case === "object") {
+      obj.object = ObjectKind.toJSON(message.kind.object);
+    } else if (message.kind?.$case === "point") {
+      obj.point = PointKind.toJSON(message.kind.point);
+    } else if (message.kind?.$case === "string") {
+      obj.string = StringKind.toJSON(message.kind.string);
+    } else if (message.kind?.$case === "uuid") {
+      obj.uuid = UuidKind.toJSON(message.kind.uuid);
+    } else if (message.kind?.$case === "regex") {
+      obj.regex = RegexKind.toJSON(message.kind.regex);
+    } else if (message.kind?.$case === "record") {
+      obj.record = RecordKind.toJSON(message.kind.record);
+    } else if (message.kind?.$case === "geometry") {
+      obj.geometry = GeometryKind.toJSON(message.kind.geometry);
+    } else if (message.kind?.$case === "option") {
+      obj.option = OptionKind.toJSON(message.kind.option);
+    } else if (message.kind?.$case === "either") {
+      obj.either = EitherKind.toJSON(message.kind.either);
+    } else if (message.kind?.$case === "set") {
+      obj.set = SetKind.toJSON(message.kind.set);
+    } else if (message.kind?.$case === "array") {
+      obj.array = ArrayKind.toJSON(message.kind.array);
+    } else if (message.kind?.$case === "function") {
+      obj.function = FunctionKind.toJSON(message.kind.function);
+    } else if (message.kind?.$case === "range") {
+      obj.range = RangeKind.toJSON(message.kind.range);
+    } else if (message.kind?.$case === "literal") {
+      obj.literal = LiteralKind.toJSON(message.kind.literal);
+    } else if (message.kind?.$case === "file") {
+      obj.file = FileKind.toJSON(message.kind.file);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Kind>, I>>(base?: I): Kind {
+    return Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Kind>, I>>(object: I): Kind {
+    const message = createBaseKind();
+    switch (object.kind?.$case) {
+      case "any": {
+        if (object.kind?.any !== undefined && object.kind?.any !== null) {
+          message.kind = { $case: "any", any: AnyKind.fromPartial(object.kind.any) };
+        }
+        break;
+      }
+      case "null": {
+        if (object.kind?.null !== undefined && object.kind?.null !== null) {
+          message.kind = { $case: "null", null: NullKind.fromPartial(object.kind.null) };
+        }
+        break;
+      }
+      case "bool": {
+        if (object.kind?.bool !== undefined && object.kind?.bool !== null) {
+          message.kind = { $case: "bool", bool: BoolKind.fromPartial(object.kind.bool) };
+        }
+        break;
+      }
+      case "bytes": {
+        if (object.kind?.bytes !== undefined && object.kind?.bytes !== null) {
+          message.kind = { $case: "bytes", bytes: BytesKind.fromPartial(object.kind.bytes) };
+        }
+        break;
+      }
+      case "datetime": {
+        if (object.kind?.datetime !== undefined && object.kind?.datetime !== null) {
+          message.kind = { $case: "datetime", datetime: DatetimeKind.fromPartial(object.kind.datetime) };
+        }
+        break;
+      }
+      case "decimal": {
+        if (object.kind?.decimal !== undefined && object.kind?.decimal !== null) {
+          message.kind = { $case: "decimal", decimal: DecimalKind.fromPartial(object.kind.decimal) };
+        }
+        break;
+      }
+      case "duration": {
+        if (object.kind?.duration !== undefined && object.kind?.duration !== null) {
+          message.kind = { $case: "duration", duration: DurationKind.fromPartial(object.kind.duration) };
+        }
+        break;
+      }
+      case "float": {
+        if (object.kind?.float !== undefined && object.kind?.float !== null) {
+          message.kind = { $case: "float", float: FloatKind.fromPartial(object.kind.float) };
+        }
+        break;
+      }
+      case "int": {
+        if (object.kind?.int !== undefined && object.kind?.int !== null) {
+          message.kind = { $case: "int", int: IntKind.fromPartial(object.kind.int) };
+        }
+        break;
+      }
+      case "number": {
+        if (object.kind?.number !== undefined && object.kind?.number !== null) {
+          message.kind = { $case: "number", number: NumberKind.fromPartial(object.kind.number) };
+        }
+        break;
+      }
+      case "object": {
+        if (object.kind?.object !== undefined && object.kind?.object !== null) {
+          message.kind = { $case: "object", object: ObjectKind.fromPartial(object.kind.object) };
+        }
+        break;
+      }
+      case "point": {
+        if (object.kind?.point !== undefined && object.kind?.point !== null) {
+          message.kind = { $case: "point", point: PointKind.fromPartial(object.kind.point) };
+        }
+        break;
+      }
+      case "string": {
+        if (object.kind?.string !== undefined && object.kind?.string !== null) {
+          message.kind = { $case: "string", string: StringKind.fromPartial(object.kind.string) };
+        }
+        break;
+      }
+      case "uuid": {
+        if (object.kind?.uuid !== undefined && object.kind?.uuid !== null) {
+          message.kind = { $case: "uuid", uuid: UuidKind.fromPartial(object.kind.uuid) };
+        }
+        break;
+      }
+      case "regex": {
+        if (object.kind?.regex !== undefined && object.kind?.regex !== null) {
+          message.kind = { $case: "regex", regex: RegexKind.fromPartial(object.kind.regex) };
+        }
+        break;
+      }
+      case "record": {
+        if (object.kind?.record !== undefined && object.kind?.record !== null) {
+          message.kind = { $case: "record", record: RecordKind.fromPartial(object.kind.record) };
+        }
+        break;
+      }
+      case "geometry": {
+        if (object.kind?.geometry !== undefined && object.kind?.geometry !== null) {
+          message.kind = { $case: "geometry", geometry: GeometryKind.fromPartial(object.kind.geometry) };
+        }
+        break;
+      }
+      case "option": {
+        if (object.kind?.option !== undefined && object.kind?.option !== null) {
+          message.kind = { $case: "option", option: OptionKind.fromPartial(object.kind.option) };
+        }
+        break;
+      }
+      case "either": {
+        if (object.kind?.either !== undefined && object.kind?.either !== null) {
+          message.kind = { $case: "either", either: EitherKind.fromPartial(object.kind.either) };
+        }
+        break;
+      }
+      case "set": {
+        if (object.kind?.set !== undefined && object.kind?.set !== null) {
+          message.kind = { $case: "set", set: SetKind.fromPartial(object.kind.set) };
+        }
+        break;
+      }
+      case "array": {
+        if (object.kind?.array !== undefined && object.kind?.array !== null) {
+          message.kind = { $case: "array", array: ArrayKind.fromPartial(object.kind.array) };
+        }
+        break;
+      }
+      case "function": {
+        if (object.kind?.function !== undefined && object.kind?.function !== null) {
+          message.kind = { $case: "function", function: FunctionKind.fromPartial(object.kind.function) };
+        }
+        break;
+      }
+      case "range": {
+        if (object.kind?.range !== undefined && object.kind?.range !== null) {
+          message.kind = { $case: "range", range: RangeKind.fromPartial(object.kind.range) };
+        }
+        break;
+      }
+      case "literal": {
+        if (object.kind?.literal !== undefined && object.kind?.literal !== null) {
+          message.kind = { $case: "literal", literal: LiteralKind.fromPartial(object.kind.literal) };
+        }
+        break;
+      }
+      case "file": {
+        if (object.kind?.file !== undefined && object.kind?.file !== null) {
+          message.kind = { $case: "file", file: FileKind.fromPartial(object.kind.file) };
+        }
+        break;
+      }
+    }
     return message;
   },
 };

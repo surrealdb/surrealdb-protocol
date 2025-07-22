@@ -367,6 +367,382 @@ impl ::prost::Name for Variables {
 const NAME: &'static str = "Variables";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Variables".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Variables".into() }}
+/// Kind system messages
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct AnyKind {
+}
+impl ::prost::Name for AnyKind {
+const NAME: &'static str = "AnyKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.AnyKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.AnyKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct NullKind {
+}
+impl ::prost::Name for NullKind {
+const NAME: &'static str = "NullKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.NullKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.NullKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct BoolKind {
+}
+impl ::prost::Name for BoolKind {
+const NAME: &'static str = "BoolKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.BoolKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.BoolKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct BytesKind {
+}
+impl ::prost::Name for BytesKind {
+const NAME: &'static str = "BytesKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.BytesKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.BytesKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct DatetimeKind {
+}
+impl ::prost::Name for DatetimeKind {
+const NAME: &'static str = "DatetimeKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.DatetimeKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.DatetimeKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct DecimalKind {
+}
+impl ::prost::Name for DecimalKind {
+const NAME: &'static str = "DecimalKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.DecimalKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.DecimalKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct DurationKind {
+}
+impl ::prost::Name for DurationKind {
+const NAME: &'static str = "DurationKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.DurationKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.DurationKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct FloatKind {
+}
+impl ::prost::Name for FloatKind {
+const NAME: &'static str = "FloatKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.FloatKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.FloatKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct IntKind {
+}
+impl ::prost::Name for IntKind {
+const NAME: &'static str = "IntKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.IntKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.IntKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct NumberKind {
+}
+impl ::prost::Name for NumberKind {
+const NAME: &'static str = "NumberKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.NumberKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.NumberKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ObjectKind {
+}
+impl ::prost::Name for ObjectKind {
+const NAME: &'static str = "ObjectKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ObjectKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.ObjectKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PointKind {
+}
+impl ::prost::Name for PointKind {
+const NAME: &'static str = "PointKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.PointKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.PointKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct StringKind {
+}
+impl ::prost::Name for StringKind {
+const NAME: &'static str = "StringKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.StringKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.StringKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct UuidKind {
+}
+impl ::prost::Name for UuidKind {
+const NAME: &'static str = "UuidKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.UuidKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.UuidKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct RegexKind {
+}
+impl ::prost::Name for RegexKind {
+const NAME: &'static str = "RegexKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RegexKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RegexKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct RangeKind {
+}
+impl ::prost::Name for RangeKind {
+const NAME: &'static str = "RangeKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RangeKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RangeKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TableName {
+    #[prost(string, tag="1")]
+    pub name: ::prost::alloc::string::String,
+}
+impl ::prost::Name for TableName {
+const NAME: &'static str = "TableName";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.TableName".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.TableName".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RecordKind {
+    #[prost(message, repeated, tag="1")]
+    pub tables: ::prost::alloc::vec::Vec<TableName>,
+}
+impl ::prost::Name for RecordKind {
+const NAME: &'static str = "RecordKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RecordKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RecordKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GeometryKind {
+    #[prost(string, repeated, tag="1")]
+    pub types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for GeometryKind {
+const NAME: &'static str = "GeometryKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.GeometryKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.GeometryKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FileKind {
+    #[prost(string, repeated, tag="1")]
+    pub buckets: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for FileKind {
+const NAME: &'static str = "FileKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.FileKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.FileKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OptionKind {
+    #[prost(message, optional, boxed, tag="1")]
+    pub inner: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
+}
+impl ::prost::Name for OptionKind {
+const NAME: &'static str = "OptionKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.OptionKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.OptionKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EitherKind {
+    #[prost(message, repeated, tag="1")]
+    pub kinds: ::prost::alloc::vec::Vec<Kind>,
+}
+impl ::prost::Name for EitherKind {
+const NAME: &'static str = "EitherKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.EitherKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.EitherKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SetKind {
+    #[prost(message, optional, boxed, tag="1")]
+    pub inner: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
+    #[prost(uint64, tag="2")]
+    pub size: u64,
+}
+impl ::prost::Name for SetKind {
+const NAME: &'static str = "SetKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.SetKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.SetKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ArrayKind {
+    #[prost(message, optional, boxed, tag="1")]
+    pub inner: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
+    #[prost(uint64, tag="2")]
+    pub size: u64,
+}
+impl ::prost::Name for ArrayKind {
+const NAME: &'static str = "ArrayKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ArrayKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.ArrayKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FunctionKind {
+    #[prost(message, repeated, tag="1")]
+    pub args: ::prost::alloc::vec::Vec<Kind>,
+    #[prost(message, optional, boxed, tag="2")]
+    pub return_type: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
+}
+impl ::prost::Name for FunctionKind {
+const NAME: &'static str = "FunctionKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.FunctionKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.FunctionKind".into() }}
+/// Literal types
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiteralArray {
+    #[prost(message, repeated, tag="1")]
+    pub kinds: ::prost::alloc::vec::Vec<Kind>,
+}
+impl ::prost::Name for LiteralArray {
+const NAME: &'static str = "LiteralArray";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.LiteralArray".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.LiteralArray".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ObjectField {
+    #[prost(string, tag="1")]
+    pub key: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="2")]
+    pub kind: ::core::option::Option<Kind>,
+}
+impl ::prost::Name for ObjectField {
+const NAME: &'static str = "ObjectField";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ObjectField".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.ObjectField".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiteralObject {
+    #[prost(message, repeated, tag="1")]
+    pub fields: ::prost::alloc::vec::Vec<ObjectField>,
+}
+impl ::prost::Name for LiteralObject {
+const NAME: &'static str = "LiteralObject";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.LiteralObject".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.LiteralObject".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiteralDiscriminatedObject {
+    #[prost(string, tag="1")]
+    pub discriminant_key: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag="2")]
+    pub variants: ::prost::alloc::vec::Vec<LiteralObject>,
+}
+impl ::prost::Name for LiteralDiscriminatedObject {
+const NAME: &'static str = "LiteralDiscriminatedObject";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.LiteralDiscriminatedObject".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.LiteralDiscriminatedObject".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiteralKind {
+    #[prost(oneof="literal_kind::Literal", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10")]
+    pub literal: ::core::option::Option<literal_kind::Literal>,
+}
+/// Nested message and enum types in `LiteralKind`.
+pub mod literal_kind {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Literal {
+        #[prost(string, tag="1")]
+        StringValue(::prost::alloc::string::String),
+        #[prost(int64, tag="2")]
+        Int64Value(i64),
+        #[prost(uint64, tag="3")]
+        Uint64Value(u64),
+        #[prost(double, tag="4")]
+        Float64Value(f64),
+        #[prost(message, tag="5")]
+        DecimalValue(super::Decimal),
+        #[prost(message, tag="6")]
+        #[serde(with = "crate::serde_duration")]
+        DurationValue(::prost_types::Duration),
+        #[prost(bool, tag="7")]
+        BoolValue(bool),
+        #[prost(message, tag="8")]
+        ArrayValue(super::LiteralArray),
+        #[prost(message, tag="9")]
+        ObjectValue(super::LiteralObject),
+        #[prost(message, tag="10")]
+        DiscriminatedObjectValue(super::LiteralDiscriminatedObject),
+    }
+}
+impl ::prost::Name for LiteralKind {
+const NAME: &'static str = "LiteralKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.LiteralKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.LiteralKind".into() }}
+/// Main Kind message
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Kind {
+    #[prost(oneof="kind::Kind", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25")]
+    pub kind: ::core::option::Option<kind::Kind>,
+}
+/// Nested message and enum types in `Kind`.
+pub mod kind {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Kind {
+        #[prost(message, tag="1")]
+        Any(super::AnyKind),
+        #[prost(message, tag="2")]
+        Null(super::NullKind),
+        #[prost(message, tag="3")]
+        Bool(super::BoolKind),
+        #[prost(message, tag="4")]
+        Bytes(super::BytesKind),
+        #[prost(message, tag="5")]
+        Datetime(super::DatetimeKind),
+        #[prost(message, tag="6")]
+        Decimal(super::DecimalKind),
+        #[prost(message, tag="7")]
+        Duration(super::DurationKind),
+        #[prost(message, tag="8")]
+        Float(super::FloatKind),
+        #[prost(message, tag="9")]
+        Int(super::IntKind),
+        #[prost(message, tag="10")]
+        Number(super::NumberKind),
+        #[prost(message, tag="11")]
+        Object(super::ObjectKind),
+        #[prost(message, tag="12")]
+        Point(super::PointKind),
+        #[prost(message, tag="13")]
+        String(super::StringKind),
+        #[prost(message, tag="14")]
+        Uuid(super::UuidKind),
+        #[prost(message, tag="15")]
+        Regex(super::RegexKind),
+        #[prost(message, tag="16")]
+        Record(super::RecordKind),
+        #[prost(message, tag="17")]
+        Geometry(super::GeometryKind),
+        #[prost(message, tag="18")]
+        Option(::prost::alloc::boxed::Box<super::OptionKind>),
+        #[prost(message, tag="19")]
+        Either(super::EitherKind),
+        #[prost(message, tag="20")]
+        Set(::prost::alloc::boxed::Box<super::SetKind>),
+        #[prost(message, tag="21")]
+        Array(::prost::alloc::boxed::Box<super::ArrayKind>),
+        #[prost(message, tag="22")]
+        Function(::prost::alloc::boxed::Box<super::FunctionKind>),
+        #[prost(message, tag="23")]
+        Range(super::RangeKind),
+        #[prost(message, tag="24")]
+        Literal(super::LiteralKind),
+        #[prost(message, tag="25")]
+        File(super::FileKind),
+    }
+}
+impl ::prost::Name for Kind {
+const NAME: &'static str = "Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Kind".into() }}
 /// Identifier.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

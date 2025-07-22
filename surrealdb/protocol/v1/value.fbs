@@ -155,3 +155,131 @@ union RecordIdKeyType {
 table RecordIdKey {
     id: RecordIdKeyType (id: 1);
 }
+
+// Kind system tables
+table AnyKind {}
+table NullKind {}
+table BoolKind {}
+table BytesKind {}
+table DatetimeKind {}
+table DecimalKind {}
+table DurationKind {}
+table FloatKind {}
+table IntKind {}
+table NumberKind {}
+table ObjectKind {}
+table PointKind {}
+table StringKind {}
+table UuidKind {}
+table RegexKind {}
+table RangeKind {}
+
+table TableName { 
+    name: string (id: 0); 
+}
+
+table RecordKind {
+    tables: [TableName] (id: 0);
+}
+
+table GeometryKind {
+    types: [string] (id: 0);
+}
+
+table FileKind {
+    buckets: [string] (id: 0);
+}
+
+
+table OptionKind {
+    inner: Kind (id: 0);
+}
+
+table EitherKind {
+    kinds: [Kind] (id: 0);
+}
+
+table SetKind {
+    inner: Kind (id: 0);
+    size: uint64 (id: 1);
+}
+
+table ArrayKind {
+    inner: Kind (id: 0);
+    size: uint64 (id: 1);
+}
+
+table FunctionKind {
+    args: [Kind] (id: 0);
+    return_type: Kind (id: 1);
+}
+
+
+// Literal types
+table LiteralArray {
+    kinds: [Kind] (id: 0);
+}
+
+table ObjectField {
+    key: string (id: 0);
+    kind: Kind (id: 1);
+}
+
+table LiteralObject {
+    fields: [ObjectField] (id: 0);
+}
+
+table LiteralDiscriminatedObject {
+    discriminant_key: string (id: 0);
+    variants: [LiteralObject] (id: 1);
+}
+
+union LiteralType {
+    String: StringValue (id: 1),
+    Int64: Int64Value (id: 2),
+    UInt64: UInt64Value (id: 3),
+    Float64: Float64Value (id: 4),
+    Decimal: surrealdb.protocol.v1.Decimal (id: 5),
+    Duration: surrealdb.protocol.v1.Duration (id: 6),
+    Bool: BoolValue (id: 7),
+    Array: LiteralArray (id: 8),
+    Object: LiteralObject (id: 9),
+    DiscriminatedObject: LiteralDiscriminatedObject (id: 10),
+}
+
+table LiteralKind {
+    literal: LiteralType (id: 1);
+}
+
+// Main Kind union
+union KindType {
+    Any: AnyKind (id: 1),
+    Null: NullKind (id: 2),
+    Bool: BoolKind (id: 3),
+    Bytes: BytesKind (id: 4),
+    Datetime: DatetimeKind (id: 5),
+    Decimal: DecimalKind (id: 6),
+    Duration: DurationKind (id: 7),
+    Float: FloatKind (id: 8),
+    Int: IntKind (id: 9),
+    Number: NumberKind (id: 10),
+    Object: ObjectKind (id: 11),
+    Point: PointKind (id: 12),
+    String: StringKind (id: 13),
+    Uuid: UuidKind (id: 14),
+    Regex: RegexKind (id: 15),
+    Record: RecordKind (id: 16),
+    Geometry: GeometryKind (id: 17),
+    Option: OptionKind (id: 18),
+    Either: EitherKind (id: 19),
+    Set: SetKind (id: 20),
+    Array: ArrayKind (id: 21),
+    Function: FunctionKind (id: 22),
+    Range: RangeKind (id: 23),
+    Literal: LiteralKind (id: 24),
+    File: FileKind (id: 25),
+}
+
+table Kind {
+    kind: KindType (id: 1);
+}

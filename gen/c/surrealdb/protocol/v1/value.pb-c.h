@@ -41,6 +41,37 @@ typedef struct Surrealdb__Protocol__V1__RecordIdKeyRange Surrealdb__Protocol__V1
 typedef struct Surrealdb__Protocol__V1__RecordIdKey Surrealdb__Protocol__V1__RecordIdKey;
 typedef struct Surrealdb__Protocol__V1__Variables Surrealdb__Protocol__V1__Variables;
 typedef struct Surrealdb__Protocol__V1__Variables__VariablesEntry Surrealdb__Protocol__V1__Variables__VariablesEntry;
+typedef struct Surrealdb__Protocol__V1__AnyKind Surrealdb__Protocol__V1__AnyKind;
+typedef struct Surrealdb__Protocol__V1__NullKind Surrealdb__Protocol__V1__NullKind;
+typedef struct Surrealdb__Protocol__V1__BoolKind Surrealdb__Protocol__V1__BoolKind;
+typedef struct Surrealdb__Protocol__V1__BytesKind Surrealdb__Protocol__V1__BytesKind;
+typedef struct Surrealdb__Protocol__V1__DatetimeKind Surrealdb__Protocol__V1__DatetimeKind;
+typedef struct Surrealdb__Protocol__V1__DecimalKind Surrealdb__Protocol__V1__DecimalKind;
+typedef struct Surrealdb__Protocol__V1__DurationKind Surrealdb__Protocol__V1__DurationKind;
+typedef struct Surrealdb__Protocol__V1__FloatKind Surrealdb__Protocol__V1__FloatKind;
+typedef struct Surrealdb__Protocol__V1__IntKind Surrealdb__Protocol__V1__IntKind;
+typedef struct Surrealdb__Protocol__V1__NumberKind Surrealdb__Protocol__V1__NumberKind;
+typedef struct Surrealdb__Protocol__V1__ObjectKind Surrealdb__Protocol__V1__ObjectKind;
+typedef struct Surrealdb__Protocol__V1__PointKind Surrealdb__Protocol__V1__PointKind;
+typedef struct Surrealdb__Protocol__V1__StringKind Surrealdb__Protocol__V1__StringKind;
+typedef struct Surrealdb__Protocol__V1__UuidKind Surrealdb__Protocol__V1__UuidKind;
+typedef struct Surrealdb__Protocol__V1__RegexKind Surrealdb__Protocol__V1__RegexKind;
+typedef struct Surrealdb__Protocol__V1__RangeKind Surrealdb__Protocol__V1__RangeKind;
+typedef struct Surrealdb__Protocol__V1__TableName Surrealdb__Protocol__V1__TableName;
+typedef struct Surrealdb__Protocol__V1__RecordKind Surrealdb__Protocol__V1__RecordKind;
+typedef struct Surrealdb__Protocol__V1__GeometryKind Surrealdb__Protocol__V1__GeometryKind;
+typedef struct Surrealdb__Protocol__V1__FileKind Surrealdb__Protocol__V1__FileKind;
+typedef struct Surrealdb__Protocol__V1__OptionKind Surrealdb__Protocol__V1__OptionKind;
+typedef struct Surrealdb__Protocol__V1__EitherKind Surrealdb__Protocol__V1__EitherKind;
+typedef struct Surrealdb__Protocol__V1__SetKind Surrealdb__Protocol__V1__SetKind;
+typedef struct Surrealdb__Protocol__V1__ArrayKind Surrealdb__Protocol__V1__ArrayKind;
+typedef struct Surrealdb__Protocol__V1__FunctionKind Surrealdb__Protocol__V1__FunctionKind;
+typedef struct Surrealdb__Protocol__V1__LiteralArray Surrealdb__Protocol__V1__LiteralArray;
+typedef struct Surrealdb__Protocol__V1__ObjectField Surrealdb__Protocol__V1__ObjectField;
+typedef struct Surrealdb__Protocol__V1__LiteralObject Surrealdb__Protocol__V1__LiteralObject;
+typedef struct Surrealdb__Protocol__V1__LiteralDiscriminatedObject Surrealdb__Protocol__V1__LiteralDiscriminatedObject;
+typedef struct Surrealdb__Protocol__V1__LiteralKind Surrealdb__Protocol__V1__LiteralKind;
+typedef struct Surrealdb__Protocol__V1__Kind Surrealdb__Protocol__V1__Kind;
 
 
 /* --- enums --- */
@@ -490,6 +521,406 @@ struct  Surrealdb__Protocol__V1__Variables
 , 0,NULL }
 
 
+/*
+ * Kind system messages
+ */
+struct  Surrealdb__Protocol__V1__AnyKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__ANY_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__any_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__NullKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__NULL_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__null_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__BoolKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__BOOL_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__bool_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__BytesKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__BYTES_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__bytes_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__DatetimeKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__DATETIME_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__datetime_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__DecimalKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__DECIMAL_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__decimal_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__DurationKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__DURATION_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__duration_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__FloatKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__FLOAT_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__float_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__IntKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__INT_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__int_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__NumberKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__NUMBER_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__number_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__ObjectKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__OBJECT_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__object_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__PointKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__POINT_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__point_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__StringKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__STRING_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__string_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__UuidKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__UUID_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__uuid_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__RegexKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__REGEX_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__regex_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__RangeKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__RANGE_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__range_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__TableName
+{
+  ProtobufCMessage base;
+  char *name;
+};
+#define SURREALDB__PROTOCOL__V1__TABLE_NAME__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__table_name__descriptor) \
+, (char *)protobuf_c_empty_string }
+
+
+struct  Surrealdb__Protocol__V1__RecordKind
+{
+  ProtobufCMessage base;
+  size_t n_tables;
+  Surrealdb__Protocol__V1__TableName **tables;
+};
+#define SURREALDB__PROTOCOL__V1__RECORD_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__record_kind__descriptor) \
+, 0,NULL }
+
+
+struct  Surrealdb__Protocol__V1__GeometryKind
+{
+  ProtobufCMessage base;
+  size_t n_types;
+  char **types;
+};
+#define SURREALDB__PROTOCOL__V1__GEOMETRY_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__geometry_kind__descriptor) \
+, 0,NULL }
+
+
+struct  Surrealdb__Protocol__V1__FileKind
+{
+  ProtobufCMessage base;
+  size_t n_buckets;
+  char **buckets;
+};
+#define SURREALDB__PROTOCOL__V1__FILE_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__file_kind__descriptor) \
+, 0,NULL }
+
+
+struct  Surrealdb__Protocol__V1__OptionKind
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Kind *inner;
+};
+#define SURREALDB__PROTOCOL__V1__OPTION_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__option_kind__descriptor) \
+, NULL }
+
+
+struct  Surrealdb__Protocol__V1__EitherKind
+{
+  ProtobufCMessage base;
+  size_t n_kinds;
+  Surrealdb__Protocol__V1__Kind **kinds;
+};
+#define SURREALDB__PROTOCOL__V1__EITHER_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__either_kind__descriptor) \
+, 0,NULL }
+
+
+struct  Surrealdb__Protocol__V1__SetKind
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Kind *inner;
+  uint64_t size;
+};
+#define SURREALDB__PROTOCOL__V1__SET_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__set_kind__descriptor) \
+, NULL, 0 }
+
+
+struct  Surrealdb__Protocol__V1__ArrayKind
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Kind *inner;
+  uint64_t size;
+};
+#define SURREALDB__PROTOCOL__V1__ARRAY_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__array_kind__descriptor) \
+, NULL, 0 }
+
+
+struct  Surrealdb__Protocol__V1__FunctionKind
+{
+  ProtobufCMessage base;
+  size_t n_args;
+  Surrealdb__Protocol__V1__Kind **args;
+  Surrealdb__Protocol__V1__Kind *return_type;
+};
+#define SURREALDB__PROTOCOL__V1__FUNCTION_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__function_kind__descriptor) \
+, 0,NULL, NULL }
+
+
+/*
+ * Literal types
+ */
+struct  Surrealdb__Protocol__V1__LiteralArray
+{
+  ProtobufCMessage base;
+  size_t n_kinds;
+  Surrealdb__Protocol__V1__Kind **kinds;
+};
+#define SURREALDB__PROTOCOL__V1__LITERAL_ARRAY__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__literal_array__descriptor) \
+, 0,NULL }
+
+
+struct  Surrealdb__Protocol__V1__ObjectField
+{
+  ProtobufCMessage base;
+  char *key;
+  Surrealdb__Protocol__V1__Kind *kind;
+};
+#define SURREALDB__PROTOCOL__V1__OBJECT_FIELD__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__object_field__descriptor) \
+, (char *)protobuf_c_empty_string, NULL }
+
+
+struct  Surrealdb__Protocol__V1__LiteralObject
+{
+  ProtobufCMessage base;
+  size_t n_fields;
+  Surrealdb__Protocol__V1__ObjectField **fields;
+};
+#define SURREALDB__PROTOCOL__V1__LITERAL_OBJECT__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__literal_object__descriptor) \
+, 0,NULL }
+
+
+struct  Surrealdb__Protocol__V1__LiteralDiscriminatedObject
+{
+  ProtobufCMessage base;
+  char *discriminant_key;
+  size_t n_variants;
+  Surrealdb__Protocol__V1__LiteralObject **variants;
+};
+#define SURREALDB__PROTOCOL__V1__LITERAL_DISCRIMINATED_OBJECT__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__literal_discriminated_object__descriptor) \
+, (char *)protobuf_c_empty_string, 0,NULL }
+
+
+typedef enum {
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL__NOT_SET = 0,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_STRING_VALUE = 1,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_INT64_VALUE = 2,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_UINT64_VALUE = 3,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_FLOAT64_VALUE = 4,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_DECIMAL_VALUE = 5,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_DURATION_VALUE = 6,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_BOOL_VALUE = 7,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_ARRAY_VALUE = 8,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_OBJECT_VALUE = 9,
+  SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL_DISCRIMINATED_OBJECT_VALUE = 10
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL__CASE)
+} Surrealdb__Protocol__V1__LiteralKind__LiteralCase;
+
+struct  Surrealdb__Protocol__V1__LiteralKind
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__LiteralKind__LiteralCase literal_case;
+  union {
+    double float64_value;
+    int64_t int64_value;
+    uint64_t uint64_value;
+    char *string_value;
+    Surrealdb__Protocol__V1__LiteralArray *array_value;
+    Surrealdb__Protocol__V1__Decimal *decimal_value;
+    Surrealdb__Protocol__V1__LiteralDiscriminatedObject *discriminated_object_value;
+    Google__Protobuf__Duration *duration_value;
+    Surrealdb__Protocol__V1__LiteralObject *object_value;
+    protobuf_c_boolean bool_value;
+  };
+};
+#define SURREALDB__PROTOCOL__V1__LITERAL_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__literal_kind__descriptor) \
+, SURREALDB__PROTOCOL__V1__LITERAL_KIND__LITERAL__NOT_SET, {0} }
+
+
+typedef enum {
+  SURREALDB__PROTOCOL__V1__KIND__KIND__NOT_SET = 0,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_ANY = 1,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_NULL = 2,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_BOOL = 3,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_BYTES = 4,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_DATETIME = 5,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_DECIMAL = 6,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_DURATION = 7,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_FLOAT = 8,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_INT = 9,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_NUMBER = 10,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_OBJECT = 11,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_POINT = 12,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_STRING = 13,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_UUID = 14,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_REGEX = 15,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_RECORD = 16,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_GEOMETRY = 17,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_OPTION = 18,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_EITHER = 19,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_SET = 20,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_ARRAY = 21,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_FUNCTION = 22,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_RANGE = 23,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_LITERAL = 24,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_FILE = 25
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__KIND__KIND__CASE)
+} Surrealdb__Protocol__V1__Kind__KindCase;
+
+/*
+ * Main Kind message
+ */
+struct  Surrealdb__Protocol__V1__Kind
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Kind__KindCase kind_case;
+  union {
+    Surrealdb__Protocol__V1__AnyKind *any;
+    Surrealdb__Protocol__V1__ArrayKind *array;
+    Surrealdb__Protocol__V1__BoolKind *bool_;
+    Surrealdb__Protocol__V1__BytesKind *bytes;
+    Surrealdb__Protocol__V1__DatetimeKind *datetime;
+    Surrealdb__Protocol__V1__DecimalKind *decimal;
+    Surrealdb__Protocol__V1__DurationKind *duration;
+    Surrealdb__Protocol__V1__EitherKind *either;
+    Surrealdb__Protocol__V1__FileKind *file;
+    Surrealdb__Protocol__V1__FloatKind *float_;
+    Surrealdb__Protocol__V1__FunctionKind *function;
+    Surrealdb__Protocol__V1__GeometryKind *geometry;
+    Surrealdb__Protocol__V1__IntKind *int_;
+    Surrealdb__Protocol__V1__LiteralKind *literal;
+    Surrealdb__Protocol__V1__NullKind *null;
+    Surrealdb__Protocol__V1__NumberKind *number;
+    Surrealdb__Protocol__V1__ObjectKind *object;
+    Surrealdb__Protocol__V1__OptionKind *option;
+    Surrealdb__Protocol__V1__PointKind *point;
+    Surrealdb__Protocol__V1__RangeKind *range;
+    Surrealdb__Protocol__V1__RecordKind *record;
+    Surrealdb__Protocol__V1__RegexKind *regex;
+    Surrealdb__Protocol__V1__SetKind *set;
+    Surrealdb__Protocol__V1__StringKind *string;
+    Surrealdb__Protocol__V1__UuidKind *uuid;
+  };
+};
+#define SURREALDB__PROTOCOL__V1__KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__kind__descriptor) \
+, SURREALDB__PROTOCOL__V1__KIND__KIND__NOT_SET, {0} }
+
+
 /* Surrealdb__Protocol__V1__NullValue methods */
 void   surrealdb__protocol__v1__null_value__init
                      (Surrealdb__Protocol__V1__NullValue         *message);
@@ -914,6 +1345,595 @@ Surrealdb__Protocol__V1__Variables *
 void   surrealdb__protocol__v1__variables__free_unpacked
                      (Surrealdb__Protocol__V1__Variables *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__AnyKind methods */
+void   surrealdb__protocol__v1__any_kind__init
+                     (Surrealdb__Protocol__V1__AnyKind         *message);
+size_t surrealdb__protocol__v1__any_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__AnyKind   *message);
+size_t surrealdb__protocol__v1__any_kind__pack
+                     (const Surrealdb__Protocol__V1__AnyKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__any_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__AnyKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__AnyKind *
+       surrealdb__protocol__v1__any_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__any_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__AnyKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__NullKind methods */
+void   surrealdb__protocol__v1__null_kind__init
+                     (Surrealdb__Protocol__V1__NullKind         *message);
+size_t surrealdb__protocol__v1__null_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__NullKind   *message);
+size_t surrealdb__protocol__v1__null_kind__pack
+                     (const Surrealdb__Protocol__V1__NullKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__null_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__NullKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__NullKind *
+       surrealdb__protocol__v1__null_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__null_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__NullKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__BoolKind methods */
+void   surrealdb__protocol__v1__bool_kind__init
+                     (Surrealdb__Protocol__V1__BoolKind         *message);
+size_t surrealdb__protocol__v1__bool_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__BoolKind   *message);
+size_t surrealdb__protocol__v1__bool_kind__pack
+                     (const Surrealdb__Protocol__V1__BoolKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__bool_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__BoolKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__BoolKind *
+       surrealdb__protocol__v1__bool_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__bool_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__BoolKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__BytesKind methods */
+void   surrealdb__protocol__v1__bytes_kind__init
+                     (Surrealdb__Protocol__V1__BytesKind         *message);
+size_t surrealdb__protocol__v1__bytes_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__BytesKind   *message);
+size_t surrealdb__protocol__v1__bytes_kind__pack
+                     (const Surrealdb__Protocol__V1__BytesKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__bytes_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__BytesKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__BytesKind *
+       surrealdb__protocol__v1__bytes_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__bytes_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__BytesKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__DatetimeKind methods */
+void   surrealdb__protocol__v1__datetime_kind__init
+                     (Surrealdb__Protocol__V1__DatetimeKind         *message);
+size_t surrealdb__protocol__v1__datetime_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__DatetimeKind   *message);
+size_t surrealdb__protocol__v1__datetime_kind__pack
+                     (const Surrealdb__Protocol__V1__DatetimeKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__datetime_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__DatetimeKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__DatetimeKind *
+       surrealdb__protocol__v1__datetime_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__datetime_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__DatetimeKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__DecimalKind methods */
+void   surrealdb__protocol__v1__decimal_kind__init
+                     (Surrealdb__Protocol__V1__DecimalKind         *message);
+size_t surrealdb__protocol__v1__decimal_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__DecimalKind   *message);
+size_t surrealdb__protocol__v1__decimal_kind__pack
+                     (const Surrealdb__Protocol__V1__DecimalKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__decimal_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__DecimalKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__DecimalKind *
+       surrealdb__protocol__v1__decimal_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__decimal_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__DecimalKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__DurationKind methods */
+void   surrealdb__protocol__v1__duration_kind__init
+                     (Surrealdb__Protocol__V1__DurationKind         *message);
+size_t surrealdb__protocol__v1__duration_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__DurationKind   *message);
+size_t surrealdb__protocol__v1__duration_kind__pack
+                     (const Surrealdb__Protocol__V1__DurationKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__duration_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__DurationKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__DurationKind *
+       surrealdb__protocol__v1__duration_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__duration_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__DurationKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__FloatKind methods */
+void   surrealdb__protocol__v1__float_kind__init
+                     (Surrealdb__Protocol__V1__FloatKind         *message);
+size_t surrealdb__protocol__v1__float_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__FloatKind   *message);
+size_t surrealdb__protocol__v1__float_kind__pack
+                     (const Surrealdb__Protocol__V1__FloatKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__float_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__FloatKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__FloatKind *
+       surrealdb__protocol__v1__float_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__float_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__FloatKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__IntKind methods */
+void   surrealdb__protocol__v1__int_kind__init
+                     (Surrealdb__Protocol__V1__IntKind         *message);
+size_t surrealdb__protocol__v1__int_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__IntKind   *message);
+size_t surrealdb__protocol__v1__int_kind__pack
+                     (const Surrealdb__Protocol__V1__IntKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__int_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__IntKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__IntKind *
+       surrealdb__protocol__v1__int_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__int_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__IntKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__NumberKind methods */
+void   surrealdb__protocol__v1__number_kind__init
+                     (Surrealdb__Protocol__V1__NumberKind         *message);
+size_t surrealdb__protocol__v1__number_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__NumberKind   *message);
+size_t surrealdb__protocol__v1__number_kind__pack
+                     (const Surrealdb__Protocol__V1__NumberKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__number_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__NumberKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__NumberKind *
+       surrealdb__protocol__v1__number_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__number_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__NumberKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__ObjectKind methods */
+void   surrealdb__protocol__v1__object_kind__init
+                     (Surrealdb__Protocol__V1__ObjectKind         *message);
+size_t surrealdb__protocol__v1__object_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__ObjectKind   *message);
+size_t surrealdb__protocol__v1__object_kind__pack
+                     (const Surrealdb__Protocol__V1__ObjectKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__object_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__ObjectKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__ObjectKind *
+       surrealdb__protocol__v1__object_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__object_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__ObjectKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__PointKind methods */
+void   surrealdb__protocol__v1__point_kind__init
+                     (Surrealdb__Protocol__V1__PointKind         *message);
+size_t surrealdb__protocol__v1__point_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__PointKind   *message);
+size_t surrealdb__protocol__v1__point_kind__pack
+                     (const Surrealdb__Protocol__V1__PointKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__point_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__PointKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__PointKind *
+       surrealdb__protocol__v1__point_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__point_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__PointKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__StringKind methods */
+void   surrealdb__protocol__v1__string_kind__init
+                     (Surrealdb__Protocol__V1__StringKind         *message);
+size_t surrealdb__protocol__v1__string_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__StringKind   *message);
+size_t surrealdb__protocol__v1__string_kind__pack
+                     (const Surrealdb__Protocol__V1__StringKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__string_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__StringKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__StringKind *
+       surrealdb__protocol__v1__string_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__string_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__StringKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__UuidKind methods */
+void   surrealdb__protocol__v1__uuid_kind__init
+                     (Surrealdb__Protocol__V1__UuidKind         *message);
+size_t surrealdb__protocol__v1__uuid_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__UuidKind   *message);
+size_t surrealdb__protocol__v1__uuid_kind__pack
+                     (const Surrealdb__Protocol__V1__UuidKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__uuid_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__UuidKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__UuidKind *
+       surrealdb__protocol__v1__uuid_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__uuid_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__UuidKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__RegexKind methods */
+void   surrealdb__protocol__v1__regex_kind__init
+                     (Surrealdb__Protocol__V1__RegexKind         *message);
+size_t surrealdb__protocol__v1__regex_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__RegexKind   *message);
+size_t surrealdb__protocol__v1__regex_kind__pack
+                     (const Surrealdb__Protocol__V1__RegexKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__regex_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__RegexKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__RegexKind *
+       surrealdb__protocol__v1__regex_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__regex_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__RegexKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__RangeKind methods */
+void   surrealdb__protocol__v1__range_kind__init
+                     (Surrealdb__Protocol__V1__RangeKind         *message);
+size_t surrealdb__protocol__v1__range_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__RangeKind   *message);
+size_t surrealdb__protocol__v1__range_kind__pack
+                     (const Surrealdb__Protocol__V1__RangeKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__range_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__RangeKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__RangeKind *
+       surrealdb__protocol__v1__range_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__range_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__RangeKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__TableName methods */
+void   surrealdb__protocol__v1__table_name__init
+                     (Surrealdb__Protocol__V1__TableName         *message);
+size_t surrealdb__protocol__v1__table_name__get_packed_size
+                     (const Surrealdb__Protocol__V1__TableName   *message);
+size_t surrealdb__protocol__v1__table_name__pack
+                     (const Surrealdb__Protocol__V1__TableName   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__table_name__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__TableName   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__TableName *
+       surrealdb__protocol__v1__table_name__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__table_name__free_unpacked
+                     (Surrealdb__Protocol__V1__TableName *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__RecordKind methods */
+void   surrealdb__protocol__v1__record_kind__init
+                     (Surrealdb__Protocol__V1__RecordKind         *message);
+size_t surrealdb__protocol__v1__record_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__RecordKind   *message);
+size_t surrealdb__protocol__v1__record_kind__pack
+                     (const Surrealdb__Protocol__V1__RecordKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__record_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__RecordKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__RecordKind *
+       surrealdb__protocol__v1__record_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__record_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__RecordKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__GeometryKind methods */
+void   surrealdb__protocol__v1__geometry_kind__init
+                     (Surrealdb__Protocol__V1__GeometryKind         *message);
+size_t surrealdb__protocol__v1__geometry_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__GeometryKind   *message);
+size_t surrealdb__protocol__v1__geometry_kind__pack
+                     (const Surrealdb__Protocol__V1__GeometryKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__geometry_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__GeometryKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__GeometryKind *
+       surrealdb__protocol__v1__geometry_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__geometry_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__GeometryKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__FileKind methods */
+void   surrealdb__protocol__v1__file_kind__init
+                     (Surrealdb__Protocol__V1__FileKind         *message);
+size_t surrealdb__protocol__v1__file_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__FileKind   *message);
+size_t surrealdb__protocol__v1__file_kind__pack
+                     (const Surrealdb__Protocol__V1__FileKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__file_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__FileKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__FileKind *
+       surrealdb__protocol__v1__file_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__file_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__FileKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__OptionKind methods */
+void   surrealdb__protocol__v1__option_kind__init
+                     (Surrealdb__Protocol__V1__OptionKind         *message);
+size_t surrealdb__protocol__v1__option_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__OptionKind   *message);
+size_t surrealdb__protocol__v1__option_kind__pack
+                     (const Surrealdb__Protocol__V1__OptionKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__option_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__OptionKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__OptionKind *
+       surrealdb__protocol__v1__option_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__option_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__OptionKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__EitherKind methods */
+void   surrealdb__protocol__v1__either_kind__init
+                     (Surrealdb__Protocol__V1__EitherKind         *message);
+size_t surrealdb__protocol__v1__either_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__EitherKind   *message);
+size_t surrealdb__protocol__v1__either_kind__pack
+                     (const Surrealdb__Protocol__V1__EitherKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__either_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__EitherKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__EitherKind *
+       surrealdb__protocol__v1__either_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__either_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__EitherKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__SetKind methods */
+void   surrealdb__protocol__v1__set_kind__init
+                     (Surrealdb__Protocol__V1__SetKind         *message);
+size_t surrealdb__protocol__v1__set_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__SetKind   *message);
+size_t surrealdb__protocol__v1__set_kind__pack
+                     (const Surrealdb__Protocol__V1__SetKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__set_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__SetKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__SetKind *
+       surrealdb__protocol__v1__set_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__set_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__SetKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__ArrayKind methods */
+void   surrealdb__protocol__v1__array_kind__init
+                     (Surrealdb__Protocol__V1__ArrayKind         *message);
+size_t surrealdb__protocol__v1__array_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__ArrayKind   *message);
+size_t surrealdb__protocol__v1__array_kind__pack
+                     (const Surrealdb__Protocol__V1__ArrayKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__array_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__ArrayKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__ArrayKind *
+       surrealdb__protocol__v1__array_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__array_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__ArrayKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__FunctionKind methods */
+void   surrealdb__protocol__v1__function_kind__init
+                     (Surrealdb__Protocol__V1__FunctionKind         *message);
+size_t surrealdb__protocol__v1__function_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__FunctionKind   *message);
+size_t surrealdb__protocol__v1__function_kind__pack
+                     (const Surrealdb__Protocol__V1__FunctionKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__function_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__FunctionKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__FunctionKind *
+       surrealdb__protocol__v1__function_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__function_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__FunctionKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__LiteralArray methods */
+void   surrealdb__protocol__v1__literal_array__init
+                     (Surrealdb__Protocol__V1__LiteralArray         *message);
+size_t surrealdb__protocol__v1__literal_array__get_packed_size
+                     (const Surrealdb__Protocol__V1__LiteralArray   *message);
+size_t surrealdb__protocol__v1__literal_array__pack
+                     (const Surrealdb__Protocol__V1__LiteralArray   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__literal_array__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__LiteralArray   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__LiteralArray *
+       surrealdb__protocol__v1__literal_array__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__literal_array__free_unpacked
+                     (Surrealdb__Protocol__V1__LiteralArray *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__ObjectField methods */
+void   surrealdb__protocol__v1__object_field__init
+                     (Surrealdb__Protocol__V1__ObjectField         *message);
+size_t surrealdb__protocol__v1__object_field__get_packed_size
+                     (const Surrealdb__Protocol__V1__ObjectField   *message);
+size_t surrealdb__protocol__v1__object_field__pack
+                     (const Surrealdb__Protocol__V1__ObjectField   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__object_field__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__ObjectField   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__ObjectField *
+       surrealdb__protocol__v1__object_field__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__object_field__free_unpacked
+                     (Surrealdb__Protocol__V1__ObjectField *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__LiteralObject methods */
+void   surrealdb__protocol__v1__literal_object__init
+                     (Surrealdb__Protocol__V1__LiteralObject         *message);
+size_t surrealdb__protocol__v1__literal_object__get_packed_size
+                     (const Surrealdb__Protocol__V1__LiteralObject   *message);
+size_t surrealdb__protocol__v1__literal_object__pack
+                     (const Surrealdb__Protocol__V1__LiteralObject   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__literal_object__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__LiteralObject   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__LiteralObject *
+       surrealdb__protocol__v1__literal_object__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__literal_object__free_unpacked
+                     (Surrealdb__Protocol__V1__LiteralObject *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__LiteralDiscriminatedObject methods */
+void   surrealdb__protocol__v1__literal_discriminated_object__init
+                     (Surrealdb__Protocol__V1__LiteralDiscriminatedObject         *message);
+size_t surrealdb__protocol__v1__literal_discriminated_object__get_packed_size
+                     (const Surrealdb__Protocol__V1__LiteralDiscriminatedObject   *message);
+size_t surrealdb__protocol__v1__literal_discriminated_object__pack
+                     (const Surrealdb__Protocol__V1__LiteralDiscriminatedObject   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__literal_discriminated_object__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__LiteralDiscriminatedObject   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__LiteralDiscriminatedObject *
+       surrealdb__protocol__v1__literal_discriminated_object__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__literal_discriminated_object__free_unpacked
+                     (Surrealdb__Protocol__V1__LiteralDiscriminatedObject *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__LiteralKind methods */
+void   surrealdb__protocol__v1__literal_kind__init
+                     (Surrealdb__Protocol__V1__LiteralKind         *message);
+size_t surrealdb__protocol__v1__literal_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__LiteralKind   *message);
+size_t surrealdb__protocol__v1__literal_kind__pack
+                     (const Surrealdb__Protocol__V1__LiteralKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__literal_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__LiteralKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__LiteralKind *
+       surrealdb__protocol__v1__literal_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__literal_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__LiteralKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Kind methods */
+void   surrealdb__protocol__v1__kind__init
+                     (Surrealdb__Protocol__V1__Kind         *message);
+size_t surrealdb__protocol__v1__kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__Kind   *message);
+size_t surrealdb__protocol__v1__kind__pack
+                     (const Surrealdb__Protocol__V1__Kind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Kind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Kind *
+       surrealdb__protocol__v1__kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__kind__free_unpacked
+                     (Surrealdb__Protocol__V1__Kind *message,
+                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*Surrealdb__Protocol__V1__NullValue_Closure)
@@ -988,6 +2008,99 @@ typedef void (*Surrealdb__Protocol__V1__Variables__VariablesEntry_Closure)
 typedef void (*Surrealdb__Protocol__V1__Variables_Closure)
                  (const Surrealdb__Protocol__V1__Variables *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__AnyKind_Closure)
+                 (const Surrealdb__Protocol__V1__AnyKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__NullKind_Closure)
+                 (const Surrealdb__Protocol__V1__NullKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__BoolKind_Closure)
+                 (const Surrealdb__Protocol__V1__BoolKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__BytesKind_Closure)
+                 (const Surrealdb__Protocol__V1__BytesKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__DatetimeKind_Closure)
+                 (const Surrealdb__Protocol__V1__DatetimeKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__DecimalKind_Closure)
+                 (const Surrealdb__Protocol__V1__DecimalKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__DurationKind_Closure)
+                 (const Surrealdb__Protocol__V1__DurationKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__FloatKind_Closure)
+                 (const Surrealdb__Protocol__V1__FloatKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__IntKind_Closure)
+                 (const Surrealdb__Protocol__V1__IntKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__NumberKind_Closure)
+                 (const Surrealdb__Protocol__V1__NumberKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__ObjectKind_Closure)
+                 (const Surrealdb__Protocol__V1__ObjectKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__PointKind_Closure)
+                 (const Surrealdb__Protocol__V1__PointKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__StringKind_Closure)
+                 (const Surrealdb__Protocol__V1__StringKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__UuidKind_Closure)
+                 (const Surrealdb__Protocol__V1__UuidKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__RegexKind_Closure)
+                 (const Surrealdb__Protocol__V1__RegexKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__RangeKind_Closure)
+                 (const Surrealdb__Protocol__V1__RangeKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__TableName_Closure)
+                 (const Surrealdb__Protocol__V1__TableName *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__RecordKind_Closure)
+                 (const Surrealdb__Protocol__V1__RecordKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__GeometryKind_Closure)
+                 (const Surrealdb__Protocol__V1__GeometryKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__FileKind_Closure)
+                 (const Surrealdb__Protocol__V1__FileKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__OptionKind_Closure)
+                 (const Surrealdb__Protocol__V1__OptionKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__EitherKind_Closure)
+                 (const Surrealdb__Protocol__V1__EitherKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__SetKind_Closure)
+                 (const Surrealdb__Protocol__V1__SetKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__ArrayKind_Closure)
+                 (const Surrealdb__Protocol__V1__ArrayKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__FunctionKind_Closure)
+                 (const Surrealdb__Protocol__V1__FunctionKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__LiteralArray_Closure)
+                 (const Surrealdb__Protocol__V1__LiteralArray *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__ObjectField_Closure)
+                 (const Surrealdb__Protocol__V1__ObjectField *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__LiteralObject_Closure)
+                 (const Surrealdb__Protocol__V1__LiteralObject *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__LiteralDiscriminatedObject_Closure)
+                 (const Surrealdb__Protocol__V1__LiteralDiscriminatedObject *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__LiteralKind_Closure)
+                 (const Surrealdb__Protocol__V1__LiteralKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Kind_Closure)
+                 (const Surrealdb__Protocol__V1__Kind *message,
+                  void *closure_data);
 
 /* --- services --- */
 
@@ -1018,6 +2131,37 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_id_key_r
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_id_key__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__variables__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__variables__variables_entry__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__any_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__null_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__bool_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__bytes_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__datetime_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__decimal_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__duration_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__float_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__int_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__number_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__object_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__point_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__string_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__uuid_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__regex_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__range_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__table_name__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__geometry_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__file_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__option_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__either_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__set_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__array_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__function_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__literal_array__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__object_field__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__literal_object__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__literal_discriminated_object__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__literal_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__kind__descriptor;
 
 PROTOBUF_C__END_DECLS
 
