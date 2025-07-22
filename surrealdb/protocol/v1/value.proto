@@ -165,3 +165,125 @@ message RecordIdKey {
 message Variables {
     map<string, Value> variables = 1;
 }
+
+// Kind system messages
+message AnyKind {}
+message NullKind {}
+message BoolKind {}
+message BytesKind {}
+message DatetimeKind {}
+message DecimalKind {}
+message DurationKind {}
+message FloatKind {}
+message IntKind {}
+message NumberKind {}
+message ObjectKind {}
+message PointKind {}
+message StringKind {}
+message UuidKind {}
+message RegexKind {}
+message RangeKind {}
+
+message TableName { 
+    string name = 1; 
+}
+
+message RecordKind {
+    repeated TableName tables = 1;
+}
+
+message GeometryKind {
+    repeated string types = 1;
+}
+
+message FileKind {
+    repeated string buckets = 1;
+}
+
+message OptionKind {
+    Kind inner = 1;
+}
+
+message EitherKind {
+    repeated Kind kinds = 1;
+}
+
+message SetKind {
+    Kind inner = 1;
+    uint64 size = 2;
+}
+
+message ArrayKind {
+    Kind inner = 1;
+    uint64 size = 2;
+}
+
+message FunctionKind {
+    repeated Kind args = 1;
+    Kind return_type = 2;
+}
+
+// Literal types
+message LiteralArray {
+    repeated Kind kinds = 1;
+}
+
+message ObjectField {
+    string key = 1;
+    Kind kind = 2;
+}
+
+message LiteralObject {
+    repeated ObjectField fields = 1;
+}
+
+message LiteralDiscriminatedObject {
+    string discriminant_key = 1;
+    repeated LiteralObject variants = 2;
+}
+
+message LiteralKind {
+    oneof literal {
+        string string_value = 1;
+        int64 int64_value = 2;
+        uint64 uint64_value = 3;
+        double float64_value = 4;
+        Decimal decimal_value = 5;
+        google.protobuf.Duration duration_value = 6;
+        bool bool_value = 7;
+        LiteralArray array_value = 8;
+        LiteralObject object_value = 9;
+        LiteralDiscriminatedObject discriminated_object_value = 10;
+    }
+}
+
+// Main Kind message
+message Kind {
+    oneof kind {
+        AnyKind any = 1;
+        NullKind null = 2;
+        BoolKind bool = 3;
+        BytesKind bytes = 4;
+        DatetimeKind datetime = 5;
+        DecimalKind decimal = 6;
+        DurationKind duration = 7;
+        FloatKind float = 8;
+        IntKind int = 9;
+        NumberKind number = 10;
+        ObjectKind object = 11;
+        PointKind point = 12;
+        StringKind string = 13;
+        UuidKind uuid = 14;
+        RegexKind regex = 15;
+        RecordKind record = 16;
+        GeometryKind geometry = 17;
+        OptionKind option = 18;
+        EitherKind either = 19;
+        SetKind set = 20;
+        ArrayKind array = 21;
+        FunctionKind function = 22;
+        RangeKind range = 23;
+        LiteralKind literal = 24;
+        FileKind file = 25;
+    }
+}
