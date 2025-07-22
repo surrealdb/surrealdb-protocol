@@ -1,6 +1,7 @@
 
 # Build
 /build
+/plugins
 
 # Rust
 /target

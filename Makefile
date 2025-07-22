@@ -4,7 +4,8 @@
 #
 # It is used to generate the Rust and TypeScript code from the SurrealDB Protocol.
 
-SCHEMA_SRCS := $(shell find surrealdb -type f)
+PROTO_SCHEMA_SRCS := $(shell find surrealdb -type f -name "*.proto")
+FB_SCHEMA_SRCS := $(shell find surrealdb -type f -name "*.fbs")
 
 ################################################################################
 # Plugins
@@ -46,6 +47,14 @@ plugins/protoc-gen-ts_proto: plugins
 	ln -s $(shell pwd)/node_modules/.bin/protoc-gen-ts_proto $(shell pwd)/$@
 	chmod +x $@
 
+# Flatbuffers
+FLATC := plugins/flatc
+$(FLATC): plugins
+	rm -f $@
+	brew install flatbuffers
+	hash -r
+	cp $(shell bash -c "which flatc") $@
+	chmod +x $@
 
 ALL_PLUGINS := plugins/protoc-gen-prost plugins/protoc-gen-tonic plugins/protoc-gen-c plugins/protoc-gen-ts_proto
 
@@ -53,15 +62,30 @@ ALL_PLUGINS := plugins/protoc-gen-prost plugins/protoc-gen-tonic plugins/protoc-
 # Code Generation
 ################################################################################
 
-gen: buf.yaml buf.gen.yaml $(SCHEMA_SRCS) $(ALL_PLUGINS)
+proto-gen: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
 	buf generate
 
+proto-check: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
+	buf lint
+
+gen/rust/fb: $(FB_SCHEMA_SRCS) $(FLATC)
+    # Remove existing files.
+	rm -rf gen/rust/fb
+	mkdir -p gen/rust/fb
+	$(FLATC) --rust --rust-module-root-file -I $(PWD) -o $@ $(FB_SCHEMA_SRCS)
+
+.PHONY: fb-gen
+fb-gen: gen/rust/fb
+
+
+gen: proto-gen fb-gen
 
 ################################################################################
 # Rust
 ################################################################################
-RUST_SRCS := $(shell find rust/src -type f -name "*.rs")
-ALL_RUST_SRCS := $(SCHEMA_SRCS) $(RUST_SRCS)
+RUST_SRCS := $(shell find rust -type f -name "*.rs")
+RUST_GEN_SRCS := $(shell find gen/rust -type f -name "*.rs")
+ALL_RUST_SRCS := $(RUST_SRCS) $(RUST_GEN_SRCS)
 
 
 rust-build: $(ALL_RUST_SRCS)
