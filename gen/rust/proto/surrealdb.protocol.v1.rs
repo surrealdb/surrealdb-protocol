@@ -659,6 +659,7 @@ pub mod literal_kind {
         #[prost(message, tag="5")]
         DecimalValue(super::Decimal),
         #[prost(message, tag="6")]
+        #[serde(with = "crate::serde_duration")]
         DurationValue(::prost_types::Duration),
         #[prost(bool, tag="7")]
         BoolValue(bool),

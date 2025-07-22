@@ -23,6 +23,7 @@ plugins:
       - field_attribute=execution_duration=#[serde(with = "crate::serde_duration_optional")]
       - field_attribute=surrealdb.protocol.v1.Value.value.duration=#[serde(with = "crate::serde_duration")]
       - field_attribute=surrealdb.protocol.v1.Value.value.datetime=#[serde(with = "crate::serde_timestamp")]
+      - field_attribute=surrealdb.protocol.v1.LiteralKind.literal.duration_value=#[serde(with = "crate::serde_duration")]
       - field_attribute=surrealdb.protocol.v1.Value.value=#[serde(flatten)]
       - field_attribute=surrealdb.protocol.v1.Geometry.geometry=#[serde(flatten)]
       - field_attribute=surrealdb.protocol.v1.Object.items=#[serde(flatten)]
