@@ -201,12 +201,12 @@ table EitherKind {
 
 table SetKind {
     inner: Kind (id: 0);
-    size: uint64 (id: 1);
+    size: UInt64Value (id: 1);
 }
 
 table ArrayKind {
     inner: Kind (id: 0);
-    size: uint64 (id: 1);
+    size: UInt64Value (id: 1);
 }
 
 table FunctionKind {

@@ -38,7 +38,7 @@ impl<'a> ArrayKind<'a> {
     args: &'args ArrayKindArgs<'args>
   ) -> flatbuffers::WIPOffset<ArrayKind<'bldr>> {
     let mut builder = ArrayKindBuilder::new(_fbb);
-    builder.add_size(args.size);
+    if let Some(x) = args.size { builder.add_size(x); }
     if let Some(x) = args.inner { builder.add_inner(x); }
     builder.finish()
   }
@@ -52,11 +52,11 @@ impl<'a> ArrayKind<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<Kind>>(ArrayKind::VT_INNER, None)}
   }
   #[inline]
-  pub fn size(&self) -> u64 {
+  pub fn size(&self) -> Option<UInt64Value<'a>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u64>(ArrayKind::VT_SIZE, Some(0)).unwrap()}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<UInt64Value>>(ArrayKind::VT_SIZE, None)}
   }
 }
 
@@ -68,21 +68,21 @@ impl flatbuffers::Verifiable for ArrayKind<'_> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<Kind>>("inner", Self::VT_INNER, false)?
-     .visit_field::<u64>("size", Self::VT_SIZE, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<UInt64Value>>("size", Self::VT_SIZE, false)?
      .finish();
     Ok(())
   }
 }
 pub struct ArrayKindArgs<'a> {
     pub inner: Option<flatbuffers::WIPOffset<Kind<'a>>>,
-    pub size: u64,
+    pub size: Option<flatbuffers::WIPOffset<UInt64Value<'a>>>,
 }
 impl<'a> Default for ArrayKindArgs<'a> {
   #[inline]
   fn default() -> Self {
     ArrayKindArgs {
       inner: None,
-      size: 0,
+      size: None,
     }
   }
 }
@@ -97,8 +97,8 @@ impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> ArrayKindBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Kind>>(ArrayKind::VT_INNER, inner);
   }
   #[inline]
-  pub fn add_size(&mut self, size: u64) {
-    self.fbb_.push_slot::<u64>(ArrayKind::VT_SIZE, size, 0);
+  pub fn add_size(&mut self, size: flatbuffers::WIPOffset<UInt64Value<'b >>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<UInt64Value>>(ArrayKind::VT_SIZE, size);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> ArrayKindBuilder<'a, 'b, A> {
