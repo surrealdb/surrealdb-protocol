@@ -18,6 +18,7 @@ table Uuid {
     bytes: [ubyte] (id: 0);
 }
 
+table NoneValue {}
 table NullValue {}
 table BoolValue { value: bool (id: 0); }
 table Int64Value { value: int64 (id: 0); }
@@ -108,23 +109,24 @@ table Range {
 
 // Main Value union
 union ValueType {
-    Null: NullValue (id: 1),
-    Bool: BoolValue (id: 2),
-    Int64: Int64Value (id: 3),
-    UInt64: UInt64Value (id: 4),
-    Float64: Float64Value (id: 5),
-    String: StringValue (id: 6),
-    Bytes: surrealdb.protocol.v1.Bytes (id: 7),
-    Decimal: surrealdb.protocol.v1.Decimal (id: 8),
-    Duration: surrealdb.protocol.v1.Duration (id: 9),
-    Datetime: surrealdb.protocol.v1.Timestamp (id: 10),
-    Uuid: surrealdb.protocol.v1.Uuid (id: 11),
-    Array (id: 12),
-    Object (id: 13),
-    Geometry (id: 14),
-    RecordId (id: 15),
-    File (id: 16),
-    Range (id: 17),
+    None: NoneValue (id: 1),
+    Null: NullValue (id: 2),
+    Bool: BoolValue (id: 3),
+    Int64: Int64Value (id: 4),
+    UInt64: UInt64Value (id: 5),
+    Float64: Float64Value (id: 6),
+    String: StringValue (id: 7),
+    Bytes: surrealdb.protocol.v1.Bytes (id: 8),
+    Decimal: surrealdb.protocol.v1.Decimal (id: 9),
+    Duration: surrealdb.protocol.v1.Duration (id: 10),
+    Datetime: surrealdb.protocol.v1.Timestamp (id: 11),
+    Uuid: surrealdb.protocol.v1.Uuid (id: 12),
+    Array (id: 13),
+    Object (id: 14),
+    Geometry (id: 15),
+    RecordId (id: 16),
+    File (id: 17),
+    Range (id: 18),
 }
 
 table Value {

@@ -6,6 +6,9 @@ package surrealdb.protocol.v1;
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
+// None value.
+message NoneValue {}
+
 // Null value.
 message NullValue {}
 
@@ -116,23 +119,24 @@ message Range {
 // Value type.
 message Value {
     oneof value {
-        NullValue null = 1;
-        bool bool = 2;
-        int64 int64 = 3;
-        uint64 uint64 = 4;
-        double float64 = 5;
-        string string = 6;
-        bytes bytes = 7;
-        Decimal decimal = 8;
-        google.protobuf.Duration duration = 9;
-        google.protobuf.Timestamp datetime = 10;
-        Uuid uuid = 11;
-        Array array = 12;
-        Object object = 13;
-        Geometry geometry = 14;
-        RecordId record_id = 15;
-        File file = 16;
-        Range range = 17;
+        NoneValue none = 1;
+        NullValue null = 2;
+        bool bool = 3;
+        int64 int64 = 4;
+        uint64 uint64 = 5;
+        double float64 = 6;
+        string string = 7;
+        bytes bytes = 8;
+        Decimal decimal = 9;
+        google.protobuf.Duration duration = 10;
+        google.protobuf.Timestamp datetime = 11;
+        Uuid uuid = 12;
+        Array array = 13;
+        Object object = 14;
+        Geometry geometry = 15;
+        RecordId record_id = 16;
+        File file = 17;
+        Range range = 18;
     }
 }
 
