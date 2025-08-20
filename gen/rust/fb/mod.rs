@@ -100,8 +100,6 @@ pub mod surrealdb {
       pub use self::number_kind_generated::*;
       mod object_kind_generated;
       pub use self::object_kind_generated::*;
-      mod point_kind_generated;
-      pub use self::point_kind_generated::*;
       mod string_kind_generated;
       pub use self::string_kind_generated::*;
       mod uuid_kind_generated;

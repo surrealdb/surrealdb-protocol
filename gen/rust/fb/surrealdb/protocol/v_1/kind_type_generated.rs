@@ -12,10 +12,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_KIND_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_KIND_TYPE: u8 = 25;
+pub const ENUM_MAX_KIND_TYPE: u8 = 24;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_KIND_TYPE: [KindType; 26] = [
+pub const ENUM_VALUES_KIND_TYPE: [KindType; 25] = [
   KindType::NONE,
   KindType::Any,
   KindType::Null,
@@ -28,7 +28,6 @@ pub const ENUM_VALUES_KIND_TYPE: [KindType; 26] = [
   KindType::Int,
   KindType::Number,
   KindType::Object,
-  KindType::Point,
   KindType::String,
   KindType::Uuid,
   KindType::Regex,
@@ -61,23 +60,22 @@ impl KindType {
   pub const Int: Self = Self(9);
   pub const Number: Self = Self(10);
   pub const Object: Self = Self(11);
-  pub const Point: Self = Self(12);
-  pub const String: Self = Self(13);
-  pub const Uuid: Self = Self(14);
-  pub const Regex: Self = Self(15);
-  pub const Record: Self = Self(16);
-  pub const Geometry: Self = Self(17);
-  pub const Option: Self = Self(18);
-  pub const Either: Self = Self(19);
-  pub const Set: Self = Self(20);
-  pub const Array: Self = Self(21);
-  pub const Function: Self = Self(22);
-  pub const Range: Self = Self(23);
-  pub const Literal: Self = Self(24);
-  pub const File: Self = Self(25);
+  pub const String: Self = Self(12);
+  pub const Uuid: Self = Self(13);
+  pub const Regex: Self = Self(14);
+  pub const Record: Self = Self(15);
+  pub const Geometry: Self = Self(16);
+  pub const Option: Self = Self(17);
+  pub const Either: Self = Self(18);
+  pub const Set: Self = Self(19);
+  pub const Array: Self = Self(20);
+  pub const Function: Self = Self(21);
+  pub const Range: Self = Self(22);
+  pub const Literal: Self = Self(23);
+  pub const File: Self = Self(24);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 25;
+  pub const ENUM_MAX: u8 = 24;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Any,
@@ -91,7 +89,6 @@ impl KindType {
     Self::Int,
     Self::Number,
     Self::Object,
-    Self::Point,
     Self::String,
     Self::Uuid,
     Self::Regex,
@@ -121,7 +118,6 @@ impl KindType {
       Self::Int => Some("Int"),
       Self::Number => Some("Number"),
       Self::Object => Some("Object"),
-      Self::Point => Some("Point"),
       Self::String => Some("String"),
       Self::Uuid => Some("Uuid"),
       Self::Regex => Some("Regex"),

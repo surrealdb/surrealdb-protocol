@@ -75,6 +75,28 @@ typedef enum _Surrealdb__Protocol__Rpc__V1__Action {
   SURREALDB__PROTOCOL__RPC__V1__ACTION__ACTION_KILLED = 4
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__ACTION)
 } Surrealdb__Protocol__Rpc__V1__Action;
+/*
+ * The kind of query response.
+ */
+typedef enum _Surrealdb__Protocol__Rpc__V1__QueryResponseKind {
+  SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_UNSPECIFIED = 0,
+  /*
+   * A single value is contained in the response and no further responses are expected.
+   * This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+   */
+  SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_SINGLE = 1,
+  /*
+   * A batch of values is contained in the response and further responses may be expected.
+   */
+  SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_BATCHED = 2,
+  /*
+   * The final response from a batched query. No further responses for this query ID are expected.
+   * This response should always contain the query stats.
+   * Note: If all response values can fit in a single batch, this will be the first and only response.
+   */
+  SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_BATCHED_FINAL = 3
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND)
+} Surrealdb__Protocol__Rpc__V1__QueryResponseKind;
 
 /* --- messages --- */
 
@@ -478,18 +500,28 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse
 , {0,NULL} }
 
 
+typedef enum {
+  SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__SUBSCRIBE_TO__NOT_SET = 0,
+  SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__SUBSCRIBE_TO_LIVE_QUERY_ID = 1,
+  SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__SUBSCRIBE_TO_QUERY = 2
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__SUBSCRIBE_TO__CASE)
+} Surrealdb__Protocol__Rpc__V1__SubscribeRequest__SubscribeToCase;
+
 /*
  * Request to issue a live query.
  */
 struct  Surrealdb__Protocol__Rpc__V1__SubscribeRequest
 {
   ProtobufCMessage base;
-  char *query;
-  Surrealdb__Protocol__V1__Variables *variables;
+  Surrealdb__Protocol__Rpc__V1__SubscribeRequest__SubscribeToCase subscribe_to_case;
+  union {
+    Surrealdb__Protocol__V1__Uuid *live_query_id;
+    Surrealdb__Protocol__Rpc__V1__QueryRequest *query;
+  };
 };
 #define SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__subscribe_request__descriptor) \
-, (char *)protobuf_c_empty_string, NULL }
+, SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_REQUEST__SUBSCRIBE_TO__NOT_SET, {0} }
 
 
 /*
@@ -540,8 +572,7 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryRequest
  * Streaming response to a query request.
  * When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
  * ID's response can be assumed to be sent in order, but may be interleaved in the future.
- * Expect the first response for each query ID to contain the query stats, subsequent
- * value batches may elide the stats.
+ * Expect only the last response for each query ID to contain the query stats.
  * 
  * Responses are ordered by query index, then batch index. For example:
  *  QueryResponse(query_index=0, batch_index=0, stats=None)
@@ -565,6 +596,10 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
    */
   uint64_t batch_index;
   /*
+   * The kind of query response.
+   */
+  Surrealdb__Protocol__Rpc__V1__QueryResponseKind kind;
+  /*
    * The query stats.
    * This is only expected to be present in the last batch of each query.
    */
@@ -581,7 +616,7 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 };
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_response__descriptor) \
-, 0, 0, NULL, NULL, 0,NULL }
+, 0, 0, SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_UNSPECIFIED, NULL, NULL, 0,NULL }
 
 
 /*
@@ -607,17 +642,13 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryStats
    */
   int64_t bytes_scanned;
   /*
-   * The start time of the query.
-   */
-  Google__Protobuf__Timestamp *start_time;
-  /*
    * The duration of the query.
    */
   Google__Protobuf__Duration *execution_duration;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_STATS__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_stats__descriptor) \
-, 0, 0, 0, 0, NULL, NULL }
+, 0, 0, 0, 0, NULL }
 
 
 /*
@@ -1810,6 +1841,7 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__subscribe(ProtobufCService
 /* --- descriptors --- */
 
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__action__descriptor;
+extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__query_response_kind__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__health_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__health_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__version_request__descriptor;

@@ -96,38 +96,6 @@ mod serde_timestamp {
     }
 }
 
-mod serde_timestamp_optional {
-    use prost_types::Timestamp;
-    use serde::{Deserializer, Serializer};
-
-    pub fn serialize<S>(timestamp: &Option<Timestamp>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match timestamp {
-            Some(timestamp) => crate::serde_timestamp::serialize(timestamp, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Timestamp>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct Visitor;
-
-        impl serde::de::Visitor<'_> for Visitor {
-            type Value = Option<Timestamp>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a timestamp or null")
-            }
-        }
-
-        deserializer.deserialize_option(Visitor)
-    }
-}
-
 mod serde_duration {
     use prost_types::Duration;
     use serde::Deserializer;
