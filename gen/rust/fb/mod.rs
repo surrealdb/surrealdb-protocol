@@ -16,6 +16,8 @@ pub mod surrealdb {
       pub use self::record_id_key_bound_generated::*;
       mod record_id_key_type_generated;
       pub use self::record_id_key_type_generated::*;
+      mod geometry_kind_type_generated;
+      pub use self::geometry_kind_type_generated::*;
       mod literal_type_generated;
       pub use self::literal_type_generated::*;
       mod kind_type_generated;

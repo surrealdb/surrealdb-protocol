@@ -43,11 +43,11 @@ impl<'a> GeometryKind<'a> {
 
 
   #[inline]
-  pub fn types(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<&'a str>>> {
+  pub fn types(&self) -> Option<flatbuffers::Vector<'a, GeometryKindType>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<&'a str>>>>(GeometryKind::VT_TYPES, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, GeometryKindType>>>(GeometryKind::VT_TYPES, None)}
   }
 }
 
@@ -58,13 +58,13 @@ impl flatbuffers::Verifiable for GeometryKind<'_> {
   ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<&'_ str>>>>("types", Self::VT_TYPES, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, GeometryKindType>>>("types", Self::VT_TYPES, false)?
      .finish();
     Ok(())
   }
 }
 pub struct GeometryKindArgs<'a> {
-    pub types: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<&'a str>>>>,
+    pub types: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, GeometryKindType>>>,
 }
 impl<'a> Default for GeometryKindArgs<'a> {
   #[inline]
@@ -81,7 +81,7 @@ pub struct GeometryKindBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
 }
 impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> GeometryKindBuilder<'a, 'b, A> {
   #[inline]
-  pub fn add_types(&mut self, types: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<&'b  str>>>) {
+  pub fn add_types(&mut self, types: flatbuffers::WIPOffset<flatbuffers::Vector<'b , GeometryKindType>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(GeometryKind::VT_TYPES, types);
   }
   #[inline]
