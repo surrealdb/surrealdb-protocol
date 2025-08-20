@@ -30,7 +30,7 @@ default = ["proto", "flatbuffers", "rpc"]
 
 proto = ["dep:prost", "dep:prost-types"]
 flatbuffers = ["dep:flatbuffers"]
-rpc = ["dep:tonic", "dep:futures"]
+rpc = ["proto", "dep:tonic", "dep:futures"]
 
 [dependencies]
 anyhow = { version = "1" }

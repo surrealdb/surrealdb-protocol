@@ -19,7 +19,6 @@ plugins:
       - enable_type_names=true
       - type_attribute=.=#[derive(serde::Deserialize\,serde::Serialize)]
       - field_attribute=timeout=#[serde(with = "crate::serde_duration_optional")]
-      - field_attribute=start_time=#[serde(with = "crate::serde_timestamp_optional")]
       - field_attribute=execution_duration=#[serde(with = "crate::serde_duration_optional")]
       - field_attribute=surrealdb.protocol.v1.Value.value.duration=#[serde(with = "crate::serde_duration")]
       - field_attribute=surrealdb.protocol.v1.Value.value.datetime=#[serde(with = "crate::serde_timestamp")]
