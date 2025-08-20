@@ -194,8 +194,10 @@ message ExportMlModelResponse {
 
 // Request to issue a live query.
 message SubscribeRequest {
-    string query = 1;
-    surrealdb.protocol.v1.Variables variables = 2;
+    oneof subscribe_to {
+        surrealdb.protocol.v1.Uuid live_query_id = 1;
+        QueryRequest query = 2;
+    }
 }
 
 // Action type.
@@ -227,13 +229,29 @@ message QueryRequest {
     surrealdb.protocol.v1.Uuid txn_id = 3;
 }
 
+// The kind of query response.
+enum QueryResponseKind {
+    QUERY_RESPONSE_KIND_UNSPECIFIED = 0;
+    // A single value is contained in the response and no further responses are expected.
+    //
+    // This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+    QUERY_RESPONSE_KIND_SINGLE = 1;
+    // A batch of values is contained in the response and further responses may be expected.
+    QUERY_RESPONSE_KIND_BATCHED = 2;
+    // The final response from a batched query. No further responses for this query ID are expected.
+    //
+    // This response should always contain the query stats.
+    //
+    // Note: If all response values can fit in a single batch, this will be the first and only response.
+    QUERY_RESPONSE_KIND_BATCHED_FINAL = 3;
+}
+
 // Streaming response to a query request.
 //
 // When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
 // ID's response can be assumed to be sent in order, but may be interleaved in the future.
 //
-// Expect the first response for each query ID to contain the query stats, subsequent
-// value batches may elide the stats.
+// Expect only the last response for each query ID to contain the query stats.
 // 
 // Responses are ordered by query index, then batch index. For example:
 //  QueryResponse(query_index=0, batch_index=0, stats=None)
@@ -249,13 +267,15 @@ message QueryResponse {
     uint32 query_index = 1;
     // The index of the batch within the given query.
     uint64 batch_index = 2;
+    // The kind of query response.
+    QueryResponseKind kind = 3;
     // The query stats.
     // This is only expected to be present in the last batch of each query.
-    QueryStats stats = 3;
+    QueryStats stats = 4;
     // The error, if any.
-    QueryError error = 4;
+    QueryError error = 5;
     // A batch of values.
-    repeated surrealdb.protocol.v1.Value values = 5;
+    repeated surrealdb.protocol.v1.Value values = 6;
 }
 
 // Query statistics.
@@ -268,10 +288,8 @@ message QueryStats {
     int64 records_scanned = 3;
     // The number of bytes scanned. -1 if unknown.
     int64 bytes_scanned = 4;
-    // The start time of the query.
-    google.protobuf.Timestamp start_time = 5;
     // The duration of the query.
-    google.protobuf.Duration execution_duration = 6;
+    google.protobuf.Duration execution_duration = 5;
 }
 
 // Query error.

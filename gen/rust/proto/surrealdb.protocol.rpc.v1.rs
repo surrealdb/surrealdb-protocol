@@ -345,10 +345,19 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Ex
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscribeRequest {
-    #[prost(string, tag="1")]
-    pub query: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
-    pub variables: ::core::option::Option<super::super::v1::Variables>,
+    #[prost(oneof="subscribe_request::SubscribeTo", tags="1, 2")]
+    pub subscribe_to: ::core::option::Option<subscribe_request::SubscribeTo>,
+}
+/// Nested message and enum types in `SubscribeRequest`.
+pub mod subscribe_request {
+    #[derive(serde::Deserialize,serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum SubscribeTo {
+        #[prost(message, tag="1")]
+        LiveQueryId(super::super::super::v1::Uuid),
+        #[prost(message, tag="2")]
+        Query(super::QueryRequest),
+    }
 }
 impl ::prost::Name for SubscribeRequest {
 const NAME: &'static str = "SubscribeRequest";
@@ -402,8 +411,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 /// When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
 /// ID's response can be assumed to be sent in order, but may be interleaved in the future.
 ///
-/// Expect the first response for each query ID to contain the query stats, subsequent
-/// value batches may elide the stats.
+/// Expect only the last response for each query ID to contain the query stats.
 /// 
 /// Responses are ordered by query index, then batch index. For example:
 ///   QueryResponse(query_index=0, batch_index=0, stats=None)
@@ -423,15 +431,18 @@ pub struct QueryResponse {
     /// The index of the batch within the given query.
     #[prost(uint64, tag="2")]
     pub batch_index: u64,
+    /// The kind of query response.
+    #[prost(enumeration="QueryResponseKind", tag="3")]
+    pub kind: i32,
     /// The query stats.
     /// This is only expected to be present in the last batch of each query.
-    #[prost(message, optional, tag="3")]
+    #[prost(message, optional, tag="4")]
     pub stats: ::core::option::Option<QueryStats>,
     /// The error, if any.
-    #[prost(message, optional, tag="4")]
+    #[prost(message, optional, tag="5")]
     pub error: ::core::option::Option<QueryError>,
     /// A batch of values.
-    #[prost(message, repeated, tag="5")]
+    #[prost(message, repeated, tag="6")]
     pub values: ::prost::alloc::vec::Vec<super::super::v1::Value>,
 }
 impl ::prost::Name for QueryResponse {
@@ -454,12 +465,8 @@ pub struct QueryStats {
     /// The number of bytes scanned. -1 if unknown.
     #[prost(int64, tag="4")]
     pub bytes_scanned: i64,
-    /// The start time of the query.
-    #[prost(message, optional, tag="5")]
-    #[serde(with = "crate::serde_timestamp_optional")]
-    pub start_time: ::core::option::Option<::prost_types::Timestamp>,
     /// The duration of the query.
-    #[prost(message, optional, tag="6")]
+    #[prost(message, optional, tag="5")]
     #[serde(with = "crate::serde_duration_optional")]
     pub execution_duration: ::core::option::Option<::prost_types::Duration>,
 }
@@ -635,6 +642,49 @@ impl Action {
             "ACTION_UPDATED" => Some(Self::Updated),
             "ACTION_DELETED" => Some(Self::Deleted),
             "ACTION_KILLED" => Some(Self::Killed),
+            _ => None,
+        }
+    }
+}
+/// The kind of query response.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum QueryResponseKind {
+    Unspecified = 0,
+    /// A single value is contained in the response and no further responses are expected.
+    ///
+    /// This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+    Single = 1,
+    /// A batch of values is contained in the response and further responses may be expected.
+    Batched = 2,
+    /// The final response from a batched query. No further responses for this query ID are expected.
+    ///
+    /// This response should always contain the query stats.
+    ///
+    /// Note: If all response values can fit in a single batch, this will be the first and only response.
+    BatchedFinal = 3,
+}
+impl QueryResponseKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "QUERY_RESPONSE_KIND_UNSPECIFIED",
+            Self::Single => "QUERY_RESPONSE_KIND_SINGLE",
+            Self::Batched => "QUERY_RESPONSE_KIND_BATCHED",
+            Self::BatchedFinal => "QUERY_RESPONSE_KIND_BATCHED_FINAL",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "QUERY_RESPONSE_KIND_UNSPECIFIED" => Some(Self::Unspecified),
+            "QUERY_RESPONSE_KIND_SINGLE" => Some(Self::Single),
+            "QUERY_RESPONSE_KIND_BATCHED" => Some(Self::Batched),
+            "QUERY_RESPONSE_KIND_BATCHED_FINAL" => Some(Self::BatchedFinal),
             _ => None,
         }
     }

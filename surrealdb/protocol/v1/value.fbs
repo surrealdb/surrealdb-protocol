@@ -168,7 +168,6 @@ table FloatKind {}
 table IntKind {}
 table NumberKind {}
 table ObjectKind {}
-table PointKind {}
 table StringKind {}
 table UuidKind {}
 table RegexKind {}
@@ -182,8 +181,18 @@ table RecordKind {
     tables: [TableName] (id: 0);
 }
 
+enum GeometryKindType: byte {
+    Point = 1,
+    Line = 2,
+    Polygon = 3,
+    MultiPoint = 4,
+    MultiLineString = 5,
+    MultiPolygon = 6,
+    Collection = 7,
+}
+
 table GeometryKind {
-    types: [string] (id: 0);
+    types: [GeometryKindType] (id: 0);
 }
 
 table FileKind {
@@ -264,7 +273,6 @@ union KindType {
     Int: IntKind (id: 9),
     Number: NumberKind (id: 10),
     Object: ObjectKind (id: 11),
-    Point: PointKind (id: 12),
     String: StringKind (id: 13),
     Uuid: UuidKind (id: 14),
     Regex: RegexKind (id: 15),

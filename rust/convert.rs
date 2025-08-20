@@ -2,8 +2,8 @@ use crate::proto::v1::value::Value as ValueInner;
 use crate::proto::v1::{self};
 use anyhow::Result;
 use rust_decimal::Decimal;
+use std::collections::BTreeMap;
 use std::str::FromStr;
-use std::{collections::BTreeMap, convert::Infallible};
 use uuid::Uuid;
 
 /// A trait for converting a type into a `v1::Value` protobuf type.
@@ -270,14 +270,12 @@ impl TryFrom<v1::Decimal> for Decimal {
     }
 }
 
-impl TryFrom<Decimal> for v1::Decimal {
-    type Error = Infallible;
-
+impl From<Decimal> for v1::Decimal {
     #[inline]
-    fn try_from(value: Decimal) -> Result<Self, Self::Error> {
-        Ok(v1::Decimal {
+    fn from(value: Decimal) -> Self {
+        v1::Decimal {
             value: value.to_string(),
-        })
+        }
     }
 }
 

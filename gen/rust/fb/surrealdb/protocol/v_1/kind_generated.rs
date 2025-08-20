@@ -225,21 +225,6 @@ impl<'a> Kind<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
-  pub fn kind_as_point(&self) -> Option<PointKind<'a>> {
-    if self.kind_type() == KindType::Point {
-      self.kind().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { PointKind::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
-  #[inline]
-  #[allow(non_snake_case)]
   pub fn kind_as_string(&self) -> Option<StringKind<'a>> {
     if self.kind_type() == KindType::String {
       self.kind().map(|t| {
@@ -455,7 +440,6 @@ impl flatbuffers::Verifiable for Kind<'_> {
           KindType::Int => v.verify_union_variant::<flatbuffers::ForwardsUOffset<IntKind>>("KindType::Int", pos),
           KindType::Number => v.verify_union_variant::<flatbuffers::ForwardsUOffset<NumberKind>>("KindType::Number", pos),
           KindType::Object => v.verify_union_variant::<flatbuffers::ForwardsUOffset<ObjectKind>>("KindType::Object", pos),
-          KindType::Point => v.verify_union_variant::<flatbuffers::ForwardsUOffset<PointKind>>("KindType::Point", pos),
           KindType::String => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringKind>>("KindType::String", pos),
           KindType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<UuidKind>>("KindType::Uuid", pos),
           KindType::Regex => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RegexKind>>("KindType::Regex", pos),
@@ -595,13 +579,6 @@ impl core::fmt::Debug for Kind<'_> {
         },
         KindType::Object => {
           if let Some(x) = self.kind_as_object() {
-            ds.field("kind", &x)
-          } else {
-            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
-        KindType::Point => {
-          if let Some(x) = self.kind_as_point() {
             ds.field("kind", &x)
           } else {
             ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
