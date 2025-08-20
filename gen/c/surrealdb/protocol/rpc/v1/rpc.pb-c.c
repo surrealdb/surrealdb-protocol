@@ -3134,7 +3134,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_request__de
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__query_request__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_response__field_descriptors[6] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_response__field_descriptors[7] =
 {
   {
     "query_index",
@@ -3161,8 +3161,20 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_respon
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "kind",
+    "result_count",
     3,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__Rpc__V1__QueryResponse, result_count),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "kind",
+    4,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
@@ -3174,7 +3186,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_respon
   },
   {
     "stats",
-    4,
+    5,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -3186,7 +3198,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_respon
   },
   {
     "error",
-    5,
+    6,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -3198,7 +3210,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_respon
   },
   {
     "values",
-    6,
+    7,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__Rpc__V1__QueryResponse, n_values),
@@ -3211,16 +3223,17 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_respon
 };
 static const unsigned surrealdb__protocol__rpc__v1__query_response__field_indices_by_name[] = {
   1,   /* field[1] = batch_index */
-  4,   /* field[4] = error */
-  2,   /* field[2] = kind */
+  5,   /* field[5] = error */
+  3,   /* field[3] = kind */
   0,   /* field[0] = query_index */
-  3,   /* field[3] = stats */
-  5,   /* field[5] = values */
+  2,   /* field[2] = result_count */
+  4,   /* field[4] = stats */
+  6,   /* field[6] = values */
 };
 static const ProtobufCIntRange surrealdb__protocol__rpc__v1__query_response__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 6 }
+  { 0, 7 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_response__descriptor =
 {
@@ -3230,7 +3243,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_response__d
   "Surrealdb__Protocol__Rpc__V1__QueryResponse",
   "surrealdb.protocol.rpc.v1",
   sizeof(Surrealdb__Protocol__Rpc__V1__QueryResponse),
-  6,
+  7,
   surrealdb__protocol__rpc__v1__query_response__field_descriptors,
   surrealdb__protocol__rpc__v1__query_response__field_indices_by_name,
   1,  surrealdb__protocol__rpc__v1__query_response__number_ranges,

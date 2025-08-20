@@ -327,10 +327,39 @@ export interface QueryRequest {
  *  QueryResponse(query_index=4, batch_index=0, stats=Some(..))
  */
 export interface QueryResponse {
-  /** The index of the query. */
+  /** The index of the query result. */
   queryIndex: number;
   /** The index of the batch within the given query. */
   batchIndex: bigint;
+  /**
+   * The total number of query results.
+   *
+   * Every response will contain the same value for this field so you can
+   * use the value from the first response to determine how many query results
+   * to expect.
+   *
+   * Note: This is NOT the number of records returned.
+   *
+   * Examples:
+   * ```
+   * query = "SELECT * FROM users;"
+   * result_count = 1
+   *
+   * query = """
+   * SELECT * FROM users;
+   * SELECT * FROM posts;
+   * """
+   * result_count = 2
+   *
+   * query = """
+   * SELECT * FROM users;
+   * SELECT * FROM posts;
+   * SELECT * FROM comments;
+   * """
+   * result_count = 3
+   * ```
+   */
+  resultCount: number;
   /** The kind of query response. */
   kind: QueryResponseKind;
   /**
@@ -2590,7 +2619,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { queryIndex: 0, batchIndex: 0n, kind: 0, stats: undefined, error: undefined, values: [] };
+  return { queryIndex: 0, batchIndex: 0n, resultCount: 0, kind: 0, stats: undefined, error: undefined, values: [] };
 }
 
 export const QueryResponse: MessageFns<QueryResponse> = {
@@ -2604,17 +2633,20 @@ export const QueryResponse: MessageFns<QueryResponse> = {
       }
       writer.uint32(16).uint64(message.batchIndex);
     }
+    if (message.resultCount !== 0) {
+      writer.uint32(24).uint32(message.resultCount);
+    }
     if (message.kind !== 0) {
-      writer.uint32(24).int32(message.kind);
+      writer.uint32(32).int32(message.kind);
     }
     if (message.stats !== undefined) {
-      QueryStats.encode(message.stats, writer.uint32(34).fork()).join();
+      QueryStats.encode(message.stats, writer.uint32(42).fork()).join();
     }
     if (message.error !== undefined) {
-      QueryError.encode(message.error, writer.uint32(42).fork()).join();
+      QueryError.encode(message.error, writer.uint32(50).fork()).join();
     }
     for (const v of message.values) {
-      Value.encode(v!, writer.uint32(50).fork()).join();
+      Value.encode(v!, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -2647,15 +2679,15 @@ export const QueryResponse: MessageFns<QueryResponse> = {
             break;
           }
 
-          message.kind = reader.int32() as any;
+          message.resultCount = reader.uint32();
           continue;
         }
         case 4: {
-          if (tag !== 34) {
+          if (tag !== 32) {
             break;
           }
 
-          message.stats = QueryStats.decode(reader, reader.uint32());
+          message.kind = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -2663,11 +2695,19 @@ export const QueryResponse: MessageFns<QueryResponse> = {
             break;
           }
 
-          message.error = QueryError.decode(reader, reader.uint32());
+          message.stats = QueryStats.decode(reader, reader.uint32());
           continue;
         }
         case 6: {
           if (tag !== 50) {
+            break;
+          }
+
+          message.error = QueryError.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
             break;
           }
 
@@ -2687,6 +2727,7 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     return {
       queryIndex: isSet(object.queryIndex) ? globalThis.Number(object.queryIndex) : 0,
       batchIndex: isSet(object.batchIndex) ? BigInt(object.batchIndex) : 0n,
+      resultCount: isSet(object.resultCount) ? globalThis.Number(object.resultCount) : 0,
       kind: isSet(object.kind) ? queryResponseKindFromJSON(object.kind) : 0,
       stats: isSet(object.stats) ? QueryStats.fromJSON(object.stats) : undefined,
       error: isSet(object.error) ? QueryError.fromJSON(object.error) : undefined,
@@ -2701,6 +2742,9 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     }
     if (message.batchIndex !== 0n) {
       obj.batchIndex = message.batchIndex.toString();
+    }
+    if (message.resultCount !== 0) {
+      obj.resultCount = Math.round(message.resultCount);
     }
     if (message.kind !== 0) {
       obj.kind = queryResponseKindToJSON(message.kind);
@@ -2724,6 +2768,7 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     const message = createBaseQueryResponse();
     message.queryIndex = object.queryIndex ?? 0;
     message.batchIndex = object.batchIndex ?? 0n;
+    message.resultCount = object.resultCount ?? 0;
     message.kind = object.kind ?? 0;
     message.stats = (object.stats !== undefined && object.stats !== null)
       ? QueryStats.fromPartial(object.stats)

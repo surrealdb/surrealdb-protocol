@@ -263,19 +263,46 @@ enum QueryResponseKind {
 //  QueryResponse(query_index=3, batch_index=0, stats=Some(..))
 //  QueryResponse(query_index=4, batch_index=0, stats=Some(..))
 message QueryResponse {
-    // The index of the query.
+    // The index of the query result.
     uint32 query_index = 1;
     // The index of the batch within the given query.
     uint64 batch_index = 2;
+    // The total number of query results.
+    //
+    // Every response will contain the same value for this field so you can
+    // use the value from the first response to determine how many query results
+    // to expect.
+    //
+    // Note: This is NOT the number of records returned.
+    //
+    // Examples:
+    // ```
+    // query = "SELECT * FROM users;"
+    // result_count = 1
+    //
+    // query = """
+    // SELECT * FROM users;
+    // SELECT * FROM posts;
+    // """
+    // result_count = 2
+    //
+    // query = """
+    // SELECT * FROM users;
+    // SELECT * FROM posts;
+    // SELECT * FROM comments;
+    // """
+    // result_count = 3
+    // ```
+    uint32 result_count = 3;
     // The kind of query response.
-    QueryResponseKind kind = 3;
+    QueryResponseKind kind = 4;
     // The query stats.
     // This is only expected to be present in the last batch of each query.
-    QueryStats stats = 4;
+    QueryStats stats = 5;
     // The error, if any.
-    QueryError error = 5;
+    QueryError error = 6;
     // A batch of values.
-    repeated surrealdb.protocol.v1.Value values = 6;
+    repeated surrealdb.protocol.v1.Value values = 7;
 }
 
 // Query statistics.
