@@ -313,6 +313,21 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_regex(&self) -> Option<StringValue<'a>> {
+    if self.value_type() == ValueType::Regex {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { StringValue::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl flatbuffers::Verifiable for Value<'_> {
@@ -341,6 +356,7 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::RecordId => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordId>>("ValueType::RecordId", pos),
           ValueType::File => v.verify_union_variant::<flatbuffers::ForwardsUOffset<File>>("ValueType::File", pos),
           ValueType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Range>>("ValueType::Range", pos),
+          ValueType::Regex => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::Regex", pos),
           _ => Ok(()),
         }
      })?
@@ -509,6 +525,13 @@ impl core::fmt::Debug for Value<'_> {
         },
         ValueType::Range => {
           if let Some(x) = self.value_as_range() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Regex => {
+          if let Some(x) = self.value_as_regex() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
