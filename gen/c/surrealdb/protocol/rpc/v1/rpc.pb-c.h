@@ -602,21 +602,19 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
    * to expect.
    * Note: This is NOT the number of records returned.
    * Examples:
-   * ```
-   * query = "SELECT * FROM users;"
-   * result_count = 1
-   * query = """
-   * SELECT * FROM users;
-   * SELECT * FROM posts;
-   * """
-   * result_count = 2
-   * query = """
-   * SELECT * FROM users;
-   * SELECT * FROM posts;
-   * SELECT * FROM comments;
-   * """
-   * result_count = 3
-   * ```
+   *   query = "SELECT * FROM users;"
+   *   result_count = 1
+   *   query = """
+   *   SELECT * FROM users;
+   *   SELECT * FROM posts;
+   *   """
+   *   result_count = 2
+   *   query = """
+   *   SELECT * FROM users;
+   *   SELECT * FROM posts;
+   *   SELECT * FROM comments;
+   *   """
+   *   result_count = 3
    */
   uint32_t result_count;
   /*

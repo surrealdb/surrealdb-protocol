@@ -440,23 +440,21 @@ pub struct QueryResponse {
     /// Note: This is NOT the number of records returned.
     ///
     /// Examples:
-    /// ```
-    /// query = "SELECT * FROM users;"
-    /// result_count = 1
+    ///    query = "SELECT * FROM users;"
+    ///    result_count = 1
     ///
-    /// query = """
-    /// SELECT * FROM users;
-    /// SELECT * FROM posts;
-    /// """
-    /// result_count = 2
+    ///    query = """
+    ///    SELECT * FROM users;
+    ///    SELECT * FROM posts;
+    ///    """
+    ///    result_count = 2
     ///
-    /// query = """
-    /// SELECT * FROM users;
-    /// SELECT * FROM posts;
-    /// SELECT * FROM comments;
-    /// """
-    /// result_count = 3
-    /// ```
+    ///    query = """
+    ///    SELECT * FROM users;
+    ///    SELECT * FROM posts;
+    ///    SELECT * FROM comments;
+    ///    """
+    ///    result_count = 3
     #[prost(uint32, tag="3")]
     pub result_count: u32,
     /// The kind of query response.
