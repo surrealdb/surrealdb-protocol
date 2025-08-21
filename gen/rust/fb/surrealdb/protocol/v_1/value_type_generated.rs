@@ -12,10 +12,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 17;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 18;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 18] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 19] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -34,6 +34,7 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 18] = [
   ValueType::RecordId,
   ValueType::File,
   ValueType::Range,
+  ValueType::Regex,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -59,9 +60,10 @@ impl ValueType {
   pub const RecordId: Self = Self(15);
   pub const File: Self = Self(16);
   pub const Range: Self = Self(17);
+  pub const Regex: Self = Self(18);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 17;
+  pub const ENUM_MAX: u8 = 18;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -81,6 +83,7 @@ impl ValueType {
     Self::RecordId,
     Self::File,
     Self::Range,
+    Self::Regex,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -103,6 +106,7 @@ impl ValueType {
       Self::RecordId => Some("RecordId"),
       Self::File => Some("File"),
       Self::Range => Some("Range"),
+      Self::Regex => Some("Regex"),
       _ => None,
     }
   }

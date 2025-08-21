@@ -125,6 +125,7 @@ union ValueType {
     RecordId (id: 15),
     File (id: 16),
     Range (id: 17),
+    Regex: StringValue (id: 18),
 }
 
 table Value {
