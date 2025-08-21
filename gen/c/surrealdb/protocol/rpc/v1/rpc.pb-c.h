@@ -588,13 +588,35 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 {
   ProtobufCMessage base;
   /*
-   * The index of the query.
+   * The index of the query result.
    */
   uint32_t query_index;
   /*
    * The index of the batch within the given query.
    */
   uint64_t batch_index;
+  /*
+   * The total number of query results.
+   * Every response will contain the same value for this field so you can
+   * use the value from the first response to determine how many query results
+   * to expect.
+   * Note: This is NOT the number of records returned.
+   * Examples:
+   *   query = "SELECT * FROM users;"
+   *   result_count = 1
+   *   query = """
+   *   SELECT * FROM users;
+   *   SELECT * FROM posts;
+   *   """
+   *   result_count = 2
+   *   query = """
+   *   SELECT * FROM users;
+   *   SELECT * FROM posts;
+   *   SELECT * FROM comments;
+   *   """
+   *   result_count = 3
+   */
+  uint32_t result_count;
   /*
    * The kind of query response.
    */
@@ -616,7 +638,7 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 };
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_response__descriptor) \
-, 0, 0, SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_UNSPECIFIED, NULL, NULL, 0,NULL }
+, 0, 0, 0, SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_UNSPECIFIED, NULL, NULL, 0,NULL }
 
 
 /*

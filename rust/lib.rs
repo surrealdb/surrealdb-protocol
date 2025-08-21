@@ -1,8 +1,11 @@
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "proto")]
 mod convert;
+#[cfg(feature = "proto")]
 mod methods;
 
+#[cfg(feature = "proto")]
 pub use convert::{TryFromValue, TryIntoValue};
 
 #[cfg(feature = "rpc")]
@@ -59,6 +62,7 @@ pub mod fb {
     pub use generated::surrealdb::protocol::v_1 as v1;
 }
 
+#[cfg(feature = "proto")]
 mod serde_timestamp {
     use prost_types::Timestamp;
     use serde::Deserializer;
@@ -96,6 +100,7 @@ mod serde_timestamp {
     }
 }
 
+#[cfg(feature = "proto")]
 mod serde_duration {
     use prost_types::Duration;
     use serde::Deserializer;
@@ -124,6 +129,7 @@ mod serde_duration {
     }
 }
 
+#[cfg(feature = "rpc")]
 mod serde_duration_optional {
     use prost_types::Duration;
     use serde::{Deserializer, Serializer};

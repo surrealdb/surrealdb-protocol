@@ -4,7 +4,7 @@ authors = ["Tobie Morgan Hitchcock <tobie@surrealdb.com>"]
 edition = "2024"
 license = "BUSL-1.1"
 license-file = "LICENSE"
-version = "0.3.1"
+version = "0.4.0"
 rust-version = "1.85.0"
 description = "The official SurrealDB Rust Client Protocol used by the SurrealDB Rust SDK."
 repository = "https://github.com/surrealdb/surrealdb-protocol"
@@ -30,7 +30,7 @@ default = ["proto", "flatbuffers", "rpc"]
 
 proto = ["dep:prost", "dep:prost-types"]
 flatbuffers = ["dep:flatbuffers"]
-rpc = ["dep:tonic", "dep:futures"]
+rpc = ["proto", "dep:tonic", "dep:futures"]
 
 [dependencies]
 anyhow = { version = "1" }

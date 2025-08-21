@@ -425,24 +425,50 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryResponse {
-    /// The index of the query.
+    /// The index of the query result.
     #[prost(uint32, tag="1")]
     pub query_index: u32,
     /// The index of the batch within the given query.
     #[prost(uint64, tag="2")]
     pub batch_index: u64,
+    /// The total number of query results.
+    ///
+    /// Every response will contain the same value for this field so you can
+    /// use the value from the first response to determine how many query results
+    /// to expect.
+    ///
+    /// Note: This is NOT the number of records returned.
+    ///
+    /// Examples:
+    ///    query = "SELECT * FROM users;"
+    ///    result_count = 1
+    ///
+    ///    query = """
+    ///    SELECT * FROM users;
+    ///    SELECT * FROM posts;
+    ///    """
+    ///    result_count = 2
+    ///
+    ///    query = """
+    ///    SELECT * FROM users;
+    ///    SELECT * FROM posts;
+    ///    SELECT * FROM comments;
+    ///    """
+    ///    result_count = 3
+    #[prost(uint32, tag="3")]
+    pub result_count: u32,
     /// The kind of query response.
-    #[prost(enumeration="QueryResponseKind", tag="3")]
+    #[prost(enumeration="QueryResponseKind", tag="4")]
     pub kind: i32,
     /// The query stats.
     /// This is only expected to be present in the last batch of each query.
-    #[prost(message, optional, tag="4")]
+    #[prost(message, optional, tag="5")]
     pub stats: ::core::option::Option<QueryStats>,
     /// The error, if any.
-    #[prost(message, optional, tag="5")]
+    #[prost(message, optional, tag="6")]
     pub error: ::core::option::Option<QueryError>,
     /// A batch of values.
-    #[prost(message, repeated, tag="6")]
+    #[prost(message, repeated, tag="7")]
     pub values: ::prost::alloc::vec::Vec<super::super::v1::Value>,
 }
 impl ::prost::Name for QueryResponse {

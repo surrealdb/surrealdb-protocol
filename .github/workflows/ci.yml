@@ -37,6 +37,22 @@ jobs:
           toolchain: stable
           override: true
       - run: cargo test
+  
+  rust-check-features:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features:
+          - "proto"
+          - "flatbuffers"
+          - "rpc"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - run: cargo build --no-default-features --features ${{ matrix.features }}
 
   ts-lint:
     runs-on: ubuntu-latest
