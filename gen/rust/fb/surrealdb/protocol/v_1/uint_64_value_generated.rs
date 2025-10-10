@@ -12,6 +12,7 @@ use super::*;
 pub enum UInt64ValueOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// 64-bit unsigned integer value.
 pub struct UInt64Value<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for UInt64Value<'a> {
   type Inner = UInt64Value<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

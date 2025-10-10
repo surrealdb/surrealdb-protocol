@@ -12,6 +12,7 @@ use super::*;
 pub enum TimestampOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Timestamp represented as seconds and nanoseconds since epoch.
 pub struct Timestamp<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for Timestamp<'a> {
   type Inner = Timestamp<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

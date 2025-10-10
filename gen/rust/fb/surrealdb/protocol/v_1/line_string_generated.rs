@@ -12,6 +12,7 @@ use super::*;
 pub enum LineStringOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// An ordered collection of Points, representing a path between locations. To be valid, a LineString must be empty, or have two or more coords.
 pub struct LineString<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for LineString<'a> {
   type Inner = LineString<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

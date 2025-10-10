@@ -25,6 +25,7 @@ pub const ENUM_VALUES_GEOMETRY_KIND_TYPE: [GeometryKindType; 7] = [
   GeometryKindType::Collection,
 ];
 
+/// Enum of geometry types for type constraints.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct GeometryKindType(pub i8);
@@ -76,7 +77,7 @@ impl<'a> flatbuffers::Follow<'a> for GeometryKindType {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
+    let b = unsafe { flatbuffers::read_scalar_at::<i8>(buf, loc) };
     Self(b)
   }
 }
@@ -85,7 +86,7 @@ impl flatbuffers::Push for GeometryKindType {
     type Output = GeometryKindType;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<i8>(dst, self.0);
+        unsafe { flatbuffers::emplace_scalar::<i8>(dst, self.0); }
     }
 }
 

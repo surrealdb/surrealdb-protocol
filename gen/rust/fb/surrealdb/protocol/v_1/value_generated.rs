@@ -12,6 +12,7 @@ use super::*;
 pub enum ValueOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// A value container that can hold any SurrealDB value type.
 pub struct Value<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for Value<'a> {
   type Inner = Value<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 
@@ -270,6 +271,21 @@ impl<'a> Value<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
+  pub fn value_as_table(&self) -> Option<StringValue<'a>> {
+    if self.value_type() == ValueType::Table {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { StringValue::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
   pub fn value_as_record_id(&self) -> Option<RecordId<'a>> {
     if self.value_type() == ValueType::RecordId {
       self.value().map(|t| {
@@ -277,6 +293,21 @@ impl<'a> Value<'a> {
        // Created from a valid Table for this object
        // Which contains a valid union in this slot
        unsafe { RecordId::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_string_record_id(&self) -> Option<StringValue<'a>> {
+    if self.value_type() == ValueType::StringRecordId {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { StringValue::init_from_table(t) }
      })
     } else {
       None
@@ -353,7 +384,9 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
           ValueType::Object => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Object>>("ValueType::Object", pos),
           ValueType::Geometry => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Geometry>>("ValueType::Geometry", pos),
+          ValueType::Table => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::Table", pos),
           ValueType::RecordId => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordId>>("ValueType::RecordId", pos),
+          ValueType::StringRecordId => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::StringRecordId", pos),
           ValueType::File => v.verify_union_variant::<flatbuffers::ForwardsUOffset<File>>("ValueType::File", pos),
           ValueType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Range>>("ValueType::Range", pos),
           ValueType::Regex => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::Regex", pos),
@@ -509,8 +542,22 @@ impl core::fmt::Debug for Value<'_> {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
+        ValueType::Table => {
+          if let Some(x) = self.value_as_table() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
         ValueType::RecordId => {
           if let Some(x) = self.value_as_record_id() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::StringRecordId => {
+          if let Some(x) = self.value_as_string_record_id() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

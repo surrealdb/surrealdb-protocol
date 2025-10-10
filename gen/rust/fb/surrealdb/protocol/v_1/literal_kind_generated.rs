@@ -12,6 +12,7 @@ use super::*;
 pub enum LiteralKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Represents a literal type (specific constant values or structured types).
 pub struct LiteralKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for LiteralKind<'a> {
   type Inner = LiteralKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

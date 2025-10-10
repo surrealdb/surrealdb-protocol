@@ -29,6 +29,7 @@ pub const ENUM_VALUES_LITERAL_TYPE: [LiteralType; 11] = [
   LiteralType::DiscriminatedObject,
 ];
 
+/// A union of all possible literal type values.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct LiteralType(pub u8);
@@ -92,7 +93,7 @@ impl<'a> flatbuffers::Follow<'a> for LiteralType {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<u8>(buf, loc);
+    let b = unsafe { flatbuffers::read_scalar_at::<u8>(buf, loc) };
     Self(b)
   }
 }
@@ -101,7 +102,7 @@ impl flatbuffers::Push for LiteralType {
     type Output = LiteralType;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<u8>(dst, self.0);
+        unsafe { flatbuffers::emplace_scalar::<u8>(dst, self.0); }
     }
 }
 

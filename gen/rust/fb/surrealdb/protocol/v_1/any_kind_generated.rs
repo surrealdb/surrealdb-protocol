@@ -12,6 +12,7 @@ use super::*;
 pub enum AnyKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Represents the 'any' type, which matches any value.
 pub struct AnyKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for AnyKind<'a> {
   type Inner = AnyKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

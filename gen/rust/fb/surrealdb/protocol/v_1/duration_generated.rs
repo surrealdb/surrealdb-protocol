@@ -12,6 +12,7 @@ use super::*;
 pub enum DurationOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Duration value.
 pub struct Duration<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for Duration<'a> {
   type Inner = Duration<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

@@ -12,10 +12,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 18;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 20;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 19] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -31,12 +31,15 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 19] = [
   ValueType::Array,
   ValueType::Object,
   ValueType::Geometry,
+  ValueType::Table,
   ValueType::RecordId,
+  ValueType::StringRecordId,
   ValueType::File,
   ValueType::Range,
   ValueType::Regex,
 ];
 
+/// A union of all possible value types in SurrealDB.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct ValueType(pub u8);
@@ -57,13 +60,17 @@ impl ValueType {
   pub const Array: Self = Self(12);
   pub const Object: Self = Self(13);
   pub const Geometry: Self = Self(14);
-  pub const RecordId: Self = Self(15);
-  pub const File: Self = Self(16);
-  pub const Range: Self = Self(17);
-  pub const Regex: Self = Self(18);
+  pub const Table: Self = Self(15);
+  /// A fully-qualified record ID.
+  pub const RecordId: Self = Self(16);
+  /// An unparsed record ID which will be parsed by the server.
+  pub const StringRecordId: Self = Self(17);
+  pub const File: Self = Self(18);
+  pub const Range: Self = Self(19);
+  pub const Regex: Self = Self(20);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 18;
+  pub const ENUM_MAX: u8 = 20;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -80,7 +87,9 @@ impl ValueType {
     Self::Array,
     Self::Object,
     Self::Geometry,
+    Self::Table,
     Self::RecordId,
+    Self::StringRecordId,
     Self::File,
     Self::Range,
     Self::Regex,
@@ -103,7 +112,9 @@ impl ValueType {
       Self::Array => Some("Array"),
       Self::Object => Some("Object"),
       Self::Geometry => Some("Geometry"),
+      Self::Table => Some("Table"),
       Self::RecordId => Some("RecordId"),
+      Self::StringRecordId => Some("StringRecordId"),
       Self::File => Some("File"),
       Self::Range => Some("Range"),
       Self::Regex => Some("Regex"),
@@ -124,7 +135,7 @@ impl<'a> flatbuffers::Follow<'a> for ValueType {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<u8>(buf, loc);
+    let b = unsafe { flatbuffers::read_scalar_at::<u8>(buf, loc) };
     Self(b)
   }
 }
@@ -133,7 +144,7 @@ impl flatbuffers::Push for ValueType {
     type Output = ValueType;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<u8>(dst, self.0);
+        unsafe { flatbuffers::emplace_scalar::<u8>(dst, self.0); }
     }
 }
 

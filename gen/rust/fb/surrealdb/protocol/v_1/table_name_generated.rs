@@ -12,6 +12,7 @@ use super::*;
 pub enum TableNameOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// A table name used in record kind definitions.
 pub struct TableName<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for TableName<'a> {
   type Inner = TableName<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 
