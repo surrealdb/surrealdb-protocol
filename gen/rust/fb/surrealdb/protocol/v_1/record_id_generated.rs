@@ -12,6 +12,7 @@ use super::*;
 pub enum RecordIdOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// An identifier for a record in a table.
 pub struct RecordId<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for RecordId<'a> {
   type Inner = RecordId<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

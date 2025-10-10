@@ -12,6 +12,7 @@ use super::*;
 pub enum RecordIdKeyRangeOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// A range of record ID keys with start and end bounds.
 pub struct RecordIdKeyRange<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for RecordIdKeyRange<'a> {
   type Inner = RecordIdKeyRange<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

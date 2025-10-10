@@ -1,61 +1,89 @@
 
 namespace surrealdb.protocol.v1;
 
+/// Decimal value represented as a string.
 table Decimal { value: string (id: 0); }
+
+/// Bytes value.
 table Bytes { value:[ubyte] (id: 0); }
 
+/// Duration value.
 table Duration {
     seconds: uint64 (id: 0);
     nanos: uint32 (id: 1);
 }
 
+/// Timestamp represented as seconds and nanoseconds since epoch.
 table Timestamp {
     seconds: int64 (id: 0);
     nanos: uint32 (id: 1);
 }
 
+/// UUID value.
 table Uuid {
     bytes: [ubyte] (id: 0);
 }
 
+/// Null value.
 table NullValue {}
+
+/// Boolean value.
 table BoolValue { value: bool (id: 0); }
+
+/// 64-bit integer value.
 table Int64Value { value: int64 (id: 0); }
+
+/// 64-bit unsigned integer value.
 table UInt64Value { value: uint64 (id: 0); }
+
+/// 64-bit floating point value.
 table Float64Value { value: double (id: 0); }
+
+/// String value.
 table StringValue { value: string (id: 0); }
 
 // Geometry types
+
+/// A single point in 2D space.
 table Point {
     x: double (id: 0);
     y: double (id: 1);
 }
 
+/// An ordered collection of Points, representing a path between locations. To be valid, a LineString must be empty, or have two or more coords.
 table LineString {
-    points:[Point] (id: 0);
+    points: [Point] (id: 0);
 }
 
+/// A bounded two-dimensional area.
+///
+/// A Polygon’s outer boundary (exterior ring) is represented by a LineString. It may contain zero or more holes (interior rings), also represented by LineStrings.
 table Polygon {
     exterior: LineString (id: 0);
     interiors: [LineString] (id: 1);
 }
 
+/// A collection of Points.
 table MultiPoint {
     points: [Point] (id: 0);
 }
 
+/// A collection of LineStrings.
 table MultiLineString {
     lines: [LineString] (id: 0);
 }
 
+/// A collection of Polygons.
 table MultiPolygon {
     polygons: [Polygon] (id: 0);
 }
 
+/// A collection of Geometry objects.
 table GeometryCollection {
     geometries: [Geometry] (id: 0);
 }
 
+/// A union of all geometry types.
 union GeometryType {
     Point (id: 1),
     LineString (id: 2),
@@ -66,47 +94,53 @@ union GeometryType {
     Collection: GeometryCollection (id: 7),
 }
 
+/// A Geometry object.
 table Geometry {
     geometry: GeometryType (id: 1);
 }
 
+/// An identifier for a record in a table.
 table RecordId {
     table: string (id: 0);
     id: RecordIdKey (id: 1);
 }
 
-// File type
+/// A file in a bucket.
 table File {
     bucket: string (id: 0);
     key: string (id: 1);
 }
 
-// Collections
+/// A collection of values.
 table Array {
     values:[Value] (id: 0);
 }
 
+/// A key-value pair.
 table KeyValue {
     key: string (id: 0);
     value: Value (id: 1);
 }
 
+/// A collection of key-value pairs.
 table Object {
     items:[KeyValue] (id: 0);
 }
 
+/// A bound for a range value, which can be inclusive, exclusive, or unbounded.
 union ValueBound {
     Inclusive: Value (id: 1),
     Exclusive: Value (id: 2),
     Unbounded: NullValue (id: 3),
 }
 
+/// A range with start and end bounds.
 table Range {
     start: ValueBound (id: 1);
     end: ValueBound (id: 3);
 }
 
-// Main Value union
+/// A union of all possible value types in SurrealDB.
 union ValueType {
     Null: NullValue (id: 1),
     Bool: BoolValue (id: 2),
@@ -122,29 +156,35 @@ union ValueType {
     Array (id: 12),
     Object (id: 13),
     Geometry (id: 14),
-    RecordId (id: 15),
-    File (id: 16),
-    Range (id: 17),
-    Regex: StringValue (id: 18),
+    Table: StringValue (id: 15),
+    /// A fully-qualified record ID.
+    RecordId (id: 16),
+    /// An unparsed record ID which will be parsed by the server.
+    StringRecordId: StringValue (id: 17),
+    File (id: 18),
+    Range (id: 19),
+    Regex: StringValue (id: 20),
 }
 
+/// A value container that can hold any SurrealDB value type.
 table Value {
     value: ValueType (id: 1);
 }
 
-
+/// A bound for a record ID key range, which can be inclusive, exclusive, or unbounded.
 union RecordIdKeyBound {
     Inclusive: RecordIdKey (id: 1),
     Exclusive: RecordIdKey (id: 2),
     Unbounded: NullValue (id: 3),
 }
 
+/// A range of record ID keys with start and end bounds.
 table RecordIdKeyRange {
     start: RecordIdKeyBound (id: 1);
     end: RecordIdKeyBound (id: 3);
 }
 
-// ID types
+/// A union of all possible record ID key types.
 union RecordIdKeyType {
     Int64: Int64Value (id: 1),
     String: StringValue (id: 2),
@@ -153,35 +193,67 @@ union RecordIdKeyType {
     Range: RecordIdKeyRange (id: 5),
 }
 
+/// A record ID key that can be an integer, string, UUID, array, or range.
 table RecordIdKey {
     id: RecordIdKeyType (id: 1);
 }
 
-// Kind system tables
+/// Represents the 'any' type, which matches any value.
 table AnyKind {}
+
+/// Represents the 'null' type.
 table NullKind {}
+
+/// Represents the 'bool' type.
 table BoolKind {}
+
+/// Represents the 'bytes' type.
 table BytesKind {}
+
+/// Represents the 'datetime' type.
 table DatetimeKind {}
+
+/// Represents the 'decimal' type.
 table DecimalKind {}
+
+/// Represents the 'duration' type.
 table DurationKind {}
+
+/// Represents the 'float' type.
 table FloatKind {}
+
+/// Represents the 'int' type.
 table IntKind {}
+
+/// Represents the 'number' type (includes int, float, and decimal).
 table NumberKind {}
+
+/// Represents the 'object' type.
 table ObjectKind {}
+
+/// Represents the 'string' type.
 table StringKind {}
+
+/// Represents the 'uuid' type.
 table UuidKind {}
+
+/// Represents the 'regex' type.
 table RegexKind {}
+
+/// Represents the 'range' type.
 table RangeKind {}
 
+/// A table name used in record kind definitions.
 table TableName { 
     name: string (id: 0); 
 }
 
+/// Represents the 'record' type, optionally constrained to specific tables.
 table RecordKind {
     tables: [TableName] (id: 0);
 }
 
+/// Enum of geometry types for type constraints.
 enum GeometryKindType: byte {
     Point = 1,
     Line = 2,
@@ -192,58 +264,68 @@ enum GeometryKindType: byte {
     Collection = 7,
 }
 
+/// Represents the 'geometry' type, optionally constrained to specific geometry types.
 table GeometryKind {
     types: [GeometryKindType] (id: 0);
 }
 
+/// Represents the 'file' type, optionally constrained to specific buckets.
 table FileKind {
     buckets: [string] (id: 0);
 }
 
-
+/// Represents the 'option' type (nullable/optional values).
 table OptionKind {
     inner: Kind (id: 0);
 }
 
+/// Represents the 'either' type (a union of multiple types).
 table EitherKind {
     kinds: [Kind] (id: 0);
 }
 
+/// Represents the 'set' type (unique collection of values).
 table SetKind {
     inner: Kind (id: 0);
     size: UInt64Value (id: 1);
 }
 
+/// Represents the 'array' type.
 table ArrayKind {
     inner: Kind (id: 0);
     size: UInt64Value (id: 1);
 }
 
+/// Represents the 'function' type with argument types and return type.
 table FunctionKind {
     args: [Kind] (id: 0);
     return_type: Kind (id: 1);
 }
 
 
-// Literal types
+/// A literal array type with specific kinds for each element.
 table LiteralArray {
     kinds: [Kind] (id: 0);
 }
 
+/// A field in a literal object type definition.
 table ObjectField {
     key: string (id: 0);
     kind: Kind (id: 1);
 }
 
+/// A literal object type with specific fields and their types.
 table LiteralObject {
     fields: [ObjectField] (id: 0);
 }
 
+/// A discriminated object type (tagged union) with variants distinguished by a discriminant field.
 table LiteralDiscriminatedObject {
     discriminant_key: string (id: 0);
     variants: [LiteralObject] (id: 1);
 }
 
+/// A union of all possible literal type values.
 union LiteralType {
     String: StringValue (id: 1),
     Int64: Int64Value (id: 2),
@@ -257,11 +339,12 @@ union LiteralType {
     DiscriminatedObject: LiteralDiscriminatedObject (id: 10),
 }
 
+/// Represents a literal type (specific constant values or structured types).
 table LiteralKind {
     literal: LiteralType (id: 1);
 }
 
-// Main Kind union
+/// A union of all possible type kinds in SurrealDB's type system.
 union KindType {
     Any: AnyKind (id: 1),
     Null: NullKind (id: 2),
@@ -289,6 +372,7 @@ union KindType {
     File: FileKind (id: 25),
 }
 
+/// A type kind container that represents a type in SurrealDB's type system.
 table Kind {
     kind: KindType (id: 1);
 }

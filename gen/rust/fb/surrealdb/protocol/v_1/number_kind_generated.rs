@@ -12,6 +12,7 @@ use super::*;
 pub enum NumberKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Represents the 'number' type (includes int, float, and decimal).
 pub struct NumberKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for NumberKind<'a> {
   type Inner = NumberKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

@@ -12,6 +12,7 @@ use super::*;
 pub enum ArrayKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Represents the 'array' type.
 pub struct ArrayKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for ArrayKind<'a> {
   type Inner = ArrayKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

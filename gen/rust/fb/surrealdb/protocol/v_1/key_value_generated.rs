@@ -12,6 +12,7 @@ use super::*;
 pub enum KeyValueOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// A key-value pair.
 pub struct KeyValue<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for KeyValue<'a> {
   type Inner = KeyValue<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

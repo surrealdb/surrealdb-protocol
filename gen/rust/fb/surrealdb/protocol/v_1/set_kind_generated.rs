@@ -12,6 +12,7 @@ use super::*;
 pub enum SetKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Represents the 'set' type (unique collection of values).
 pub struct SetKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for SetKind<'a> {
   type Inner = SetKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

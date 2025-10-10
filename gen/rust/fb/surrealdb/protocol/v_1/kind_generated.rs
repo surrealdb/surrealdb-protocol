@@ -12,6 +12,7 @@ use super::*;
 pub enum KindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// A type kind container that represents a type in SurrealDB's type system.
 pub struct Kind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for Kind<'a> {
   type Inner = Kind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 

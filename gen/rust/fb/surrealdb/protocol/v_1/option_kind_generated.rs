@@ -12,6 +12,7 @@ use super::*;
 pub enum OptionKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
+/// Represents the 'option' type (nullable/optional values).
 pub struct OptionKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
@@ -20,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for OptionKind<'a> {
   type Inner = OptionKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 
