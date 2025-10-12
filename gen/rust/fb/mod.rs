@@ -108,8 +108,8 @@ pub mod surrealdb {
       pub use self::regex_kind_generated::*;
       mod range_kind_generated;
       pub use self::range_kind_generated::*;
-      mod table_name_generated;
-      pub use self::table_name_generated::*;
+      mod table_kind_generated;
+      pub use self::table_kind_generated::*;
       mod record_kind_generated;
       pub use self::record_kind_generated::*;
       mod geometry_kind_generated;

@@ -271,6 +271,21 @@ impl<'a> Kind<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
+  pub fn kind_as_table(&self) -> Option<TableKind<'a>> {
+    if self.kind_type() == KindType::Table {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { TableKind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
   pub fn kind_as_record(&self) -> Option<RecordKind<'a>> {
     if self.kind_type() == KindType::Record {
       self.kind().map(|t| {
@@ -444,6 +459,7 @@ impl flatbuffers::Verifiable for Kind<'_> {
           KindType::String => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringKind>>("KindType::String", pos),
           KindType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<UuidKind>>("KindType::Uuid", pos),
           KindType::Regex => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RegexKind>>("KindType::Regex", pos),
+          KindType::Table => v.verify_union_variant::<flatbuffers::ForwardsUOffset<TableKind>>("KindType::Table", pos),
           KindType::Record => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordKind>>("KindType::Record", pos),
           KindType::Geometry => v.verify_union_variant::<flatbuffers::ForwardsUOffset<GeometryKind>>("KindType::Geometry", pos),
           KindType::Option => v.verify_union_variant::<flatbuffers::ForwardsUOffset<OptionKind>>("KindType::Option", pos),
@@ -601,6 +617,13 @@ impl core::fmt::Debug for Kind<'_> {
         },
         KindType::Regex => {
           if let Some(x) = self.kind_as_regex() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::Table => {
+          if let Some(x) = self.kind_as_table() {
             ds.field("kind", &x)
           } else {
             ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")

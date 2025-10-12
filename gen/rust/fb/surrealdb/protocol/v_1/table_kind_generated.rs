@@ -9,35 +9,35 @@ use core::mem;
 use core::cmp::Ordering;
 use self::flatbuffers::{EndianScalar, Follow};
 use super::*;
-pub enum RecordKindOffset {}
+pub enum TableKindOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-/// Represents the 'record' type, optionally constrained to specific tables.
-pub struct RecordKind<'a> {
+/// Represents the 'table' type.
+pub struct TableKind<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
 
-impl<'a> flatbuffers::Follow<'a> for RecordKind<'a> {
-  type Inner = RecordKind<'a>;
+impl<'a> flatbuffers::Follow<'a> for TableKind<'a> {
+  type Inner = TableKind<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
     Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 
-impl<'a> RecordKind<'a> {
+impl<'a> TableKind<'a> {
   pub const VT_TABLES: flatbuffers::VOffsetT = 4;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    RecordKind { _tab: table }
+    TableKind { _tab: table }
   }
   #[allow(unused_mut)]
   pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
     _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
-    args: &'args RecordKindArgs<'args>
-  ) -> flatbuffers::WIPOffset<RecordKind<'bldr>> {
-    let mut builder = RecordKindBuilder::new(_fbb);
+    args: &'args TableKindArgs<'args>
+  ) -> flatbuffers::WIPOffset<TableKind<'bldr>> {
+    let mut builder = TableKindBuilder::new(_fbb);
     if let Some(x) = args.tables { builder.add_tables(x); }
     builder.finish()
   }
@@ -48,11 +48,11 @@ impl<'a> RecordKind<'a> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<&'a str>>>>(RecordKind::VT_TABLES, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<&'a str>>>>(TableKind::VT_TABLES, None)}
   }
 }
 
-impl flatbuffers::Verifiable for RecordKind<'_> {
+impl flatbuffers::Verifiable for TableKind<'_> {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
@@ -64,45 +64,45 @@ impl flatbuffers::Verifiable for RecordKind<'_> {
     Ok(())
   }
 }
-pub struct RecordKindArgs<'a> {
+pub struct TableKindArgs<'a> {
     pub tables: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<&'a str>>>>,
 }
-impl<'a> Default for RecordKindArgs<'a> {
+impl<'a> Default for TableKindArgs<'a> {
   #[inline]
   fn default() -> Self {
-    RecordKindArgs {
+    TableKindArgs {
       tables: None,
     }
   }
 }
 
-pub struct RecordKindBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+pub struct TableKindBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
   fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> RecordKindBuilder<'a, 'b, A> {
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> TableKindBuilder<'a, 'b, A> {
   #[inline]
   pub fn add_tables(&mut self, tables: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<&'b  str>>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(RecordKind::VT_TABLES, tables);
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(TableKind::VT_TABLES, tables);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> RecordKindBuilder<'a, 'b, A> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> TableKindBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
-    RecordKindBuilder {
+    TableKindBuilder {
       fbb_: _fbb,
       start_: start,
     }
   }
   #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<RecordKind<'a>> {
+  pub fn finish(self) -> flatbuffers::WIPOffset<TableKind<'a>> {
     let o = self.fbb_.end_table(self.start_);
     flatbuffers::WIPOffset::new(o.value())
   }
 }
 
-impl core::fmt::Debug for RecordKind<'_> {
+impl core::fmt::Debug for TableKind<'_> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("RecordKind");
+    let mut ds = f.debug_struct("TableKind");
       ds.field("tables", &self.tables());
       ds.finish()
   }
