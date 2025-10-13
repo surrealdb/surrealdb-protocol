@@ -243,14 +243,14 @@ table RegexKind {}
 /// Represents the 'range' type.
 table RangeKind {}
 
-/// A table name used in record kind definitions.
-table TableName { 
-    name: string (id: 0); 
+/// Represents the 'table' type.
+table TableKind {
+    tables: [string] (id: 0);
 }
 
 /// Represents the 'record' type, optionally constrained to specific tables.
 table RecordKind {
-    tables: [TableName] (id: 0);
+    tables: [string] (id: 0);
 }
 
 /// Enum of geometry types for type constraints.
@@ -360,16 +360,17 @@ union KindType {
     String: StringKind (id: 13),
     Uuid: UuidKind (id: 14),
     Regex: RegexKind (id: 15),
-    Record: RecordKind (id: 16),
-    Geometry: GeometryKind (id: 17),
-    Option: OptionKind (id: 18),
-    Either: EitherKind (id: 19),
-    Set: SetKind (id: 20),
-    Array: ArrayKind (id: 21),
-    Function: FunctionKind (id: 22),
-    Range: RangeKind (id: 23),
-    Literal: LiteralKind (id: 24),
-    File: FileKind (id: 25),
+    Table: TableKind (id: 16),
+    Record: RecordKind (id: 17),
+    Geometry: GeometryKind (id: 18),
+    Option: OptionKind (id: 19),
+    Either: EitherKind (id: 20),
+    Set: SetKind (id: 21),
+    Array: ArrayKind (id: 22),
+    Function: FunctionKind (id: 23),
+    Range: RangeKind (id: 24),
+    Literal: LiteralKind (id: 25),
+    File: FileKind (id: 26),
 }
 
 /// A type kind container that represents a type in SurrealDB's type system.
