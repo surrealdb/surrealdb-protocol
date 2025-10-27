@@ -116,6 +116,11 @@ table Array {
     values:[Value] (id: 0);
 }
 
+/// A unique collection of values.
+table Set {
+    values:[Value] (id: 0);
+}
+
 /// A key-value pair.
 table KeyValue {
     key: string (id: 0);
@@ -153,17 +158,18 @@ union ValueType {
     Duration: surrealdb.protocol.v1.Duration (id: 9),
     Datetime: surrealdb.protocol.v1.Timestamp (id: 10),
     Uuid: surrealdb.protocol.v1.Uuid (id: 11),
-    Array (id: 12),
-    Object (id: 13),
-    Geometry (id: 14),
-    Table: StringValue (id: 15),
+    Geometry (id: 12),
+    Table: StringValue (id: 13),
     /// A fully-qualified record ID.
-    RecordId (id: 16),
+    RecordId (id: 14),
     /// An unparsed record ID which will be parsed by the server.
-    StringRecordId: StringValue (id: 17),
-    File (id: 18),
-    Range (id: 19),
-    Regex: StringValue (id: 20),
+    StringRecordId: StringValue (id: 15),
+    File (id: 16),
+    Range (id: 17),
+    Regex: StringValue (id: 18),
+    Object (id: 19),
+    Array (id: 20),
+    Set (id: 21),
 }
 
 /// A value container that can hold any SurrealDB value type.

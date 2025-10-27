@@ -92,6 +92,11 @@ message Array {
     repeated Value values = 1;
 }
 
+// Set type.
+message Set {
+    repeated Value values = 1;
+}
+
 // Object type.
 message Object {
     map<string, Value> items = 1;
@@ -127,12 +132,13 @@ message Value {
         google.protobuf.Duration duration = 9;
         google.protobuf.Timestamp datetime = 10;
         Uuid uuid = 11;
-        Array array = 12;
-        Object object = 13;
-        Geometry geometry = 14;
-        RecordId record_id = 15;
-        File file = 16;
-        Range range = 17;
+        Geometry geometry = 12;
+        RecordId record_id = 13;
+        File file = 14;
+        Range range = 15;
+        Object object = 16;
+        Array array = 17;
+        Set set = 18;
     }
 }
 

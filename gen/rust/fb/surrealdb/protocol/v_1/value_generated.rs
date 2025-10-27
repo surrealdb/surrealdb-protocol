@@ -226,36 +226,6 @@ impl<'a> Value<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
-  pub fn value_as_array(&self) -> Option<Array<'a>> {
-    if self.value_type() == ValueType::Array {
-      self.value().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { Array::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
-  #[inline]
-  #[allow(non_snake_case)]
-  pub fn value_as_object(&self) -> Option<Object<'a>> {
-    if self.value_type() == ValueType::Object {
-      self.value().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { Object::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
-  #[inline]
-  #[allow(non_snake_case)]
   pub fn value_as_geometry(&self) -> Option<Geometry<'a>> {
     if self.value_type() == ValueType::Geometry {
       self.value().map(|t| {
@@ -359,6 +329,51 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_object(&self) -> Option<Object<'a>> {
+    if self.value_type() == ValueType::Object {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Object::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_array(&self) -> Option<Array<'a>> {
+    if self.value_type() == ValueType::Array {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Array::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_set(&self) -> Option<Set<'a>> {
+    if self.value_type() == ValueType::Set {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Set::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl flatbuffers::Verifiable for Value<'_> {
@@ -381,8 +396,6 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::Duration => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Duration>>("ValueType::Duration", pos),
           ValueType::Datetime => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Timestamp>>("ValueType::Datetime", pos),
           ValueType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("ValueType::Uuid", pos),
-          ValueType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
-          ValueType::Object => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Object>>("ValueType::Object", pos),
           ValueType::Geometry => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Geometry>>("ValueType::Geometry", pos),
           ValueType::Table => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::Table", pos),
           ValueType::RecordId => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordId>>("ValueType::RecordId", pos),
@@ -390,6 +403,9 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::File => v.verify_union_variant::<flatbuffers::ForwardsUOffset<File>>("ValueType::File", pos),
           ValueType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Range>>("ValueType::Range", pos),
           ValueType::Regex => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::Regex", pos),
+          ValueType::Object => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Object>>("ValueType::Object", pos),
+          ValueType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
+          ValueType::Set => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Set>>("ValueType::Set", pos),
           _ => Ok(()),
         }
      })?
@@ -521,20 +537,6 @@ impl core::fmt::Debug for Value<'_> {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        ValueType::Array => {
-          if let Some(x) = self.value_as_array() {
-            ds.field("value", &x)
-          } else {
-            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
-        ValueType::Object => {
-          if let Some(x) = self.value_as_object() {
-            ds.field("value", &x)
-          } else {
-            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
         ValueType::Geometry => {
           if let Some(x) = self.value_as_geometry() {
             ds.field("value", &x)
@@ -579,6 +581,27 @@ impl core::fmt::Debug for Value<'_> {
         },
         ValueType::Regex => {
           if let Some(x) = self.value_as_regex() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Object => {
+          if let Some(x) = self.value_as_object() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Array => {
+          if let Some(x) = self.value_as_array() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Set => {
+          if let Some(x) = self.value_as_set() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

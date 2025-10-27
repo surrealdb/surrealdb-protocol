@@ -188,6 +188,17 @@ impl ::prost::Name for Array {
 const NAME: &'static str = "Array";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Array".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Array".into() }}
+/// Set type.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Set {
+    #[prost(message, repeated, tag="1")]
+    pub values: ::prost::alloc::vec::Vec<Value>,
+}
+impl ::prost::Name for Set {
+const NAME: &'static str = "Set";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Set".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Set".into() }}
 /// Object type.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -241,7 +252,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
+    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -275,17 +286,19 @@ pub mod value {
         #[prost(message, tag="11")]
         Uuid(super::Uuid),
         #[prost(message, tag="12")]
-        Array(super::Array),
-        #[prost(message, tag="13")]
-        Object(super::Object),
-        #[prost(message, tag="14")]
         Geometry(super::Geometry),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="13")]
         RecordId(super::RecordId),
-        #[prost(message, tag="16")]
+        #[prost(message, tag="14")]
         File(super::File),
-        #[prost(message, tag="17")]
+        #[prost(message, tag="15")]
         Range(::prost::alloc::boxed::Box<super::Range>),
+        #[prost(message, tag="16")]
+        Object(super::Object),
+        #[prost(message, tag="17")]
+        Array(super::Array),
+        #[prost(message, tag="18")]
+        Set(super::Set),
     }
 }
 impl ::prost::Name for Value {

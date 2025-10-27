@@ -5,7 +5,7 @@
       "name": "@surrealdb/protocol",
       "dependencies": {
         "rxjs": "^7.8.2",
-        "ts-proto": "^2.7.7",
+        "ts-proto": "^2.8.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.0.6",
@@ -111,7 +111,7 @@
 
     "ts-poet": ["ts-poet@6.12.0", "", { "dependencies": { "dprint-node": "^1.0.8" } }, "sha512-xo+iRNMWqyvXpFTaOAvLPA5QAWO6TZrSUs5s4Odaya3epqofBu/fMLHEWl8jPmjhA0s9sgj9sNvF1BmaQlmQkA=="],
 
-    "ts-proto": ["ts-proto@2.7.7", "", { "dependencies": { "@bufbuild/protobuf": "^2.0.0", "case-anything": "^2.1.13", "ts-poet": "^6.12.0", "ts-proto-descriptors": "2.0.0" }, "bin": { "protoc-gen-ts_proto": "protoc-gen-ts_proto" } }, "sha512-/OfN9/Yriji2bbpOysZ/Jzc96isOKz+eBTJEcKaIZ0PR6x1TNgVm4Lz0zfbo+J0jwFO7fJjJyssefBPQ0o1V9A=="],
+    "ts-proto": ["ts-proto@2.8.1", "", { "dependencies": { "@bufbuild/protobuf": "^2.0.0", "case-anything": "^2.1.13", "ts-poet": "^6.12.0", "ts-proto-descriptors": "2.0.0" }, "bin": { "protoc-gen-ts_proto": "protoc-gen-ts_proto" } }, "sha512-suKxr/MaDwCZhWPykXGIanxqFUE79zwN5SUKMCmVzyf32ZZeKSt2aut9kcx9DmXFocf2v1Jpr2ITWIQH4Xz+Bw=="],
 
     "ts-proto-descriptors": ["ts-proto-descriptors@2.0.0", "", { "dependencies": { "@bufbuild/protobuf": "^2.0.0" } }, "sha512-wHcTH3xIv11jxgkX5OyCSFfw27agpInAd6yh89hKG6zqIXnjW9SYqSER2CVQxdPj4czeOhGagNvZBEbJPy7qkw=="],
 

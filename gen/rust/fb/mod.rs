@@ -66,6 +66,8 @@ pub mod surrealdb {
       pub use self::file_generated::*;
       mod array_generated;
       pub use self::array_generated::*;
+      mod set_generated;
+      pub use self::set_generated::*;
       mod key_value_generated;
       pub use self::key_value_generated::*;
       mod object_generated;

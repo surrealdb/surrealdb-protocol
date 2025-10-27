@@ -12,10 +12,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 20;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 21;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -28,8 +28,6 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
   ValueType::Duration,
   ValueType::Datetime,
   ValueType::Uuid,
-  ValueType::Array,
-  ValueType::Object,
   ValueType::Geometry,
   ValueType::Table,
   ValueType::RecordId,
@@ -37,6 +35,9 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
   ValueType::File,
   ValueType::Range,
   ValueType::Regex,
+  ValueType::Object,
+  ValueType::Array,
+  ValueType::Set,
 ];
 
 /// A union of all possible value types in SurrealDB.
@@ -57,20 +58,21 @@ impl ValueType {
   pub const Duration: Self = Self(9);
   pub const Datetime: Self = Self(10);
   pub const Uuid: Self = Self(11);
-  pub const Array: Self = Self(12);
-  pub const Object: Self = Self(13);
-  pub const Geometry: Self = Self(14);
-  pub const Table: Self = Self(15);
+  pub const Geometry: Self = Self(12);
+  pub const Table: Self = Self(13);
   /// A fully-qualified record ID.
-  pub const RecordId: Self = Self(16);
+  pub const RecordId: Self = Self(14);
   /// An unparsed record ID which will be parsed by the server.
-  pub const StringRecordId: Self = Self(17);
-  pub const File: Self = Self(18);
-  pub const Range: Self = Self(19);
-  pub const Regex: Self = Self(20);
+  pub const StringRecordId: Self = Self(15);
+  pub const File: Self = Self(16);
+  pub const Range: Self = Self(17);
+  pub const Regex: Self = Self(18);
+  pub const Object: Self = Self(19);
+  pub const Array: Self = Self(20);
+  pub const Set: Self = Self(21);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 20;
+  pub const ENUM_MAX: u8 = 21;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -84,8 +86,6 @@ impl ValueType {
     Self::Duration,
     Self::Datetime,
     Self::Uuid,
-    Self::Array,
-    Self::Object,
     Self::Geometry,
     Self::Table,
     Self::RecordId,
@@ -93,6 +93,9 @@ impl ValueType {
     Self::File,
     Self::Range,
     Self::Regex,
+    Self::Object,
+    Self::Array,
+    Self::Set,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -109,8 +112,6 @@ impl ValueType {
       Self::Duration => Some("Duration"),
       Self::Datetime => Some("Datetime"),
       Self::Uuid => Some("Uuid"),
-      Self::Array => Some("Array"),
-      Self::Object => Some("Object"),
       Self::Geometry => Some("Geometry"),
       Self::Table => Some("Table"),
       Self::RecordId => Some("RecordId"),
@@ -118,6 +119,9 @@ impl ValueType {
       Self::File => Some("File"),
       Self::Range => Some("Range"),
       Self::Regex => Some("Regex"),
+      Self::Object => Some("Object"),
+      Self::Array => Some("Array"),
+      Self::Set => Some("Set"),
       _ => None,
     }
   }
