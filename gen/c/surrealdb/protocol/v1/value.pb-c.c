@@ -3333,7 +3333,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__range__descriptor =
   (ProtobufCMessageInit) surrealdb__protocol__v1__range__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_descriptors[18] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_descriptors[21] =
 {
   {
     "null",
@@ -3480,8 +3480,20 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "record_id",
+    "table",
     13,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, table),
+    NULL,
+    &protobuf_c_empty_string,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "record_id",
+    14,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__V1__Value, value_case),
@@ -3492,8 +3504,20 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
+    "string_record_id",
+    15,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, string_record_id),
+    NULL,
+    &protobuf_c_empty_string,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
     "file",
-    14,
+    16,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__V1__Value, value_case),
@@ -3505,7 +3529,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
   },
   {
     "range",
-    15,
+    17,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__V1__Value, value_case),
@@ -3516,8 +3540,20 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
+    "regex",
+    18,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, regex),
+    NULL,
+    &protobuf_c_empty_string,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
     "object",
-    16,
+    19,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__V1__Value, value_case),
@@ -3529,7 +3565,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
   },
   {
     "array",
-    17,
+    20,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__V1__Value, value_case),
@@ -3541,7 +3577,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
   },
   {
     "set",
-    18,
+    21,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(Surrealdb__Protocol__V1__Value, value_case),
@@ -3553,29 +3589,32 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
   },
 };
 static const unsigned surrealdb__protocol__v1__value__field_indices_by_name[] = {
-  16,   /* field[16] = array */
+  19,   /* field[19] = array */
   1,   /* field[1] = bool */
   6,   /* field[6] = bytes */
   9,   /* field[9] = datetime */
   7,   /* field[7] = decimal */
   8,   /* field[8] = duration */
-  13,   /* field[13] = file */
+  15,   /* field[15] = file */
   4,   /* field[4] = float64 */
   11,   /* field[11] = geometry */
   2,   /* field[2] = int64 */
   0,   /* field[0] = null */
-  15,   /* field[15] = object */
-  14,   /* field[14] = range */
-  12,   /* field[12] = record_id */
-  17,   /* field[17] = set */
+  18,   /* field[18] = object */
+  16,   /* field[16] = range */
+  13,   /* field[13] = record_id */
+  17,   /* field[17] = regex */
+  20,   /* field[20] = set */
   5,   /* field[5] = string */
+  14,   /* field[14] = string_record_id */
+  12,   /* field[12] = table */
   3,   /* field[3] = uint64 */
   10,   /* field[10] = uuid */
 };
 static const ProtobufCIntRange surrealdb__protocol__v1__value__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 18 }
+  { 0, 21 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor =
 {
@@ -3585,7 +3624,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor =
   "Surrealdb__Protocol__V1__Value",
   "surrealdb.protocol.v1",
   sizeof(Surrealdb__Protocol__V1__Value),
-  18,
+  21,
   surrealdb__protocol__v1__value__field_descriptors,
   surrealdb__protocol__v1__value__field_indices_by_name,
   1,  surrealdb__protocol__v1__value__number_ranges,
@@ -3707,7 +3746,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_id_key_range__d
   (ProtobufCMessageInit) surrealdb__protocol__v1__record_id_key_range__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__v1__record_id_key__field_descriptors[5] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__record_id_key__field_descriptors[6] =
 {
   {
     "int64",
@@ -3769,10 +3808,23 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__record_id_key__fi
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "object",
+    6,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__RecordIdKey, id_case),
+    offsetof(Surrealdb__Protocol__V1__RecordIdKey, object),
+    &surrealdb__protocol__v1__object__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned surrealdb__protocol__v1__record_id_key__field_indices_by_name[] = {
   3,   /* field[3] = array */
   0,   /* field[0] = int64 */
+  5,   /* field[5] = object */
   4,   /* field[4] = range */
   1,   /* field[1] = string */
   2,   /* field[2] = uuid */
@@ -3780,7 +3832,7 @@ static const unsigned surrealdb__protocol__v1__record_id_key__field_indices_by_n
 static const ProtobufCIntRange surrealdb__protocol__v1__record_id_key__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 5 }
+  { 0, 6 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_id_key__descriptor =
 {
@@ -3790,7 +3842,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_id_key__descrip
   "Surrealdb__Protocol__V1__RecordIdKey",
   "surrealdb.protocol.v1",
   sizeof(Surrealdb__Protocol__V1__RecordIdKey),
-  5,
+  6,
   surrealdb__protocol__v1__record_id_key__field_descriptors,
   surrealdb__protocol__v1__record_id_key__field_indices_by_name,
   1,  surrealdb__protocol__v1__record_id_key__number_ranges,

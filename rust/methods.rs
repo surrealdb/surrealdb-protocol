@@ -1,7 +1,7 @@
 use crate::proto::v1::geometry::Geometry as GeometryEnum;
 use crate::proto::v1::{
     Array, Decimal, File, Geometry, GeometryCollection, NullValue, Object, RecordId, RecordIdKey,
-    Uuid, Value,
+    Set, Uuid, Value,
 };
 use crate::proto::v1::{Line, MultiLine, MultiPoint, MultiPolygon, Point, Polygon};
 
@@ -108,10 +108,24 @@ impl Value {
         }
     }
 
+    /// Creates a new `Value` with a `Regex` value.
+    pub fn regex(value: String) -> Self {
+        Self {
+            value: Some(ValueEnum::Regex(value)),
+        }
+    }
+
     /// Creates a new `Value` with a `Geometry` value.
     pub fn geometry(value: Geometry) -> Self {
         Self {
             value: Some(ValueEnum::Geometry(value)),
+        }
+    }
+
+    /// Creates a new `Value` with a `Table` value.
+    pub fn table(value: String) -> Self {
+        Self {
+            value: Some(ValueEnum::Table(value)),
         }
     }
 
@@ -126,6 +140,13 @@ impl Value {
     pub fn file(value: File) -> Self {
         Self {
             value: Some(ValueEnum::File(value)),
+        }
+    }
+
+    /// Creates a new `Value` with a `Set` value.
+    pub fn set(value: Set) -> Self {
+        Self {
+            value: Some(ValueEnum::Set(value)),
         }
     }
 

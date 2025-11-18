@@ -404,12 +404,15 @@ typedef enum {
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_DATETIME = 10,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_UUID = 11,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_GEOMETRY = 12,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_RECORD_ID = 13,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_FILE = 14,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_RANGE = 15,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_OBJECT = 16,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_ARRAY = 17,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_SET = 18
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_TABLE = 13,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_RECORD_ID = 14,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_STRING_RECORD_ID = 15,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_FILE = 16,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_RANGE = 17,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_REGEX = 18,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_OBJECT = 19,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_ARRAY = 20,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_SET = 21
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__VALUE__VALUE__CASE)
 } Surrealdb__Protocol__V1__Value__ValueCase;
 
@@ -425,7 +428,10 @@ struct  Surrealdb__Protocol__V1__Value
     double float64;
     int64_t int64;
     uint64_t uint64;
+    char *regex;
     char *string;
+    char *string_record_id;
+    char *table;
     Surrealdb__Protocol__V1__Array *array;
     Google__Protobuf__Timestamp *datetime;
     Surrealdb__Protocol__V1__Decimal *decimal;
@@ -489,7 +495,8 @@ typedef enum {
   SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID_STRING = 2,
   SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID_UUID = 3,
   SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID_ARRAY = 4,
-  SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID_RANGE = 5
+  SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID_RANGE = 5,
+  SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID_OBJECT = 6
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__RECORD_ID_KEY__ID__CASE)
 } Surrealdb__Protocol__V1__RecordIdKey__IdCase;
 
@@ -504,6 +511,7 @@ struct  Surrealdb__Protocol__V1__RecordIdKey
     int64_t int64;
     char *string;
     Surrealdb__Protocol__V1__Array *array;
+    Surrealdb__Protocol__V1__Object *object;
     Surrealdb__Protocol__V1__RecordIdKeyRange *range;
     Surrealdb__Protocol__V1__Uuid *uuid;
   };
