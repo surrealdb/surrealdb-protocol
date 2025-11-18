@@ -4,7 +4,7 @@ authors = ["Tobie Morgan Hitchcock <tobie@surrealdb.com>"]
 edition = "2024"
 license = "BUSL-1.1"
 license-file = "LICENSE"
-version = "0.6.0"
+version = "0.6.1"
 rust-version = "1.85.0"
 description = "The official SurrealDB Rust Client Protocol used by the SurrealDB Rust SDK."
 repository = "https://github.com/surrealdb/surrealdb-protocol"
@@ -40,18 +40,18 @@ chrono = { version = "0" }
 geo = { version = "0" }
 flatbuffers = { version = "25.2.10", features = ["serde"], optional = true }
 futures = { version = "0.3", optional = true }
-prost = { version = "0.13", optional = true }
-prost-types = { version = "0.13", optional = true }
-rust_decimal = { version = "1.30.0" }
-serde = { version = "1" }
+prost = { version = "0.13.1", optional = true }
+prost-types = { version = "0.13.1", optional = true }
+rust_decimal = { version = "1.30" }
+serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
-tonic = { version = "0.12", optional = true }
+tonic = { version = "0.12.0", optional = true }
 uuid = { version = "1" }
 semver = { version = "1" }
 
 [dev-dependencies]
 assert-json-diff = { version = "2.0" }
-rstest = { version = "0.24" }
+rstest = { version = "0.26" }
 serde_json = { version = "1" }
 
 [lints.rust]
