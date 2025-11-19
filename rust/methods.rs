@@ -38,13 +38,6 @@ impl Value {
         }
     }
 
-    /// Creates a new `Value` with a `Uint64` value.
-    pub fn uint64(value: u64) -> Self {
-        Self {
-            value: Some(ValueEnum::Uint64(value)),
-        }
-    }
-
     /// Creates a new `Value` with a `Float64` value.
     pub fn float64(value: f64) -> Self {
         Self {

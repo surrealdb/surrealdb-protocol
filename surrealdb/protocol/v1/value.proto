@@ -124,24 +124,23 @@ message Value {
         NullValue null = 1;
         bool bool = 2;
         int64 int64 = 3;
-        uint64 uint64 = 4;
-        double float64 = 5;
+        double float64 = 4;
+        Decimal decimal = 5;
         string string = 6;
         bytes bytes = 7;
-        Decimal decimal = 8;
-        google.protobuf.Duration duration = 9;
-        google.protobuf.Timestamp datetime = 10;
-        Uuid uuid = 11;
-        Geometry geometry = 12;
-        string table = 13;
-        RecordId record_id = 14;
-        string string_record_id = 15;
-        File file = 16;
-        Range range = 17;
-        string regex = 18;
-        Object object = 19;
-        Array array = 20;
-        Set set = 21;
+        google.protobuf.Duration duration = 8;
+        google.protobuf.Timestamp datetime = 9;
+        Uuid uuid = 10;
+        Geometry geometry = 11;
+        string table = 12;
+        RecordId record_id = 13;
+        string string_record_id = 14;
+        File file = 15;
+        Range range = 16;
+        string regex = 17;
+        Object object = 18;
+        Array array = 19;
+        Set set = 20;
     }
 }
 
