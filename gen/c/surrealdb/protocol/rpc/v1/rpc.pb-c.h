@@ -16,7 +16,6 @@ PROTOBUF_C__BEGIN_DECLS
 
 #include "surrealdb/protocol/v1/value.pb-c.h"
 #include "google/protobuf/duration.pb-c.h"
-#include "google/protobuf/timestamp.pb-c.h"
 
 typedef struct Surrealdb__Protocol__Rpc__V1__HealthRequest Surrealdb__Protocol__Rpc__V1__HealthRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__HealthResponse Surrealdb__Protocol__Rpc__V1__HealthResponse;
