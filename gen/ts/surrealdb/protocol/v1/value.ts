@@ -144,9 +144,12 @@ export interface Value {
     | { $case: "datetime"; datetime: Date }
     | { $case: "uuid"; uuid: Uuid }
     | { $case: "geometry"; geometry: Geometry }
+    | { $case: "table"; table: string }
     | { $case: "recordId"; recordId: RecordId }
+    | { $case: "stringRecordId"; stringRecordId: string }
     | { $case: "file"; file: File }
     | { $case: "range"; range: Range }
+    | { $case: "regex"; regex: string }
     | { $case: "object"; object: Object }
     | { $case: "array"; array: Array }
     | { $case: "set"; set: Set }
@@ -174,6 +177,7 @@ export interface RecordIdKey {
     | { $case: "uuid"; uuid: Uuid }
     | { $case: "array"; array: Array }
     | { $case: "range"; range: RecordIdKeyRange }
+    | { $case: "object"; object: Object }
     | undefined;
 }
 
@@ -1815,23 +1819,32 @@ export const Value: MessageFns<Value> = {
       case "geometry":
         Geometry.encode(message.value.geometry, writer.uint32(98).fork()).join();
         break;
+      case "table":
+        writer.uint32(106).string(message.value.table);
+        break;
       case "recordId":
-        RecordId.encode(message.value.recordId, writer.uint32(106).fork()).join();
+        RecordId.encode(message.value.recordId, writer.uint32(114).fork()).join();
+        break;
+      case "stringRecordId":
+        writer.uint32(122).string(message.value.stringRecordId);
         break;
       case "file":
-        File.encode(message.value.file, writer.uint32(114).fork()).join();
+        File.encode(message.value.file, writer.uint32(130).fork()).join();
         break;
       case "range":
-        Range.encode(message.value.range, writer.uint32(122).fork()).join();
+        Range.encode(message.value.range, writer.uint32(138).fork()).join();
+        break;
+      case "regex":
+        writer.uint32(146).string(message.value.regex);
         break;
       case "object":
-        Object.encode(message.value.object, writer.uint32(130).fork()).join();
+        Object.encode(message.value.object, writer.uint32(154).fork()).join();
         break;
       case "array":
-        Array.encode(message.value.array, writer.uint32(138).fork()).join();
+        Array.encode(message.value.array, writer.uint32(162).fork()).join();
         break;
       case "set":
-        Set.encode(message.value.set, writer.uint32(146).fork()).join();
+        Set.encode(message.value.set, writer.uint32(170).fork()).join();
         break;
     }
     return writer;
@@ -1945,7 +1958,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "recordId", recordId: RecordId.decode(reader, reader.uint32()) };
+          message.value = { $case: "table", table: reader.string() };
           continue;
         }
         case 14: {
@@ -1953,7 +1966,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "file", file: File.decode(reader, reader.uint32()) };
+          message.value = { $case: "recordId", recordId: RecordId.decode(reader, reader.uint32()) };
           continue;
         }
         case 15: {
@@ -1961,7 +1974,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "range", range: Range.decode(reader, reader.uint32()) };
+          message.value = { $case: "stringRecordId", stringRecordId: reader.string() };
           continue;
         }
         case 16: {
@@ -1969,7 +1982,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "object", object: Object.decode(reader, reader.uint32()) };
+          message.value = { $case: "file", file: File.decode(reader, reader.uint32()) };
           continue;
         }
         case 17: {
@@ -1977,11 +1990,35 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "array", array: Array.decode(reader, reader.uint32()) };
+          message.value = { $case: "range", range: Range.decode(reader, reader.uint32()) };
           continue;
         }
         case 18: {
           if (tag !== 146) {
+            break;
+          }
+
+          message.value = { $case: "regex", regex: reader.string() };
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.value = { $case: "object", object: Object.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.value = { $case: "array", array: Array.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 21: {
+          if (tag !== 170) {
             break;
           }
 
@@ -2023,12 +2060,18 @@ export const Value: MessageFns<Value> = {
         ? { $case: "uuid", uuid: Uuid.fromJSON(object.uuid) }
         : isSet(object.geometry)
         ? { $case: "geometry", geometry: Geometry.fromJSON(object.geometry) }
+        : isSet(object.table)
+        ? { $case: "table", table: globalThis.String(object.table) }
         : isSet(object.recordId)
         ? { $case: "recordId", recordId: RecordId.fromJSON(object.recordId) }
+        : isSet(object.stringRecordId)
+        ? { $case: "stringRecordId", stringRecordId: globalThis.String(object.stringRecordId) }
         : isSet(object.file)
         ? { $case: "file", file: File.fromJSON(object.file) }
         : isSet(object.range)
         ? { $case: "range", range: Range.fromJSON(object.range) }
+        : isSet(object.regex)
+        ? { $case: "regex", regex: globalThis.String(object.regex) }
         : isSet(object.object)
         ? { $case: "object", object: Object.fromJSON(object.object) }
         : isSet(object.array)
@@ -2065,12 +2108,18 @@ export const Value: MessageFns<Value> = {
       obj.uuid = Uuid.toJSON(message.value.uuid);
     } else if (message.value?.$case === "geometry") {
       obj.geometry = Geometry.toJSON(message.value.geometry);
+    } else if (message.value?.$case === "table") {
+      obj.table = message.value.table;
     } else if (message.value?.$case === "recordId") {
       obj.recordId = RecordId.toJSON(message.value.recordId);
+    } else if (message.value?.$case === "stringRecordId") {
+      obj.stringRecordId = message.value.stringRecordId;
     } else if (message.value?.$case === "file") {
       obj.file = File.toJSON(message.value.file);
     } else if (message.value?.$case === "range") {
       obj.range = Range.toJSON(message.value.range);
+    } else if (message.value?.$case === "regex") {
+      obj.regex = message.value.regex;
     } else if (message.value?.$case === "object") {
       obj.object = Object.toJSON(message.value.object);
     } else if (message.value?.$case === "array") {
@@ -2159,9 +2208,21 @@ export const Value: MessageFns<Value> = {
         }
         break;
       }
+      case "table": {
+        if (object.value?.table !== undefined && object.value?.table !== null) {
+          message.value = { $case: "table", table: object.value.table };
+        }
+        break;
+      }
       case "recordId": {
         if (object.value?.recordId !== undefined && object.value?.recordId !== null) {
           message.value = { $case: "recordId", recordId: RecordId.fromPartial(object.value.recordId) };
+        }
+        break;
+      }
+      case "stringRecordId": {
+        if (object.value?.stringRecordId !== undefined && object.value?.stringRecordId !== null) {
+          message.value = { $case: "stringRecordId", stringRecordId: object.value.stringRecordId };
         }
         break;
       }
@@ -2174,6 +2235,12 @@ export const Value: MessageFns<Value> = {
       case "range": {
         if (object.value?.range !== undefined && object.value?.range !== null) {
           message.value = { $case: "range", range: Range.fromPartial(object.value.range) };
+        }
+        break;
+      }
+      case "regex": {
+        if (object.value?.regex !== undefined && object.value?.regex !== null) {
+          message.value = { $case: "regex", regex: object.value.regex };
         }
         break;
       }
@@ -2418,6 +2485,9 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
       case "range":
         RecordIdKeyRange.encode(message.id.range, writer.uint32(42).fork()).join();
         break;
+      case "object":
+        Object.encode(message.id.object, writer.uint32(50).fork()).join();
+        break;
     }
     return writer;
   },
@@ -2469,6 +2539,14 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
           message.id = { $case: "range", range: RecordIdKeyRange.decode(reader, reader.uint32()) };
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.id = { $case: "object", object: Object.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2490,6 +2568,8 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : isSet(object.range)
         ? { $case: "range", range: RecordIdKeyRange.fromJSON(object.range) }
+        : isSet(object.object)
+        ? { $case: "object", object: Object.fromJSON(object.object) }
         : undefined,
     };
   },
@@ -2506,6 +2586,8 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
       obj.array = Array.toJSON(message.id.array);
     } else if (message.id?.$case === "range") {
       obj.range = RecordIdKeyRange.toJSON(message.id.range);
+    } else if (message.id?.$case === "object") {
+      obj.object = Object.toJSON(message.id.object);
     }
     return obj;
   },
@@ -2543,6 +2625,12 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
       case "range": {
         if (object.id?.range !== undefined && object.id?.range !== null) {
           message.id = { $case: "range", range: RecordIdKeyRange.fromPartial(object.id.range) };
+        }
+        break;
+      }
+      case "object": {
+        if (object.id?.object !== undefined && object.id?.object !== null) {
+          message.id = { $case: "object", object: Object.fromPartial(object.id.object) };
         }
         break;
       }

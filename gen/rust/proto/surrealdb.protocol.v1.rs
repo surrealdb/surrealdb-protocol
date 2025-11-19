@@ -252,7 +252,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18")]
+    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -287,17 +287,23 @@ pub mod value {
         Uuid(super::Uuid),
         #[prost(message, tag="12")]
         Geometry(super::Geometry),
-        #[prost(message, tag="13")]
-        RecordId(super::RecordId),
+        #[prost(string, tag="13")]
+        Table(::prost::alloc::string::String),
         #[prost(message, tag="14")]
-        File(super::File),
-        #[prost(message, tag="15")]
-        Range(::prost::alloc::boxed::Box<super::Range>),
+        RecordId(super::RecordId),
+        #[prost(string, tag="15")]
+        StringRecordId(::prost::alloc::string::String),
         #[prost(message, tag="16")]
-        Object(super::Object),
+        File(super::File),
         #[prost(message, tag="17")]
+        Range(::prost::alloc::boxed::Box<super::Range>),
+        #[prost(string, tag="18")]
+        Regex(::prost::alloc::string::String),
+        #[prost(message, tag="19")]
+        Object(super::Object),
+        #[prost(message, tag="20")]
         Array(super::Array),
-        #[prost(message, tag="18")]
+        #[prost(message, tag="21")]
         Set(super::Set),
     }
 }
@@ -345,7 +351,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Record
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RecordIdKey {
-    #[prost(oneof="record_id_key::Id", tags="1, 2, 3, 4, 5")]
+    #[prost(oneof="record_id_key::Id", tags="1, 2, 3, 4, 5, 6")]
     pub id: ::core::option::Option<record_id_key::Id>,
 }
 /// Nested message and enum types in `RecordIdKey`.
@@ -363,6 +369,8 @@ pub mod record_id_key {
         Array(super::Array),
         #[prost(message, tag="5")]
         Range(::prost::alloc::boxed::Box<super::RecordIdKeyRange>),
+        #[prost(message, tag="6")]
+        Object(super::Object),
     }
 }
 impl ::prost::Name for RecordIdKey {

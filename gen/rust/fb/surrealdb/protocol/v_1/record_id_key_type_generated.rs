@@ -12,16 +12,17 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_RECORD_ID_KEY_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_RECORD_ID_KEY_TYPE: u8 = 5;
+pub const ENUM_MAX_RECORD_ID_KEY_TYPE: u8 = 6;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_RECORD_ID_KEY_TYPE: [RecordIdKeyType; 6] = [
+pub const ENUM_VALUES_RECORD_ID_KEY_TYPE: [RecordIdKeyType; 7] = [
   RecordIdKeyType::NONE,
   RecordIdKeyType::Int64,
   RecordIdKeyType::String,
   RecordIdKeyType::Uuid,
   RecordIdKeyType::Array,
   RecordIdKeyType::Range,
+  RecordIdKeyType::Object,
 ];
 
 /// A union of all possible record ID key types.
@@ -36,9 +37,10 @@ impl RecordIdKeyType {
   pub const Uuid: Self = Self(3);
   pub const Array: Self = Self(4);
   pub const Range: Self = Self(5);
+  pub const Object: Self = Self(6);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 5;
+  pub const ENUM_MAX: u8 = 6;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Int64,
@@ -46,6 +48,7 @@ impl RecordIdKeyType {
     Self::Uuid,
     Self::Array,
     Self::Range,
+    Self::Object,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -56,6 +59,7 @@ impl RecordIdKeyType {
       Self::Uuid => Some("Uuid"),
       Self::Array => Some("Array"),
       Self::Range => Some("Range"),
+      Self::Object => Some("Object"),
       _ => None,
     }
   }

@@ -133,12 +133,15 @@ message Value {
         google.protobuf.Timestamp datetime = 10;
         Uuid uuid = 11;
         Geometry geometry = 12;
-        RecordId record_id = 13;
-        File file = 14;
-        Range range = 15;
-        Object object = 16;
-        Array array = 17;
-        Set set = 18;
+        string table = 13;
+        RecordId record_id = 14;
+        string string_record_id = 15;
+        File file = 16;
+        Range range = 17;
+        string regex = 18;
+        Object object = 19;
+        Array array = 20;
+        Set set = 21;
     }
 }
 
@@ -164,6 +167,7 @@ message RecordIdKey {
         Uuid uuid = 3;
         Array array = 4;
         RecordIdKeyRange range = 5;
+        Object object = 6;
     }
 }
 

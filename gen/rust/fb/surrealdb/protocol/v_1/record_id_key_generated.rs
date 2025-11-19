@@ -134,6 +134,21 @@ impl<'a> RecordIdKey<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn id_as_object(&self) -> Option<Object<'a>> {
+    if self.id_type() == RecordIdKeyType::Object {
+      self.id().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Object::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl flatbuffers::Verifiable for RecordIdKey<'_> {
@@ -150,6 +165,7 @@ impl flatbuffers::Verifiable for RecordIdKey<'_> {
           RecordIdKeyType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("RecordIdKeyType::Uuid", pos),
           RecordIdKeyType::Array => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Array>>("RecordIdKeyType::Array", pos),
           RecordIdKeyType::Range => v.verify_union_variant::<flatbuffers::ForwardsUOffset<RecordIdKeyRange>>("RecordIdKeyType::Range", pos),
+          RecordIdKeyType::Object => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Object>>("RecordIdKeyType::Object", pos),
           _ => Ok(()),
         }
      })?
@@ -234,6 +250,13 @@ impl core::fmt::Debug for RecordIdKey<'_> {
         },
         RecordIdKeyType::Range => {
           if let Some(x) = self.id_as_range() {
+            ds.field("id", &x)
+          } else {
+            ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        RecordIdKeyType::Object => {
+          if let Some(x) = self.id_as_object() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
