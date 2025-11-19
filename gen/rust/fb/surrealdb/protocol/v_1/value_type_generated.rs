@@ -12,19 +12,18 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 21;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 20;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
   ValueType::Int64,
-  ValueType::UInt64,
   ValueType::Float64,
+  ValueType::Decimal,
   ValueType::String,
   ValueType::Bytes,
-  ValueType::Decimal,
   ValueType::Duration,
   ValueType::Datetime,
   ValueType::Uuid,
@@ -50,39 +49,37 @@ impl ValueType {
   pub const Null: Self = Self(1);
   pub const Bool: Self = Self(2);
   pub const Int64: Self = Self(3);
-  pub const UInt64: Self = Self(4);
-  pub const Float64: Self = Self(5);
+  pub const Float64: Self = Self(4);
+  pub const Decimal: Self = Self(5);
   pub const String: Self = Self(6);
   pub const Bytes: Self = Self(7);
-  pub const Decimal: Self = Self(8);
-  pub const Duration: Self = Self(9);
-  pub const Datetime: Self = Self(10);
-  pub const Uuid: Self = Self(11);
-  pub const Geometry: Self = Self(12);
-  pub const Table: Self = Self(13);
+  pub const Duration: Self = Self(8);
+  pub const Datetime: Self = Self(9);
+  pub const Uuid: Self = Self(10);
+  pub const Geometry: Self = Self(11);
+  pub const Table: Self = Self(12);
   /// A fully-qualified record ID.
-  pub const RecordId: Self = Self(14);
+  pub const RecordId: Self = Self(13);
   /// An unparsed record ID which will be parsed by the server.
-  pub const StringRecordId: Self = Self(15);
-  pub const File: Self = Self(16);
-  pub const Range: Self = Self(17);
-  pub const Regex: Self = Self(18);
-  pub const Object: Self = Self(19);
-  pub const Array: Self = Self(20);
-  pub const Set: Self = Self(21);
+  pub const StringRecordId: Self = Self(14);
+  pub const File: Self = Self(15);
+  pub const Range: Self = Self(16);
+  pub const Regex: Self = Self(17);
+  pub const Object: Self = Self(18);
+  pub const Array: Self = Self(19);
+  pub const Set: Self = Self(20);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 21;
+  pub const ENUM_MAX: u8 = 20;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
     Self::Bool,
     Self::Int64,
-    Self::UInt64,
     Self::Float64,
+    Self::Decimal,
     Self::String,
     Self::Bytes,
-    Self::Decimal,
     Self::Duration,
     Self::Datetime,
     Self::Uuid,
@@ -104,11 +101,10 @@ impl ValueType {
       Self::Null => Some("Null"),
       Self::Bool => Some("Bool"),
       Self::Int64 => Some("Int64"),
-      Self::UInt64 => Some("UInt64"),
       Self::Float64 => Some("Float64"),
+      Self::Decimal => Some("Decimal"),
       Self::String => Some("String"),
       Self::Bytes => Some("Bytes"),
-      Self::Decimal => Some("Decimal"),
       Self::Duration => Some("Duration"),
       Self::Datetime => Some("Datetime"),
       Self::Uuid => Some("Uuid"),

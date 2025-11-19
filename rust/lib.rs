@@ -191,7 +191,6 @@ mod tests {
     #[case(Value::null(), json!({"Null":{}}))]
     #[case(Value::bool(true), json!({"Bool":true}))]
     #[case(Value::int64(1), json!({"Int64":1}))]
-    #[case(Value::uint64(1), json!({"Uint64":1}))]
     #[case(Value::float64(1.0), json!({"Float64":1.0}))]
     #[case(Value::string("test".to_string()), json!({"String":"test"}))]
     #[case(Value::bytes(Bytes::from_static(b"test")), json!({"Bytes":[116,101,115,116]}))]

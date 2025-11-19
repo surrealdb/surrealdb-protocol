@@ -133,7 +133,6 @@ macro_rules! impl_try_from_value_for_int {
 				};
 				match inner {
 					ValueInner::Int64(v) => Ok(v as Self),
-					ValueInner::Uint64(v) => Ok(v as Self),
 					ValueInner::Float64(v) => Ok(v as Self),
 					ValueInner::Decimal(v) => Ok(v.to_i64().unwrap() as Self),
 					v => Err(anyhow::anyhow!("Invalid Int: expected int, got {v:?}")),
@@ -157,7 +156,6 @@ macro_rules! impl_try_from_value_for_float {
 				match inner {
 					ValueInner::Float64(v) => Ok(v as Self),
 					ValueInner::Int64(v) => Ok(v as Self),
-					ValueInner::Uint64(v) => Ok(v as Self),
 					ValueInner::Decimal(v) => Ok(v.to_f64().unwrap() as Self),
 					v => Err(anyhow::anyhow!("Invalid Float: expected float, got {v:?}")),
 				}

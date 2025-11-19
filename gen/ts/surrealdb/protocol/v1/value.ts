@@ -135,11 +135,10 @@ export interface Value {
     | { $case: "null"; null: NullValue }
     | { $case: "bool"; bool: boolean }
     | { $case: "int64"; int64: bigint }
-    | { $case: "uint64"; uint64: bigint }
     | { $case: "float64"; float64: number }
+    | { $case: "decimal"; decimal: Decimal }
     | { $case: "string"; string: string }
     | { $case: "bytes"; bytes: Uint8Array }
-    | { $case: "decimal"; decimal: Decimal }
     | { $case: "duration"; duration: Duration }
     | { $case: "datetime"; datetime: Date }
     | { $case: "uuid"; uuid: Uuid }
@@ -1789,14 +1788,11 @@ export const Value: MessageFns<Value> = {
         }
         writer.uint32(24).int64(message.value.int64);
         break;
-      case "uint64":
-        if (BigInt.asUintN(64, message.value.uint64) !== message.value.uint64) {
-          throw new globalThis.Error("value provided for field message.value.uint64 of type uint64 too large");
-        }
-        writer.uint32(32).uint64(message.value.uint64);
-        break;
       case "float64":
-        writer.uint32(41).double(message.value.float64);
+        writer.uint32(33).double(message.value.float64);
+        break;
+      case "decimal":
+        Decimal.encode(message.value.decimal, writer.uint32(42).fork()).join();
         break;
       case "string":
         writer.uint32(50).string(message.value.string);
@@ -1804,47 +1800,44 @@ export const Value: MessageFns<Value> = {
       case "bytes":
         writer.uint32(58).bytes(message.value.bytes);
         break;
-      case "decimal":
-        Decimal.encode(message.value.decimal, writer.uint32(66).fork()).join();
-        break;
       case "duration":
-        Duration.encode(message.value.duration, writer.uint32(74).fork()).join();
+        Duration.encode(message.value.duration, writer.uint32(66).fork()).join();
         break;
       case "datetime":
-        Timestamp.encode(toTimestamp(message.value.datetime), writer.uint32(82).fork()).join();
+        Timestamp.encode(toTimestamp(message.value.datetime), writer.uint32(74).fork()).join();
         break;
       case "uuid":
-        Uuid.encode(message.value.uuid, writer.uint32(90).fork()).join();
+        Uuid.encode(message.value.uuid, writer.uint32(82).fork()).join();
         break;
       case "geometry":
-        Geometry.encode(message.value.geometry, writer.uint32(98).fork()).join();
+        Geometry.encode(message.value.geometry, writer.uint32(90).fork()).join();
         break;
       case "table":
-        writer.uint32(106).string(message.value.table);
+        writer.uint32(98).string(message.value.table);
         break;
       case "recordId":
-        RecordId.encode(message.value.recordId, writer.uint32(114).fork()).join();
+        RecordId.encode(message.value.recordId, writer.uint32(106).fork()).join();
         break;
       case "stringRecordId":
-        writer.uint32(122).string(message.value.stringRecordId);
+        writer.uint32(114).string(message.value.stringRecordId);
         break;
       case "file":
-        File.encode(message.value.file, writer.uint32(130).fork()).join();
+        File.encode(message.value.file, writer.uint32(122).fork()).join();
         break;
       case "range":
-        Range.encode(message.value.range, writer.uint32(138).fork()).join();
+        Range.encode(message.value.range, writer.uint32(130).fork()).join();
         break;
       case "regex":
-        writer.uint32(146).string(message.value.regex);
+        writer.uint32(138).string(message.value.regex);
         break;
       case "object":
-        Object.encode(message.value.object, writer.uint32(154).fork()).join();
+        Object.encode(message.value.object, writer.uint32(146).fork()).join();
         break;
       case "array":
-        Array.encode(message.value.array, writer.uint32(162).fork()).join();
+        Array.encode(message.value.array, writer.uint32(154).fork()).join();
         break;
       case "set":
-        Set.encode(message.value.set, writer.uint32(170).fork()).join();
+        Set.encode(message.value.set, writer.uint32(162).fork()).join();
         break;
     }
     return writer;
@@ -1882,19 +1875,19 @@ export const Value: MessageFns<Value> = {
           continue;
         }
         case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.value = { $case: "uint64", uint64: reader.uint64() as bigint };
-          continue;
-        }
-        case 5: {
-          if (tag !== 41) {
+          if (tag !== 33) {
             break;
           }
 
           message.value = { $case: "float64", float64: reader.double() };
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.value = { $case: "decimal", decimal: Decimal.decode(reader, reader.uint32()) };
           continue;
         }
         case 6: {
@@ -1918,7 +1911,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "decimal", decimal: Decimal.decode(reader, reader.uint32()) };
+          message.value = { $case: "duration", duration: Duration.decode(reader, reader.uint32()) };
           continue;
         }
         case 9: {
@@ -1926,7 +1919,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "duration", duration: Duration.decode(reader, reader.uint32()) };
+          message.value = { $case: "datetime", datetime: fromTimestamp(Timestamp.decode(reader, reader.uint32())) };
           continue;
         }
         case 10: {
@@ -1934,7 +1927,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "datetime", datetime: fromTimestamp(Timestamp.decode(reader, reader.uint32())) };
+          message.value = { $case: "uuid", uuid: Uuid.decode(reader, reader.uint32()) };
           continue;
         }
         case 11: {
@@ -1942,7 +1935,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "uuid", uuid: Uuid.decode(reader, reader.uint32()) };
+          message.value = { $case: "geometry", geometry: Geometry.decode(reader, reader.uint32()) };
           continue;
         }
         case 12: {
@@ -1950,7 +1943,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "geometry", geometry: Geometry.decode(reader, reader.uint32()) };
+          message.value = { $case: "table", table: reader.string() };
           continue;
         }
         case 13: {
@@ -1958,7 +1951,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "table", table: reader.string() };
+          message.value = { $case: "recordId", recordId: RecordId.decode(reader, reader.uint32()) };
           continue;
         }
         case 14: {
@@ -1966,7 +1959,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "recordId", recordId: RecordId.decode(reader, reader.uint32()) };
+          message.value = { $case: "stringRecordId", stringRecordId: reader.string() };
           continue;
         }
         case 15: {
@@ -1974,7 +1967,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "stringRecordId", stringRecordId: reader.string() };
+          message.value = { $case: "file", file: File.decode(reader, reader.uint32()) };
           continue;
         }
         case 16: {
@@ -1982,7 +1975,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "file", file: File.decode(reader, reader.uint32()) };
+          message.value = { $case: "range", range: Range.decode(reader, reader.uint32()) };
           continue;
         }
         case 17: {
@@ -1990,7 +1983,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "range", range: Range.decode(reader, reader.uint32()) };
+          message.value = { $case: "regex", regex: reader.string() };
           continue;
         }
         case 18: {
@@ -1998,7 +1991,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "regex", regex: reader.string() };
+          message.value = { $case: "object", object: Object.decode(reader, reader.uint32()) };
           continue;
         }
         case 19: {
@@ -2006,19 +1999,11 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "object", object: Object.decode(reader, reader.uint32()) };
+          message.value = { $case: "array", array: Array.decode(reader, reader.uint32()) };
           continue;
         }
         case 20: {
           if (tag !== 162) {
-            break;
-          }
-
-          message.value = { $case: "array", array: Array.decode(reader, reader.uint32()) };
-          continue;
-        }
-        case 21: {
-          if (tag !== 170) {
             break;
           }
 
@@ -2042,16 +2027,14 @@ export const Value: MessageFns<Value> = {
         ? { $case: "bool", bool: globalThis.Boolean(object.bool) }
         : isSet(object.int64)
         ? { $case: "int64", int64: BigInt(object.int64) }
-        : isSet(object.uint64)
-        ? { $case: "uint64", uint64: BigInt(object.uint64) }
         : isSet(object.float64)
         ? { $case: "float64", float64: globalThis.Number(object.float64) }
+        : isSet(object.decimal)
+        ? { $case: "decimal", decimal: Decimal.fromJSON(object.decimal) }
         : isSet(object.string)
         ? { $case: "string", string: globalThis.String(object.string) }
         : isSet(object.bytes)
         ? { $case: "bytes", bytes: bytesFromBase64(object.bytes) }
-        : isSet(object.decimal)
-        ? { $case: "decimal", decimal: Decimal.fromJSON(object.decimal) }
         : isSet(object.duration)
         ? { $case: "duration", duration: Duration.fromJSON(object.duration) }
         : isSet(object.datetime)
@@ -2090,16 +2073,14 @@ export const Value: MessageFns<Value> = {
       obj.bool = message.value.bool;
     } else if (message.value?.$case === "int64") {
       obj.int64 = message.value.int64.toString();
-    } else if (message.value?.$case === "uint64") {
-      obj.uint64 = message.value.uint64.toString();
     } else if (message.value?.$case === "float64") {
       obj.float64 = message.value.float64;
+    } else if (message.value?.$case === "decimal") {
+      obj.decimal = Decimal.toJSON(message.value.decimal);
     } else if (message.value?.$case === "string") {
       obj.string = message.value.string;
     } else if (message.value?.$case === "bytes") {
       obj.bytes = base64FromBytes(message.value.bytes);
-    } else if (message.value?.$case === "decimal") {
-      obj.decimal = Decimal.toJSON(message.value.decimal);
     } else if (message.value?.$case === "duration") {
       obj.duration = Duration.toJSON(message.value.duration);
     } else if (message.value?.$case === "datetime") {
@@ -2154,15 +2135,15 @@ export const Value: MessageFns<Value> = {
         }
         break;
       }
-      case "uint64": {
-        if (object.value?.uint64 !== undefined && object.value?.uint64 !== null) {
-          message.value = { $case: "uint64", uint64: object.value.uint64 };
-        }
-        break;
-      }
       case "float64": {
         if (object.value?.float64 !== undefined && object.value?.float64 !== null) {
           message.value = { $case: "float64", float64: object.value.float64 };
+        }
+        break;
+      }
+      case "decimal": {
+        if (object.value?.decimal !== undefined && object.value?.decimal !== null) {
+          message.value = { $case: "decimal", decimal: Decimal.fromPartial(object.value.decimal) };
         }
         break;
       }
@@ -2175,12 +2156,6 @@ export const Value: MessageFns<Value> = {
       case "bytes": {
         if (object.value?.bytes !== undefined && object.value?.bytes !== null) {
           message.value = { $case: "bytes", bytes: object.value.bytes };
-        }
-        break;
-      }
-      case "decimal": {
-        if (object.value?.decimal !== undefined && object.value?.decimal !== null) {
-          message.value = { $case: "decimal", decimal: Decimal.fromPartial(object.value.decimal) };
         }
         break;
       }

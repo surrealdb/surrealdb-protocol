@@ -252,7 +252,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21")]
+    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -267,43 +267,41 @@ pub mod value {
         Bool(bool),
         #[prost(int64, tag="3")]
         Int64(i64),
-        #[prost(uint64, tag="4")]
-        Uint64(u64),
-        #[prost(double, tag="5")]
+        #[prost(double, tag="4")]
         Float64(f64),
+        #[prost(message, tag="5")]
+        Decimal(super::Decimal),
         #[prost(string, tag="6")]
         String(::prost::alloc::string::String),
         #[prost(bytes, tag="7")]
         Bytes(::prost::bytes::Bytes),
         #[prost(message, tag="8")]
-        Decimal(super::Decimal),
-        #[prost(message, tag="9")]
         #[serde(with = "crate::serde_duration")]
         Duration(::prost_types::Duration),
-        #[prost(message, tag="10")]
+        #[prost(message, tag="9")]
         #[serde(with = "crate::serde_timestamp")]
         Datetime(::prost_types::Timestamp),
-        #[prost(message, tag="11")]
+        #[prost(message, tag="10")]
         Uuid(super::Uuid),
-        #[prost(message, tag="12")]
+        #[prost(message, tag="11")]
         Geometry(super::Geometry),
-        #[prost(string, tag="13")]
+        #[prost(string, tag="12")]
         Table(::prost::alloc::string::String),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="13")]
         RecordId(super::RecordId),
-        #[prost(string, tag="15")]
+        #[prost(string, tag="14")]
         StringRecordId(::prost::alloc::string::String),
-        #[prost(message, tag="16")]
+        #[prost(message, tag="15")]
         File(super::File),
-        #[prost(message, tag="17")]
+        #[prost(message, tag="16")]
         Range(::prost::alloc::boxed::Box<super::Range>),
-        #[prost(string, tag="18")]
+        #[prost(string, tag="17")]
         Regex(::prost::alloc::string::String),
-        #[prost(message, tag="19")]
+        #[prost(message, tag="18")]
         Object(super::Object),
-        #[prost(message, tag="20")]
+        #[prost(message, tag="19")]
         Array(super::Array),
-        #[prost(message, tag="21")]
+        #[prost(message, tag="20")]
         Set(super::Set),
     }
 }
