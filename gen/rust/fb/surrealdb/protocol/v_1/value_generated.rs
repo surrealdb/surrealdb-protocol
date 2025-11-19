@@ -106,13 +106,13 @@ impl<'a> Value<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
-  pub fn value_as_uint_64(&self) -> Option<UInt64Value<'a>> {
-    if self.value_type() == ValueType::UInt64 {
+  pub fn value_as_float_64(&self) -> Option<Float64Value<'a>> {
+    if self.value_type() == ValueType::Float64 {
       self.value().map(|t| {
        // Safety:
        // Created from a valid Table for this object
        // Which contains a valid union in this slot
-       unsafe { UInt64Value::init_from_table(t) }
+       unsafe { Float64Value::init_from_table(t) }
      })
     } else {
       None
@@ -121,13 +121,13 @@ impl<'a> Value<'a> {
 
   #[inline]
   #[allow(non_snake_case)]
-  pub fn value_as_float_64(&self) -> Option<Float64Value<'a>> {
-    if self.value_type() == ValueType::Float64 {
+  pub fn value_as_decimal(&self) -> Option<Decimal<'a>> {
+    if self.value_type() == ValueType::Decimal {
       self.value().map(|t| {
        // Safety:
        // Created from a valid Table for this object
        // Which contains a valid union in this slot
-       unsafe { Float64Value::init_from_table(t) }
+       unsafe { Decimal::init_from_table(t) }
      })
     } else {
       None
@@ -158,21 +158,6 @@ impl<'a> Value<'a> {
        // Created from a valid Table for this object
        // Which contains a valid union in this slot
        unsafe { Bytes::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
-  #[inline]
-  #[allow(non_snake_case)]
-  pub fn value_as_decimal(&self) -> Option<Decimal<'a>> {
-    if self.value_type() == ValueType::Decimal {
-      self.value().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { Decimal::init_from_table(t) }
      })
     } else {
       None
@@ -388,11 +373,10 @@ impl flatbuffers::Verifiable for Value<'_> {
           ValueType::Null => v.verify_union_variant::<flatbuffers::ForwardsUOffset<NullValue>>("ValueType::Null", pos),
           ValueType::Bool => v.verify_union_variant::<flatbuffers::ForwardsUOffset<BoolValue>>("ValueType::Bool", pos),
           ValueType::Int64 => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Int64Value>>("ValueType::Int64", pos),
-          ValueType::UInt64 => v.verify_union_variant::<flatbuffers::ForwardsUOffset<UInt64Value>>("ValueType::UInt64", pos),
           ValueType::Float64 => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Float64Value>>("ValueType::Float64", pos),
+          ValueType::Decimal => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Decimal>>("ValueType::Decimal", pos),
           ValueType::String => v.verify_union_variant::<flatbuffers::ForwardsUOffset<StringValue>>("ValueType::String", pos),
           ValueType::Bytes => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Bytes>>("ValueType::Bytes", pos),
-          ValueType::Decimal => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Decimal>>("ValueType::Decimal", pos),
           ValueType::Duration => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Duration>>("ValueType::Duration", pos),
           ValueType::Datetime => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Timestamp>>("ValueType::Datetime", pos),
           ValueType::Uuid => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Uuid>>("ValueType::Uuid", pos),
@@ -481,15 +465,15 @@ impl core::fmt::Debug for Value<'_> {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        ValueType::UInt64 => {
-          if let Some(x) = self.value_as_uint_64() {
+        ValueType::Float64 => {
+          if let Some(x) = self.value_as_float_64() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
           }
         },
-        ValueType::Float64 => {
-          if let Some(x) = self.value_as_float_64() {
+        ValueType::Decimal => {
+          if let Some(x) = self.value_as_decimal() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
@@ -504,13 +488,6 @@ impl core::fmt::Debug for Value<'_> {
         },
         ValueType::Bytes => {
           if let Some(x) = self.value_as_bytes() {
-            ds.field("value", &x)
-          } else {
-            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
-        ValueType::Decimal => {
-          if let Some(x) = self.value_as_decimal() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

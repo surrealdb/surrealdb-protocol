@@ -19,10 +19,10 @@ impl TryIntoValue for serde_json::Value {
             JsonValue::Null => Ok(v1::Value::null()),
             JsonValue::Bool(b) => Ok(v1::Value::bool(b)),
             JsonValue::Number(n) => {
-                if n.is_u64() {
-                    Ok(v1::Value::uint64(n.as_u64().unwrap()))
-                } else if n.is_i64() {
+                if n.is_i64() {
                     Ok(v1::Value::int64(n.as_i64().unwrap()))
+                } else if n.is_f64() {
+                    Ok(v1::Value::float64(n.as_f64().unwrap()))
                 } else {
                     Err(anyhow::anyhow!("Invalid number: {n:?}"))
                 }
@@ -133,7 +133,6 @@ macro_rules! impl_try_from_value_for_int {
 				};
 				match inner {
 					ValueInner::Int64(v) => Ok(v as Self),
-					ValueInner::Uint64(v) => Ok(v as Self),
 					ValueInner::Float64(v) => Ok(v as Self),
 					ValueInner::Decimal(v) => Ok(v.to_i64().unwrap() as Self),
 					v => Err(anyhow::anyhow!("Invalid Int: expected int, got {v:?}")),
@@ -157,7 +156,6 @@ macro_rules! impl_try_from_value_for_float {
 				match inner {
 					ValueInner::Float64(v) => Ok(v as Self),
 					ValueInner::Int64(v) => Ok(v as Self),
-					ValueInner::Uint64(v) => Ok(v as Self),
 					ValueInner::Decimal(v) => Ok(v.to_f64().unwrap() as Self),
 					v => Err(anyhow::anyhow!("Invalid Float: expected float, got {v:?}")),
 				}
