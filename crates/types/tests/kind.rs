@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, clippy::unwrap_used)]
 
 use surrealdb_types::{GeometryKind, Kind, kind};
 

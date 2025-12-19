@@ -233,6 +233,7 @@ impl FromFlatbuffers for Value {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use std::collections::BTreeMap;
     use std::ops::Bound;
     use std::str::FromStr;

@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, clippy::unwrap_used)]
 
 use surrealdb_types::{
     ConversionError, Kind, LengthMismatchError, Number, OutOfRangeError, TypeError, Value,

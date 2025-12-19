@@ -70,6 +70,7 @@ pub fn decode_kind(value: &[u8]) -> anyhow::Result<Kind> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use chrono::{DateTime, Utc};
     use rstest::rstest;
     use rust_decimal::Decimal;

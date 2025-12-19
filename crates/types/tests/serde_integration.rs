@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, clippy::unwrap_used, clippy::allow_attributes)]
 
 use serde::{Deserialize, Serialize};
 use surrealdb_types::{Object, SurrealValue, Value};

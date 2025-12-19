@@ -274,7 +274,6 @@ pub(crate) struct RouterRequest {
     id: Option<i64>,
     method: String,
     params: Option<Value>,
-    #[allow(dead_code)]
     transaction: Option<Uuid>,
 }
 

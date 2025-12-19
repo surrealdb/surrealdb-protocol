@@ -282,7 +282,7 @@ mod tests {
     #[case(Value::record_id(RecordId::new("test".to_string(), None)), json!({"RecordId":{"table":"test","id":null}}))]
     #[case(Value::file(File::new("test".to_string(), "test".to_string())), json!({"File":{"bucket":"test","key":"test"}}))]
     fn test_serde(#[case] value: Value, #[case] expected: serde_json::Value) {
-        let serialized = serde_json::to_value(&value).unwrap();
+        let serialized = serde_json::to_value(&value).expect("Failed to serialize value to JSON");
         assert_json_eq!(serialized, expected);
     }
 }
