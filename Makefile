@@ -83,7 +83,7 @@ gen: proto-gen fb-gen
 ################################################################################
 # Rust
 ################################################################################
-RUST_SRCS := $(shell find rust -type f -name "*.rs")
+RUST_SRCS := $(shell find crates -type f -name "*.rs")
 RUST_GEN_SRCS := $(shell find gen/rust -type f -name "*.rs")
 ALL_RUST_SRCS := $(RUST_SRCS) $(RUST_GEN_SRCS)
 

@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("README.md")]
 
 #[cfg(feature = "proto")]
 mod convert;
@@ -26,13 +26,13 @@ pub mod proto {
         pub mod surrealdb {
             pub mod protocol {
                 pub mod v1 {
-                    include!("../gen/rust/proto/surrealdb.protocol.v1.rs");
+                    include!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../gen/rust/proto/surrealdb.protocol.v1.rs"));
                 }
 
                 #[cfg(feature = "rpc")]
                 pub mod rpc {
                     pub mod v1 {
-                        include!("../gen/rust/proto/surrealdb.protocol.rpc.v1.rs");
+                        include!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../gen/rust/proto/surrealdb.protocol.rpc.v1.rs"));
                     }
                 }
             }
@@ -56,7 +56,7 @@ pub mod fb {
             unsafe_op_in_unsafe_fn,
             unused_imports
         )]
-        include!("../gen/rust/fb/mod.rs");
+        include!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../gen/rust/fb/mod.rs"));
     }
 
     pub use generated::surrealdb::protocol::v_1 as v1;
