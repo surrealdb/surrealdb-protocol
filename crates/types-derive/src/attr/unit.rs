@@ -45,7 +45,9 @@ impl UnitValue {
     pub fn parse(buf: &ParseBuffer<'_>) -> Self {
         // Check for custom tokens first (null, none)
         if buf.peek(syn::Ident) {
-            let ident = buf.parse::<syn::Ident>().unwrap();
+            let ident = buf
+                .parse::<syn::Ident>()
+                .expect("Failed to parse identifier");
             let ident_str = ident.to_string().to_lowercase();
             let inner = ident.to_token_stream();
 
@@ -75,7 +77,7 @@ impl UnitValue {
         }
 
         // Fall back to parsing as literal
-        let lit = buf.parse::<Lit>().unwrap();
+        let lit = buf.parse::<Lit>().expect("Failed to parse literal");
         let inner = lit.to_token_stream();
 
         let (value, is_value, kind_of) = match lit {
@@ -106,7 +108,10 @@ impl UnitValue {
             }
             // Literal integer
             Lit::Int(x) => {
-                let inner = x.base10_digits().parse::<i64>().unwrap();
+                let inner = x
+                    .base10_digits()
+                    .parse::<i64>()
+                    .expect("Failed to parse integer literal");
                 (
                     quote!(surrealdb_types::Value::Number(surrealdb_types::Number::Int(#inner))),
                     quote!(value.is_int_and(|i| i == &#inner)),
@@ -115,7 +120,10 @@ impl UnitValue {
             }
             // Literal float
             Lit::Float(x) => {
-                let inner = x.base10_digits().parse::<f64>().unwrap();
+                let inner = x
+                    .base10_digits()
+                    .parse::<f64>()
+                    .expect("Failed to parse float literal");
                 (
                     quote!(surrealdb_types::Value::Number(surrealdb_types::Number::Float(#inner))),
                     quote!(value.is_float_and(|f| f == &#inner)),

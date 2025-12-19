@@ -20,9 +20,9 @@ impl TryIntoValue for serde_json::Value {
             JsonValue::Bool(b) => Ok(v1::Value::bool(b)),
             JsonValue::Number(n) => {
                 if n.is_i64() {
-                    Ok(v1::Value::int64(n.as_i64().unwrap()))
+                    Ok(v1::Value::int64(n.as_i64().expect("number is_i64")))
                 } else if n.is_f64() {
-                    Ok(v1::Value::float64(n.as_f64().unwrap()))
+                    Ok(v1::Value::float64(n.as_f64().expect("number is_f64")))
                 } else {
                     Err(anyhow::anyhow!("Invalid number: {n:?}"))
                 }

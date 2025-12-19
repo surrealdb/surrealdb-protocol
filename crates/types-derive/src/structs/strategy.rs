@@ -41,14 +41,14 @@ impl Strategy {
         if let Some(tag) = attrs.tag.as_ref() {
             if let Some(content) = attrs.content.as_ref() {
                 return Self::TagContentKeys {
-                    tag: tag.to_string(),
+                    tag: tag.clone(),
                     variant,
-                    content: content.to_string(),
+                    content: content.clone(),
                 };
             }
 
             return Self::TagKey {
-                tag: tag.to_string(),
+                tag: tag.clone(),
                 variant,
             };
         }

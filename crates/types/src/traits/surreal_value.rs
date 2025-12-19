@@ -1156,7 +1156,7 @@ macro_rules! impl_tuples {
                 }
 
                 fn into_value(self) -> Value {
-                    #[allow(non_snake_case)]
+                    #[expect(non_snake_case)]
                     let ($($t,)+) = self;
                     Value::Array(Array(vec![$($t.into_value()),+]))
                 }
@@ -1170,7 +1170,7 @@ macro_rules! impl_tuples {
                         return Err(length_mismatch_error($n, a.len(), std::any::type_name::<Self>()));
                     }
 
-                    $(#[allow(non_snake_case)] let $t = $t::from_value(a.remove(0)).map_err(|e| anyhow::anyhow!("Failed to convert to {}: {}", Self::kind_of(), e))?;)+
+                    $(#[expect(non_snake_case)] let $t = $t::from_value(a.remove(0)).map_err(|e| anyhow::anyhow!("Failed to convert to {}: {}", Self::kind_of(), e))?;)+
                     Ok(($($t,)+))
                 }
             }

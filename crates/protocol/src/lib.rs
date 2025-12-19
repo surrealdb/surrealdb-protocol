@@ -58,6 +58,7 @@ pub mod fb {
             clippy::extra_unused_lifetimes,
             clippy::missing_safety_doc,
             clippy::needless_lifetimes,
+            clippy::unwrap_used,
             missing_docs,
             unsafe_op_in_unsafe_fn,
             unused_imports

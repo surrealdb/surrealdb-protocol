@@ -19,7 +19,7 @@ impl Enum {
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention)]
     pub fn into_value(&self, attrs: &EnumAttributes) -> TokenStream2 {
         let variants = self
             .variants
@@ -46,7 +46,7 @@ impl Enum {
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention)]
     pub fn from_value(&self, name: &String, attrs: &EnumAttributes) -> TokenStream2 {
         let mut with_map = WithMap::new();
 

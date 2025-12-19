@@ -29,7 +29,6 @@ pub enum KindExpr {
 
 /// Parameters inside angle brackets
 #[derive(Debug, Clone)]
-#[allow(clippy::large_enum_variant)]
 pub enum KindParam {
     /// An identifier parameter
     Ident(Ident),

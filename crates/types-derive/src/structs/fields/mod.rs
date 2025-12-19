@@ -28,7 +28,10 @@ impl Fields {
                     .named
                     .iter()
                     .map(|field| {
-                        let field_name = field.ident.as_ref().unwrap();
+                        let field_name = field
+                            .ident
+                            .as_ref()
+                            .expect("Named field must have an identifier");
                         let field_attrs = FieldAttributes::parse(field);
                         NamedField {
                             ident: field_name.clone(),
@@ -89,7 +92,7 @@ impl Fields {
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention)]
     pub fn into_value(&self, strategy: &Strategy) -> TokenStream2 {
         match self {
             Fields::Named(fields) => {
@@ -236,7 +239,7 @@ impl Fields {
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention)]
     pub fn from_value(&self, name: &String, strategy: &Strategy, ok: TokenStream2) -> With {
         match self {
             Fields::Named(fields) => {
@@ -245,7 +248,7 @@ impl Fields {
                 let final_ok = if fields.default {
                     quote!(Ok(result))
                 } else {
-                    ok.clone()
+                    ok
                 };
 
                 match strategy {

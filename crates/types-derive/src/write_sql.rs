@@ -87,7 +87,11 @@ fn parse_format_string(format_str: &str) -> Result<Vec<FormatPart>, String> {
                     if placeholder_content
                         .chars()
                         .all(|c| c.is_alphanumeric() || c == '_')
-                        && !placeholder_content.chars().next().unwrap().is_numeric()
+                        && !placeholder_content
+                            .chars()
+                            .next()
+                            .expect("placeholder_content is not empty")
+                            .is_numeric()
                     {
                         Placeholder::Named(placeholder_content)
                     } else {
