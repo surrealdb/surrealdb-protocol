@@ -40,8 +40,9 @@ js = { version = "0.8.0", package = "rquickjs", features = ["rust-alloc"] }
 nanoid = "0.4.0"
 papaya = "0.2.3"
 proc-macro2 = "1.0"
-prost = "0.13.1"
-prost-types = "0.13.1"
+prost = "0.14.1"
+prost-types = "0.14.1"
+tonic-prost = "0.14.2"
 quote = "1.0"
 regex = "1.10.6"
 regex-syntax = "0.8.4"
@@ -51,7 +52,7 @@ semver = "1"
 serde = { version = "1.0.209", features = ["derive"] }
 serde_json = "1.0.145"
 syn = { version = "2.0", features = ["full", "extra-traits"] }
-tonic = "0.12.0"
+tonic = "0.14.2"
 ulid = "1.1.0"
 uuid = "1.17.0"
 

@@ -29,7 +29,7 @@ default = ["proto", "flatbuffers", "rpc"]
 
 proto = ["dep:prost", "dep:prost-types"]
 flatbuffers = ["dep:flatbuffers"]
-rpc = ["proto", "dep:tonic", "dep:futures"]
+rpc = ["proto", "dep:tonic", "dep:tonic-prost", "dep:futures"]
 
 [dependencies]
 anyhow.workspace = true
@@ -45,6 +45,7 @@ rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tonic = { workspace = true, optional = true }
+tonic-prost = { workspace = true, optional = true }
 uuid.workspace = true
 semver.workspace = true
 
