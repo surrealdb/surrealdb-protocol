@@ -1,9 +1,9 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/protocol",
-    "crates/types",
-    "crates/types-derive",
+    "rust/protocol",
+    "rust/types",
+    "rust/types-derive",
 ]
 
 [workspace.package]
@@ -21,8 +21,8 @@ categories = ["database-implementations", "data-structures", "embedded"]
 
 [workspace.dependencies]
 # Internal workspace crates
-surrealdb-protocol = { version = "0.8.0", path = "crates/protocol", default-features = false }
-surrealdb-types-derive = { version = "0.8.0", path = "crates/types-derive" }
+surrealdb-protocol = { version = "0.8.0", path = "rust/protocol", default-features = false }
+surrealdb-types-derive = { version = "0.8.0", path = "rust/types-derive" }
 
 # External dependencies used across workspace members
 anyhow = "1.0.100"
