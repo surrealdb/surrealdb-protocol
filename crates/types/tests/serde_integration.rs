@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use serde::{Deserialize, Serialize};
 use surrealdb_types::{Object, SurrealValue, Value};
 

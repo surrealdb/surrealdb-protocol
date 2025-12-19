@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use surrealdb_types::{
     ConversionError, Kind, LengthMismatchError, Number, OutOfRangeError, TypeError, Value,
 };

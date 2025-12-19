@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use surrealdb_types::{GeometryKind, Kind, kind};
 
 #[test]
