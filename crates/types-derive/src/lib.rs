@@ -1,3 +1,11 @@
+//! Procedural macros for the `surrealdb-types` crate.
+//!
+//! This crate provides derive macros and utility macros for working with SurrealDB types:
+//!
+//! - `#[derive(SurrealValue)]` - Automatically implement the `SurrealValue` trait for custom types
+//! - `kind!()` - Macro for creating `Kind` values with a convenient DSL syntax
+//! - `write_sql!()` - Macro for writing SQL strings with automatic `ToSql` formatting
+
 mod attr;
 use attr::*;
 
@@ -12,6 +20,46 @@ use syn::{DeriveInput, parse_macro_input};
 mod kind;
 mod write_sql;
 
+/// Derives the `SurrealValue` trait for a struct or enum.
+///
+/// This macro automatically implements the `SurrealValue` trait, which provides conversion
+/// methods between Rust types and SurrealDB `Value` types.
+///
+/// # Attributes
+///
+/// The `#[surreal]` attribute can be used to customize the behavior:
+///
+/// - `#[surreal(tag = "type")]` - Specify a custom tag field for enum variants
+/// - `#[surreal(content = "data")]` - Specify a custom content field for enum variants
+/// - `#[surreal(rename = "name")]` - Rename a field or variant
+/// - `#[surreal(skip)]` - Skip a field during serialization
+///
+/// # Examples
+///
+/// Basic struct:
+///
+/// ```ignore
+/// use surrealdb_types::SurrealValue;
+///
+/// #[derive(SurrealValue)]
+/// struct Person {
+///     name: String,
+///     age: i64,
+/// }
+/// ```
+///
+/// Enum with variants:
+///
+/// ```ignore
+/// use surrealdb_types::SurrealValue;
+///
+/// #[derive(SurrealValue)]
+/// enum Status {
+///     Active,
+///     Inactive,
+///     Pending { reason: String },
+/// }
+/// ```
 #[proc_macro_derive(SurrealValue, attributes(surreal))]
 pub fn surreal_value(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
