@@ -1289,7 +1289,6 @@ version = "0.8.0"
 dependencies = [
  "anyhow",
  "assert-json-diff",
- "async-trait",
  "bytes",
  "chrono",
  "flatbuffers",

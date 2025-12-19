@@ -33,7 +33,6 @@ rpc = ["proto", "dep:tonic", "dep:tonic-prost", "dep:futures"]
 
 [dependencies]
 anyhow.workspace = true
-async-trait.workspace = true
 bytes.workspace = true
 chrono.workspace = true
 geo.workspace = true
@@ -53,6 +52,10 @@ semver.workspace = true
 assert-json-diff.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
+
+[package.metadata.cargo-machete]
+# flatbuffers and tonic-prost are used in generated code included via include! macro
+ignored = ["flatbuffers", "tonic-prost"]
 
 [lints]
 workspace = true
