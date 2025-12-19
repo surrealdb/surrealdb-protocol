@@ -12,104 +12,104 @@ use crate::sql::{SqlFormat, ToSql};
 /// A UUID (Universally Unique Identifier) is a 128-bit identifier that is unique across space and
 /// time. This type wraps the `uuid::Uuid` type.
 #[derive(
-	Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Uuid(pub(crate) ::uuid::Uuid);
 
 impl ToSql for Uuid {
-	fn fmt_sql(&self, f: &mut String, _fmt: SqlFormat) {
-		f.push_str("u'");
-		f.push_str(&self.0.to_string());
-		f.push('\'');
-	}
+    fn fmt_sql(&self, f: &mut String, _fmt: SqlFormat) {
+        f.push_str("u'");
+        f.push_str(&self.0.to_string());
+        f.push('\'');
+    }
 }
 
 impl Uuid {
-	/// Generate a new UUID
-	pub fn new() -> Self {
-		Self(uuid::Uuid::now_v7())
-	}
+    /// Generate a new UUID
+    pub fn new() -> Self {
+        Self(uuid::Uuid::now_v7())
+    }
 
-	/// Generate a new V4 UUID
-	pub fn new_v4() -> Self {
-		Self(uuid::Uuid::new_v4())
-	}
+    /// Generate a new V4 UUID
+    pub fn new_v4() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
 
-	/// Generate a new V7 UUID
-	pub fn new_v7() -> Self {
-		Self(uuid::Uuid::now_v7())
-	}
+    /// Generate a new V7 UUID
+    pub fn new_v7() -> Self {
+        Self(uuid::Uuid::now_v7())
+    }
 
-	/// Generate a new V7 UUID
-	pub fn new_v7_from_datetime(timestamp: Datetime) -> Self {
-		let ts = uuid::Timestamp::from_unix(
-			uuid::NoContext,
-			timestamp.0.timestamp() as u64,
-			timestamp.0.timestamp_subsec_nanos(),
-		);
-		Self(uuid::Uuid::new_v7(ts))
-	}
+    /// Generate a new V7 UUID
+    pub fn new_v7_from_datetime(timestamp: Datetime) -> Self {
+        let ts = uuid::Timestamp::from_unix(
+            uuid::NoContext,
+            timestamp.0.timestamp() as u64,
+            timestamp.0.timestamp_subsec_nanos(),
+        );
+        Self(uuid::Uuid::new_v7(ts))
+    }
 
-	/// Generate a new nil UUID
-	pub const fn nil() -> Self {
-		Self(uuid::Uuid::nil())
-	}
+    /// Generate a new nil UUID
+    pub const fn nil() -> Self {
+        Self(uuid::Uuid::nil())
+    }
 
-	/// Generate a new max UUID
-	pub const fn max() -> Self {
-		Self(uuid::Uuid::max())
-	}
+    /// Generate a new max UUID
+    pub const fn max() -> Self {
+        Self(uuid::Uuid::max())
+    }
 
-	/// Convert into the inner uuid::Uuid
-	pub fn into_inner(self) -> uuid::Uuid {
-		self.0
-	}
+    /// Convert into the inner uuid::Uuid
+    pub fn into_inner(self) -> uuid::Uuid {
+        self.0
+    }
 }
 
 impl From<uuid::Uuid> for Uuid {
-	fn from(v: uuid::Uuid) -> Self {
-		Uuid(v)
-	}
+    fn from(v: uuid::Uuid) -> Self {
+        Uuid(v)
+    }
 }
 
 impl From<Uuid> for uuid::Uuid {
-	fn from(s: Uuid) -> Self {
-		s.0
-	}
+    fn from(s: Uuid) -> Self {
+        s.0
+    }
 }
 
 impl TryFrom<String> for Uuid {
-	type Error = uuid::Error;
+    type Error = uuid::Error;
 
-	fn try_from(v: String) -> Result<Self, Self::Error> {
-		Ok(Self(uuid::Uuid::parse_str(&v)?))
-	}
+    fn try_from(v: String) -> Result<Self, Self::Error> {
+        Ok(Self(uuid::Uuid::parse_str(&v)?))
+    }
 }
 
 impl FromStr for Uuid {
-	type Err = uuid::Error;
+    type Err = uuid::Error;
 
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		uuid::Uuid::try_parse(s).map(Uuid)
-	}
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        uuid::Uuid::try_parse(s).map(Uuid)
+    }
 }
 
 impl Deref for Uuid {
-	type Target = uuid::Uuid;
-	fn deref(&self) -> &Self::Target {
-		&self.0
-	}
+    type Target = uuid::Uuid;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl DerefMut for Uuid {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.0
-	}
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 impl Display for Uuid {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		self.0.fmt(f)
-	}
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
 }

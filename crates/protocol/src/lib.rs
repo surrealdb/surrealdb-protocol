@@ -26,13 +26,19 @@ pub mod proto {
         pub mod surrealdb {
             pub mod protocol {
                 pub mod v1 {
-                    include!(concat!(env!("CARGO_WORKSPACE_DIR"), "gen/rust/proto/surrealdb/protocol/v1/surrealdb.protocol.v1.rs"));
+                    include!(concat!(
+                        env!("CARGO_WORKSPACE_DIR"),
+                        "gen/rust/proto/surrealdb/protocol/v1/surrealdb.protocol.v1.rs"
+                    ));
                 }
 
                 #[cfg(feature = "rpc")]
                 pub mod rpc {
                     pub mod v1 {
-                        include!(concat!(env!("CARGO_WORKSPACE_DIR"), "gen/rust/proto/surrealdb/protocol/rpc/v1/surrealdb.protocol.rpc.v1.rs"));
+                        include!(concat!(
+                            env!("CARGO_WORKSPACE_DIR"),
+                            "gen/rust/proto/surrealdb/protocol/rpc/v1/surrealdb.protocol.rpc.v1.rs"
+                        ));
                     }
                 }
             }

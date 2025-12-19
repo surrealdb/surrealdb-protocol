@@ -46,13 +46,13 @@ macro_rules! impl_arg_either {
 }
 
 impl_arg_either! {
-	Either2 => 2 => (A, B),
-	Either3 => 2 => (A, B, C),
-	Either4 => 2 => (A, B, C, D),
-	Either5 => 2 => (A, B, C, D, E),
-	Either6 => 2 => (A, B, C, D, E, F),
-	Either7 => 2 => (A, B, C, D, E, F, G),
-	Either8 => 2 => (A, B, C, D, E, F, G, H),
-	Either9 => 2 => (A, B, C, D, E, F, G, H, I),
-	Either10 => 2 => (A, B, C, D, E, F, G, H, I, J),
+    Either2 => 2 => (A, B),
+    Either3 => 2 => (A, B, C),
+    Either4 => 2 => (A, B, C, D),
+    Either5 => 2 => (A, B, C, D, E),
+    Either6 => 2 => (A, B, C, D, E, F),
+    Either7 => 2 => (A, B, C, D, E, F, G),
+    Either8 => 2 => (A, B, C, D, E, F, G, H),
+    Either9 => 2 => (A, B, C, D, E, F, G, H, I),
+    Either10 => 2 => (A, B, C, D, E, F, G, H, I, J),
 }

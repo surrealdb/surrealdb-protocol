@@ -14,61 +14,61 @@ use crate::sql::{SqlFormat, ToSql};
 pub struct Table(pub(crate) String);
 
 impl Table {
-	/// Create a new table.
-	pub fn new(s: impl Into<String>) -> Self {
-		Table(s.into())
-	}
+    /// Create a new table.
+    pub fn new(s: impl Into<String>) -> Self {
+        Table(s.into())
+    }
 
-	/// Convert the table to a string.
-	pub fn into_string(self) -> String {
-		self.0
-	}
+    /// Convert the table to a string.
+    pub fn into_string(self) -> String {
+        self.0
+    }
 
-	/// Convert into the inner String
-	pub fn into_inner(self) -> String {
-		self.0
-	}
+    /// Convert into the inner String
+    pub fn into_inner(self) -> String {
+        self.0
+    }
 
-	/// Get the table as a string.
-	pub fn as_str(&self) -> &str {
-		&self.0
-	}
+    /// Get the table as a string.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 impl Deref for Table {
-	type Target = String;
-	fn deref(&self) -> &Self::Target {
-		&self.0
-	}
+    type Target = String;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Display for Table {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", self.0)
-	}
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 impl ToSql for Table {
-	fn fmt_sql(&self, f: &mut String, fmt: SqlFormat) {
-		use crate::utils::escape::EscapeSqonIdent;
-		write_sql!(f, fmt, "{}", EscapeSqonIdent(&self.0));
-	}
+    fn fmt_sql(&self, f: &mut String, fmt: SqlFormat) {
+        use crate::utils::escape::EscapeSqonIdent;
+        write_sql!(f, fmt, "{}", EscapeSqonIdent(&self.0));
+    }
 }
 
 impl From<&str> for Table {
-	fn from(s: &str) -> Self {
-		Table::new(s.to_string())
-	}
+    fn from(s: &str) -> Self {
+        Table::new(s.to_string())
+    }
 }
 
 impl From<String> for Table {
-	fn from(s: String) -> Self {
-		Table::new(s)
-	}
+    fn from(s: String) -> Self {
+        Table::new(s)
+    }
 }
 
 impl From<Table> for String {
-	fn from(value: Table) -> Self {
-		value.0
-	}
+    fn from(value: Table) -> Self {
+        value.0
+    }
 }

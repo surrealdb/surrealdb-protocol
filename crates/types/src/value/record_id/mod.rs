@@ -20,37 +20,44 @@ use crate::sql::{SqlFormat, ToSql};
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct RecordId {
-	/// The name of the table containing the record
-	pub table: Table,
-	/// The key that uniquely identifies the record within the table
-	pub key: RecordIdKey,
+    /// The name of the table containing the record
+    pub table: Table,
+    /// The key that uniquely identifies the record within the table
+    pub key: RecordIdKey,
 }
 
 impl RecordId {
-	/// Creates a new record id from the given table and key
-	pub fn new(table: impl Into<Table>, key: impl Into<RecordIdKey>) -> Self {
-		RecordId {
-			table: table.into(),
-			key: key.into(),
-		}
-	}
+    /// Creates a new record id from the given table and key
+    pub fn new(table: impl Into<Table>, key: impl Into<RecordIdKey>) -> Self {
+        RecordId {
+            table: table.into(),
+            key: key.into(),
+        }
+    }
 
-	/// Checks if the record id is of the specified type.
-	pub fn is_table_type(&self, tables: &[Table]) -> bool {
-		tables.is_empty() || tables.contains(&self.table)
-	}
+    /// Checks if the record id is of the specified type.
+    pub fn is_table_type(&self, tables: &[Table]) -> bool {
+        tables.is_empty() || tables.contains(&self.table)
+    }
 
-	/// Parses a record id which must be in the format of `table:key`.
-	pub fn parse_simple(s: &str) -> anyhow::Result<Self> {
-		let (table, key) =
-			s.split_once(':').ok_or_else(|| anyhow::anyhow!("Invalid record id: {s}"))?;
-		Ok(Self::new(table, key))
-	}
+    /// Parses a record id which must be in the format of `table:key`.
+    pub fn parse_simple(s: &str) -> anyhow::Result<Self> {
+        let (table, key) = s
+            .split_once(':')
+            .ok_or_else(|| anyhow::anyhow!("Invalid record id: {s}"))?;
+        Ok(Self::new(table, key))
+    }
 }
 
 impl ToSql for RecordId {
-	fn fmt_sql(&self, f: &mut String, fmt: SqlFormat) {
-		use crate::utils::escape::EscapeSqonIdent;
-		write_sql!(f, fmt, "{}:{}", EscapeSqonIdent(self.table.as_str()), self.key);
-	}
+    fn fmt_sql(&self, f: &mut String, fmt: SqlFormat) {
+        use crate::utils::escape::EscapeSqonIdent;
+        write_sql!(
+            f,
+            fmt,
+            "{}:{}",
+            EscapeSqonIdent(self.table.as_str()),
+            self.key
+        );
+    }
 }

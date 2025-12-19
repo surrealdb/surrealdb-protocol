@@ -62,21 +62,21 @@ mod write_sql;
 /// ```
 #[proc_macro_derive(SurrealValue, attributes(surreal))]
 pub fn surreal_value(input: TokenStream) -> TokenStream {
-	let input = parse_macro_input!(input as DeriveInput);
-	let name = &input.ident;
-	let generics = &input.generics;
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let generics = &input.generics;
 
-	match &input.data {
-		syn::Data::Struct(data) => {
-			let fields = Fields::parse(&data.fields, &input.attrs);
-			impl_struct(name, generics, fields)
-		}
-		syn::Data::Enum(data) => {
-			let r#enum = Enum::parse(data, &input.attrs);
-			impl_enum(name, generics, r#enum)
-		}
-		syn::Data::Union(_) => panic!("SurrealValue cannot be derived for unions"),
-	}
+    match &input.data {
+        syn::Data::Struct(data) => {
+            let fields = Fields::parse(&data.fields, &input.attrs);
+            impl_struct(name, generics, fields)
+        }
+        syn::Data::Enum(data) => {
+            let r#enum = Enum::parse(data, &input.attrs);
+            impl_enum(name, generics, r#enum)
+        }
+        syn::Data::Union(_) => panic!("SurrealValue cannot be derived for unions"),
+    }
 }
 
 /// A procedural macro for creating `Kind` values with a convenient DSL syntax.
@@ -117,7 +117,7 @@ pub fn surreal_value(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn kind(input: TokenStream) -> TokenStream {
-	kind::kind(input)
+    kind::kind(input)
 }
 
 /// A procedural macro for writing SQL strings with automatic `ToSql` formatting.
@@ -163,5 +163,5 @@ pub fn kind(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn write_sql(input: TokenStream) -> TokenStream {
-	write_sql::write_sql_impl(input)
+    write_sql::write_sql_impl(input)
 }

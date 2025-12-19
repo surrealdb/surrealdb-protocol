@@ -20,159 +20,160 @@ pub(crate) const REGEX_TOKEN: &str = "$surrealdb::public::Regex";
 pub struct Regex(pub(crate) ::regex::Regex);
 
 impl Regex {
-	/// Returns a reference to the underlying regex
-	///
-	/// Note: This method returns the regex without the '/' delimiters that are used in display.
-	pub fn regex(&self) -> &regex::Regex {
-		&self.0
-	}
+    /// Returns a reference to the underlying regex
+    ///
+    /// Note: This method returns the regex without the '/' delimiters that are used in display.
+    pub fn regex(&self) -> &regex::Regex {
+        &self.0
+    }
 
-	/// Convert into the inner regex::Regex
-	pub fn into_inner(self) -> regex::Regex {
-		self.0
-	}
+    /// Convert into the inner regex::Regex
+    pub fn into_inner(self) -> regex::Regex {
+        self.0
+    }
 }
 
 impl From<regex::Regex> for Regex {
-	fn from(regex: regex::Regex) -> Self {
-		Regex(regex)
-	}
+    fn from(regex: regex::Regex) -> Self {
+        Regex(regex)
+    }
 }
 
 impl FromStr for Regex {
-	type Err = <regex::Regex as FromStr>::Err;
+    type Err = <regex::Regex as FromStr>::Err;
 
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		Ok(Regex(RegexBuilder::new(&s.replace("\\/", "/")).build()?))
-	}
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Regex(RegexBuilder::new(&s.replace("\\/", "/")).build()?))
+    }
 }
 
 impl PartialEq for Regex {
-	fn eq(&self, other: &Self) -> bool {
-		self.0.as_str() == other.0.as_str()
-	}
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_str() == other.0.as_str()
+    }
 }
 
 impl Eq for Regex {}
 
 impl Ord for Regex {
-	fn cmp(&self, other: &Self) -> Ordering {
-		self.0.as_str().cmp(other.0.as_str())
-	}
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.as_str().cmp(other.0.as_str())
+    }
 }
 
 impl PartialOrd for Regex {
-	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		Some(self.cmp(other))
-	}
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Hash for Regex {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.0.as_str().hash(state);
-	}
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_str().hash(state);
+    }
 }
 
 impl Deref for Regex {
-	type Target = regex::Regex;
+    type Target = regex::Regex;
 
-	fn deref(&self) -> &Self::Target {
-		&self.0
-	}
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Debug for Regex {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		let t = self.0.to_string().replace('/', "\\/");
-		write!(f, "/{}/", &t)
-	}
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let t = self.0.to_string().replace('/', "\\/");
+        write!(f, "/{}/", &t)
+    }
 }
 
 impl Display for Regex {
-	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		let t = self.0.to_string().replace('/', "\\/");
-		write!(f, "/{}/", &t)
-	}
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let t = self.0.to_string().replace('/', "\\/");
+        write!(f, "/{}/", &t)
+    }
 }
 
 impl ToSql for Regex {
-	fn fmt_sql(&self, f: &mut String, _fmt: SqlFormat) {
-		f.push('/');
-		f.push_str(&self.0.to_string().replace('/', "\\/"));
-		f.push('/');
-	}
+    fn fmt_sql(&self, f: &mut String, _fmt: SqlFormat) {
+        f.push('/');
+        f.push_str(&self.0.to_string().replace('/', "\\/"));
+        f.push('/');
+    }
 }
 
 impl Serialize for Regex {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: Serializer,
-	{
-		serializer.serialize_newtype_struct(REGEX_TOKEN, self.0.as_str())
-	}
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_newtype_struct(REGEX_TOKEN, self.0.as_str())
+    }
 }
 
 impl<'de> Deserialize<'de> for Regex {
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-	where
-		D: Deserializer<'de>,
-	{
-		struct RegexNewtypeVisitor;
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct RegexNewtypeVisitor;
 
-		impl<'de> Visitor<'de> for RegexNewtypeVisitor {
-			type Value = Regex;
+        impl<'de> Visitor<'de> for RegexNewtypeVisitor {
+            type Value = Regex;
 
-			fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-				formatter.write_str("a regex newtype")
-			}
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a regex newtype")
+            }
 
-			fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-			where
-				D: Deserializer<'de>,
-			{
-				struct RegexVisitor;
+            fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct RegexVisitor;
 
-				impl Visitor<'_> for RegexVisitor {
-					type Value = Regex;
+                impl Visitor<'_> for RegexVisitor {
+                    type Value = Regex;
 
-					fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-						formatter.write_str("a regex str")
-					}
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("a regex str")
+                    }
 
-					fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-					where
-						E: de::Error,
-					{
-						regex::Regex::from_str(value)
-							.map(Regex)
-							.map_err(|_| de::Error::custom("invalid regex"))
-					}
-				}
+                    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+                    where
+                        E: de::Error,
+                    {
+                        regex::Regex::from_str(value)
+                            .map(Regex)
+                            .map_err(|_| de::Error::custom("invalid regex"))
+                    }
+                }
 
-				deserializer.deserialize_str(RegexVisitor)
-			}
-		}
+                deserializer.deserialize_str(RegexVisitor)
+            }
+        }
 
-		deserializer.deserialize_newtype_struct(REGEX_TOKEN, RegexNewtypeVisitor)
-	}
+        deserializer.deserialize_newtype_struct(REGEX_TOKEN, RegexNewtypeVisitor)
+    }
 }
 
 #[cfg(feature = "arbitrary")]
 mod arb {
-	use ::arbitrary::Arbitrary;
+    use ::arbitrary::Arbitrary;
 
-	use super::*;
+    use super::*;
 
-	impl<'a> Arbitrary<'a> for Regex {
-		fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
-			let ast = regex_syntax::ast::Ast::arbitrary(u)?;
-			let src = &ast.to_string();
-			if src.is_empty() {
-				return Err(::arbitrary::Error::IncorrectFormat);
-			}
-			let regex =
-				RegexBuilder::new(src).build().map_err(|_| ::arbitrary::Error::IncorrectFormat)?;
-			Ok(Regex(regex))
-		}
-	}
+    impl<'a> Arbitrary<'a> for Regex {
+        fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
+            let ast = regex_syntax::ast::Ast::arbitrary(u)?;
+            let src = &ast.to_string();
+            if src.is_empty() {
+                return Err(::arbitrary::Error::IncorrectFormat);
+            }
+            let regex = RegexBuilder::new(src)
+                .build()
+                .map_err(|_| ::arbitrary::Error::IncorrectFormat)?;
+            Ok(Regex(regex))
+        }
+    }
 }
