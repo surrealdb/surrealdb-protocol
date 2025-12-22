@@ -26,13 +26,19 @@ pub mod proto {
         pub mod surrealdb {
             pub mod protocol {
                 pub mod v1 {
-                    include!("../gen/rust/proto/surrealdb.protocol.v1.rs");
+                    include!(concat!(
+                        env!("CARGO_WORKSPACE_DIR"),
+                        "gen/rust/proto/surrealdb/protocol/v1/surrealdb.protocol.v1.rs"
+                    ));
                 }
 
                 #[cfg(feature = "rpc")]
                 pub mod rpc {
                     pub mod v1 {
-                        include!("../gen/rust/proto/surrealdb.protocol.rpc.v1.rs");
+                        include!(concat!(
+                            env!("CARGO_WORKSPACE_DIR"),
+                            "gen/rust/proto/surrealdb/protocol/rpc/v1/surrealdb.protocol.rpc.v1.rs"
+                        ));
                     }
                 }
             }
@@ -52,11 +58,12 @@ pub mod fb {
             clippy::extra_unused_lifetimes,
             clippy::missing_safety_doc,
             clippy::needless_lifetimes,
+            clippy::unwrap_used,
             missing_docs,
             unsafe_op_in_unsafe_fn,
             unused_imports
         )]
-        include!("../gen/rust/fb/mod.rs");
+        include!(concat!(env!("CARGO_WORKSPACE_DIR"), "gen/rust/fb/mod.rs"));
     }
 
     pub use generated::surrealdb::protocol::v_1 as v1;
@@ -275,7 +282,7 @@ mod tests {
     #[case(Value::record_id(RecordId::new("test".to_string(), None)), json!({"RecordId":{"table":"test","id":null}}))]
     #[case(Value::file(File::new("test".to_string(), "test".to_string())), json!({"File":{"bucket":"test","key":"test"}}))]
     fn test_serde(#[case] value: Value, #[case] expected: serde_json::Value) {
-        let serialized = serde_json::to_value(&value).unwrap();
+        let serialized = serde_json::to_value(&value).expect("Failed to serialize value to JSON");
         assert_json_eq!(serialized, expected);
     }
 }
