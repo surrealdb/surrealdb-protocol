@@ -97,7 +97,7 @@ impl Fields {
         let value_ty = crate_path.value();
         let object_ty = crate_path.object();
         let array_ty = crate_path.array();
-        let from_t = crate_path.from_t();
+        let value_from_t = crate_path.value_from_t();
         match self {
             Fields::Named(fields) => {
                 let map_assignments = fields.map_assignments();
@@ -153,7 +153,7 @@ impl Fields {
             }
             Fields::Unnamed(x) => {
                 let value = if !x.tuple && x.fields.len() == 1 {
-                    quote!(#from_t(field_0))
+                    quote!(#value_from_t(field_0))
                 } else {
                     let arr_assignments = x.arr_assignments();
                     quote! {{

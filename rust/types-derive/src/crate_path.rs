@@ -22,14 +22,12 @@ impl CratePath {
                 let mut crate_path = None;
 
                 let _ = attr.parse_nested_meta(|meta| {
-                    if meta.path.is_ident("crate") {
-                        if let Ok(value) = meta.value() {
-                            if let Ok(lit_str) = value.parse::<LitStr>() {
-                                if let Ok(path) = syn::parse_str::<Path>(&lit_str.value()) {
-                                    crate_path = Some(quote! { #path });
-                                }
-                            }
-                        }
+                    if meta.path.is_ident("crate")
+                        && let Ok(value) = meta.value()
+                        && let Ok(lit_str) = value.parse::<LitStr>()
+                        && let Ok(path) = syn::parse_str::<Path>(&lit_str.value())
+                    {
+                        crate_path = Some(quote! { #path });
                     }
                     Ok(())
                 });
@@ -98,8 +96,8 @@ impl CratePath {
         quote! { #base::anyhow::anyhow }
     }
 
-    /// Get the token stream for from_t function
-    pub fn from_t(&self) -> TokenStream {
+    /// Get the token stream for Value::from_t function
+    pub fn value_from_t(&self) -> TokenStream {
         let base = &self.path;
         quote! { #base::Value::from_t }
     }
