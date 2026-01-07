@@ -1,5 +1,0 @@
-[env]
-# Define an environment variable for the workspace directory.
-# TODO(rushmore): Remove once the upstream environment variable is available.
-# https://github.com/rust-lang/cargo/issues/3946
-CARGO_WORKSPACE_DIR = { value = "", relative = true }
