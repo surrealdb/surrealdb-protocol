@@ -11,7 +11,7 @@ authors = ["Tobie Morgan Hitchcock <tobie@surrealdb.com>"]
 edition = "2024"
 license = "BUSL-1.1"
 license-file = "LICENSE"
-version = "0.8.0"
+version = "0.8.1"
 rust-version = "1.85.0"
 description = "SurrealDB protocol and type definitions"
 repository = "https://github.com/surrealdb/surrealdb-protocol"
@@ -21,8 +21,8 @@ categories = ["database-implementations", "data-structures", "embedded"]
 
 [workspace.dependencies]
 # Internal workspace crates
-surrealdb-protocol = { version = "0.8.0", path = "rust/protocol", default-features = false }
-surrealdb-types-derive = { version = "0.8.0", path = "rust/types-derive" }
+surrealdb-protocol = { version = "0.8.1", path = "rust/protocol", default-features = false }
+surrealdb-types-derive = { version = "0.8.1", path = "rust/types-derive" }
 
 # External dependencies used across workspace members
 anyhow = "1.0.100"
