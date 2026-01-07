@@ -6,6 +6,9 @@ members = [
     "rust/types-derive",
 ]
 
+[workspace.metadata.release]
+allow-branch = ["main", "HEAD"]
+
 [workspace.package]
 authors = ["Tobie Morgan Hitchcock <tobie@surrealdb.com>"]
 edition = "2024"
