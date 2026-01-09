@@ -8,7 +8,7 @@ use syn::Attribute;
 pub use unnamed::*;
 
 use crate::{
-    CratePath, FieldAttributes, NamedFieldsAttributes, Strategy, UnitAttributes, UnitValue,
+    FieldAttributes, NamedFieldsAttributes, Strategy, UnitAttributes, UnitValue,
     UnnamedFieldsAttributes, With,
 };
 
@@ -93,11 +93,7 @@ impl Fields {
     }
 
     #[expect(clippy::wrong_self_convention)]
-    pub fn into_value(&self, strategy: &Strategy, crate_path: &CratePath) -> TokenStream2 {
-        let value_ty = crate_path.value();
-        let object_ty = crate_path.object();
-        let array_ty = crate_path.array();
-        let value_from_t = crate_path.value_from_t();
+    pub fn into_value(&self, strategy: &Strategy) -> TokenStream2 {
         match self {
             Fields::Named(fields) => {
                 let map_assignments = fields.map_assignments();
@@ -105,13 +101,13 @@ impl Fields {
                 match strategy {
                     Strategy::VariantKey { variant } => {
                         quote! {{
-                            let mut map = #object_ty::new();
+                            let mut map = surrealdb_types::Object::new();
                             map.insert(#variant.to_string(), {
-                                let mut map = #object_ty::new();
+                                let mut map = surrealdb_types::Object::new();
                                 #(#map_assignments)*
-                                #value_ty::Object(map)
+                                surrealdb_types::Value::Object(map)
                             });
-                            #value_ty::Object(map)
+                            surrealdb_types::Value::Object(map)
                         }}
                     }
                     Strategy::TagKey { tag, variant } => {
@@ -120,10 +116,10 @@ impl Fields {
                         }
 
                         quote! {{
-                            let mut map = #object_ty::new();
-                            map.insert(#tag.to_string(), #value_ty::String(#variant.to_string()));
+                            let mut map = surrealdb_types::Object::new();
+                            map.insert(#tag.to_string(), surrealdb_types::Value::String(#variant.to_string()));
                             #(#map_assignments)*
-                            #value_ty::Object(map)
+                            surrealdb_types::Value::Object(map)
                         }}
                     }
                     Strategy::TagContentKeys {
@@ -132,43 +128,43 @@ impl Fields {
                         content,
                     } => {
                         quote! {{
-                            let mut map = #object_ty::new();
-                            map.insert(#tag.to_string(), #value_ty::String(#variant.to_string()));
+                            let mut map = surrealdb_types::Object::new();
+                            map.insert(#tag.to_string(), surrealdb_types::Value::String(#variant.to_string()));
                             map.insert(#content.to_string(), {
-                                let mut map = #object_ty::new();
+                                let mut map = surrealdb_types::Object::new();
                                 #(#map_assignments)*
-                                #value_ty::Object(map)
+                                surrealdb_types::Value::Object(map)
                             });
-                            #value_ty::Object(map)
+                            surrealdb_types::Value::Object(map)
                         }}
                     }
                     Strategy::Value { .. } => {
                         quote! {{
-                            let mut map = #object_ty::new();
+                            let mut map = surrealdb_types::Object::new();
                             #(#map_assignments)*
-                            #value_ty::Object(map)
+                            surrealdb_types::Value::Object(map)
                         }}
                     }
                 }
             }
             Fields::Unnamed(x) => {
                 let value = if !x.tuple && x.fields.len() == 1 {
-                    quote!(#value_from_t(field_0))
+                    quote!(surrealdb_types::Value::from_t(field_0))
                 } else {
                     let arr_assignments = x.arr_assignments();
                     quote! {{
-                        let mut arr = #array_ty::new();
+                        let mut arr = surrealdb_types::Array::new();
                         #(#arr_assignments)*
-                        #value_ty::Array(arr)
+                        surrealdb_types::Value::Array(arr)
                     }}
                 };
 
                 match strategy {
                     Strategy::VariantKey { variant } => {
                         quote! {{
-                            let mut map = #object_ty::new();
+                            let mut map = surrealdb_types::Object::new();
                             map.insert(#variant.to_string(), #value);
-                            #value_ty::Object(map)
+                            surrealdb_types::Value::Object(map)
                         }}
                     }
                     Strategy::TagKey { .. } => {
@@ -180,10 +176,10 @@ impl Fields {
                         content,
                     } => {
                         quote! {{
-                            let mut map = #object_ty::new();
-                            map.insert(#tag.to_string(), #value_ty::String(#variant.to_string()));
+                            let mut map = surrealdb_types::Object::new();
+                            map.insert(#tag.to_string(), surrealdb_types::Value::String(#variant.to_string()));
                             map.insert(#content.to_string(), #value);
-                            #value_ty::Object(map)
+                            surrealdb_types::Value::Object(map)
                         }}
                     }
                     Strategy::Value { .. } => value,
@@ -196,9 +192,9 @@ impl Fields {
                     }
 
                     quote! {{
-                        let mut map = #object_ty::new();
-                        map.insert(#variant.to_string(), #value_ty::Object(#object_ty::new()));
-                        #value_ty::Object(map)
+                        let mut map = surrealdb_types::Object::new();
+                        map.insert(#variant.to_string(), surrealdb_types::Value::Object(surrealdb_types::Object::new()));
+                        surrealdb_types::Value::Object(map)
                     }}
                 }
                 Strategy::TagKey { tag, variant } => {
@@ -207,9 +203,9 @@ impl Fields {
                     }
 
                     quote! {{
-                        let mut map = #object_ty::new();
-                        map.insert(#tag.to_string(), #value_ty::String(#variant.to_string()));
-                        #value_ty::Object(map)
+                        let mut map = surrealdb_types::Object::new();
+                        map.insert(#tag.to_string(), surrealdb_types::Value::String(#variant.to_string()));
+                        surrealdb_types::Value::Object(map)
                     }}
                 }
                 Strategy::TagContentKeys {
@@ -222,20 +218,20 @@ impl Fields {
                     }
 
                     quote! {{
-                        let mut map = #object_ty::new();
-                        map.insert(#tag.to_string(), #value_ty::String(#variant.to_string()));
-                        map.insert(#content.to_string(), #value_ty::Object(#object_ty::new()));
-                        #value_ty::Object(map)
+                        let mut map = surrealdb_types::Object::new();
+                        map.insert(#tag.to_string(), surrealdb_types::Value::String(#variant.to_string()));
+                        map.insert(#content.to_string(), surrealdb_types::Value::Object(surrealdb_types::Object::new()));
+                        surrealdb_types::Value::Object(map)
                     }}
                 }
                 Strategy::Value { variant } => {
                     if let Some(UnitValue { value, .. }) = attrs.value.as_ref() {
                         quote!(#value)
                     } else if let Some(variant) = variant {
-                        quote!(#value_ty::String(#variant.to_string()))
+                        quote!(surrealdb_types::Value::String(#variant.to_string()))
                     } else {
-                        quote!(#value_ty::Object(
-                            #object_ty::new()
+                        quote!(surrealdb_types::Value::Object(
+                            surrealdb_types::Object::new()
                         ))
                     }
                 }
@@ -244,21 +240,10 @@ impl Fields {
     }
 
     #[expect(clippy::wrong_self_convention)]
-    pub fn from_value(
-        &self,
-        name: &String,
-        strategy: &Strategy,
-        ok: TokenStream2,
-        crate_path: &CratePath,
-    ) -> With {
-        let value_ty = crate_path.value();
-        let kind_ty = crate_path.kind();
-        let conversion_error_ty = crate_path.conversion_error();
-        let type_error_ty = crate_path.type_error();
-        let anyhow_macro = crate_path.anyhow_macro();
+    pub fn from_value(&self, name: &String, strategy: &Strategy, ok: TokenStream2) -> With {
         match self {
             Fields::Named(fields) => {
-                let map_retrievals = fields.map_retrievals(name, crate_path);
+                let map_retrievals = fields.map_retrievals(name);
 
                 let final_ok = if fields.default {
                     quote!(Ok(result))
@@ -269,12 +254,12 @@ impl Fields {
                 match strategy {
                     Strategy::VariantKey { variant } => With::Map(quote! {{
                         if let Some(value) = map.remove(#variant) {
-                            if let #value_ty::Object(mut map) = value {
+                            if let surrealdb_types::Value::Object(mut map) = value {
                                 #(#map_retrievals)*
                                 #final_ok
                             } else {
-                                let err = #conversion_error_ty::from_value(
-                                    #kind_ty::Object,
+                                let err = surrealdb_types::ConversionError::from_value(
+                                    surrealdb_types::Kind::Object,
                                     &value
                                 ).with_context(format!("variant '{}'", #variant));
                                 return Err(err.into())
@@ -293,11 +278,11 @@ impl Fields {
                         content,
                     } => With::Map(quote! {{
                         if map.get(#tag).is_some_and(|v| v == Value::String(#variant.to_string())) {
-                            if let Some(#value_ty::Object(mut map)) = map.remove(#content) {
+                            if let Some(surrealdb_types::Value::Object(mut map)) = map.remove(#content) {
                                 #(#map_retrievals)*
                                 #final_ok
                             } else {
-                                let err = #type_error_ty::Invalid(
+                                let err = surrealdb_types::TypeError::Invalid(
                                     format!("Expected object under content key '{}' for variant '{}'", #content, #variant)
                                 );
                                 return Err(err.into())
@@ -352,7 +337,7 @@ impl Fields {
                                 if let Some(value) = map.remove(#content) {
                                     #retrieve
                                 } else {
-                                    let err = #type_error_ty::Invalid(
+                                    let err = surrealdb_types::TypeError::Invalid(
                                         format!("Expected content key '{}' for variant '{}'", #content, #variant)
                                     );
                                     return Err(err.into())
@@ -376,11 +361,11 @@ impl Fields {
                     }};
 
                     let retrieve_value = quote! {{
-                        if let #value_ty::Array(mut arr) = value {
+                        if let surrealdb_types::Value::Array(mut arr) = value {
                             #retrieve_arr
                         } else {
-                            let err = #conversion_error_ty::from_value(
-                                #kind_ty::Array(Box::new(#kind_ty::Any), None),
+                            let err = surrealdb_types::ConversionError::from_value(
+                                surrealdb_types::Kind::Array(Box::new(surrealdb_types::Kind::Any), None),
                                 &value
                             );
                             return Err(err.into())
@@ -405,7 +390,7 @@ impl Fields {
                                 if let Some(value) = map.remove(#content) {
                                     #retrieve_value
                                 } else {
-                                    return Err(#anyhow_macro!("Expected content key"))
+                                    return Err(surrealdb_types::anyhow::anyhow!("Expected content key"))
                                 }
                             }
                         }}),
@@ -449,7 +434,7 @@ impl Fields {
                             if map.get(#content).is_some_and(|v| v.is_object_and(|o| o.is_empty())) {
                                 #ok
                             } else {
-                                let err = #type_error_ty::Invalid(
+                                let err = surrealdb_types::TypeError::Invalid(
                                     format!("Expected empty object under content key '{}' for variant '{}'", #content, #variant)
                                 );
                                 return Err(err.into())
@@ -484,7 +469,7 @@ impl Fields {
                                 if #is_value {
                                     #ok
                                 } else {
-                                    let err = #type_error_ty::Invalid(
+                                    let err = surrealdb_types::TypeError::Invalid(
                                         format!("Expected {} while decoding {}", #inner, #name)
                                     );
                                     return Err(err.into())
@@ -495,7 +480,7 @@ impl Fields {
                                 if map.is_empty() {
                                     #ok
                                 } else {
-                                    let err = #type_error_ty::Invalid(
+                                    let err = surrealdb_types::TypeError::Invalid(
                                         format!("Expected empty object value while decoding {}", #name)
                                     );
                                     return Err(err.into())
@@ -510,15 +495,14 @@ impl Fields {
 
     /// Generates value checking code. Only returns once it has committed that no other variant can
     /// match.
-    pub fn is_value(&self, strategy: &Strategy, crate_path: &CratePath) -> With {
-        let value_ty = crate_path.value();
+    pub fn is_value(&self, strategy: &Strategy) -> With {
         match self {
             Fields::Named(fields) => {
                 let field_checks = fields.field_checks();
 
                 match strategy {
                     Strategy::VariantKey { variant } => With::Map(quote! {{
-                        if let Some(#value_ty::Object(map)) = map.get(#variant) {
+                        if let Some(surrealdb_types::Value::Object(map)) = map.get(#variant) {
                             let mut valid = true;
                             #(#field_checks)*
                             return valid;
@@ -537,7 +521,7 @@ impl Fields {
                         content,
                     } => With::Map(quote! {{
                         if map.get(#tag).is_some_and(|v| v.is_string_and(|s| s == #variant)) {
-                            if let Some(#value_ty::Object(map)) = map.get(#content) {
+                            if let Some(surrealdb_types::Value::Object(map)) = map.get(#content) {
                                 let mut valid = true;
                                 #(#field_checks)*
                                 return valid;
@@ -591,7 +575,7 @@ impl Fields {
                     let field_checks = fields.field_checks();
                     let check_arr = quote!( #(#field_checks)* );
                     let check_value = quote! {{
-                        if let #value_ty::Array(arr) = value {
+                        if let surrealdb_types::Value::Array(arr) = value {
                             #check_arr
                         } else {
                             valid = false;
@@ -679,9 +663,7 @@ impl Fields {
         }
     }
 
-    pub fn kind_of(&self, strategy: &Strategy, crate_path: &CratePath) -> TokenStream2 {
-        let kind_ty = crate_path.kind();
-        let kind_literal_ty = crate_path.kind_literal();
+    pub fn kind_of(&self, strategy: &Strategy) -> TokenStream2 {
         match self {
             Fields::Named(fields) => {
                 let map_types = fields.map_types();
@@ -693,17 +675,17 @@ impl Fields {
                             map.insert(#variant.to_string(), {
                                 let mut map = std::collections::BTreeMap::new();
                                 #(#map_types)*
-                                #kind_ty::Literal(#kind_literal_ty::Object(map))
+                                surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(map))
                             });
-                            #kind_ty::Literal(#kind_literal_ty::Object(map))
+                            surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(map))
                         }}
                     }
                     Strategy::TagKey { tag, variant } => {
                         quote! {{
                             let mut map = std::collections::BTreeMap::new();
-                            map.insert(#tag.to_string(), #kind_ty::Literal(#kind_literal_ty::String(#variant.to_string())));
+                            map.insert(#tag.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::String(#variant.to_string())));
                             #(#map_types)*
-                            #kind_ty::Literal(#kind_literal_ty::Object(map))
+                            surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(map))
                         }}
                     }
                     Strategy::TagContentKeys {
@@ -713,20 +695,20 @@ impl Fields {
                     } => {
                         quote! {{
                             let mut map = std::collections::BTreeMap::new();
-                            map.insert(#tag.to_string(), #kind_ty::Literal(#kind_literal_ty::String(#variant.to_string())));
+                            map.insert(#tag.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::String(#variant.to_string())));
                             map.insert(#content.to_string(), {
                                 let mut map = std::collections::BTreeMap::new();
                                 #(#map_types)*
-                                #kind_ty::Literal(#kind_literal_ty::Object(map))
+                                surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(map))
                             });
-                            #kind_ty::Literal(#kind_literal_ty::Object(map))
+                            surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(map))
                         }}
                     }
                     Strategy::Value { .. } => {
                         quote! {{
                             let mut map = std::collections::BTreeMap::new();
                             #(#map_types)*
-                            #kind_ty::Literal(#kind_literal_ty::Object(map))
+                            surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(map))
                         }}
                     }
                 }
@@ -741,7 +723,7 @@ impl Fields {
                     quote! {{
                         let mut arr = Vec::new();
                         #(#arr_types)*
-                        #kind_ty::Literal(#kind_literal_ty::Array(arr))
+                        surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Array(arr))
                     }}
                 };
 
@@ -750,7 +732,7 @@ impl Fields {
                         quote! {{
                             let mut obj = std::collections::BTreeMap::new();
                             obj.insert(#variant.to_string(), #kind_of);
-                            #kind_ty::Literal(#kind_literal_ty::Object(obj))
+                            surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(obj))
                         }}
                     }
                     Strategy::TagKey { .. } => {
@@ -763,9 +745,9 @@ impl Fields {
                     } => {
                         quote! {{
                             let mut obj = std::collections::BTreeMap::new();
-                            obj.insert(#tag.to_string(), #kind_ty::Literal(#kind_literal_ty::String(#variant.to_string())));
+                            obj.insert(#tag.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::String(#variant.to_string())));
                             obj.insert(#content.to_string(), #kind_of);
-                            #kind_ty::Literal(#kind_literal_ty::Object(obj))
+                            surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(obj))
                         }}
                     }
                     Strategy::Value { .. } => kind_of,
@@ -775,15 +757,15 @@ impl Fields {
                 Strategy::VariantKey { variant } => {
                     quote! {{
                         let mut obj = std::collections::BTreeMap::new();
-                        obj.insert(#variant.to_string(), #kind_ty::Literal(#kind_literal_ty::Object(std::collections::BTreeMap::new())));
-                        #kind_ty::Literal(#kind_literal_ty::Object(obj))
+                        obj.insert(#variant.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(std::collections::BTreeMap::new())));
+                        surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(obj))
                     }}
                 }
                 Strategy::TagKey { tag, variant } => {
                     quote! {{
                         let mut obj = std::collections::BTreeMap::new();
-                        obj.insert(#tag.to_string(), #kind_ty::Literal(#kind_literal_ty::String(#variant.to_string())));
-                        #kind_ty::Literal(#kind_literal_ty::Object(obj))
+                        obj.insert(#tag.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::String(#variant.to_string())));
+                        surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(obj))
                     }}
                 }
                 Strategy::TagContentKeys {
@@ -793,18 +775,18 @@ impl Fields {
                 } => {
                     quote! {{
                         let mut obj = std::collections::BTreeMap::new();
-                        obj.insert(#tag.to_string(), #kind_ty::Literal(#kind_literal_ty::String(#variant.to_string())));
-                        obj.insert(#content.to_string(), #kind_ty::Literal(#kind_literal_ty::Object(std::collections::BTreeMap::new())));
-                        #kind_ty::Literal(#kind_literal_ty::Object(obj))
+                        obj.insert(#tag.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::String(#variant.to_string())));
+                        obj.insert(#content.to_string(), surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(std::collections::BTreeMap::new())));
+                        surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(obj))
                     }}
                 }
                 Strategy::Value { variant } => {
                     if let Some(UnitValue { kind_of, .. }) = attrs.value.as_ref() {
                         quote! ( #kind_of )
                     } else if let Some(variant) = variant {
-                        quote! { #kind_ty::Literal(#kind_literal_ty::String(#variant.to_string())) }
+                        quote! { surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::String(#variant.to_string())) }
                     } else {
-                        quote! { #kind_ty::Literal(#kind_literal_ty::Object(std::collections::BTreeMap::new())) }
+                        quote! { surrealdb_types::Kind::Literal(surrealdb_types::KindLiteral::Object(std::collections::BTreeMap::new())) }
                     }
                 }
             },

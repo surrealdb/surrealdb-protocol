@@ -17,10 +17,8 @@ use r#impl::*;
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
-mod crate_path;
 mod kind;
 mod write_sql;
-use crate_path::CratePath;
 
 /// Derives the `SurrealValue` trait for a struct or enum.
 ///
@@ -31,7 +29,6 @@ use crate_path::CratePath;
 ///
 /// The `#[surreal]` attribute can be used to customize the behavior:
 ///
-/// - `#[surreal(crate = "path")]` - Specify a custom path to the surrealdb-types crate (e.g., `crate`, `::my_crate`)
 /// - `#[surreal(tag = "type")]` - Specify a custom tag field for enum variants
 /// - `#[surreal(content = "data")]` - Specify a custom content field for enum variants
 /// - `#[surreal(rename = "name")]` - Rename a field or variant
@@ -63,34 +60,20 @@ use crate_path::CratePath;
 ///     Pending { reason: String },
 /// }
 /// ```
-///
-/// Custom crate path (useful when re-exporting):
-///
-/// ```ignore
-/// use my_crate::SurrealValue;
-///
-/// #[derive(SurrealValue)]
-/// #[surreal(crate = "my_crate")]
-/// struct Person {
-///     name: String,
-///     age: i64,
-/// }
-/// ```
 #[proc_macro_derive(SurrealValue, attributes(surreal))]
 pub fn surreal_value(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let generics = &input.generics;
-    let crate_path = CratePath::parse(&input.attrs);
 
     match &input.data {
         syn::Data::Struct(data) => {
             let fields = Fields::parse(&data.fields, &input.attrs);
-            impl_struct(name, generics, fields, &crate_path)
+            impl_struct(name, generics, fields)
         }
         syn::Data::Enum(data) => {
             let r#enum = Enum::parse(data, &input.attrs);
-            impl_enum(name, generics, r#enum, &crate_path)
+            impl_enum(name, generics, r#enum)
         }
         syn::Data::Union(_) => panic!("SurrealValue cannot be derived for unions"),
     }
