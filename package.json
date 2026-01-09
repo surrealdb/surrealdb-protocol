@@ -1,7 +1,7 @@
 {
   "name": "@surrealdb/protocol",
   "module": "typescript/index.ts",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "type": "module",
   "license": "BUSL-1.1",
   "licenses": [
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "rxjs": "^7.8.2",
-    "ts-proto": "^2.8.3"
+    "ts-proto": "^2.10.1"
   },
   "scripts": {
     "ts": "tsc --watch --noEmit true --emitDeclarationOnly false",

@@ -63,9 +63,9 @@
 
 <br>
 
-<h2><img height="20" src="./img/whatissurreal.svg">&nbsp;&nbsp;SurrealDB Protocol & Types</h2>
+<h2><img height="20" src="./img/whatissurreal.svg">&nbsp;&nbsp;SurrealDB Network Protocol</h2>
 
-This repository contains the SurrealDB protocol definitions and type system, which are used to communicate with the SurrealDB server and provide type-safe data structures.
+This repository contains the SurrealDB Network Protocol, which is used to communicate with the SurrealDB server.
 
 **THIS IS A WORK IN PROGRESS**
 
