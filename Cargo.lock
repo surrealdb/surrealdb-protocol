@@ -1285,7 +1285,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
 name = "surrealdb-protocol"
-version = "0.8.2"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "assert-json-diff",
@@ -1308,7 +1308,7 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-types"
-version = "0.8.2"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -1336,7 +1336,7 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-types-derive"
-version = "0.8.2"
+version = "0.8.1"
 dependencies = [
  "proc-macro2",
  "quote",
