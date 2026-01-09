@@ -17,6 +17,9 @@ keywords = [
 categories = ["database-implementations", "data-structures", "embedded"]
 include = ["../../gen/rust/**/*.rs", "src/**/*"]
 
+[package.metadata.release]
+allow-branch = ["main", "HEAD"]
+
 [lib]
 name = "surrealdb_protocol"
 path = "src/lib.rs"
