@@ -27,7 +27,7 @@ pub mod surreal_db_service_client {
     }
     impl<T> SurrealDbServiceClient<T>
     where
-        T: tonic::client::GrpcService<tonic::body::Body>,
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
         T::ResponseBody: Body<Data = Bytes> + std::marker::Send + 'static,
         <T::ResponseBody as Body>::Error: Into<StdError> + std::marker::Send,
@@ -48,13 +48,13 @@ pub mod surreal_db_service_client {
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
             T: tonic::codegen::Service<
-                http::Request<tonic::body::Body>,
+                http::Request<tonic::body::BoxBody>,
                 Response = http::Response<
-                    <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
+                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
             <T as tonic::codegen::Service<
-                http::Request<tonic::body::Body>,
+                http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             SurrealDbServiceClient::new(InterceptedService::new(inner, interceptor))
@@ -102,7 +102,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Health",
             );
@@ -131,7 +131,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Version",
             );
@@ -157,7 +157,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Signup",
             );
@@ -183,7 +183,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Signin",
             );
@@ -212,7 +212,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Authenticate",
             );
@@ -238,7 +238,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Use",
             );
@@ -261,7 +261,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Set",
             );
@@ -284,7 +284,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Unset",
             );
@@ -313,7 +313,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Invalidate",
             );
@@ -339,7 +339,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Reset",
             );
@@ -368,7 +368,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/ImportSql",
             );
@@ -397,7 +397,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql",
             );
@@ -426,7 +426,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportMlModel",
             );
@@ -455,7 +455,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Query",
             );
@@ -484,7 +484,7 @@ pub mod surreal_db_service_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic_prost::ProstCodec::default();
+            let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/surrealdb.protocol.rpc.v1.SurrealDBService/Subscribe",
             );
@@ -675,7 +675,7 @@ pub mod surreal_db_service_server {
         B: Body + std::marker::Send + 'static,
         B::Error: Into<StdError> + std::marker::Send + 'static,
     {
-        type Response = http::Response<tonic::body::Body>;
+        type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
         fn poll_ready(
@@ -716,7 +716,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = HealthSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -761,7 +761,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = VersionSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -806,7 +806,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = SignupSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -851,7 +851,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = SigninSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -896,7 +896,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = AuthenticateSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -940,7 +940,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = UseSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -984,7 +984,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = SetSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1028,7 +1028,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = UnsetSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1073,7 +1073,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = InvalidateSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1117,7 +1117,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = ResetSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1164,7 +1164,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = ImportSqlSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1210,7 +1210,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = ExportSqlSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1257,7 +1257,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = ExportMlModelSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1303,7 +1303,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = QuerySvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1349,7 +1349,7 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = SubscribeSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
+                        let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -1366,9 +1366,7 @@ pub mod surreal_db_service_server {
                 }
                 _ => {
                     Box::pin(async move {
-                        let mut response = http::Response::new(
-                            tonic::body::Body::default(),
-                        );
+                        let mut response = http::Response::new(empty_body());
                         let headers = response.headers_mut();
                         headers
                             .insert(
