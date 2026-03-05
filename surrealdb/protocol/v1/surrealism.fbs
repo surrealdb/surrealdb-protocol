@@ -1,0 +1,50 @@
+include "surrealdb/protocol/v1/value.fbs";
+
+namespace surrealdb.protocol.v1;
+
+/// A list of Values for plugin argument and result transfer.
+table ValueList {
+  values: [Value] (id: 0);
+}
+
+/// A list of Kinds for plugin type metadata transfer.
+table KindList {
+  kinds: [Kind] (id: 0);
+}
+
+/// A string-keyed Value entry for variable and KV batch transfer.
+table StringKeyValue {
+  key: string (id: 0);
+  value: Value (id: 1);
+}
+
+/// A list of string-keyed Value entries.
+table StringKeyValueList {
+  entries: [StringKeyValue] (id: 0);
+}
+
+/// A wrapper for optional Values in batch results.
+table OptionalValue {
+  present: bool (id: 0);
+  value: Value (id: 1);
+}
+
+/// A list of optional Values for batch get results.
+table OptionalValueList {
+  values: [OptionalValue] (id: 0);
+}
+
+/// Tag for string range bounds.
+enum StringBoundTag : byte {
+  Unbounded = 0,
+  Included = 1,
+  Excluded = 2,
+}
+
+/// A range on string keys for KV range operations.
+table StringRange {
+  start_tag: StringBoundTag (id: 0);
+  start_value: string (id: 1);
+  end_tag: StringBoundTag (id: 2);
+  end_value: string (id: 3);
+}
