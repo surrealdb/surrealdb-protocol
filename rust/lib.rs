@@ -113,8 +113,8 @@ mod serde_duration {
     where
         S: serde::Serializer,
     {
-        let duration = std::time::Duration::from_secs(duration.seconds as u64)
-            + std::time::Duration::from_nanos(duration.nanos as u64);
+        let duration = chrono::Duration::new(duration.seconds, duration.nanos as u32)
+            .ok_or_else(|| serde::ser::Error::custom("Invalid duration"))?;
         duration.serialize(serializer)
     }
 
@@ -122,11 +122,11 @@ mod serde_duration {
     where
         D: Deserializer<'de>,
     {
-        let duration = std::time::Duration::deserialize(deserializer)?;
+        let duration = chrono::Duration::deserialize(deserializer)?;
 
         Ok(Duration {
-            seconds: duration.as_secs() as i64,
-            nanos: duration.subsec_nanos() as i32,
+            seconds: duration.num_seconds(),
+            nanos: duration.subsec_nanos(),
         })
     }
 }
