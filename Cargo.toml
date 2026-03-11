@@ -125,3 +125,7 @@ lossy_float_literal = "warn"
 # SurrealDB relies on async functions in the AST parser and executor to avoid stack overflows.
 # Warning or denying this lint can cause unexpected errors.
 unused_async = "allow"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+# patch missing feature in getrandom dependency of geo 0.32 for WASM targets
+getrandom = { version = "0.2.17", features = ["js"] }
