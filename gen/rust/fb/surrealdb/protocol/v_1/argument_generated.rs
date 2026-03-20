@@ -9,36 +9,36 @@ use core::mem;
 use core::cmp::Ordering;
 use self::flatbuffers::{EndianScalar, Follow};
 use super::*;
-pub enum StringKeyValueOffset {}
+pub enum ArgumentOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-/// A string-keyed Value entry for variable and KV batch transfer.
-pub struct StringKeyValue<'a> {
+/// An argument pair for a function signature.
+pub struct Argument<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
 
-impl<'a> flatbuffers::Follow<'a> for StringKeyValue<'a> {
-  type Inner = StringKeyValue<'a>;
+impl<'a> flatbuffers::Follow<'a> for Argument<'a> {
+  type Inner = Argument<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
     Self { _tab: flatbuffers::Table::new(buf, loc) }
   }
 }
 
-impl<'a> StringKeyValue<'a> {
+impl<'a> Argument<'a> {
   pub const VT_KEY: flatbuffers::VOffsetT = 4;
   pub const VT_VALUE: flatbuffers::VOffsetT = 6;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    StringKeyValue { _tab: table }
+    Argument { _tab: table }
   }
   #[allow(unused_mut)]
   pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
     _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
-    args: &'args StringKeyValueArgs<'args>
-  ) -> flatbuffers::WIPOffset<StringKeyValue<'bldr>> {
-    let mut builder = StringKeyValueBuilder::new(_fbb);
+    args: &'args ArgumentArgs<'args>
+  ) -> flatbuffers::WIPOffset<Argument<'bldr>> {
+    let mut builder = ArgumentBuilder::new(_fbb);
     if let Some(x) = args.value { builder.add_value(x); }
     if let Some(x) = args.key { builder.add_key(x); }
     builder.finish()
@@ -50,18 +50,18 @@ impl<'a> StringKeyValue<'a> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(StringKeyValue::VT_KEY, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Argument::VT_KEY, None)}
   }
   #[inline]
-  pub fn value(&self) -> Option<Value<'a>> {
+  pub fn value(&self) -> Option<Kind<'a>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<Value>>(StringKeyValue::VT_VALUE, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<Kind>>(Argument::VT_VALUE, None)}
   }
 }
 
-impl flatbuffers::Verifiable for StringKeyValue<'_> {
+impl flatbuffers::Verifiable for Argument<'_> {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
@@ -69,56 +69,56 @@ impl flatbuffers::Verifiable for StringKeyValue<'_> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("key", Self::VT_KEY, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<Value>>("value", Self::VT_VALUE, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<Kind>>("value", Self::VT_VALUE, false)?
      .finish();
     Ok(())
   }
 }
-pub struct StringKeyValueArgs<'a> {
+pub struct ArgumentArgs<'a> {
     pub key: Option<flatbuffers::WIPOffset<&'a str>>,
-    pub value: Option<flatbuffers::WIPOffset<Value<'a>>>,
+    pub value: Option<flatbuffers::WIPOffset<Kind<'a>>>,
 }
-impl<'a> Default for StringKeyValueArgs<'a> {
+impl<'a> Default for ArgumentArgs<'a> {
   #[inline]
   fn default() -> Self {
-    StringKeyValueArgs {
+    ArgumentArgs {
       key: None,
       value: None,
     }
   }
 }
 
-pub struct StringKeyValueBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+pub struct ArgumentBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
   fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> StringKeyValueBuilder<'a, 'b, A> {
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> ArgumentBuilder<'a, 'b, A> {
   #[inline]
   pub fn add_key(&mut self, key: flatbuffers::WIPOffset<&'b  str>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(StringKeyValue::VT_KEY, key);
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Argument::VT_KEY, key);
   }
   #[inline]
-  pub fn add_value(&mut self, value: flatbuffers::WIPOffset<Value<'b >>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Value>>(StringKeyValue::VT_VALUE, value);
+  pub fn add_value(&mut self, value: flatbuffers::WIPOffset<Kind<'b >>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Kind>>(Argument::VT_VALUE, value);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> StringKeyValueBuilder<'a, 'b, A> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> ArgumentBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
-    StringKeyValueBuilder {
+    ArgumentBuilder {
       fbb_: _fbb,
       start_: start,
     }
   }
   #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<StringKeyValue<'a>> {
+  pub fn finish(self) -> flatbuffers::WIPOffset<Argument<'a>> {
     let o = self.fbb_.end_table(self.start_);
     flatbuffers::WIPOffset::new(o.value())
   }
 }
 
-impl core::fmt::Debug for StringKeyValue<'_> {
+impl core::fmt::Debug for Argument<'_> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("StringKeyValue");
+    let mut ds = f.debug_struct("Argument");
       ds.field("key", &self.key());
       ds.field("value", &self.value());
       ds.finish()
