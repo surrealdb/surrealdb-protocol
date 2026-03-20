@@ -13,7 +13,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.NullVa
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Decimal {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub value: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Decimal {
@@ -24,7 +24,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Decima
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Uuid {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub value: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Uuid {
@@ -35,9 +35,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Uuid".
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Point {
-    #[prost(double, tag="1")]
+    #[prost(double, tag = "1")]
     pub x: f64,
-    #[prost(double, tag="2")]
+    #[prost(double, tag = "2")]
     pub y: f64,
 }
 impl ::prost::Name for Point {
@@ -48,7 +48,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Point"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Line {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub points: ::prost::alloc::vec::Vec<Point>,
 }
 impl ::prost::Name for Line {
@@ -60,10 +60,10 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Line".
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Polygon {
     /// Exterior ring.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub exterior: ::core::option::Option<Line>,
     /// Interior rings.
-    #[prost(message, repeated, tag="2")]
+    #[prost(message, repeated, tag = "2")]
     pub interiors: ::prost::alloc::vec::Vec<Line>,
 }
 impl ::prost::Name for Polygon {
@@ -74,7 +74,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Polygo
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MultiPoint {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub points: ::prost::alloc::vec::Vec<Point>,
 }
 impl ::prost::Name for MultiPoint {
@@ -85,7 +85,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.MultiP
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MultiLine {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub lines: ::prost::alloc::vec::Vec<Line>,
 }
 impl ::prost::Name for MultiLine {
@@ -96,7 +96,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.MultiL
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MultiPolygon {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub polygons: ::prost::alloc::vec::Vec<Polygon>,
 }
 impl ::prost::Name for MultiPolygon {
@@ -107,7 +107,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.MultiP
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GeometryCollection {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub geometries: ::prost::alloc::vec::Vec<Geometry>,
 }
 impl ::prost::Name for GeometryCollection {
@@ -118,7 +118,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Geomet
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Geometry {
-    #[prost(oneof="geometry::Geometry", tags="1, 2, 3, 4, 5, 6, 7")]
+    #[prost(oneof = "geometry::Geometry", tags = "1, 2, 3, 4, 5, 6, 7")]
     #[serde(flatten)]
     pub geometry: ::core::option::Option<geometry::Geometry>,
 }
@@ -127,19 +127,19 @@ pub mod geometry {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Geometry {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Point(super::Point),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Line(super::Line),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Polygon(super::Polygon),
-        #[prost(message, tag="4")]
+        #[prost(message, tag = "4")]
         MultiPoint(super::MultiPoint),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         MultiLine(super::MultiLine),
-        #[prost(message, tag="6")]
+        #[prost(message, tag = "6")]
         MultiPolygon(super::MultiPolygon),
-        #[prost(message, tag="7")]
+        #[prost(message, tag = "7")]
         Collection(super::GeometryCollection),
     }
 }
@@ -152,10 +152,10 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Geomet
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RecordId {
     /// Table name.
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub table: ::prost::alloc::string::String,
     /// Record ID.
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub id: ::core::option::Option<RecordIdKey>,
 }
 impl ::prost::Name for RecordId {
@@ -167,10 +167,10 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Record
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct File {
     /// Bucket name.
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub bucket: ::prost::alloc::string::String,
     /// File key.
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub key: ::prost::alloc::string::String,
 }
 impl ::prost::Name for File {
@@ -181,7 +181,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.File".
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Array {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub values: ::prost::alloc::vec::Vec<Value>,
 }
 impl ::prost::Name for Array {
@@ -192,7 +192,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Array"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Set {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub values: ::prost::alloc::vec::Vec<Value>,
 }
 impl ::prost::Name for Set {
@@ -203,7 +203,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Set".i
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Object {
-    #[prost(btree_map="string, message", tag="1")]
+    #[prost(btree_map = "string, message", tag = "1")]
     #[serde(flatten)]
     pub items: ::prost::alloc::collections::BTreeMap<::prost::alloc::string::String, Value>,
 }
@@ -215,7 +215,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Object
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValueBound {
-    #[prost(oneof="value_bound::Bound", tags="1, 2, 3")]
+    #[prost(oneof = "value_bound::Bound", tags = "1, 2, 3")]
     pub bound: ::core::option::Option<value_bound::Bound>,
 }
 /// Nested message and enum types in `ValueBound`.
@@ -223,11 +223,11 @@ pub mod value_bound {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Bound {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Inclusive(::prost::alloc::boxed::Box<super::Value>),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Exclusive(::prost::alloc::boxed::Box<super::Value>),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Unbounded(super::NullValue),
     }
 }
@@ -239,9 +239,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ValueB
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Range {
-    #[prost(message, optional, boxed, tag="1")]
+    #[prost(message, optional, boxed, tag = "1")]
     pub start: ::core::option::Option<::prost::alloc::boxed::Box<ValueBound>>,
-    #[prost(message, optional, boxed, tag="2")]
+    #[prost(message, optional, boxed, tag = "2")]
     pub end: ::core::option::Option<::prost::alloc::boxed::Box<ValueBound>>,
 }
 impl ::prost::Name for Range {
@@ -252,7 +252,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof="value::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20")]
+    #[prost(oneof = "value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -261,47 +261,47 @@ pub mod value {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Value {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Null(super::NullValue),
-        #[prost(bool, tag="2")]
+        #[prost(bool, tag = "2")]
         Bool(bool),
-        #[prost(int64, tag="3")]
+        #[prost(int64, tag = "3")]
         Int64(i64),
-        #[prost(double, tag="4")]
+        #[prost(double, tag = "4")]
         Float64(f64),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         Decimal(super::Decimal),
-        #[prost(string, tag="6")]
+        #[prost(string, tag = "6")]
         String(::prost::alloc::string::String),
-        #[prost(bytes, tag="7")]
+        #[prost(bytes, tag = "7")]
         Bytes(::prost::bytes::Bytes),
-        #[prost(message, tag="8")]
+        #[prost(message, tag = "8")]
         #[serde(with = "crate::serde_duration")]
         Duration(::prost_types::Duration),
-        #[prost(message, tag="9")]
+        #[prost(message, tag = "9")]
         #[serde(with = "crate::serde_timestamp")]
         Datetime(::prost_types::Timestamp),
-        #[prost(message, tag="10")]
+        #[prost(message, tag = "10")]
         Uuid(super::Uuid),
-        #[prost(message, tag="11")]
+        #[prost(message, tag = "11")]
         Geometry(super::Geometry),
-        #[prost(string, tag="12")]
+        #[prost(string, tag = "12")]
         Table(::prost::alloc::string::String),
-        #[prost(message, tag="13")]
+        #[prost(message, tag = "13")]
         RecordId(super::RecordId),
-        #[prost(string, tag="14")]
+        #[prost(string, tag = "14")]
         StringRecordId(::prost::alloc::string::String),
-        #[prost(message, tag="15")]
+        #[prost(message, tag = "15")]
         File(super::File),
-        #[prost(message, tag="16")]
+        #[prost(message, tag = "16")]
         Range(::prost::alloc::boxed::Box<super::Range>),
-        #[prost(string, tag="17")]
+        #[prost(string, tag = "17")]
         Regex(::prost::alloc::string::String),
-        #[prost(message, tag="18")]
+        #[prost(message, tag = "18")]
         Object(super::Object),
-        #[prost(message, tag="19")]
+        #[prost(message, tag = "19")]
         Array(super::Array),
-        #[prost(message, tag="20")]
+        #[prost(message, tag = "20")]
         Set(super::Set),
     }
 }
@@ -312,7 +312,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Value"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RecordIdKeyBound {
-    #[prost(oneof="record_id_key_bound::Bound", tags="1, 2, 3")]
+    #[prost(oneof = "record_id_key_bound::Bound", tags = "1, 2, 3")]
     pub bound: ::core::option::Option<record_id_key_bound::Bound>,
 }
 /// Nested message and enum types in `RecordIdKeyBound`.
@@ -320,11 +320,11 @@ pub mod record_id_key_bound {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Bound {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Inclusive(::prost::alloc::boxed::Box<super::RecordIdKey>),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Exclusive(::prost::alloc::boxed::Box<super::RecordIdKey>),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Unbounded(super::NullValue),
     }
 }
@@ -336,9 +336,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Record
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RecordIdKeyRange {
-    #[prost(message, optional, boxed, tag="1")]
+    #[prost(message, optional, boxed, tag = "1")]
     pub start: ::core::option::Option<::prost::alloc::boxed::Box<RecordIdKeyBound>>,
-    #[prost(message, optional, boxed, tag="2")]
+    #[prost(message, optional, boxed, tag = "2")]
     pub end: ::core::option::Option<::prost::alloc::boxed::Box<RecordIdKeyBound>>,
 }
 impl ::prost::Name for RecordIdKeyRange {
@@ -349,7 +349,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Record
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RecordIdKey {
-    #[prost(oneof="record_id_key::Id", tags="1, 2, 3, 4, 5, 6")]
+    #[prost(oneof = "record_id_key::Id", tags = "1, 2, 3, 4, 5, 6")]
     pub id: ::core::option::Option<record_id_key::Id>,
 }
 /// Nested message and enum types in `RecordIdKey`.
@@ -357,17 +357,17 @@ pub mod record_id_key {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Id {
-        #[prost(int64, tag="1")]
+        #[prost(int64, tag = "1")]
         Int64(i64),
-        #[prost(string, tag="2")]
+        #[prost(string, tag = "2")]
         String(::prost::alloc::string::String),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Uuid(super::Uuid),
-        #[prost(message, tag="4")]
+        #[prost(message, tag = "4")]
         Array(super::Array),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         Range(::prost::alloc::boxed::Box<super::RecordIdKeyRange>),
-        #[prost(message, tag="6")]
+        #[prost(message, tag = "6")]
         Object(super::Object),
     }
 }
@@ -379,7 +379,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Record
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Variables {
-    #[prost(btree_map="string, message", tag="1")]
+    #[prost(btree_map = "string, message", tag = "1")]
     pub variables: ::prost::alloc::collections::BTreeMap<::prost::alloc::string::String, Value>,
 }
 impl ::prost::Name for Variables {
@@ -518,7 +518,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RangeK
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct TableName {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub name: ::prost::alloc::string::String,
 }
 impl ::prost::Name for TableName {
@@ -528,7 +528,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.TableN
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RecordKind {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub tables: ::prost::alloc::vec::Vec<TableName>,
 }
 impl ::prost::Name for RecordKind {
@@ -538,7 +538,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Record
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GeometryKind {
-    #[prost(string, repeated, tag="1")]
+    #[prost(string, repeated, tag = "1")]
     pub types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 impl ::prost::Name for GeometryKind {
@@ -548,7 +548,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Geomet
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FileKind {
-    #[prost(string, repeated, tag="1")]
+    #[prost(string, repeated, tag = "1")]
     pub buckets: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 impl ::prost::Name for FileKind {
@@ -558,7 +558,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.FileKi
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionKind {
-    #[prost(message, optional, boxed, tag="1")]
+    #[prost(message, optional, boxed, tag = "1")]
     pub inner: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
 }
 impl ::prost::Name for OptionKind {
@@ -568,7 +568,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Option
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EitherKind {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub kinds: ::prost::alloc::vec::Vec<Kind>,
 }
 impl ::prost::Name for EitherKind {
@@ -578,9 +578,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Either
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SetKind {
-    #[prost(message, optional, boxed, tag="1")]
+    #[prost(message, optional, boxed, tag = "1")]
     pub inner: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub size: u64,
 }
 impl ::prost::Name for SetKind {
@@ -590,9 +590,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.SetKin
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ArrayKind {
-    #[prost(message, optional, boxed, tag="1")]
+    #[prost(message, optional, boxed, tag = "1")]
     pub inner: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub size: u64,
 }
 impl ::prost::Name for ArrayKind {
@@ -602,9 +602,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ArrayK
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FunctionKind {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub args: ::prost::alloc::vec::Vec<Kind>,
-    #[prost(message, optional, boxed, tag="2")]
+    #[prost(message, optional, boxed, tag = "2")]
     pub return_type: ::core::option::Option<::prost::alloc::boxed::Box<Kind>>,
 }
 impl ::prost::Name for FunctionKind {
@@ -615,7 +615,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Functi
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiteralArray {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub kinds: ::prost::alloc::vec::Vec<Kind>,
 }
 impl ::prost::Name for LiteralArray {
@@ -625,9 +625,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Litera
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ObjectField {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub key: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub kind: ::core::option::Option<Kind>,
 }
 impl ::prost::Name for ObjectField {
@@ -637,7 +637,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Object
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiteralObject {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub fields: ::prost::alloc::vec::Vec<ObjectField>,
 }
 impl ::prost::Name for LiteralObject {
@@ -647,9 +647,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Litera
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiteralDiscriminatedObject {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub discriminant_key: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag="2")]
+    #[prost(message, repeated, tag = "2")]
     pub variants: ::prost::alloc::vec::Vec<LiteralObject>,
 }
 impl ::prost::Name for LiteralDiscriminatedObject {
@@ -659,7 +659,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Litera
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiteralKind {
-    #[prost(oneof="literal_kind::Literal", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10")]
+    #[prost(oneof = "literal_kind::Literal", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")]
     pub literal: ::core::option::Option<literal_kind::Literal>,
 }
 /// Nested message and enum types in `LiteralKind`.
@@ -667,26 +667,26 @@ pub mod literal_kind {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Literal {
-        #[prost(string, tag="1")]
+        #[prost(string, tag = "1")]
         StringValue(::prost::alloc::string::String),
-        #[prost(int64, tag="2")]
+        #[prost(int64, tag = "2")]
         Int64Value(i64),
-        #[prost(uint64, tag="3")]
+        #[prost(uint64, tag = "3")]
         Uint64Value(u64),
-        #[prost(double, tag="4")]
+        #[prost(double, tag = "4")]
         Float64Value(f64),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         DecimalValue(super::Decimal),
-        #[prost(message, tag="6")]
+        #[prost(message, tag = "6")]
         #[serde(with = "crate::serde_duration")]
         DurationValue(::prost_types::Duration),
-        #[prost(bool, tag="7")]
+        #[prost(bool, tag = "7")]
         BoolValue(bool),
-        #[prost(message, tag="8")]
+        #[prost(message, tag = "8")]
         ArrayValue(super::LiteralArray),
-        #[prost(message, tag="9")]
+        #[prost(message, tag = "9")]
         ObjectValue(super::LiteralObject),
-        #[prost(message, tag="10")]
+        #[prost(message, tag = "10")]
         DiscriminatedObjectValue(super::LiteralDiscriminatedObject),
     }
 }
@@ -698,7 +698,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Litera
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Kind {
-    #[prost(oneof="kind::Kind", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25")]
+    #[prost(oneof = "kind::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25")]
     pub kind: ::core::option::Option<kind::Kind>,
 }
 /// Nested message and enum types in `Kind`.
@@ -706,55 +706,55 @@ pub mod kind {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Kind {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Any(super::AnyKind),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Null(super::NullKind),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Bool(super::BoolKind),
-        #[prost(message, tag="4")]
+        #[prost(message, tag = "4")]
         Bytes(super::BytesKind),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         Datetime(super::DatetimeKind),
-        #[prost(message, tag="6")]
+        #[prost(message, tag = "6")]
         Decimal(super::DecimalKind),
-        #[prost(message, tag="7")]
+        #[prost(message, tag = "7")]
         Duration(super::DurationKind),
-        #[prost(message, tag="8")]
+        #[prost(message, tag = "8")]
         Float(super::FloatKind),
-        #[prost(message, tag="9")]
+        #[prost(message, tag = "9")]
         Int(super::IntKind),
-        #[prost(message, tag="10")]
+        #[prost(message, tag = "10")]
         Number(super::NumberKind),
-        #[prost(message, tag="11")]
+        #[prost(message, tag = "11")]
         Object(super::ObjectKind),
-        #[prost(message, tag="12")]
+        #[prost(message, tag = "12")]
         Point(super::PointKind),
-        #[prost(message, tag="13")]
+        #[prost(message, tag = "13")]
         String(super::StringKind),
-        #[prost(message, tag="14")]
+        #[prost(message, tag = "14")]
         Uuid(super::UuidKind),
-        #[prost(message, tag="15")]
+        #[prost(message, tag = "15")]
         Regex(super::RegexKind),
-        #[prost(message, tag="16")]
+        #[prost(message, tag = "16")]
         Record(super::RecordKind),
-        #[prost(message, tag="17")]
+        #[prost(message, tag = "17")]
         Geometry(super::GeometryKind),
-        #[prost(message, tag="18")]
+        #[prost(message, tag = "18")]
         Option(::prost::alloc::boxed::Box<super::OptionKind>),
-        #[prost(message, tag="19")]
+        #[prost(message, tag = "19")]
         Either(super::EitherKind),
-        #[prost(message, tag="20")]
+        #[prost(message, tag = "20")]
         Set(::prost::alloc::boxed::Box<super::SetKind>),
-        #[prost(message, tag="21")]
+        #[prost(message, tag = "21")]
         Array(::prost::alloc::boxed::Box<super::ArrayKind>),
-        #[prost(message, tag="22")]
+        #[prost(message, tag = "22")]
         Function(::prost::alloc::boxed::Box<super::FunctionKind>),
-        #[prost(message, tag="23")]
+        #[prost(message, tag = "23")]
         Range(super::RangeKind),
-        #[prost(message, tag="24")]
+        #[prost(message, tag = "24")]
         Literal(super::LiteralKind),
-        #[prost(message, tag="25")]
+        #[prost(message, tag = "25")]
         File(super::FileKind),
     }
 }
@@ -766,7 +766,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Kind".
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Ident {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub value: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Ident {
@@ -778,10 +778,10 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Ident"
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fields {
     /// Whether this is a single VALUE clause.
-    #[prost(bool, tag="1")]
+    #[prost(bool, tag = "1")]
     pub single: bool,
     /// Field selection.
-    #[prost(message, repeated, tag="2")]
+    #[prost(message, repeated, tag = "2")]
     pub fields: ::prost::alloc::vec::Vec<fields::Field>,
 }
 /// Nested message and enum types in `Fields`.
@@ -791,10 +791,10 @@ pub mod fields {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct SingleField {
         /// Expression.
-        #[prost(message, optional, tag="1")]
+        #[prost(message, optional, tag = "1")]
         pub expr: ::core::option::Option<super::Value>,
         /// Alias.
-        #[prost(message, optional, tag="2")]
+        #[prost(message, optional, tag = "2")]
         pub alias: ::core::option::Option<super::Idiom>,
     }
 impl ::prost::Name for SingleField {
@@ -805,7 +805,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Fields
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Field {
-        #[prost(oneof="field::Field", tags="1, 2")]
+        #[prost(oneof = "field::Field", tags = "1, 2")]
         pub field: ::core::option::Option<field::Field>,
     }
     /// Nested message and enum types in `Field`.
@@ -814,10 +814,10 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Fields
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum Field {
             /// All fields.
-            #[prost(message, tag="1")]
+            #[prost(message, tag = "1")]
             All(super::super::NullValue),
             /// Single field.
-            #[prost(message, tag="2")]
+            #[prost(message, tag = "2")]
             Single(super::SingleField),
         }
     }
@@ -834,7 +834,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Fields
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Idiom {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub value: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Idiom {
@@ -845,7 +845,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Idiom"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Data {
-    #[prost(oneof="data::Data", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10")]
+    #[prost(oneof = "data::Data", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")]
     pub data: ::core::option::Option<data::Data>,
 }
 /// Nested message and enum types in `Data`.
@@ -855,13 +855,13 @@ pub mod data {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct SetExpr {
         /// Idiom.
-        #[prost(message, optional, tag="1")]
+        #[prost(message, optional, tag = "1")]
         pub idiom: ::core::option::Option<super::Idiom>,
         /// Operator.
-        #[prost(enumeration="super::Operator", tag="2")]
+        #[prost(enumeration = "super::Operator", tag = "2")]
         pub operator: i32,
         /// Value.
-        #[prost(message, optional, tag="3")]
+        #[prost(message, optional, tag = "3")]
         pub value: ::core::option::Option<super::Value>,
     }
 impl ::prost::Name for SetExpr {
@@ -872,7 +872,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data.S
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct SetMultiExpr {
-        #[prost(message, repeated, tag="1")]
+        #[prost(message, repeated, tag = "1")]
         pub items: ::prost::alloc::vec::Vec<SetExpr>,
     }
 impl ::prost::Name for SetMultiExpr {
@@ -883,7 +883,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data.S
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct UnsetMultiExpr {
-        #[prost(message, repeated, tag="1")]
+        #[prost(message, repeated, tag = "1")]
         pub items: ::prost::alloc::vec::Vec<super::Idiom>,
     }
 impl ::prost::Name for UnsetMultiExpr {
@@ -894,9 +894,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data.U
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct IdiomValuePair {
-        #[prost(message, optional, tag="1")]
+        #[prost(message, optional, tag = "1")]
         pub idiom: ::core::option::Option<super::Idiom>,
-        #[prost(message, optional, tag="2")]
+        #[prost(message, optional, tag = "2")]
         pub value: ::core::option::Option<super::Value>,
     }
 impl ::prost::Name for IdiomValuePair {
@@ -907,7 +907,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data.I
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ValuesExpr {
-        #[prost(message, repeated, tag="1")]
+        #[prost(message, repeated, tag = "1")]
         pub items: ::prost::alloc::vec::Vec<IdiomValuePair>,
     }
 impl ::prost::Name for ValuesExpr {
@@ -918,7 +918,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data.V
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ValuesMultiExpr {
-        #[prost(message, repeated, tag="1")]
+        #[prost(message, repeated, tag = "1")]
         pub items: ::prost::alloc::vec::Vec<ValuesExpr>,
     }
 impl ::prost::Name for ValuesMultiExpr {
@@ -928,25 +928,25 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data.V
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Data {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Empty(super::NullValue),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Set(SetMultiExpr),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Unset(UnsetMultiExpr),
-        #[prost(message, tag="4")]
+        #[prost(message, tag = "4")]
         Patch(super::Value),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         Merge(super::Value),
-        #[prost(message, tag="6")]
+        #[prost(message, tag = "6")]
         Replace(super::Value),
-        #[prost(message, tag="7")]
+        #[prost(message, tag = "7")]
         Content(super::Value),
-        #[prost(message, tag="8")]
+        #[prost(message, tag = "8")]
         Value(super::Value),
-        #[prost(message, tag="9")]
+        #[prost(message, tag = "9")]
         Values(ValuesMultiExpr),
-        #[prost(message, tag="10")]
+        #[prost(message, tag = "10")]
         Update(SetMultiExpr),
     }
 }
@@ -958,7 +958,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Data".
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fetchs {
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag = "1")]
     pub items: ::prost::alloc::vec::Vec<Value>,
 }
 impl ::prost::Name for Fetchs {
@@ -968,7 +968,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Fetchs
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {
-    #[prost(oneof="output::Output", tags="1, 2, 3, 4, 5")]
+    #[prost(oneof = "output::Output", tags = "1, 2, 3, 4, 5")]
     pub output: ::core::option::Option<output::Output>,
 }
 /// Nested message and enum types in `Output`.
@@ -976,15 +976,15 @@ pub mod output {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Output {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Null(super::NullValue),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Diff(super::NullValue),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         After(super::NullValue),
-        #[prost(message, tag="4")]
+        #[prost(message, tag = "4")]
         Before(super::NullValue),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         Fields(super::Fields),
     }
 }
@@ -996,7 +996,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Output
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Explain {
-    #[prost(bool, tag="1")]
+    #[prost(bool, tag = "1")]
     pub explain: bool,
 }
 impl ::prost::Name for Explain {
@@ -1007,7 +1007,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Explai
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Start {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub start: u64,
 }
 impl ::prost::Name for Start {
@@ -1018,7 +1018,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Start"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Limit {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub limit: u64,
 }
 impl ::prost::Name for Limit {
@@ -1028,7 +1028,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Limit"
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fetch {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub fetch: ::core::option::Option<Fetchs>,
 }
 impl ::prost::Name for Fetch {
@@ -1039,7 +1039,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Fetch"
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct With {
     /// Indices to use. If not specified, use no indexes
-    #[prost(string, repeated, tag="1")]
+    #[prost(string, repeated, tag = "1")]
     pub indexes: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 impl ::prost::Name for With {

@@ -12,6 +12,17 @@ table KindList {
   kinds: [Kind] (id: 0);
 }
 
+/// An argument pair for a function signature.
+table Argument {
+  key: string (id: 0);
+  value: Kind (id: 1);
+}
+
+/// A list of arguments for a function signature.
+table ArgumentList {
+  arguments: [Argument] (id: 0);
+}
+
 /// A string-keyed Value entry for variable and KV batch transfer.
 table StringKeyValue {
   key: string (id: 0);
