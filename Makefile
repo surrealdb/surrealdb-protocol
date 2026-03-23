@@ -68,11 +68,18 @@ proto-gen: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
 proto-check: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
 	buf lint
 
+# flatc --rust-module-root-file overwrites mod.rs per input file. root.fbs
+# includes all other schemas, so its mod.rs has every type. We pass all
+# schemas for individual file generation, with root.fbs last so its
+# complete mod.rs is the one that survives.
+FB_ROOT_SCHEMA := surrealdb/protocol/v1/root.fbs
+FB_DEP_SCHEMAS := $(filter-out $(FB_ROOT_SCHEMA),$(FB_SCHEMA_SRCS))
+
 gen/rust/fb: $(FB_SCHEMA_SRCS) $(FLATC)
     # Remove existing files.
 	rm -rf gen/rust/fb
 	mkdir -p gen/rust/fb
-	$(FLATC) --rust --rust-module-root-file -I $(PWD) -o $@ $(FB_SCHEMA_SRCS)
+	$(FLATC) --rust --rust-module-root-file -I $(PWD) -o $@ $(FB_DEP_SCHEMAS) $(FB_ROOT_SCHEMA)
 
 .PHONY: fb-gen
 fb-gen: gen/rust/fb
