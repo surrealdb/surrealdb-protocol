@@ -22,6 +22,8 @@ pub mod surrealdb {
       pub use self::literal_type_generated::*;
       mod kind_type_generated;
       pub use self::kind_type_generated::*;
+      mod string_bound_tag_generated;
+      pub use self::string_bound_tag_generated::*;
       mod decimal_generated;
       pub use self::decimal_generated::*;
       mod bytes_generated;
@@ -140,6 +142,24 @@ pub mod surrealdb {
       pub use self::literal_kind_generated::*;
       mod kind_generated;
       pub use self::kind_generated::*;
+      mod value_list_generated;
+      pub use self::value_list_generated::*;
+      mod kind_list_generated;
+      pub use self::kind_list_generated::*;
+      mod argument_generated;
+      pub use self::argument_generated::*;
+      mod argument_list_generated;
+      pub use self::argument_list_generated::*;
+      mod string_key_value_generated;
+      pub use self::string_key_value_generated::*;
+      mod string_key_value_list_generated;
+      pub use self::string_key_value_list_generated::*;
+      mod optional_value_generated;
+      pub use self::optional_value_generated::*;
+      mod optional_value_list_generated;
+      pub use self::optional_value_list_generated::*;
+      mod string_range_generated;
+      pub use self::string_range_generated::*;
     } // v_1
   } // protocol
 } // surrealdb

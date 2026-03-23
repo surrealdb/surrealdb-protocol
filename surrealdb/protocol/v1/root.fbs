@@ -1,0 +1,4 @@
+include "surrealdb/protocol/v1/value.fbs";
+include "surrealdb/protocol/v1/surrealism.fbs";
+
+namespace surrealdb.protocol.v1;
