@@ -9,7 +9,7 @@ table Bytes { value:[ubyte] (id: 0); }
 
 /// Duration value.
 table Duration {
-    seconds: uint64 (id: 0);
+    seconds: int64 (id: 0);
     nanos: uint32 (id: 1);
 }
 
