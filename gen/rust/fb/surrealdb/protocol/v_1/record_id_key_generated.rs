@@ -142,6 +142,36 @@ impl<'a> RecordIdKey<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn id_as_float_64(&self) -> Option<Float64Value<'a>> {
+    if self.id_type() == RecordIdKeyType::Float64 {
+      self.id().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Float64Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn id_as_decimal(&self) -> Option<Decimal<'a>> {
+    if self.id_type() == RecordIdKeyType::Decimal {
+      self.id().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Decimal::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for RecordIdKey<'_> {
@@ -158,6 +188,8 @@ impl ::flatbuffers::Verifiable for RecordIdKey<'_> {
           RecordIdKeyType::Array => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Array>>("RecordIdKeyType::Array", pos),
           RecordIdKeyType::Range => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<RecordIdKeyRange>>("RecordIdKeyType::Range", pos),
           RecordIdKeyType::Object => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Object>>("RecordIdKeyType::Object", pos),
+          RecordIdKeyType::Float64 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Float64Value>>("RecordIdKeyType::Float64", pos),
+          RecordIdKeyType::Decimal => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Decimal>>("RecordIdKeyType::Decimal", pos),
           _ => Ok(()),
         }
      })?
@@ -249,6 +281,20 @@ impl ::core::fmt::Debug for RecordIdKey<'_> {
         },
         RecordIdKeyType::Object => {
           if let Some(x) = self.id_as_object() {
+            ds.field("id", &x)
+          } else {
+            ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        RecordIdKeyType::Float64 => {
+          if let Some(x) = self.id_as_float_64() {
+            ds.field("id", &x)
+          } else {
+            ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        RecordIdKeyType::Decimal => {
+          if let Some(x) = self.id_as_decimal() {
             ds.field("id", &x)
           } else {
             ds.field("id", &"InvalidFlatbuffer: Union discriminant does not match value.")
