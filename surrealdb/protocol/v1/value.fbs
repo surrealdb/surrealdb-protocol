@@ -197,6 +197,8 @@ union RecordIdKeyType {
     Array (id: 4),
     Range: RecordIdKeyRange (id: 5),
     Object: Object (id: 6),
+    Float64: Float64Value (id: 7),
+    Decimal: surrealdb.protocol.v1.Decimal (id: 8),
 }
 
 /// A record ID key that can be an integer, string, UUID, array, or range.
