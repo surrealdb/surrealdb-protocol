@@ -36,13 +36,13 @@ rpc = ["proto", "dep:tonic", "dep:tonic-prost", "dep:futures"]
 anyhow = { version = "1" }
 async-trait = { version = "0.1" }
 bytes = { version = "1", features = ["serde"] }
-chrono = { version = "0" }
-geo = { version = "0" }
-flatbuffers = { version = "25.2.10", features = ["serde"], optional = true }
+chrono = { version = "0", default-features = false, features = ["std"] }
+geo = { version = "0", default-features = false, features = ["use-serde"] }
+flatbuffers = { version = "25.2.10", optional = true }
 futures = { version = "0.3", optional = true }
 prost = { version = "0.14.1", optional = true }
 prost-types = { version = "0.14.1", optional = true }
-rust_decimal = { version = "1.30" }
+rust_decimal = { version = "1.30", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 tonic = { version = "0.14.2", optional = true }
