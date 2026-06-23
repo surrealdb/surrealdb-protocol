@@ -34,6 +34,15 @@ service SurrealDBService {
     rpc ImportSql(stream ImportSqlRequest) returns (ImportSqlResponse);
     // Export data from the database.
     rpc ExportSql(ExportSqlRequest) returns (stream ExportSqlResponse);
+    // Export data from the database as a stream of directory files.
+    //
+    // Unlike ExportSql, which emits a flat SurrealQL statement stream, this
+    // reproduces a directory-format export (manifest + schema + per-table data
+    // files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
+    // FileEnd, so neither peer ever buffers a whole file; the file's byte count
+    // and SHA-256 are carried in the FileEnd trailer, computed incrementally as
+    // chunks are produced.
+    rpc ExportDirectory(ExportDirectoryRequest) returns (stream ExportDirectoryResponse);
 
     // Export the ML model.
     rpc ExportMlModel(ExportMlModelRequest) returns (stream ExportMlModelResponse);
@@ -189,6 +198,230 @@ message ExportMlModelRequest {
 // Response to an export request.
 message ExportMlModelResponse {
     bytes model = 1;
+}
+
+// Compression applied to exported data files.
+enum ExportCompression {
+    // No explicit compression was specified. On a request this selects the
+    // server default; it should never appear on a response frame.
+    EXPORT_COMPRESSION_UNSPECIFIED = 0;
+    // Files are streamed uncompressed.
+    EXPORT_COMPRESSION_NONE = 1;
+    // Each file's bytes are zstd-compressed (the on-disk `.surql.zst` form).
+    EXPORT_COMPRESSION_ZSTD = 2;
+}
+
+// Which sections of the database to include in a directory export.
+//
+// Mirrors the fields of `ExportSqlRequest`; kept as a distinct message so the
+// directory export surface can evolve independently of the SurrealQL export.
+message ExportConfig {
+    // An explicit list of tables to export.
+    message SelectedTables {
+        repeated string tables = 1;
+    }
+
+    // Table selection for the export.
+    message Tables {
+        oneof selection {
+            // Export all tables.
+            surrealdb.protocol.v1.NullValue all = 1;
+            // Export no tables.
+            surrealdb.protocol.v1.NullValue none = 2;
+            // Export only the named tables.
+            SelectedTables selected = 3;
+        }
+    }
+
+    // Include user definitions.
+    bool users = 1;
+    // Include access definitions.
+    bool accesses = 2;
+    // Include parameter definitions.
+    bool params = 3;
+    // Include function definitions.
+    bool functions = 4;
+    // Include analyzer definitions.
+    bool analyzers = 5;
+    // Which tables to include.
+    Tables tables = 6;
+    // Include record versions.
+    bool versions = 7;
+    // Include table records.
+    bool records = 8;
+    // Include sequence definitions.
+    bool sequences = 9;
+}
+
+// Stream the export to the requesting client, which writes the files to its
+// own local disk.
+message ClientStreamDestination {}
+
+// Write the export directly to an object-storage bucket from the server.
+//
+// Reserved for a future server-side destination; not yet served.
+message BucketDestination {
+    // The bucket URL (for example `s3://my-bucket`).
+    string url = 1;
+    // A key prefix within the bucket to write files under.
+    string prefix = 2;
+}
+
+// Where the exported files should be written.
+message ExportDestination {
+    oneof destination {
+        // Stream the files back to the client (the default).
+        ClientStreamDestination client_stream = 1;
+        // Write the files to an object-storage bucket (future).
+        BucketDestination bucket = 2;
+    }
+}
+
+// Request to export data from the database as a streamed directory.
+message ExportDirectoryRequest {
+    // Which sections of the database to export.
+    ExportConfig config = 1;
+    // The compression to apply to each data file.
+    ExportCompression compression = 2;
+    // A hint for how many files to produce concurrently. Zero means the
+    // server chooses a default.
+    uint32 parallelism = 3;
+    // The directory format version the client expects. Empty means the client
+    // accepts whatever the server produces.
+    string format_version = 4;
+    // Where the server should write the exported files.
+    ExportDestination destination = 5;
+}
+
+// Manifest entry describing a single exported file.
+message ManifestEntry {
+    // The file's path relative to the export root.
+    string path = 1;
+    // The number of bytes written for the file (the on-disk size).
+    uint64 bytes = 2;
+    // The SHA-256 of the file's on-disk bytes, lowercase hex.
+    string sha256 = 3;
+    // The table the file holds data for. Empty for schema or metadata files
+    // (table names are never empty).
+    string table = 4;
+}
+
+// Manifest describing a complete directory export.
+//
+// The client writes this verbatim as `manifest.json` once the stream
+// completes; it is the wire analogue of the manifest being written last.
+message Manifest {
+    // The directory format version.
+    string format_version = 1;
+    // The namespace that was exported.
+    string namespace = 2;
+    // The database that was exported.
+    string database = 3;
+    // The SurrealDB version that produced the export.
+    string surrealdb_version = 4;
+    // The compression applied to the data files.
+    ExportCompression compression = 5;
+    // One entry per file in the export, in replay order.
+    repeated ManifestEntry files = 6;
+}
+
+// Frame: the export has begun. Sent once, before any files.
+message ExportDirectoryBegin {
+    // The directory format version.
+    string format_version = 1;
+    // The namespace being exported.
+    string namespace = 2;
+    // The database being exported.
+    string database = 3;
+    // The SurrealDB version producing the export.
+    string surrealdb_version = 4;
+    // The compression applied to the data files.
+    ExportCompression compression = 5;
+}
+
+// Frame: a new file in the stream has begun.
+//
+// All frames for a given file share its `file_id`. A file's own frames are
+// always ordered FileBegin -> FileChunk* -> FileEnd, but frames belonging to
+// different files MAY be interleaved when the server streams files
+// concurrently.
+message FileBegin {
+    // Correlates this file's frames within the stream.
+    uint64 file_id = 1;
+    // The file's path relative to the export root.
+    string relative_path = 2;
+    // The table the file holds data for. Empty for schema or metadata files
+    // (table names are never empty).
+    string table = 3;
+    // The compression applied to this file's chunks.
+    ExportCompression compression = 4;
+}
+
+// Frame: a chunk of a file's content.
+//
+// `data` carries the file's on-disk bytes verbatim — already zstd-compressed
+// when the file's compression is ZSTD. Chunks are bounded in size (see the
+// `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
+// bindings) so neither peer buffers a whole file.
+message FileChunk {
+    // The file this chunk belongs to.
+    uint64 file_id = 1;
+    // The chunk's bytes.
+    bytes data = 2;
+}
+
+// Frame: a file has ended.
+//
+// The trailer carries the file's total size and hash, both computed
+// incrementally while the chunks were produced — so no whole-file buffering is
+// needed to learn them up front.
+message FileEnd {
+    // The file these totals apply to.
+    uint64 file_id = 1;
+    // The total number of bytes streamed for the file.
+    uint64 bytes = 2;
+    // The SHA-256 of the streamed bytes, lowercase hex.
+    string sha256 = 3;
+}
+
+// Frame: the export completed successfully.
+//
+// This is the completion token, the wire analogue of `manifest.json` being
+// written last. A stream that ends without this frame MUST be treated as
+// failed, and the client MUST NOT leave behind an importable directory.
+message ExportDirectoryEnd {
+    // The full manifest for the export.
+    Manifest manifest = 1;
+}
+
+// Frame: the export failed mid-stream. Terminates the stream.
+message ExportError {
+    // The error code.
+    int64 code = 1;
+    // The error message.
+    string message = 2;
+}
+
+// A single frame in a directory export stream.
+//
+// Modelled on the QueryResponse streaming envelope. The frames for one export
+// arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
+// either End (success) or Error (failure).
+message ExportDirectoryResponse {
+    oneof frame {
+        // The export has begun.
+        ExportDirectoryBegin begin = 1;
+        // A new file has begun.
+        FileBegin file_begin = 2;
+        // A chunk of the current file.
+        FileChunk file_chunk = 3;
+        // The current file has ended (size + hash trailer).
+        FileEnd file_end = 4;
+        // The export completed successfully (carries the manifest).
+        ExportDirectoryEnd end = 5;
+        // The export failed.
+        ExportError error = 6;
+    }
 }
 
 // Request to issue a live query.

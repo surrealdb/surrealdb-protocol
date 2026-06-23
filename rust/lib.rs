@@ -9,8 +9,12 @@ mod methods;
 pub use convert::{TryFromValue, TryIntoValue};
 
 #[cfg(feature = "rpc")]
+mod export;
+#[cfg(feature = "rpc")]
 mod rpc_methods;
 
+#[cfg(feature = "rpc")]
+pub use export::{DEFAULT_FILE_CHUNK_SIZE, MAX_FILE_CHUNK_SIZE};
 #[cfg(feature = "rpc")]
 pub use rpc_methods::{QueryResponseValueStream, TryFromQueryStream};
 

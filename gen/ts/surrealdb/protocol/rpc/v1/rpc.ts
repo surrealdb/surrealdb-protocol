@@ -13,6 +13,52 @@ import { NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
 
+/** Compression applied to exported data files. */
+export enum ExportCompression {
+  /**
+   * UNSPECIFIED - No explicit compression was specified. On a request this selects the
+   * server default; it should never appear on a response frame.
+   */
+  UNSPECIFIED = 0,
+  /** NONE - Files are streamed uncompressed. */
+  NONE = 1,
+  /** ZSTD - Each file's bytes are zstd-compressed (the on-disk `.surql.zst` form). */
+  ZSTD = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function exportCompressionFromJSON(object: any): ExportCompression {
+  switch (object) {
+    case 0:
+    case "EXPORT_COMPRESSION_UNSPECIFIED":
+      return ExportCompression.UNSPECIFIED;
+    case 1:
+    case "EXPORT_COMPRESSION_NONE":
+      return ExportCompression.NONE;
+    case 2:
+    case "EXPORT_COMPRESSION_ZSTD":
+      return ExportCompression.ZSTD;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ExportCompression.UNRECOGNIZED;
+  }
+}
+
+export function exportCompressionToJSON(object: ExportCompression): string {
+  switch (object) {
+    case ExportCompression.UNSPECIFIED:
+      return "EXPORT_COMPRESSION_UNSPECIFIED";
+    case ExportCompression.NONE:
+      return "EXPORT_COMPRESSION_NONE";
+    case ExportCompression.ZSTD:
+      return "EXPORT_COMPRESSION_ZSTD";
+    case ExportCompression.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Action type. */
 export enum Action {
   UNSPECIFIED = 0,
@@ -281,6 +327,261 @@ export interface ExportMlModelRequest {
 /** Response to an export request. */
 export interface ExportMlModelResponse {
   model: Uint8Array;
+}
+
+/**
+ * Which sections of the database to include in a directory export.
+ *
+ * Mirrors the fields of `ExportSqlRequest`; kept as a distinct message so the
+ * directory export surface can evolve independently of the SurrealQL export.
+ */
+export interface ExportConfig {
+  /** Include user definitions. */
+  users: boolean;
+  /** Include access definitions. */
+  accesses: boolean;
+  /** Include parameter definitions. */
+  params: boolean;
+  /** Include function definitions. */
+  functions: boolean;
+  /** Include analyzer definitions. */
+  analyzers: boolean;
+  /** Which tables to include. */
+  tables:
+    | ExportConfig_Tables
+    | undefined;
+  /** Include record versions. */
+  versions: boolean;
+  /** Include table records. */
+  records: boolean;
+  /** Include sequence definitions. */
+  sequences: boolean;
+}
+
+/** An explicit list of tables to export. */
+export interface ExportConfig_SelectedTables {
+  tables: string[];
+}
+
+/** Table selection for the export. */
+export interface ExportConfig_Tables {
+  selection:
+    | //
+    /** Export all tables. */
+    { $case: "all"; all: NullValue }
+    | //
+    /** Export no tables. */
+    { $case: "none"; none: NullValue }
+    | //
+    /** Export only the named tables. */
+    { $case: "selected"; selected: ExportConfig_SelectedTables }
+    | undefined;
+}
+
+/**
+ * Stream the export to the requesting client, which writes the files to its
+ * own local disk.
+ */
+export interface ClientStreamDestination {
+}
+
+/**
+ * Write the export directly to an object-storage bucket from the server.
+ *
+ * Reserved for a future server-side destination; not yet served.
+ */
+export interface BucketDestination {
+  /** The bucket URL (for example `s3://my-bucket`). */
+  url: string;
+  /** A key prefix within the bucket to write files under. */
+  prefix: string;
+}
+
+/** Where the exported files should be written. */
+export interface ExportDestination {
+  destination:
+    | //
+    /** Stream the files back to the client (the default). */
+    { $case: "clientStream"; clientStream: ClientStreamDestination }
+    | //
+    /** Write the files to an object-storage bucket (future). */
+    { $case: "bucket"; bucket: BucketDestination }
+    | undefined;
+}
+
+/** Request to export data from the database as a streamed directory. */
+export interface ExportDirectoryRequest {
+  /** Which sections of the database to export. */
+  config:
+    | ExportConfig
+    | undefined;
+  /** The compression to apply to each data file. */
+  compression: ExportCompression;
+  /**
+   * A hint for how many files to produce concurrently. Zero means the
+   * server chooses a default.
+   */
+  parallelism: number;
+  /**
+   * The directory format version the client expects. Empty means the client
+   * accepts whatever the server produces.
+   */
+  formatVersion: string;
+  /** Where the server should write the exported files. */
+  destination: ExportDestination | undefined;
+}
+
+/** Manifest entry describing a single exported file. */
+export interface ManifestEntry {
+  /** The file's path relative to the export root. */
+  path: string;
+  /** The number of bytes written for the file (the on-disk size). */
+  bytes: bigint;
+  /** The SHA-256 of the file's on-disk bytes, lowercase hex. */
+  sha256: string;
+  /**
+   * The table the file holds data for. Empty for schema or metadata files
+   * (table names are never empty).
+   */
+  table: string;
+}
+
+/**
+ * Manifest describing a complete directory export.
+ *
+ * The client writes this verbatim as `manifest.json` once the stream
+ * completes; it is the wire analogue of the manifest being written last.
+ */
+export interface Manifest {
+  /** The directory format version. */
+  formatVersion: string;
+  /** The namespace that was exported. */
+  namespace: string;
+  /** The database that was exported. */
+  database: string;
+  /** The SurrealDB version that produced the export. */
+  surrealdbVersion: string;
+  /** The compression applied to the data files. */
+  compression: ExportCompression;
+  /** One entry per file in the export, in replay order. */
+  files: ManifestEntry[];
+}
+
+/** Frame: the export has begun. Sent once, before any files. */
+export interface ExportDirectoryBegin {
+  /** The directory format version. */
+  formatVersion: string;
+  /** The namespace being exported. */
+  namespace: string;
+  /** The database being exported. */
+  database: string;
+  /** The SurrealDB version producing the export. */
+  surrealdbVersion: string;
+  /** The compression applied to the data files. */
+  compression: ExportCompression;
+}
+
+/**
+ * Frame: a new file in the stream has begun.
+ *
+ * All frames for a given file share its `file_id`. A file's own frames are
+ * always ordered FileBegin -> FileChunk* -> FileEnd, but frames belonging to
+ * different files MAY be interleaved when the server streams files
+ * concurrently.
+ */
+export interface FileBegin {
+  /** Correlates this file's frames within the stream. */
+  fileId: bigint;
+  /** The file's path relative to the export root. */
+  relativePath: string;
+  /**
+   * The table the file holds data for. Empty for schema or metadata files
+   * (table names are never empty).
+   */
+  table: string;
+  /** The compression applied to this file's chunks. */
+  compression: ExportCompression;
+}
+
+/**
+ * Frame: a chunk of a file's content.
+ *
+ * `data` carries the file's on-disk bytes verbatim — already zstd-compressed
+ * when the file's compression is ZSTD. Chunks are bounded in size (see the
+ * `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
+ * bindings) so neither peer buffers a whole file.
+ */
+export interface FileChunk {
+  /** The file this chunk belongs to. */
+  fileId: bigint;
+  /** The chunk's bytes. */
+  data: Uint8Array;
+}
+
+/**
+ * Frame: a file has ended.
+ *
+ * The trailer carries the file's total size and hash, both computed
+ * incrementally while the chunks were produced — so no whole-file buffering is
+ * needed to learn them up front.
+ */
+export interface FileEnd {
+  /** The file these totals apply to. */
+  fileId: bigint;
+  /** The total number of bytes streamed for the file. */
+  bytes: bigint;
+  /** The SHA-256 of the streamed bytes, lowercase hex. */
+  sha256: string;
+}
+
+/**
+ * Frame: the export completed successfully.
+ *
+ * This is the completion token, the wire analogue of `manifest.json` being
+ * written last. A stream that ends without this frame MUST be treated as
+ * failed, and the client MUST NOT leave behind an importable directory.
+ */
+export interface ExportDirectoryEnd {
+  /** The full manifest for the export. */
+  manifest: Manifest | undefined;
+}
+
+/** Frame: the export failed mid-stream. Terminates the stream. */
+export interface ExportError {
+  /** The error code. */
+  code: bigint;
+  /** The error message. */
+  message: string;
+}
+
+/**
+ * A single frame in a directory export stream.
+ *
+ * Modelled on the QueryResponse streaming envelope. The frames for one export
+ * arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
+ * either End (success) or Error (failure).
+ */
+export interface ExportDirectoryResponse {
+  frame:
+    | //
+    /** The export has begun. */
+    { $case: "begin"; begin: ExportDirectoryBegin }
+    | //
+    /** A new file has begun. */
+    { $case: "fileBegin"; fileBegin: FileBegin }
+    | //
+    /** A chunk of the current file. */
+    { $case: "fileChunk"; fileChunk: FileChunk }
+    | //
+    /** The current file has ended (size + hash trailer). */
+    { $case: "fileEnd"; fileEnd: FileEnd }
+    | //
+    /** The export completed successfully (carries the manifest). */
+    { $case: "end"; end: ExportDirectoryEnd }
+    | //
+    /** The export failed. */
+    { $case: "error"; error: ExportError }
+    | undefined;
 }
 
 /** Request to issue a live query. */
@@ -2268,6 +2569,1740 @@ export const ExportMlModelResponse: MessageFns<ExportMlModelResponse> = {
   },
 };
 
+function createBaseExportConfig(): ExportConfig {
+  return {
+    users: false,
+    accesses: false,
+    params: false,
+    functions: false,
+    analyzers: false,
+    tables: undefined,
+    versions: false,
+    records: false,
+    sequences: false,
+  };
+}
+
+export const ExportConfig: MessageFns<ExportConfig> = {
+  encode(message: ExportConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.users !== false) {
+      writer.uint32(8).bool(message.users);
+    }
+    if (message.accesses !== false) {
+      writer.uint32(16).bool(message.accesses);
+    }
+    if (message.params !== false) {
+      writer.uint32(24).bool(message.params);
+    }
+    if (message.functions !== false) {
+      writer.uint32(32).bool(message.functions);
+    }
+    if (message.analyzers !== false) {
+      writer.uint32(40).bool(message.analyzers);
+    }
+    if (message.tables !== undefined) {
+      ExportConfig_Tables.encode(message.tables, writer.uint32(50).fork()).join();
+    }
+    if (message.versions !== false) {
+      writer.uint32(56).bool(message.versions);
+    }
+    if (message.records !== false) {
+      writer.uint32(64).bool(message.records);
+    }
+    if (message.sequences !== false) {
+      writer.uint32(72).bool(message.sequences);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.users = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accesses = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.params = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.functions = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.analyzers = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.tables = ExportConfig_Tables.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.versions = reader.bool();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.records = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.sequences = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportConfig {
+    return {
+      users: isSet(object.users) ? globalThis.Boolean(object.users) : false,
+      accesses: isSet(object.accesses) ? globalThis.Boolean(object.accesses) : false,
+      params: isSet(object.params) ? globalThis.Boolean(object.params) : false,
+      functions: isSet(object.functions) ? globalThis.Boolean(object.functions) : false,
+      analyzers: isSet(object.analyzers) ? globalThis.Boolean(object.analyzers) : false,
+      tables: isSet(object.tables) ? ExportConfig_Tables.fromJSON(object.tables) : undefined,
+      versions: isSet(object.versions) ? globalThis.Boolean(object.versions) : false,
+      records: isSet(object.records) ? globalThis.Boolean(object.records) : false,
+      sequences: isSet(object.sequences) ? globalThis.Boolean(object.sequences) : false,
+    };
+  },
+
+  toJSON(message: ExportConfig): unknown {
+    const obj: any = {};
+    if (message.users !== false) {
+      obj.users = message.users;
+    }
+    if (message.accesses !== false) {
+      obj.accesses = message.accesses;
+    }
+    if (message.params !== false) {
+      obj.params = message.params;
+    }
+    if (message.functions !== false) {
+      obj.functions = message.functions;
+    }
+    if (message.analyzers !== false) {
+      obj.analyzers = message.analyzers;
+    }
+    if (message.tables !== undefined) {
+      obj.tables = ExportConfig_Tables.toJSON(message.tables);
+    }
+    if (message.versions !== false) {
+      obj.versions = message.versions;
+    }
+    if (message.records !== false) {
+      obj.records = message.records;
+    }
+    if (message.sequences !== false) {
+      obj.sequences = message.sequences;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportConfig>, I>>(base?: I): ExportConfig {
+    return ExportConfig.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportConfig>, I>>(object: I): ExportConfig {
+    const message = createBaseExportConfig();
+    message.users = object.users ?? false;
+    message.accesses = object.accesses ?? false;
+    message.params = object.params ?? false;
+    message.functions = object.functions ?? false;
+    message.analyzers = object.analyzers ?? false;
+    message.tables = (object.tables !== undefined && object.tables !== null)
+      ? ExportConfig_Tables.fromPartial(object.tables)
+      : undefined;
+    message.versions = object.versions ?? false;
+    message.records = object.records ?? false;
+    message.sequences = object.sequences ?? false;
+    return message;
+  },
+};
+
+function createBaseExportConfig_SelectedTables(): ExportConfig_SelectedTables {
+  return { tables: [] };
+}
+
+export const ExportConfig_SelectedTables: MessageFns<ExportConfig_SelectedTables> = {
+  encode(message: ExportConfig_SelectedTables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.tables) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportConfig_SelectedTables {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportConfig_SelectedTables();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tables.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportConfig_SelectedTables {
+    return {
+      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: ExportConfig_SelectedTables): unknown {
+    const obj: any = {};
+    if (message.tables?.length) {
+      obj.tables = message.tables;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportConfig_SelectedTables>, I>>(base?: I): ExportConfig_SelectedTables {
+    return ExportConfig_SelectedTables.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportConfig_SelectedTables>, I>>(object: I): ExportConfig_SelectedTables {
+    const message = createBaseExportConfig_SelectedTables();
+    message.tables = object.tables?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseExportConfig_Tables(): ExportConfig_Tables {
+  return { selection: undefined };
+}
+
+export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
+  encode(message: ExportConfig_Tables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.selection?.$case) {
+      case "all":
+        NullValue.encode(message.selection.all, writer.uint32(10).fork()).join();
+        break;
+      case "none":
+        NullValue.encode(message.selection.none, writer.uint32(18).fork()).join();
+        break;
+      case "selected":
+        ExportConfig_SelectedTables.encode(message.selection.selected, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportConfig_Tables {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportConfig_Tables();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.selection = { $case: "all", all: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.selection = { $case: "none", none: NullValue.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.selection = {
+            $case: "selected",
+            selected: ExportConfig_SelectedTables.decode(reader, reader.uint32()),
+          };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportConfig_Tables {
+    return {
+      selection: isSet(object.all)
+        ? { $case: "all", all: NullValue.fromJSON(object.all) }
+        : isSet(object.none)
+        ? { $case: "none", none: NullValue.fromJSON(object.none) }
+        : isSet(object.selected)
+        ? { $case: "selected", selected: ExportConfig_SelectedTables.fromJSON(object.selected) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ExportConfig_Tables): unknown {
+    const obj: any = {};
+    if (message.selection?.$case === "all") {
+      obj.all = NullValue.toJSON(message.selection.all);
+    } else if (message.selection?.$case === "none") {
+      obj.none = NullValue.toJSON(message.selection.none);
+    } else if (message.selection?.$case === "selected") {
+      obj.selected = ExportConfig_SelectedTables.toJSON(message.selection.selected);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportConfig_Tables>, I>>(base?: I): ExportConfig_Tables {
+    return ExportConfig_Tables.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportConfig_Tables>, I>>(object: I): ExportConfig_Tables {
+    const message = createBaseExportConfig_Tables();
+    switch (object.selection?.$case) {
+      case "all": {
+        if (object.selection?.all !== undefined && object.selection?.all !== null) {
+          message.selection = { $case: "all", all: NullValue.fromPartial(object.selection.all) };
+        }
+        break;
+      }
+      case "none": {
+        if (object.selection?.none !== undefined && object.selection?.none !== null) {
+          message.selection = { $case: "none", none: NullValue.fromPartial(object.selection.none) };
+        }
+        break;
+      }
+      case "selected": {
+        if (object.selection?.selected !== undefined && object.selection?.selected !== null) {
+          message.selection = {
+            $case: "selected",
+            selected: ExportConfig_SelectedTables.fromPartial(object.selection.selected),
+          };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseClientStreamDestination(): ClientStreamDestination {
+  return {};
+}
+
+export const ClientStreamDestination: MessageFns<ClientStreamDestination> = {
+  encode(_: ClientStreamDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClientStreamDestination {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClientStreamDestination();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ClientStreamDestination {
+    return {};
+  },
+
+  toJSON(_: ClientStreamDestination): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClientStreamDestination>, I>>(base?: I): ClientStreamDestination {
+    return ClientStreamDestination.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClientStreamDestination>, I>>(_: I): ClientStreamDestination {
+    const message = createBaseClientStreamDestination();
+    return message;
+  },
+};
+
+function createBaseBucketDestination(): BucketDestination {
+  return { url: "", prefix: "" };
+}
+
+export const BucketDestination: MessageFns<BucketDestination> = {
+  encode(message: BucketDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.url !== "") {
+      writer.uint32(10).string(message.url);
+    }
+    if (message.prefix !== "") {
+      writer.uint32(18).string(message.prefix);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BucketDestination {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBucketDestination();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.prefix = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BucketDestination {
+    return {
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      prefix: isSet(object.prefix) ? globalThis.String(object.prefix) : "",
+    };
+  },
+
+  toJSON(message: BucketDestination): unknown {
+    const obj: any = {};
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.prefix !== "") {
+      obj.prefix = message.prefix;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BucketDestination>, I>>(base?: I): BucketDestination {
+    return BucketDestination.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BucketDestination>, I>>(object: I): BucketDestination {
+    const message = createBaseBucketDestination();
+    message.url = object.url ?? "";
+    message.prefix = object.prefix ?? "";
+    return message;
+  },
+};
+
+function createBaseExportDestination(): ExportDestination {
+  return { destination: undefined };
+}
+
+export const ExportDestination: MessageFns<ExportDestination> = {
+  encode(message: ExportDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.destination?.$case) {
+      case "clientStream":
+        ClientStreamDestination.encode(message.destination.clientStream, writer.uint32(10).fork()).join();
+        break;
+      case "bucket":
+        BucketDestination.encode(message.destination.bucket, writer.uint32(18).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDestination {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDestination();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.destination = {
+            $case: "clientStream",
+            clientStream: ClientStreamDestination.decode(reader, reader.uint32()),
+          };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.destination = { $case: "bucket", bucket: BucketDestination.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDestination {
+    return {
+      destination: isSet(object.clientStream)
+        ? { $case: "clientStream", clientStream: ClientStreamDestination.fromJSON(object.clientStream) }
+        : isSet(object.client_stream)
+        ? { $case: "clientStream", clientStream: ClientStreamDestination.fromJSON(object.client_stream) }
+        : isSet(object.bucket)
+        ? { $case: "bucket", bucket: BucketDestination.fromJSON(object.bucket) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ExportDestination): unknown {
+    const obj: any = {};
+    if (message.destination?.$case === "clientStream") {
+      obj.clientStream = ClientStreamDestination.toJSON(message.destination.clientStream);
+    } else if (message.destination?.$case === "bucket") {
+      obj.bucket = BucketDestination.toJSON(message.destination.bucket);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportDestination>, I>>(base?: I): ExportDestination {
+    return ExportDestination.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportDestination>, I>>(object: I): ExportDestination {
+    const message = createBaseExportDestination();
+    switch (object.destination?.$case) {
+      case "clientStream": {
+        if (object.destination?.clientStream !== undefined && object.destination?.clientStream !== null) {
+          message.destination = {
+            $case: "clientStream",
+            clientStream: ClientStreamDestination.fromPartial(object.destination.clientStream),
+          };
+        }
+        break;
+      }
+      case "bucket": {
+        if (object.destination?.bucket !== undefined && object.destination?.bucket !== null) {
+          message.destination = { $case: "bucket", bucket: BucketDestination.fromPartial(object.destination.bucket) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseExportDirectoryRequest(): ExportDirectoryRequest {
+  return { config: undefined, compression: 0, parallelism: 0, formatVersion: "", destination: undefined };
+}
+
+export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
+  encode(message: ExportDirectoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.config !== undefined) {
+      ExportConfig.encode(message.config, writer.uint32(10).fork()).join();
+    }
+    if (message.compression !== 0) {
+      writer.uint32(16).int32(message.compression);
+    }
+    if (message.parallelism !== 0) {
+      writer.uint32(24).uint32(message.parallelism);
+    }
+    if (message.formatVersion !== "") {
+      writer.uint32(34).string(message.formatVersion);
+    }
+    if (message.destination !== undefined) {
+      ExportDestination.encode(message.destination, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDirectoryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDirectoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.config = ExportConfig.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.compression = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.parallelism = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.formatVersion = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.destination = ExportDestination.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDirectoryRequest {
+    return {
+      config: isSet(object.config) ? ExportConfig.fromJSON(object.config) : undefined,
+      compression: isSet(object.compression) ? exportCompressionFromJSON(object.compression) : 0,
+      parallelism: isSet(object.parallelism) ? globalThis.Number(object.parallelism) : 0,
+      formatVersion: isSet(object.formatVersion)
+        ? globalThis.String(object.formatVersion)
+        : isSet(object.format_version)
+        ? globalThis.String(object.format_version)
+        : "",
+      destination: isSet(object.destination) ? ExportDestination.fromJSON(object.destination) : undefined,
+    };
+  },
+
+  toJSON(message: ExportDirectoryRequest): unknown {
+    const obj: any = {};
+    if (message.config !== undefined) {
+      obj.config = ExportConfig.toJSON(message.config);
+    }
+    if (message.compression !== 0) {
+      obj.compression = exportCompressionToJSON(message.compression);
+    }
+    if (message.parallelism !== 0) {
+      obj.parallelism = Math.round(message.parallelism);
+    }
+    if (message.formatVersion !== "") {
+      obj.formatVersion = message.formatVersion;
+    }
+    if (message.destination !== undefined) {
+      obj.destination = ExportDestination.toJSON(message.destination);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportDirectoryRequest>, I>>(base?: I): ExportDirectoryRequest {
+    return ExportDirectoryRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportDirectoryRequest>, I>>(object: I): ExportDirectoryRequest {
+    const message = createBaseExportDirectoryRequest();
+    message.config = (object.config !== undefined && object.config !== null)
+      ? ExportConfig.fromPartial(object.config)
+      : undefined;
+    message.compression = object.compression ?? 0;
+    message.parallelism = object.parallelism ?? 0;
+    message.formatVersion = object.formatVersion ?? "";
+    message.destination = (object.destination !== undefined && object.destination !== null)
+      ? ExportDestination.fromPartial(object.destination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseManifestEntry(): ManifestEntry {
+  return { path: "", bytes: 0n, sha256: "", table: "" };
+}
+
+export const ManifestEntry: MessageFns<ManifestEntry> = {
+  encode(message: ManifestEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.path !== "") {
+      writer.uint32(10).string(message.path);
+    }
+    if (message.bytes !== 0n) {
+      if (BigInt.asUintN(64, message.bytes) !== message.bytes) {
+        throw new globalThis.Error("value provided for field message.bytes of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.bytes);
+    }
+    if (message.sha256 !== "") {
+      writer.uint32(26).string(message.sha256);
+    }
+    if (message.table !== "") {
+      writer.uint32(34).string(message.table);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ManifestEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseManifestEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.path = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bytes = reader.uint64() as bigint;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sha256 = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ManifestEntry {
+    return {
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
+      bytes: isSet(object.bytes) ? BigInt(object.bytes) : 0n,
+      sha256: isSet(object.sha256) ? globalThis.String(object.sha256) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+    };
+  },
+
+  toJSON(message: ManifestEntry): unknown {
+    const obj: any = {};
+    if (message.path !== "") {
+      obj.path = message.path;
+    }
+    if (message.bytes !== 0n) {
+      obj.bytes = message.bytes.toString();
+    }
+    if (message.sha256 !== "") {
+      obj.sha256 = message.sha256;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ManifestEntry>, I>>(base?: I): ManifestEntry {
+    return ManifestEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ManifestEntry>, I>>(object: I): ManifestEntry {
+    const message = createBaseManifestEntry();
+    message.path = object.path ?? "";
+    message.bytes = object.bytes ?? 0n;
+    message.sha256 = object.sha256 ?? "";
+    message.table = object.table ?? "";
+    return message;
+  },
+};
+
+function createBaseManifest(): Manifest {
+  return { formatVersion: "", namespace: "", database: "", surrealdbVersion: "", compression: 0, files: [] };
+}
+
+export const Manifest: MessageFns<Manifest> = {
+  encode(message: Manifest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.formatVersion !== "") {
+      writer.uint32(10).string(message.formatVersion);
+    }
+    if (message.namespace !== "") {
+      writer.uint32(18).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(26).string(message.database);
+    }
+    if (message.surrealdbVersion !== "") {
+      writer.uint32(34).string(message.surrealdbVersion);
+    }
+    if (message.compression !== 0) {
+      writer.uint32(40).int32(message.compression);
+    }
+    for (const v of message.files) {
+      ManifestEntry.encode(v!, writer.uint32(50).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Manifest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseManifest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.formatVersion = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.surrealdbVersion = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.compression = reader.int32() as any;
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.files.push(ManifestEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Manifest {
+    return {
+      formatVersion: isSet(object.formatVersion)
+        ? globalThis.String(object.formatVersion)
+        : isSet(object.format_version)
+        ? globalThis.String(object.format_version)
+        : "",
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      surrealdbVersion: isSet(object.surrealdbVersion)
+        ? globalThis.String(object.surrealdbVersion)
+        : isSet(object.surrealdb_version)
+        ? globalThis.String(object.surrealdb_version)
+        : "",
+      compression: isSet(object.compression) ? exportCompressionFromJSON(object.compression) : 0,
+      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => ManifestEntry.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: Manifest): unknown {
+    const obj: any = {};
+    if (message.formatVersion !== "") {
+      obj.formatVersion = message.formatVersion;
+    }
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.surrealdbVersion !== "") {
+      obj.surrealdbVersion = message.surrealdbVersion;
+    }
+    if (message.compression !== 0) {
+      obj.compression = exportCompressionToJSON(message.compression);
+    }
+    if (message.files?.length) {
+      obj.files = message.files.map((e) => ManifestEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Manifest>, I>>(base?: I): Manifest {
+    return Manifest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Manifest>, I>>(object: I): Manifest {
+    const message = createBaseManifest();
+    message.formatVersion = object.formatVersion ?? "";
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    message.surrealdbVersion = object.surrealdbVersion ?? "";
+    message.compression = object.compression ?? 0;
+    message.files = object.files?.map((e) => ManifestEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExportDirectoryBegin(): ExportDirectoryBegin {
+  return { formatVersion: "", namespace: "", database: "", surrealdbVersion: "", compression: 0 };
+}
+
+export const ExportDirectoryBegin: MessageFns<ExportDirectoryBegin> = {
+  encode(message: ExportDirectoryBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.formatVersion !== "") {
+      writer.uint32(10).string(message.formatVersion);
+    }
+    if (message.namespace !== "") {
+      writer.uint32(18).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(26).string(message.database);
+    }
+    if (message.surrealdbVersion !== "") {
+      writer.uint32(34).string(message.surrealdbVersion);
+    }
+    if (message.compression !== 0) {
+      writer.uint32(40).int32(message.compression);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDirectoryBegin {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDirectoryBegin();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.formatVersion = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.surrealdbVersion = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.compression = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDirectoryBegin {
+    return {
+      formatVersion: isSet(object.formatVersion)
+        ? globalThis.String(object.formatVersion)
+        : isSet(object.format_version)
+        ? globalThis.String(object.format_version)
+        : "",
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      surrealdbVersion: isSet(object.surrealdbVersion)
+        ? globalThis.String(object.surrealdbVersion)
+        : isSet(object.surrealdb_version)
+        ? globalThis.String(object.surrealdb_version)
+        : "",
+      compression: isSet(object.compression) ? exportCompressionFromJSON(object.compression) : 0,
+    };
+  },
+
+  toJSON(message: ExportDirectoryBegin): unknown {
+    const obj: any = {};
+    if (message.formatVersion !== "") {
+      obj.formatVersion = message.formatVersion;
+    }
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.surrealdbVersion !== "") {
+      obj.surrealdbVersion = message.surrealdbVersion;
+    }
+    if (message.compression !== 0) {
+      obj.compression = exportCompressionToJSON(message.compression);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportDirectoryBegin>, I>>(base?: I): ExportDirectoryBegin {
+    return ExportDirectoryBegin.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportDirectoryBegin>, I>>(object: I): ExportDirectoryBegin {
+    const message = createBaseExportDirectoryBegin();
+    message.formatVersion = object.formatVersion ?? "";
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    message.surrealdbVersion = object.surrealdbVersion ?? "";
+    message.compression = object.compression ?? 0;
+    return message;
+  },
+};
+
+function createBaseFileBegin(): FileBegin {
+  return { fileId: 0n, relativePath: "", table: "", compression: 0 };
+}
+
+export const FileBegin: MessageFns<FileBegin> = {
+  encode(message: FileBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileId !== 0n) {
+      if (BigInt.asUintN(64, message.fileId) !== message.fileId) {
+        throw new globalThis.Error("value provided for field message.fileId of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.fileId);
+    }
+    if (message.relativePath !== "") {
+      writer.uint32(18).string(message.relativePath);
+    }
+    if (message.table !== "") {
+      writer.uint32(26).string(message.table);
+    }
+    if (message.compression !== 0) {
+      writer.uint32(32).int32(message.compression);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FileBegin {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFileBegin();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.fileId = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.relativePath = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.compression = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FileBegin {
+    return {
+      fileId: isSet(object.fileId) ? BigInt(object.fileId) : isSet(object.file_id) ? BigInt(object.file_id) : 0n,
+      relativePath: isSet(object.relativePath)
+        ? globalThis.String(object.relativePath)
+        : isSet(object.relative_path)
+        ? globalThis.String(object.relative_path)
+        : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+      compression: isSet(object.compression) ? exportCompressionFromJSON(object.compression) : 0,
+    };
+  },
+
+  toJSON(message: FileBegin): unknown {
+    const obj: any = {};
+    if (message.fileId !== 0n) {
+      obj.fileId = message.fileId.toString();
+    }
+    if (message.relativePath !== "") {
+      obj.relativePath = message.relativePath;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.compression !== 0) {
+      obj.compression = exportCompressionToJSON(message.compression);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FileBegin>, I>>(base?: I): FileBegin {
+    return FileBegin.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FileBegin>, I>>(object: I): FileBegin {
+    const message = createBaseFileBegin();
+    message.fileId = object.fileId ?? 0n;
+    message.relativePath = object.relativePath ?? "";
+    message.table = object.table ?? "";
+    message.compression = object.compression ?? 0;
+    return message;
+  },
+};
+
+function createBaseFileChunk(): FileChunk {
+  return { fileId: 0n, data: new Uint8Array(0) };
+}
+
+export const FileChunk: MessageFns<FileChunk> = {
+  encode(message: FileChunk, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileId !== 0n) {
+      if (BigInt.asUintN(64, message.fileId) !== message.fileId) {
+        throw new globalThis.Error("value provided for field message.fileId of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.fileId);
+    }
+    if (message.data.length !== 0) {
+      writer.uint32(18).bytes(message.data);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FileChunk {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFileChunk();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.fileId = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = reader.bytes();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FileChunk {
+    return {
+      fileId: isSet(object.fileId) ? BigInt(object.fileId) : isSet(object.file_id) ? BigInt(object.file_id) : 0n,
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array(0),
+    };
+  },
+
+  toJSON(message: FileChunk): unknown {
+    const obj: any = {};
+    if (message.fileId !== 0n) {
+      obj.fileId = message.fileId.toString();
+    }
+    if (message.data.length !== 0) {
+      obj.data = base64FromBytes(message.data);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FileChunk>, I>>(base?: I): FileChunk {
+    return FileChunk.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FileChunk>, I>>(object: I): FileChunk {
+    const message = createBaseFileChunk();
+    message.fileId = object.fileId ?? 0n;
+    message.data = object.data ?? new Uint8Array(0);
+    return message;
+  },
+};
+
+function createBaseFileEnd(): FileEnd {
+  return { fileId: 0n, bytes: 0n, sha256: "" };
+}
+
+export const FileEnd: MessageFns<FileEnd> = {
+  encode(message: FileEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileId !== 0n) {
+      if (BigInt.asUintN(64, message.fileId) !== message.fileId) {
+        throw new globalThis.Error("value provided for field message.fileId of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.fileId);
+    }
+    if (message.bytes !== 0n) {
+      if (BigInt.asUintN(64, message.bytes) !== message.bytes) {
+        throw new globalThis.Error("value provided for field message.bytes of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.bytes);
+    }
+    if (message.sha256 !== "") {
+      writer.uint32(26).string(message.sha256);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FileEnd {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFileEnd();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.fileId = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bytes = reader.uint64() as bigint;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sha256 = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FileEnd {
+    return {
+      fileId: isSet(object.fileId) ? BigInt(object.fileId) : isSet(object.file_id) ? BigInt(object.file_id) : 0n,
+      bytes: isSet(object.bytes) ? BigInt(object.bytes) : 0n,
+      sha256: isSet(object.sha256) ? globalThis.String(object.sha256) : "",
+    };
+  },
+
+  toJSON(message: FileEnd): unknown {
+    const obj: any = {};
+    if (message.fileId !== 0n) {
+      obj.fileId = message.fileId.toString();
+    }
+    if (message.bytes !== 0n) {
+      obj.bytes = message.bytes.toString();
+    }
+    if (message.sha256 !== "") {
+      obj.sha256 = message.sha256;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FileEnd>, I>>(base?: I): FileEnd {
+    return FileEnd.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FileEnd>, I>>(object: I): FileEnd {
+    const message = createBaseFileEnd();
+    message.fileId = object.fileId ?? 0n;
+    message.bytes = object.bytes ?? 0n;
+    message.sha256 = object.sha256 ?? "";
+    return message;
+  },
+};
+
+function createBaseExportDirectoryEnd(): ExportDirectoryEnd {
+  return { manifest: undefined };
+}
+
+export const ExportDirectoryEnd: MessageFns<ExportDirectoryEnd> = {
+  encode(message: ExportDirectoryEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.manifest !== undefined) {
+      Manifest.encode(message.manifest, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDirectoryEnd {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDirectoryEnd();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.manifest = Manifest.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDirectoryEnd {
+    return { manifest: isSet(object.manifest) ? Manifest.fromJSON(object.manifest) : undefined };
+  },
+
+  toJSON(message: ExportDirectoryEnd): unknown {
+    const obj: any = {};
+    if (message.manifest !== undefined) {
+      obj.manifest = Manifest.toJSON(message.manifest);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportDirectoryEnd>, I>>(base?: I): ExportDirectoryEnd {
+    return ExportDirectoryEnd.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportDirectoryEnd>, I>>(object: I): ExportDirectoryEnd {
+    const message = createBaseExportDirectoryEnd();
+    message.manifest = (object.manifest !== undefined && object.manifest !== null)
+      ? Manifest.fromPartial(object.manifest)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseExportError(): ExportError {
+  return { code: 0n, message: "" };
+}
+
+export const ExportError: MessageFns<ExportError> = {
+  encode(message: ExportError, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.code !== 0n) {
+      if (BigInt.asIntN(64, message.code) !== message.code) {
+        throw new globalThis.Error("value provided for field message.code of type int64 too large");
+      }
+      writer.uint32(8).int64(message.code);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportError {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportError();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.code = reader.int64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportError {
+    return {
+      code: isSet(object.code) ? BigInt(object.code) : 0n,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: ExportError): unknown {
+    const obj: any = {};
+    if (message.code !== 0n) {
+      obj.code = message.code.toString();
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportError>, I>>(base?: I): ExportError {
+    return ExportError.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportError>, I>>(object: I): ExportError {
+    const message = createBaseExportError();
+    message.code = object.code ?? 0n;
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBaseExportDirectoryResponse(): ExportDirectoryResponse {
+  return { frame: undefined };
+}
+
+export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
+  encode(message: ExportDirectoryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.frame?.$case) {
+      case "begin":
+        ExportDirectoryBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
+        break;
+      case "fileBegin":
+        FileBegin.encode(message.frame.fileBegin, writer.uint32(18).fork()).join();
+        break;
+      case "fileChunk":
+        FileChunk.encode(message.frame.fileChunk, writer.uint32(26).fork()).join();
+        break;
+      case "fileEnd":
+        FileEnd.encode(message.frame.fileEnd, writer.uint32(34).fork()).join();
+        break;
+      case "end":
+        ExportDirectoryEnd.encode(message.frame.end, writer.uint32(42).fork()).join();
+        break;
+      case "error":
+        ExportError.encode(message.frame.error, writer.uint32(50).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDirectoryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDirectoryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.frame = { $case: "begin", begin: ExportDirectoryBegin.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "fileBegin", fileBegin: FileBegin.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "fileChunk", fileChunk: FileChunk.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.frame = { $case: "fileEnd", fileEnd: FileEnd.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.frame = { $case: "end", end: ExportDirectoryEnd.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.frame = { $case: "error", error: ExportError.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDirectoryResponse {
+    return {
+      frame: isSet(object.begin)
+        ? { $case: "begin", begin: ExportDirectoryBegin.fromJSON(object.begin) }
+        : isSet(object.fileBegin)
+        ? { $case: "fileBegin", fileBegin: FileBegin.fromJSON(object.fileBegin) }
+        : isSet(object.file_begin)
+        ? { $case: "fileBegin", fileBegin: FileBegin.fromJSON(object.file_begin) }
+        : isSet(object.fileChunk)
+        ? { $case: "fileChunk", fileChunk: FileChunk.fromJSON(object.fileChunk) }
+        : isSet(object.file_chunk)
+        ? { $case: "fileChunk", fileChunk: FileChunk.fromJSON(object.file_chunk) }
+        : isSet(object.fileEnd)
+        ? { $case: "fileEnd", fileEnd: FileEnd.fromJSON(object.fileEnd) }
+        : isSet(object.file_end)
+        ? { $case: "fileEnd", fileEnd: FileEnd.fromJSON(object.file_end) }
+        : isSet(object.end)
+        ? { $case: "end", end: ExportDirectoryEnd.fromJSON(object.end) }
+        : isSet(object.error)
+        ? { $case: "error", error: ExportError.fromJSON(object.error) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ExportDirectoryResponse): unknown {
+    const obj: any = {};
+    if (message.frame?.$case === "begin") {
+      obj.begin = ExportDirectoryBegin.toJSON(message.frame.begin);
+    } else if (message.frame?.$case === "fileBegin") {
+      obj.fileBegin = FileBegin.toJSON(message.frame.fileBegin);
+    } else if (message.frame?.$case === "fileChunk") {
+      obj.fileChunk = FileChunk.toJSON(message.frame.fileChunk);
+    } else if (message.frame?.$case === "fileEnd") {
+      obj.fileEnd = FileEnd.toJSON(message.frame.fileEnd);
+    } else if (message.frame?.$case === "end") {
+      obj.end = ExportDirectoryEnd.toJSON(message.frame.end);
+    } else if (message.frame?.$case === "error") {
+      obj.error = ExportError.toJSON(message.frame.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportDirectoryResponse>, I>>(base?: I): ExportDirectoryResponse {
+    return ExportDirectoryResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportDirectoryResponse>, I>>(object: I): ExportDirectoryResponse {
+    const message = createBaseExportDirectoryResponse();
+    switch (object.frame?.$case) {
+      case "begin": {
+        if (object.frame?.begin !== undefined && object.frame?.begin !== null) {
+          message.frame = { $case: "begin", begin: ExportDirectoryBegin.fromPartial(object.frame.begin) };
+        }
+        break;
+      }
+      case "fileBegin": {
+        if (object.frame?.fileBegin !== undefined && object.frame?.fileBegin !== null) {
+          message.frame = { $case: "fileBegin", fileBegin: FileBegin.fromPartial(object.frame.fileBegin) };
+        }
+        break;
+      }
+      case "fileChunk": {
+        if (object.frame?.fileChunk !== undefined && object.frame?.fileChunk !== null) {
+          message.frame = { $case: "fileChunk", fileChunk: FileChunk.fromPartial(object.frame.fileChunk) };
+        }
+        break;
+      }
+      case "fileEnd": {
+        if (object.frame?.fileEnd !== undefined && object.frame?.fileEnd !== null) {
+          message.frame = { $case: "fileEnd", fileEnd: FileEnd.fromPartial(object.frame.fileEnd) };
+        }
+        break;
+      }
+      case "end": {
+        if (object.frame?.end !== undefined && object.frame?.end !== null) {
+          message.frame = { $case: "end", end: ExportDirectoryEnd.fromPartial(object.frame.end) };
+        }
+        break;
+      }
+      case "error": {
+        if (object.frame?.error !== undefined && object.frame?.error !== null) {
+          message.frame = { $case: "error", error: ExportError.fromPartial(object.frame.error) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
 function createBaseSubscribeRequest(): SubscribeRequest {
   return { subscribeTo: undefined };
 }
@@ -3834,6 +5869,17 @@ export interface SurrealDBService {
   ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse>;
   /** Export data from the database. */
   ExportSql(request: ExportSqlRequest): Observable<ExportSqlResponse>;
+  /**
+   * Export data from the database as a stream of directory files.
+   *
+   * Unlike ExportSql, which emits a flat SurrealQL statement stream, this
+   * reproduces a directory-format export (manifest + schema + per-table data
+   * files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
+   * FileEnd, so neither peer ever buffers a whole file; the file's byte count
+   * and SHA-256 are carried in the FileEnd trailer, computed incrementally as
+   * chunks are produced.
+   */
+  ExportDirectory(request: ExportDirectoryRequest): Observable<ExportDirectoryResponse>;
   /** Export the ML model. */
   ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse>;
   /** Query the database and get a stream of values. */
@@ -3861,6 +5907,7 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.Reset = this.Reset.bind(this);
     this.ImportSql = this.ImportSql.bind(this);
     this.ExportSql = this.ExportSql.bind(this);
+    this.ExportDirectory = this.ExportDirectory.bind(this);
     this.ExportMlModel = this.ExportMlModel.bind(this);
     this.Query = this.Query.bind(this);
     this.Subscribe = this.Subscribe.bind(this);
@@ -3935,6 +5982,12 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     const data = ExportSqlRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "ExportSql", data);
     return result.pipe(map((data) => ExportSqlResponse.decode(new BinaryReader(data))));
+  }
+
+  ExportDirectory(request: ExportDirectoryRequest): Observable<ExportDirectoryResponse> {
+    const data = ExportDirectoryRequest.encode(request).finish();
+    const result = this.rpc.serverStreamingRequest(this.service, "ExportDirectory", data);
+    return result.pipe(map((data) => ExportDirectoryResponse.decode(new BinaryReader(data))));
   }
 
   ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse> {

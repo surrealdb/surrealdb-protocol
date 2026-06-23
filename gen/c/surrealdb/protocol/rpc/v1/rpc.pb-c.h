@@ -45,6 +45,22 @@ typedef struct Surrealdb__Protocol__Rpc__V1__ExportSqlRequest__Tables Surrealdb_
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportSqlResponse Surrealdb__Protocol__Rpc__V1__ExportSqlResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig Surrealdb__Protocol__Rpc__V1__ExportConfig;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables;
+typedef struct Surrealdb__Protocol__Rpc__V1__ClientStreamDestination Surrealdb__Protocol__Rpc__V1__ClientStreamDestination;
+typedef struct Surrealdb__Protocol__Rpc__V1__BucketDestination Surrealdb__Protocol__Rpc__V1__BucketDestination;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportDestination Surrealdb__Protocol__Rpc__V1__ExportDestination;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest;
+typedef struct Surrealdb__Protocol__Rpc__V1__ManifestEntry Surrealdb__Protocol__Rpc__V1__ManifestEntry;
+typedef struct Surrealdb__Protocol__Rpc__V1__Manifest Surrealdb__Protocol__Rpc__V1__Manifest;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin;
+typedef struct Surrealdb__Protocol__Rpc__V1__FileBegin Surrealdb__Protocol__Rpc__V1__FileBegin;
+typedef struct Surrealdb__Protocol__Rpc__V1__FileChunk Surrealdb__Protocol__Rpc__V1__FileChunk;
+typedef struct Surrealdb__Protocol__Rpc__V1__FileEnd Surrealdb__Protocol__Rpc__V1__FileEnd;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportError Surrealdb__Protocol__Rpc__V1__ExportError;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeRequest Surrealdb__Protocol__Rpc__V1__SubscribeRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeResponse Surrealdb__Protocol__Rpc__V1__SubscribeResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__Notification Surrealdb__Protocol__Rpc__V1__Notification;
@@ -63,6 +79,25 @@ typedef struct Surrealdb__Protocol__Rpc__V1__AccessMethod Surrealdb__Protocol__R
 
 /* --- enums --- */
 
+/*
+ * Compression applied to exported data files.
+ */
+typedef enum _Surrealdb__Protocol__Rpc__V1__ExportCompression {
+  /*
+   * No explicit compression was specified. On a request this selects the
+   * server default; it should never appear on a response frame.
+   */
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED = 0,
+  /*
+   * Files are streamed uncompressed.
+   */
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_NONE = 1,
+  /*
+   * Each file's bytes are zstd-compressed (the on-disk `.surql.zst` form).
+   */
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_ZSTD = 2
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION)
+} Surrealdb__Protocol__Rpc__V1__ExportCompression;
 /*
  * Action type.
  */
@@ -497,6 +532,479 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse
 #define SURREALDB__PROTOCOL__RPC__V1__EXPORT_ML_MODEL_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_ml_model_response__descriptor) \
 , {0,NULL} }
+
+
+/*
+ * An explicit list of tables to export.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables
+{
+  ProtobufCMessage base;
+  size_t n_tables;
+  char **tables;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__SELECTED_TABLES__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_config__selected_tables__descriptor) \
+, 0,NULL }
+
+
+typedef enum {
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION__NOT_SET = 0,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_ALL = 1,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_NONE = 2,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_SELECTED = 3
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION__CASE)
+} Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables__SelectionCase;
+
+/*
+ * Table selection for the export.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables__SelectionCase selection_case;
+  union {
+    /*
+     * Export all tables.
+     */
+    Surrealdb__Protocol__V1__NullValue *all;
+    /*
+     * Export no tables.
+     */
+    Surrealdb__Protocol__V1__NullValue *none;
+    /*
+     * Export only the named tables.
+     */
+    Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables *selected;
+  };
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_config__tables__descriptor) \
+, SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION__NOT_SET, {0} }
+
+
+/*
+ * Which sections of the database to include in a directory export.
+ * Mirrors the fields of `ExportSqlRequest`; kept as a distinct message so the
+ * directory export surface can evolve independently of the SurrealQL export.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportConfig
+{
+  ProtobufCMessage base;
+  /*
+   * Include user definitions.
+   */
+  protobuf_c_boolean users;
+  /*
+   * Include access definitions.
+   */
+  protobuf_c_boolean accesses;
+  /*
+   * Include parameter definitions.
+   */
+  protobuf_c_boolean params;
+  /*
+   * Include function definitions.
+   */
+  protobuf_c_boolean functions;
+  /*
+   * Include analyzer definitions.
+   */
+  protobuf_c_boolean analyzers;
+  /*
+   * Which tables to include.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables *tables;
+  /*
+   * Include record versions.
+   */
+  protobuf_c_boolean versions;
+  /*
+   * Include table records.
+   */
+  protobuf_c_boolean records;
+  /*
+   * Include sequence definitions.
+   */
+  protobuf_c_boolean sequences;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_config__descriptor) \
+, 0, 0, 0, 0, 0, NULL, 0, 0, 0 }
+
+
+/*
+ * Stream the export to the requesting client, which writes the files to its
+ * own local disk.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ClientStreamDestination
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__CLIENT_STREAM_DESTINATION__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__client_stream_destination__descriptor) \
+ }
+
+
+/*
+ * Write the export directly to an object-storage bucket from the server.
+ * Reserved for a future server-side destination; not yet served.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__BucketDestination
+{
+  ProtobufCMessage base;
+  /*
+   * The bucket URL (for example `s3://my-bucket`).
+   */
+  char *url;
+  /*
+   * A key prefix within the bucket to write files under.
+   */
+  char *prefix;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__BUCKET_DESTINATION__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__bucket_destination__descriptor) \
+, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string }
+
+
+typedef enum {
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DESTINATION__DESTINATION__NOT_SET = 0,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DESTINATION__DESTINATION_CLIENT_STREAM = 1,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DESTINATION__DESTINATION_BUCKET = 2
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__EXPORT_DESTINATION__DESTINATION__CASE)
+} Surrealdb__Protocol__Rpc__V1__ExportDestination__DestinationCase;
+
+/*
+ * Where the exported files should be written.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportDestination
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__ExportDestination__DestinationCase destination_case;
+  union {
+    /*
+     * Write the files to an object-storage bucket (future).
+     */
+    Surrealdb__Protocol__Rpc__V1__BucketDestination *bucket;
+    /*
+     * Stream the files back to the client (the default).
+     */
+    Surrealdb__Protocol__Rpc__V1__ClientStreamDestination *client_stream;
+  };
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DESTINATION__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_destination__descriptor) \
+, SURREALDB__PROTOCOL__RPC__V1__EXPORT_DESTINATION__DESTINATION__NOT_SET, {0} }
+
+
+/*
+ * Request to export data from the database as a streamed directory.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest
+{
+  ProtobufCMessage base;
+  /*
+   * Which sections of the database to export.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportConfig *config;
+  /*
+   * The compression to apply to each data file.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportCompression compression;
+  /*
+   * A hint for how many files to produce concurrently. Zero means the
+   * server chooses a default.
+   */
+  uint32_t parallelism;
+  /*
+   * The directory format version the client expects. Empty means the client
+   * accepts whatever the server produces.
+   */
+  char *format_version;
+  /*
+   * Where the server should write the exported files.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportDestination *destination;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_REQUEST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_directory_request__descriptor) \
+, NULL, SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED, 0, (char *)protobuf_c_empty_string, NULL }
+
+
+/*
+ * Manifest entry describing a single exported file.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ManifestEntry
+{
+  ProtobufCMessage base;
+  /*
+   * The file's path relative to the export root.
+   */
+  char *path;
+  /*
+   * The number of bytes written for the file (the on-disk size).
+   */
+  uint64_t bytes;
+  /*
+   * The SHA-256 of the file's on-disk bytes, lowercase hex.
+   */
+  char *sha256;
+  /*
+   * The table the file holds data for. Empty for schema or metadata files
+   * (table names are never empty).
+   */
+  char *table;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__MANIFEST_ENTRY__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__manifest_entry__descriptor) \
+, (char *)protobuf_c_empty_string, 0, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string }
+
+
+/*
+ * Manifest describing a complete directory export.
+ * The client writes this verbatim as `manifest.json` once the stream
+ * completes; it is the wire analogue of the manifest being written last.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__Manifest
+{
+  ProtobufCMessage base;
+  /*
+   * The directory format version.
+   */
+  char *format_version;
+  /*
+   * The namespace that was exported.
+   */
+  char *namespace_;
+  /*
+   * The database that was exported.
+   */
+  char *database;
+  /*
+   * The SurrealDB version that produced the export.
+   */
+  char *surrealdb_version;
+  /*
+   * The compression applied to the data files.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportCompression compression;
+  /*
+   * One entry per file in the export, in replay order.
+   */
+  size_t n_files;
+  Surrealdb__Protocol__Rpc__V1__ManifestEntry **files;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__MANIFEST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__manifest__descriptor) \
+, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED, 0,NULL }
+
+
+/*
+ * Frame: the export has begun. Sent once, before any files.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin
+{
+  ProtobufCMessage base;
+  /*
+   * The directory format version.
+   */
+  char *format_version;
+  /*
+   * The namespace being exported.
+   */
+  char *namespace_;
+  /*
+   * The database being exported.
+   */
+  char *database;
+  /*
+   * The SurrealDB version producing the export.
+   */
+  char *surrealdb_version;
+  /*
+   * The compression applied to the data files.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportCompression compression;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_BEGIN__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_directory_begin__descriptor) \
+, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED }
+
+
+/*
+ * Frame: a new file in the stream has begun.
+ * All frames for a given file share its `file_id`. A file's own frames are
+ * always ordered FileBegin -> FileChunk* -> FileEnd, but frames belonging to
+ * different files MAY be interleaved when the server streams files
+ * concurrently.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__FileBegin
+{
+  ProtobufCMessage base;
+  /*
+   * Correlates this file's frames within the stream.
+   */
+  uint64_t file_id;
+  /*
+   * The file's path relative to the export root.
+   */
+  char *relative_path;
+  /*
+   * The table the file holds data for. Empty for schema or metadata files
+   * (table names are never empty).
+   */
+  char *table;
+  /*
+   * The compression applied to this file's chunks.
+   */
+  Surrealdb__Protocol__Rpc__V1__ExportCompression compression;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__FILE_BEGIN__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__file_begin__descriptor) \
+, 0, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED }
+
+
+/*
+ * Frame: a chunk of a file's content.
+ * `data` carries the file's on-disk bytes verbatim — already zstd-compressed
+ * when the file's compression is ZSTD. Chunks are bounded in size (see the
+ * `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
+ * bindings) so neither peer buffers a whole file.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__FileChunk
+{
+  ProtobufCMessage base;
+  /*
+   * The file this chunk belongs to.
+   */
+  uint64_t file_id;
+  /*
+   * The chunk's bytes.
+   */
+  ProtobufCBinaryData data;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__FILE_CHUNK__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__file_chunk__descriptor) \
+, 0, {0,NULL} }
+
+
+/*
+ * Frame: a file has ended.
+ * The trailer carries the file's total size and hash, both computed
+ * incrementally while the chunks were produced — so no whole-file buffering is
+ * needed to learn them up front.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__FileEnd
+{
+  ProtobufCMessage base;
+  /*
+   * The file these totals apply to.
+   */
+  uint64_t file_id;
+  /*
+   * The total number of bytes streamed for the file.
+   */
+  uint64_t bytes;
+  /*
+   * The SHA-256 of the streamed bytes, lowercase hex.
+   */
+  char *sha256;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__FILE_END__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__file_end__descriptor) \
+, 0, 0, (char *)protobuf_c_empty_string }
+
+
+/*
+ * Frame: the export completed successfully.
+ * This is the completion token, the wire analogue of `manifest.json` being
+ * written last. A stream that ends without this frame MUST be treated as
+ * failed, and the client MUST NOT leave behind an importable directory.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd
+{
+  ProtobufCMessage base;
+  /*
+   * The full manifest for the export.
+   */
+  Surrealdb__Protocol__Rpc__V1__Manifest *manifest;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_END__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_directory_end__descriptor) \
+, NULL }
+
+
+/*
+ * Frame: the export failed mid-stream. Terminates the stream.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportError
+{
+  ProtobufCMessage base;
+  /*
+   * The error code.
+   */
+  int64_t code;
+  /*
+   * The error message.
+   */
+  char *message;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_ERROR__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_error__descriptor) \
+, 0, (char *)protobuf_c_empty_string }
+
+
+typedef enum {
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME__NOT_SET = 0,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME_BEGIN = 1,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME_FILE_BEGIN = 2,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME_FILE_CHUNK = 3,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME_FILE_END = 4,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME_END = 5,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME_ERROR = 6
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME__CASE)
+} Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse__FrameCase;
+
+/*
+ * A single frame in a directory export stream.
+ * Modelled on the QueryResponse streaming envelope. The frames for one export
+ * arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
+ * either End (success) or Error (failure).
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse__FrameCase frame_case;
+  union {
+    /*
+     * The export has begun.
+     */
+    Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin *begin;
+    /*
+     * The export completed successfully (carries the manifest).
+     */
+    Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd *end;
+    /*
+     * The export failed.
+     */
+    Surrealdb__Protocol__Rpc__V1__ExportError *error;
+    /*
+     * A new file has begun.
+     */
+    Surrealdb__Protocol__Rpc__V1__FileBegin *file_begin;
+    /*
+     * A chunk of the current file.
+     */
+    Surrealdb__Protocol__Rpc__V1__FileChunk *file_chunk;
+    /*
+     * The current file has ended (size + hash trailer).
+     */
+    Surrealdb__Protocol__Rpc__V1__FileEnd *file_end;
+  };
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_directory_response__descriptor) \
+, SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_RESPONSE__FRAME__NOT_SET, {0} }
 
 
 typedef enum {
@@ -1314,6 +1822,278 @@ Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse *
 void   surrealdb__protocol__rpc__v1__export_ml_model_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables methods */
+void   surrealdb__protocol__rpc__v1__export_config__selected_tables__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables         *message);
+/* Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables methods */
+void   surrealdb__protocol__rpc__v1__export_config__tables__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables         *message);
+/* Surrealdb__Protocol__Rpc__V1__ExportConfig methods */
+void   surrealdb__protocol__rpc__v1__export_config__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportConfig         *message);
+size_t surrealdb__protocol__rpc__v1__export_config__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportConfig   *message);
+size_t surrealdb__protocol__rpc__v1__export_config__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportConfig   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_config__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportConfig   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportConfig *
+       surrealdb__protocol__rpc__v1__export_config__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_config__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportConfig *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ClientStreamDestination methods */
+void   surrealdb__protocol__rpc__v1__client_stream_destination__init
+                     (Surrealdb__Protocol__Rpc__V1__ClientStreamDestination         *message);
+size_t surrealdb__protocol__rpc__v1__client_stream_destination__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ClientStreamDestination   *message);
+size_t surrealdb__protocol__rpc__v1__client_stream_destination__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ClientStreamDestination   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__client_stream_destination__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ClientStreamDestination   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ClientStreamDestination *
+       surrealdb__protocol__rpc__v1__client_stream_destination__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__client_stream_destination__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ClientStreamDestination *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__BucketDestination methods */
+void   surrealdb__protocol__rpc__v1__bucket_destination__init
+                     (Surrealdb__Protocol__Rpc__V1__BucketDestination         *message);
+size_t surrealdb__protocol__rpc__v1__bucket_destination__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__BucketDestination   *message);
+size_t surrealdb__protocol__rpc__v1__bucket_destination__pack
+                     (const Surrealdb__Protocol__Rpc__V1__BucketDestination   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__bucket_destination__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__BucketDestination   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__BucketDestination *
+       surrealdb__protocol__rpc__v1__bucket_destination__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__bucket_destination__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__BucketDestination *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportDestination methods */
+void   surrealdb__protocol__rpc__v1__export_destination__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportDestination         *message);
+size_t surrealdb__protocol__rpc__v1__export_destination__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDestination   *message);
+size_t surrealdb__protocol__rpc__v1__export_destination__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDestination   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_destination__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDestination   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportDestination *
+       surrealdb__protocol__rpc__v1__export_destination__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_destination__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportDestination *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest methods */
+void   surrealdb__protocol__rpc__v1__export_directory_request__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest         *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_request__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest   *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_request__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_directory_request__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *
+       surrealdb__protocol__rpc__v1__export_directory_request__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_directory_request__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ManifestEntry methods */
+void   surrealdb__protocol__rpc__v1__manifest_entry__init
+                     (Surrealdb__Protocol__Rpc__V1__ManifestEntry         *message);
+size_t surrealdb__protocol__rpc__v1__manifest_entry__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry   *message);
+size_t surrealdb__protocol__rpc__v1__manifest_entry__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__manifest_entry__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ManifestEntry *
+       surrealdb__protocol__rpc__v1__manifest_entry__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__manifest_entry__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__Manifest methods */
+void   surrealdb__protocol__rpc__v1__manifest__init
+                     (Surrealdb__Protocol__Rpc__V1__Manifest         *message);
+size_t surrealdb__protocol__rpc__v1__manifest__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__Manifest   *message);
+size_t surrealdb__protocol__rpc__v1__manifest__pack
+                     (const Surrealdb__Protocol__Rpc__V1__Manifest   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__manifest__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__Manifest   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__Manifest *
+       surrealdb__protocol__rpc__v1__manifest__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__manifest__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__Manifest *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin methods */
+void   surrealdb__protocol__rpc__v1__export_directory_begin__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin         *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_begin__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin   *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_begin__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_directory_begin__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin *
+       surrealdb__protocol__rpc__v1__export_directory_begin__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_directory_begin__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__FileBegin methods */
+void   surrealdb__protocol__rpc__v1__file_begin__init
+                     (Surrealdb__Protocol__Rpc__V1__FileBegin         *message);
+size_t surrealdb__protocol__rpc__v1__file_begin__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__FileBegin   *message);
+size_t surrealdb__protocol__rpc__v1__file_begin__pack
+                     (const Surrealdb__Protocol__Rpc__V1__FileBegin   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__file_begin__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__FileBegin   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__FileBegin *
+       surrealdb__protocol__rpc__v1__file_begin__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__file_begin__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__FileBegin *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__FileChunk methods */
+void   surrealdb__protocol__rpc__v1__file_chunk__init
+                     (Surrealdb__Protocol__Rpc__V1__FileChunk         *message);
+size_t surrealdb__protocol__rpc__v1__file_chunk__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__FileChunk   *message);
+size_t surrealdb__protocol__rpc__v1__file_chunk__pack
+                     (const Surrealdb__Protocol__Rpc__V1__FileChunk   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__file_chunk__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__FileChunk   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__FileChunk *
+       surrealdb__protocol__rpc__v1__file_chunk__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__file_chunk__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__FileChunk *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__FileEnd methods */
+void   surrealdb__protocol__rpc__v1__file_end__init
+                     (Surrealdb__Protocol__Rpc__V1__FileEnd         *message);
+size_t surrealdb__protocol__rpc__v1__file_end__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__FileEnd   *message);
+size_t surrealdb__protocol__rpc__v1__file_end__pack
+                     (const Surrealdb__Protocol__Rpc__V1__FileEnd   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__file_end__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__FileEnd   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__FileEnd *
+       surrealdb__protocol__rpc__v1__file_end__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__file_end__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__FileEnd *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd methods */
+void   surrealdb__protocol__rpc__v1__export_directory_end__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd         *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_end__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd   *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_end__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_directory_end__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd *
+       surrealdb__protocol__rpc__v1__export_directory_end__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_directory_end__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportError methods */
+void   surrealdb__protocol__rpc__v1__export_error__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportError         *message);
+size_t surrealdb__protocol__rpc__v1__export_error__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportError   *message);
+size_t surrealdb__protocol__rpc__v1__export_error__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportError   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_error__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportError   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportError *
+       surrealdb__protocol__rpc__v1__export_error__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_error__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportError *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse methods */
+void   surrealdb__protocol__rpc__v1__export_directory_response__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse         *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_response__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse   *message);
+size_t surrealdb__protocol__rpc__v1__export_directory_response__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__export_directory_response__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse *
+       surrealdb__protocol__rpc__v1__export_directory_response__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__export_directory_response__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse *message,
+                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__SubscribeRequest methods */
 void   surrealdb__protocol__rpc__v1__subscribe_request__init
                      (Surrealdb__Protocol__Rpc__V1__SubscribeRequest         *message);
@@ -1666,6 +2446,54 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportConfig_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportConfig *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ClientStreamDestination_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ClientStreamDestination *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__BucketDestination_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__BucketDestination *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDestination_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportDestination *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ManifestEntry_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__Manifest_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__Manifest *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__FileBegin_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__FileBegin *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__FileChunk_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__FileChunk *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__FileEnd_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__FileEnd *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportError_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportError *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse *message,
+                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__SubscribeRequest_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__SubscribeRequest *message,
                   void *closure_data);
@@ -1763,6 +2591,10 @@ struct Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service
                      const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *input,
                      Surrealdb__Protocol__Rpc__V1__ExportSqlResponse_Closure closure,
                      void *closure_data);
+  void (*export_directory)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
+                           const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *input,
+                           Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse_Closure closure,
+                           void *closure_data);
   void (*export_ml_model)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                           const Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest *input,
                           Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse_Closure closure,
@@ -1795,6 +2627,7 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__init (Surrealdb__Protocol_
       function_prefix__ ## reset,\
       function_prefix__ ## import_sql,\
       function_prefix__ ## export_sql,\
+      function_prefix__ ## export_directory,\
       function_prefix__ ## export_ml_model,\
       function_prefix__ ## query,\
       function_prefix__ ## subscribe  }
@@ -1846,6 +2679,10 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__export_sql(ProtobufCServic
                                                                  const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *input,
                                                                  Surrealdb__Protocol__Rpc__V1__ExportSqlResponse_Closure closure,
                                                                  void *closure_data);
+void surrealdb__protocol__rpc__v1__surreal_dbservice__export_directory(ProtobufCService *service,
+                                                                       const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *input,
+                                                                       Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse_Closure closure,
+                                                                       void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__export_ml_model(ProtobufCService *service,
                                                                       const Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest *input,
                                                                       Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse_Closure closure,
@@ -1861,6 +2698,7 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__subscribe(ProtobufCService
 
 /* --- descriptors --- */
 
+extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__export_compression__descriptor;
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__action__descriptor;
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__query_response_kind__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__health_request__descriptor;
@@ -1891,6 +2729,22 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_sql
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_sql_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_ml_model_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_ml_model_response__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__selected_tables__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__tables__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__client_stream_destination__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__bucket_destination__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_destination__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_request__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__manifest_entry__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__manifest__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_begin__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__file_begin__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__file_chunk__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__file_end__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_end__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_error__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__notification__descriptor;

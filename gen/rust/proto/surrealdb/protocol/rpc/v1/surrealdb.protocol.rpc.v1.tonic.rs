@@ -411,6 +411,35 @@ pub mod surreal_db_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        pub async fn export_directory(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ExportDirectoryRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::ExportDirectoryResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic_prost::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportDirectory",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "surrealdb.protocol.rpc.v1.SurrealDBService",
+                        "ExportDirectory",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
         pub async fn export_ml_model(
             &mut self,
             request: impl tonic::IntoRequest<super::ExportMlModelRequest>,
@@ -576,6 +605,19 @@ pub mod surreal_db_service_server {
             &self,
             request: tonic::Request<super::ExportSqlRequest>,
         ) -> std::result::Result<tonic::Response<Self::ExportSqlStream>, tonic::Status>;
+        /// Server streaming response type for the ExportDirectory method.
+        type ExportDirectoryStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::ExportDirectoryResponse, tonic::Status>,
+            >
+            + std::marker::Send
+            + 'static;
+        async fn export_directory(
+            &self,
+            request: tonic::Request<super::ExportDirectoryRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::ExportDirectoryStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the ExportMlModel method.
         type ExportMlModelStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ExportMlModelResponse, tonic::Status>,
@@ -1210,6 +1252,54 @@ pub mod surreal_db_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = ExportSqlSvc(inner);
+                        let codec = tonic_prost::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportDirectory" => {
+                    #[allow(non_camel_case_types)]
+                    struct ExportDirectorySvc<T: SurrealDbService>(pub Arc<T>);
+                    impl<
+                        T: SurrealDbService,
+                    > tonic::server::ServerStreamingService<
+                        super::ExportDirectoryRequest,
+                    > for ExportDirectorySvc<T> {
+                        type Response = super::ExportDirectoryResponse;
+                        type ResponseStream = T::ExportDirectoryStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ExportDirectoryRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as SurrealDbService>::export_directory(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ExportDirectorySvc(inner);
                         let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
