@@ -487,10 +487,13 @@ pub struct ExportDirectoryRequest {
     #[prost(uint32, tag = "3")]
     pub parallelism: u32,
     /// The directory format version the client expects. Empty means the client
-    /// accepts whatever the server produces.
+    /// accepts whatever the server produces. A server that cannot produce the
+    /// requested version rejects the request before sending any frame.
     #[prost(string, tag = "4")]
     pub format_version: ::prost::alloc::string::String,
-    /// Where the server should write the exported files.
+    /// Where the server should write the exported files. Unset is equivalent
+    /// to a client_stream destination. A server that does not support the
+    /// requested destination rejects the request before sending any frame.
     #[prost(message, optional, tag = "5")]
     pub destination: ::core::option::Option<ExportDestination>,
 }
@@ -498,58 +501,6 @@ impl ::prost::Name for ExportDirectoryRequest {
 const NAME: &'static str = "ExportDirectoryRequest";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryRequest".into() }}
-/// Manifest entry describing a single exported file.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ManifestEntry {
-    /// The file's path relative to the export root.
-    #[prost(string, tag = "1")]
-    pub path: ::prost::alloc::string::String,
-    /// The number of bytes written for the file (the on-disk size).
-    #[prost(uint64, tag = "2")]
-    pub bytes: u64,
-    /// The SHA-256 of the file's on-disk bytes, lowercase hex.
-    #[prost(string, tag = "3")]
-    pub sha256: ::prost::alloc::string::String,
-    /// The table the file holds data for. Empty for schema or metadata files
-    /// (table names are never empty).
-    #[prost(string, tag = "4")]
-    pub table: ::prost::alloc::string::String,
-}
-impl ::prost::Name for ManifestEntry {
-const NAME: &'static str = "ManifestEntry";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ManifestEntry".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ManifestEntry".into() }}
-/// Manifest describing a complete directory export.
-///
-/// The client writes this verbatim as `manifest.json` once the stream
-/// completes; it is the wire analogue of the manifest being written last.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Manifest {
-    /// The directory format version.
-    #[prost(string, tag = "1")]
-    pub format_version: ::prost::alloc::string::String,
-    /// The namespace that was exported.
-    #[prost(string, tag = "2")]
-    pub namespace: ::prost::alloc::string::String,
-    /// The database that was exported.
-    #[prost(string, tag = "3")]
-    pub database: ::prost::alloc::string::String,
-    /// The SurrealDB version that produced the export.
-    #[prost(string, tag = "4")]
-    pub surrealdb_version: ::prost::alloc::string::String,
-    /// The compression applied to the data files.
-    #[prost(enumeration = "ExportCompression", tag = "5")]
-    pub compression: i32,
-    /// One entry per file in the export, in replay order.
-    #[prost(message, repeated, tag = "6")]
-    pub files: ::prost::alloc::vec::Vec<ManifestEntry>,
-}
-impl ::prost::Name for Manifest {
-const NAME: &'static str = "Manifest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Manifest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.Manifest".into() }}
 /// Frame: the export has begun. Sent once, before any files.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
@@ -583,10 +534,15 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Ex
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FileBegin {
-    /// Correlates this file's frames within the stream.
+    /// Correlates this file's frames within the stream. Values are unique for
+    /// the lifetime of the stream and are never reused, even after the file's
+    /// FileEnd; a FileBegin repeating a previously seen file_id is a protocol
+    /// error.
     #[prost(uint64, tag = "1")]
     pub file_id: u64,
-    /// The file's path relative to the export root.
+    /// The file's path relative to the export root. Paths use `/` separators
+    /// and MUST NOT be absolute, contain `..` components, or repeat within the
+    /// stream; clients MUST reject a violating path before opening any file.
     #[prost(string, tag = "2")]
     pub relative_path: ::prost::alloc::string::String,
     /// The table the file holds data for. Empty for schema or metadata files
@@ -604,9 +560,11 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Fi
 /// Frame: a chunk of a file's content.
 ///
 /// `data` carries the file's on-disk bytes verbatim — already zstd-compressed
-/// when the file's compression is ZSTD. Chunks are bounded in size (see the
-/// `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
-/// bindings) so neither peer buffers a whole file.
+/// when the file's compression is ZSTD. Producers MUST NOT exceed 1 MiB
+/// (1,048,576 bytes) of data per chunk (256 KiB is the recommended default),
+/// so neither peer ever buffers a whole file; consumers MAY treat a larger
+/// chunk as a protocol error. Chunk boundaries carry no meaning: a file may be
+/// split at any byte position, and empty chunks are permitted.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FileChunk {
@@ -625,7 +583,9 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Fi
 ///
 /// The trailer carries the file's total size and hash, both computed
 /// incrementally while the chunks were produced — so no whole-file buffering is
-/// needed to learn them up front.
+/// needed to learn them up front. Clients MUST verify that the bytes they
+/// received for the file match both `bytes` and `sha256`, and treat any
+/// mismatch as a failed export.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FileEnd {
@@ -645,21 +605,35 @@ const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.FileEnd".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.FileEnd".into() }}
 /// Frame: the export completed successfully.
 ///
-/// This is the completion token, the wire analogue of `manifest.json` being
-/// written last. A stream that ends without this frame MUST be treated as
-/// failed, and the client MUST NOT leave behind an importable directory.
+/// This is the completion token. A stream that ends without this frame MUST be
+/// treated as failed, and the client MUST NOT leave behind an importable
+/// directory.
+///
+/// The manifest is not carried here: `manifest.json` is streamed as the final
+/// file of the export, listing every other file in replay order (the order an
+/// importer must apply them) in the schema defined by the directory format
+/// version, and its content MUST agree with the streamed FileBegin and FileEnd
+/// frames. This keeps the terminal frame O(1) regardless of how many files the
+/// export contains.
 #[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ExportDirectoryEnd {
-    /// The full manifest for the export.
-    #[prost(message, optional, tag = "1")]
-    pub manifest: ::core::option::Option<Manifest>,
+    /// The total number of files streamed, including `manifest.json`.
+    #[prost(uint64, tag = "1")]
+    pub file_count: u64,
+    /// The sum of every streamed file's size (the sum of all `FileEnd.bytes`).
+    #[prost(uint64, tag = "2")]
+    pub total_bytes: u64,
 }
 impl ::prost::Name for ExportDirectoryEnd {
 const NAME: &'static str = "ExportDirectoryEnd";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryEnd".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryEnd".into() }}
-/// Frame: the export failed mid-stream. Terminates the stream.
+/// Frame: the export failed. Terminates the stream.
+///
+/// An Error frame MAY arrive at any point, including before Begin and while
+/// files are still open. All open files are abandoned and no further frames
+/// follow.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ExportError {
@@ -676,11 +650,22 @@ const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportError".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportError".into() }}
 /// A single frame in a directory export stream.
 ///
-/// Modelled on the QueryResponse streaming envelope. The frames for one export
-/// arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
-/// either End (success) or Error (failure).
+/// Modelled on the QueryResponse streaming envelope. A successful export
+/// arrives as: Begin (exactly once, first), then for each file
+/// FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed is
+/// always `manifest.json`, which lists every other file. An Error frame MAY
+/// terminate the stream at any point instead.
+///
+/// A single file's frames are always sent in order, but frames belonging to
+/// different `file_id`s MAY be interleaved; clients MUST demultiplex by
+/// `file_id`.
+///
+/// Clients MUST treat any deviation from this grammar as a failed export,
+/// including a response whose frame is unset (an unrecognised variant from a
+/// newer server). Servers MUST NOT send frame variants that the format version
+/// negotiated with the client does not define.
 #[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ExportDirectoryResponse {
     #[prost(oneof = "export_directory_response::Frame", tags = "1, 2, 3, 4, 5, 6")]
     pub frame: ::core::option::Option<export_directory_response::Frame>,
@@ -688,7 +673,7 @@ pub struct ExportDirectoryResponse {
 /// Nested message and enum types in `ExportDirectoryResponse`.
 pub mod export_directory_response {
     #[derive(serde::Deserialize,serde::Serialize)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum Frame {
         /// The export has begun.
         #[prost(message, tag = "1")]
@@ -702,7 +687,7 @@ pub mod export_directory_response {
         /// The current file has ended (size + hash trailer).
         #[prost(message, tag = "4")]
         FileEnd(super::FileEnd),
-        /// The export completed successfully (carries the manifest).
+        /// The export completed successfully (carries the stream totals).
         #[prost(message, tag = "5")]
         End(super::ExportDirectoryEnd),
         /// The export failed.
@@ -781,20 +766,31 @@ const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.QueryRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.QueryRequest".into() }}
 /// Streaming response to a query request.
 ///
-/// When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
-/// ID's response can be assumed to be sent in order, but may be interleaved in the future.
+/// When a query has 5 statements, there will be 5 unique query indexes (0..4).
 ///
-/// Expect only the last response for each query ID to contain the query stats.
-/// 
-/// Responses are ordered by query index, then batch index. For example:
-///   QueryResponse(query_index=0, batch_index=0, stats=None)
-///   QueryResponse(query_index=0, batch_index=1, stats=Some(..))
-///   QueryResponse(query_index=1, batch_index=0, stats=Some(..))
-///   QueryResponse(query_index=2, batch_index=0, stats=None)
-///   QueryResponse(query_index=2, batch_index=1, stats=None)
-///   QueryResponse(query_index=2, batch_index=2, stats=Some(..))
-///   QueryResponse(query_index=3, batch_index=0, stats=Some(..))
-///   QueryResponse(query_index=4, batch_index=0, stats=Some(..))
+/// Ordering: responses that share a query_index are always sent in ascending
+/// batch_index order. Responses for DIFFERENT query indexes MAY be interleaved
+/// arbitrarily; clients MUST demultiplex by query_index and MUST NOT assume
+/// one statement's responses finish before another's begin. This is what
+/// allows a server to stream each statement's batches as soon as they are
+/// produced. For example:
+///   QueryResponse(query_index=0, batch_index=0)
+///   QueryResponse(query_index=1, batch_index=0, stats=Some(..))  // q1 complete
+///   QueryResponse(query_index=0, batch_index=1, stats=Some(..))  // q0 complete
+///   QueryResponse(query_index=2, batch_index=0)
+///   QueryResponse(query_index=2, batch_index=1, stats=Some(..))  // q2 complete
+///
+/// Lifecycle: every query index in 0..result_count emits at least one
+/// response. The final response for a query index is the one carrying stats
+/// and/or error; treat their presence as the authoritative end-of-results
+/// signal for that index.
+///
+/// Errors: a response with error set is the final response for its
+/// query index; its values are empty, stats MAY be present, and responses for
+/// other query indexes continue to arrive. result_count includes errored
+/// statements. Failures that occur before execution begins (parse errors,
+/// authentication, an unknown txn_id) terminate the RPC with a gRPC status
+/// error and no QueryResponse frames.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryResponse {
@@ -834,13 +830,18 @@ pub struct QueryResponse {
     #[prost(enumeration = "QueryResponseKind", tag = "4")]
     pub kind: i32,
     /// The query stats.
-    /// This is only expected to be present in the last batch of each query.
+    /// Present only on the final response of each query index.
     #[prost(message, optional, tag = "5")]
     pub stats: ::core::option::Option<QueryStats>,
-    /// The error, if any.
+    /// The error, if any. A response carrying an error is the final response
+    /// for its query index.
     #[prost(message, optional, tag = "6")]
     pub error: ::core::option::Option<QueryError>,
-    /// A batch of values.
+    /// A batch of values. This is the only result payload in this version of
+    /// the protocol. Future result encodings (for example a columnar Arrow
+    /// batch) will be added as sibling submessage fields (field 8 onwards) and
+    /// MUST only be emitted when the client explicitly opts in via
+    /// QueryRequest; exactly one payload field is populated per response.
     #[prost(message, repeated, tag = "7")]
     pub values: ::prost::alloc::vec::Vec<super::super::v1::Value>,
 }
@@ -1014,7 +1015,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Ac
 #[repr(i32)]
 pub enum ExportCompression {
     /// No explicit compression was specified. On a request this selects the
-    /// server default; it should never appear on a response frame.
+    /// server default; it MUST NOT appear on a response frame.
     Unspecified = 0,
     /// Files are streamed uncompressed.
     None = 1,
@@ -1081,6 +1082,10 @@ impl Action {
     }
 }
 /// The kind of query response.
+///
+/// New kinds will only ever be sent to clients that explicitly opt in via a
+/// QueryRequest capability; clients MAY treat an unrecognised kind as a
+/// protocol error.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -1089,6 +1094,8 @@ pub enum QueryResponseKind {
     /// A single value is contained in the response and no further responses are expected.
     ///
     /// This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+    ///
+    /// This is the final response for its query index and carries the query stats.
     Single = 1,
     /// A batch of values is contained in the response and further responses may be expected.
     Batched = 2,

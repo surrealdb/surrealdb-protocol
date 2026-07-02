@@ -1426,96 +1426,6 @@ void   surrealdb__protocol__rpc__v1__export_directory_request__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_directory_request__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__manifest_entry__init
-                     (Surrealdb__Protocol__Rpc__V1__ManifestEntry         *message)
-{
-  static const Surrealdb__Protocol__Rpc__V1__ManifestEntry init_value = SURREALDB__PROTOCOL__RPC__V1__MANIFEST_ENTRY__INIT;
-  *message = init_value;
-}
-size_t surrealdb__protocol__rpc__v1__manifest_entry__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry *message)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest_entry__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t surrealdb__protocol__rpc__v1__manifest_entry__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
-                      uint8_t       *out)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest_entry__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t surrealdb__protocol__rpc__v1__manifest_entry__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
-                      ProtobufCBuffer *buffer)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest_entry__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-Surrealdb__Protocol__Rpc__V1__ManifestEntry *
-       surrealdb__protocol__rpc__v1__manifest_entry__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (Surrealdb__Protocol__Rpc__V1__ManifestEntry *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__manifest_entry__descriptor,
-                                allocator, len, data);
-}
-void   surrealdb__protocol__rpc__v1__manifest_entry__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
-                      ProtobufCAllocator *allocator)
-{
-  if(!message)
-    return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest_entry__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   surrealdb__protocol__rpc__v1__manifest__init
-                     (Surrealdb__Protocol__Rpc__V1__Manifest         *message)
-{
-  static const Surrealdb__Protocol__Rpc__V1__Manifest init_value = SURREALDB__PROTOCOL__RPC__V1__MANIFEST__INIT;
-  *message = init_value;
-}
-size_t surrealdb__protocol__rpc__v1__manifest__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__Manifest *message)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t surrealdb__protocol__rpc__v1__manifest__pack
-                     (const Surrealdb__Protocol__Rpc__V1__Manifest *message,
-                      uint8_t       *out)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t surrealdb__protocol__rpc__v1__manifest__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__Manifest *message,
-                      ProtobufCBuffer *buffer)
-{
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-Surrealdb__Protocol__Rpc__V1__Manifest *
-       surrealdb__protocol__rpc__v1__manifest__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (Surrealdb__Protocol__Rpc__V1__Manifest *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__manifest__descriptor,
-                                allocator, len, data);
-}
-void   surrealdb__protocol__rpc__v1__manifest__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__Manifest *message,
-                      ProtobufCAllocator *allocator)
-{
-  if(!message)
-    return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__manifest__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
 void   surrealdb__protocol__rpc__v1__export_directory_begin__init
                      (Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin         *message)
 {
@@ -4000,186 +3910,6 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_directory_request__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__manifest_entry__field_descriptors[4] =
-{
-  {
-    "path",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ManifestEntry, path),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "bytes",
-    2,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_UINT64,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ManifestEntry, bytes),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "sha256",
-    3,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ManifestEntry, sha256),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "table",
-    4,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ManifestEntry, table),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned surrealdb__protocol__rpc__v1__manifest_entry__field_indices_by_name[] = {
-  1,   /* field[1] = bytes */
-  0,   /* field[0] = path */
-  2,   /* field[2] = sha256 */
-  3,   /* field[3] = table */
-};
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__manifest_entry__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 4 }
-};
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__manifest_entry__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.ManifestEntry",
-  "ManifestEntry",
-  "Surrealdb__Protocol__Rpc__V1__ManifestEntry",
-  "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__ManifestEntry),
-  4,
-  surrealdb__protocol__rpc__v1__manifest_entry__field_descriptors,
-  surrealdb__protocol__rpc__v1__manifest_entry__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__manifest_entry__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__manifest_entry__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__manifest__field_descriptors[6] =
-{
-  {
-    "format_version",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, format_version),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "namespace",
-    2,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, namespace_),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "database",
-    3,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, database),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "surrealdb_version",
-    4,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, surrealdb_version),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "compression",
-    5,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_ENUM,
-    0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, compression),
-    &surrealdb__protocol__rpc__v1__export_compression__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "files",
-    6,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, n_files),
-    offsetof(Surrealdb__Protocol__Rpc__V1__Manifest, files),
-    &surrealdb__protocol__rpc__v1__manifest_entry__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned surrealdb__protocol__rpc__v1__manifest__field_indices_by_name[] = {
-  4,   /* field[4] = compression */
-  2,   /* field[2] = database */
-  5,   /* field[5] = files */
-  0,   /* field[0] = format_version */
-  1,   /* field[1] = namespace */
-  3,   /* field[3] = surrealdb_version */
-};
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__manifest__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 6 }
-};
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__manifest__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.Manifest",
-  "Manifest",
-  "Surrealdb__Protocol__Rpc__V1__Manifest",
-  "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__Manifest),
-  6,
-  surrealdb__protocol__rpc__v1__manifest__field_descriptors,
-  surrealdb__protocol__rpc__v1__manifest__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__manifest__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__manifest__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
 static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_directory_begin__field_descriptors[5] =
 {
   {
@@ -4462,28 +4192,41 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__file_end__descrip
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__file_end__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_directory_end__field_descriptors[1] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_directory_end__field_descriptors[2] =
 {
   {
-    "manifest",
+    "file_count",
     1,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_MESSAGE,
+    PROTOBUF_C_TYPE_UINT64,
     0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd, manifest),
-    &surrealdb__protocol__rpc__v1__manifest__descriptor,
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd, file_count),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "total_bytes",
+    2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd, total_bytes),
+    NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
 static const unsigned surrealdb__protocol__rpc__v1__export_directory_end__field_indices_by_name[] = {
-  0,   /* field[0] = manifest */
+  0,   /* field[0] = file_count */
+  1,   /* field[1] = total_bytes */
 };
 static const ProtobufCIntRange surrealdb__protocol__rpc__v1__export_directory_end__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 1 }
+  { 0, 2 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_end__descriptor =
 {
@@ -4493,7 +4236,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_
   "Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd",
   "surrealdb.protocol.rpc.v1",
   sizeof(Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd),
-  1,
+  2,
   surrealdb__protocol__rpc__v1__export_directory_end__field_descriptors,
   surrealdb__protocol__rpc__v1__export_directory_end__field_indices_by_name,
   1,  surrealdb__protocol__rpc__v1__export_directory_end__number_ranges,

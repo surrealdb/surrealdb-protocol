@@ -5,8 +5,10 @@
 //! file is sent as a `FileBegin` -> `FileChunk`* -> `FileEnd` run so that
 //! neither peer ever buffers a whole file: the file's byte count and SHA-256
 //! are carried in the `FileEnd` trailer, computed incrementally as the chunks
-//! are produced. The stream is bracketed by a `Begin` frame and terminated by
-//! either an `End` frame (success, carrying the manifest) or an `Error` frame.
+//! are produced. The manifest is streamed as the final file (`manifest.json`),
+//! so no frame grows with the number of files. The stream is bracketed by a
+//! `Begin` frame and terminated by either an `End` frame (success) or an
+//! `Error` frame.
 
 use std::fmt::Display;
 
@@ -14,7 +16,7 @@ use bytes::Bytes;
 
 use crate::proto::rpc::v1::{
     ExportDirectoryBegin, ExportDirectoryEnd, ExportDirectoryResponse, ExportError, FileBegin,
-    FileChunk, FileEnd, Manifest, export_config, export_directory_response::Frame,
+    FileChunk, FileEnd, export_config, export_directory_response::Frame,
 };
 
 /// The default size, in bytes, of a [`FileChunk`]'s payload (256 KiB).
@@ -91,12 +93,13 @@ impl ExportDirectoryResponse {
         }
     }
 
-    /// Wraps the completion [`ExportDirectoryEnd`] frame carrying the export
-    /// `manifest`.
-    pub fn end(manifest: Manifest) -> Self {
+    /// Builds the completion [`ExportDirectoryEnd`] frame carrying the stream
+    /// totals.
+    pub fn end(file_count: u64, total_bytes: u64) -> Self {
         Self {
             frame: Some(Frame::End(ExportDirectoryEnd {
-                manifest: Some(manifest),
+                file_count,
+                total_bytes,
             })),
         }
     }
@@ -179,7 +182,7 @@ mod tests {
             Some(Frame::FileEnd(_))
         ));
         assert!(matches!(
-            ExportDirectoryResponse::end(Manifest::default()).frame,
+            ExportDirectoryResponse::end(0, 0).frame,
             Some(Frame::End(_))
         ));
         assert!(matches!(
@@ -214,15 +217,7 @@ mod tests {
             }),
             ExportDirectoryResponse::file_chunk(42, Bytes::from_static(b"chunk-bytes")),
             ExportDirectoryResponse::file_end(42, 4096, "deadbeef".to_string()),
-            ExportDirectoryResponse::end(Manifest {
-                files: vec![crate::proto::rpc::v1::ManifestEntry {
-                    path: "data/users/0001.surql.zst".to_string(),
-                    bytes: 4096,
-                    sha256: "deadbeef".to_string(),
-                    table: "users".to_string(),
-                }],
-                ..Default::default()
-            }),
+            ExportDirectoryResponse::end(3, 4096),
             ExportDirectoryResponse::error(500, "boom".to_string()),
         ];
 

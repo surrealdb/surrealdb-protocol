@@ -52,8 +52,6 @@ typedef struct Surrealdb__Protocol__Rpc__V1__ClientStreamDestination Surrealdb__
 typedef struct Surrealdb__Protocol__Rpc__V1__BucketDestination Surrealdb__Protocol__Rpc__V1__BucketDestination;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportDestination Surrealdb__Protocol__Rpc__V1__ExportDestination;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__ManifestEntry Surrealdb__Protocol__Rpc__V1__ManifestEntry;
-typedef struct Surrealdb__Protocol__Rpc__V1__Manifest Surrealdb__Protocol__Rpc__V1__Manifest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin;
 typedef struct Surrealdb__Protocol__Rpc__V1__FileBegin Surrealdb__Protocol__Rpc__V1__FileBegin;
 typedef struct Surrealdb__Protocol__Rpc__V1__FileChunk Surrealdb__Protocol__Rpc__V1__FileChunk;
@@ -85,7 +83,7 @@ typedef struct Surrealdb__Protocol__Rpc__V1__AccessMethod Surrealdb__Protocol__R
 typedef enum _Surrealdb__Protocol__Rpc__V1__ExportCompression {
   /*
    * No explicit compression was specified. On a request this selects the
-   * server default; it should never appear on a response frame.
+   * server default; it MUST NOT appear on a response frame.
    */
   SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED = 0,
   /*
@@ -111,12 +109,16 @@ typedef enum _Surrealdb__Protocol__Rpc__V1__Action {
 } Surrealdb__Protocol__Rpc__V1__Action;
 /*
  * The kind of query response.
+ * New kinds will only ever be sent to clients that explicitly opt in via a
+ * QueryRequest capability; clients MAY treat an unrecognised kind as a
+ * protocol error.
  */
 typedef enum _Surrealdb__Protocol__Rpc__V1__QueryResponseKind {
   SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_UNSPECIFIED = 0,
   /*
    * A single value is contained in the response and no further responses are expected.
    * This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+   * This is the final response for its query index and carries the query stats.
    */
   SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE_KIND__QUERY_RESPONSE_KIND_SINGLE = 1,
   /*
@@ -718,85 +720,20 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest
   uint32_t parallelism;
   /*
    * The directory format version the client expects. Empty means the client
-   * accepts whatever the server produces.
+   * accepts whatever the server produces. A server that cannot produce the
+   * requested version rejects the request before sending any frame.
    */
   char *format_version;
   /*
-   * Where the server should write the exported files.
+   * Where the server should write the exported files. Unset is equivalent
+   * to a client_stream destination. A server that does not support the
+   * requested destination rejects the request before sending any frame.
    */
   Surrealdb__Protocol__Rpc__V1__ExportDestination *destination;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_REQUEST__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_directory_request__descriptor) \
 , NULL, SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED, 0, (char *)protobuf_c_empty_string, NULL }
-
-
-/*
- * Manifest entry describing a single exported file.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ManifestEntry
-{
-  ProtobufCMessage base;
-  /*
-   * The file's path relative to the export root.
-   */
-  char *path;
-  /*
-   * The number of bytes written for the file (the on-disk size).
-   */
-  uint64_t bytes;
-  /*
-   * The SHA-256 of the file's on-disk bytes, lowercase hex.
-   */
-  char *sha256;
-  /*
-   * The table the file holds data for. Empty for schema or metadata files
-   * (table names are never empty).
-   */
-  char *table;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__MANIFEST_ENTRY__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__manifest_entry__descriptor) \
-, (char *)protobuf_c_empty_string, 0, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string }
-
-
-/*
- * Manifest describing a complete directory export.
- * The client writes this verbatim as `manifest.json` once the stream
- * completes; it is the wire analogue of the manifest being written last.
- */
-struct  Surrealdb__Protocol__Rpc__V1__Manifest
-{
-  ProtobufCMessage base;
-  /*
-   * The directory format version.
-   */
-  char *format_version;
-  /*
-   * The namespace that was exported.
-   */
-  char *namespace_;
-  /*
-   * The database that was exported.
-   */
-  char *database;
-  /*
-   * The SurrealDB version that produced the export.
-   */
-  char *surrealdb_version;
-  /*
-   * The compression applied to the data files.
-   */
-  Surrealdb__Protocol__Rpc__V1__ExportCompression compression;
-  /*
-   * One entry per file in the export, in replay order.
-   */
-  size_t n_files;
-  Surrealdb__Protocol__Rpc__V1__ManifestEntry **files;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__MANIFEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__manifest__descriptor) \
-, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, SURREALDB__PROTOCOL__RPC__V1__EXPORT_COMPRESSION__EXPORT_COMPRESSION_UNSPECIFIED, 0,NULL }
 
 
 /*
@@ -842,11 +779,16 @@ struct  Surrealdb__Protocol__Rpc__V1__FileBegin
 {
   ProtobufCMessage base;
   /*
-   * Correlates this file's frames within the stream.
+   * Correlates this file's frames within the stream. Values are unique for
+   * the lifetime of the stream and are never reused, even after the file's
+   * FileEnd; a FileBegin repeating a previously seen file_id is a protocol
+   * error.
    */
   uint64_t file_id;
   /*
-   * The file's path relative to the export root.
+   * The file's path relative to the export root. Paths use `/` separators
+   * and MUST NOT be absolute, contain `..` components, or repeat within the
+   * stream; clients MUST reject a violating path before opening any file.
    */
   char *relative_path;
   /*
@@ -867,9 +809,11 @@ struct  Surrealdb__Protocol__Rpc__V1__FileBegin
 /*
  * Frame: a chunk of a file's content.
  * `data` carries the file's on-disk bytes verbatim — already zstd-compressed
- * when the file's compression is ZSTD. Chunks are bounded in size (see the
- * `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
- * bindings) so neither peer buffers a whole file.
+ * when the file's compression is ZSTD. Producers MUST NOT exceed 1 MiB
+ * (1,048,576 bytes) of data per chunk (256 KiB is the recommended default),
+ * so neither peer ever buffers a whole file; consumers MAY treat a larger
+ * chunk as a protocol error. Chunk boundaries carry no meaning: a file may be
+ * split at any byte position, and empty chunks are permitted.
  */
 struct  Surrealdb__Protocol__Rpc__V1__FileChunk
 {
@@ -892,7 +836,9 @@ struct  Surrealdb__Protocol__Rpc__V1__FileChunk
  * Frame: a file has ended.
  * The trailer carries the file's total size and hash, both computed
  * incrementally while the chunks were produced — so no whole-file buffering is
- * needed to learn them up front.
+ * needed to learn them up front. Clients MUST verify that the bytes they
+ * received for the file match both `bytes` and `sha256`, and treat any
+ * mismatch as a failed export.
  */
 struct  Surrealdb__Protocol__Rpc__V1__FileEnd
 {
@@ -917,25 +863,38 @@ struct  Surrealdb__Protocol__Rpc__V1__FileEnd
 
 /*
  * Frame: the export completed successfully.
- * This is the completion token, the wire analogue of `manifest.json` being
- * written last. A stream that ends without this frame MUST be treated as
- * failed, and the client MUST NOT leave behind an importable directory.
+ * This is the completion token. A stream that ends without this frame MUST be
+ * treated as failed, and the client MUST NOT leave behind an importable
+ * directory.
+ * The manifest is not carried here: `manifest.json` is streamed as the final
+ * file of the export, listing every other file in replay order (the order an
+ * importer must apply them) in the schema defined by the directory format
+ * version, and its content MUST agree with the streamed FileBegin and FileEnd
+ * frames. This keeps the terminal frame O(1) regardless of how many files the
+ * export contains.
  */
 struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd
 {
   ProtobufCMessage base;
   /*
-   * The full manifest for the export.
+   * The total number of files streamed, including `manifest.json`.
    */
-  Surrealdb__Protocol__Rpc__V1__Manifest *manifest;
+  uint64_t file_count;
+  /*
+   * The sum of every streamed file's size (the sum of all `FileEnd.bytes`).
+   */
+  uint64_t total_bytes;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__EXPORT_DIRECTORY_END__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_directory_end__descriptor) \
-, NULL }
+, 0, 0 }
 
 
 /*
- * Frame: the export failed mid-stream. Terminates the stream.
+ * Frame: the export failed. Terminates the stream.
+ * An Error frame MAY arrive at any point, including before Begin and while
+ * files are still open. All open files are abandoned and no further frames
+ * follow.
  */
 struct  Surrealdb__Protocol__Rpc__V1__ExportError
 {
@@ -967,9 +926,18 @@ typedef enum {
 
 /*
  * A single frame in a directory export stream.
- * Modelled on the QueryResponse streaming envelope. The frames for one export
- * arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
- * either End (success) or Error (failure).
+ * Modelled on the QueryResponse streaming envelope. A successful export
+ * arrives as: Begin (exactly once, first), then for each file
+ * FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed is
+ * always `manifest.json`, which lists every other file. An Error frame MAY
+ * terminate the stream at any point instead.
+ * A single file's frames are always sent in order, but frames belonging to
+ * different `file_id`s MAY be interleaved; clients MUST demultiplex by
+ * `file_id`.
+ * Clients MUST treat any deviation from this grammar as a failed export,
+ * including a response whose frame is unset (an unrecognised variant from a
+ * newer server). Servers MUST NOT send frame variants that the format version
+ * negotiated with the client does not define.
  */
 struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse
 {
@@ -981,7 +949,7 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse
      */
     Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin *begin;
     /*
-     * The export completed successfully (carries the manifest).
+     * The export completed successfully (carries the stream totals).
      */
     Surrealdb__Protocol__Rpc__V1__ExportDirectoryEnd *end;
     /*
@@ -1077,19 +1045,28 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryRequest
 
 /*
  * Streaming response to a query request.
- * When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
- * ID's response can be assumed to be sent in order, but may be interleaved in the future.
- * Expect only the last response for each query ID to contain the query stats.
- * 
- * Responses are ordered by query index, then batch index. For example:
- *  QueryResponse(query_index=0, batch_index=0, stats=None)
- *  QueryResponse(query_index=0, batch_index=1, stats=Some(..))
- *  QueryResponse(query_index=1, batch_index=0, stats=Some(..))
- *  QueryResponse(query_index=2, batch_index=0, stats=None)
- *  QueryResponse(query_index=2, batch_index=1, stats=None)
- *  QueryResponse(query_index=2, batch_index=2, stats=Some(..))
- *  QueryResponse(query_index=3, batch_index=0, stats=Some(..))
- *  QueryResponse(query_index=4, batch_index=0, stats=Some(..))
+ * When a query has 5 statements, there will be 5 unique query indexes (0..4).
+ * Ordering: responses that share a query_index are always sent in ascending
+ * batch_index order. Responses for DIFFERENT query indexes MAY be interleaved
+ * arbitrarily; clients MUST demultiplex by query_index and MUST NOT assume
+ * one statement's responses finish before another's begin. This is what
+ * allows a server to stream each statement's batches as soon as they are
+ * produced. For example:
+ *  QueryResponse(query_index=0, batch_index=0)
+ *  QueryResponse(query_index=1, batch_index=0, stats=Some(..))  // q1 complete
+ *  QueryResponse(query_index=0, batch_index=1, stats=Some(..))  // q0 complete
+ *  QueryResponse(query_index=2, batch_index=0)
+ *  QueryResponse(query_index=2, batch_index=1, stats=Some(..))  // q2 complete
+ * Lifecycle: every query index in 0..result_count emits at least one
+ * response. The final response for a query index is the one carrying stats
+ * and/or error; treat their presence as the authoritative end-of-results
+ * signal for that index.
+ * Errors: a response with error set is the final response for its
+ * query index; its values are empty, stats MAY be present, and responses for
+ * other query indexes continue to arrive. result_count includes errored
+ * statements. Failures that occur before execution begins (parse errors,
+ * authentication, an unknown txn_id) terminate the RPC with a gRPC status
+ * error and no QueryResponse frames.
  */
 struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 {
@@ -1130,15 +1107,20 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
   Surrealdb__Protocol__Rpc__V1__QueryResponseKind kind;
   /*
    * The query stats.
-   * This is only expected to be present in the last batch of each query.
+   * Present only on the final response of each query index.
    */
   Surrealdb__Protocol__Rpc__V1__QueryStats *stats;
   /*
-   * The error, if any.
+   * The error, if any. A response carrying an error is the final response
+   * for its query index.
    */
   Surrealdb__Protocol__Rpc__V1__QueryError *error;
   /*
-   * A batch of values.
+   * A batch of values. This is the only result payload in this version of
+   * the protocol. Future result encodings (for example a columnar Arrow
+   * batch) will be added as sibling submessage fields (field 8 onwards) and
+   * MUST only be emitted when the client explicitly opts in via
+   * QueryRequest; exactly one payload field is populated per response.
    */
   size_t n_values;
   Surrealdb__Protocol__V1__Value **values;
@@ -1923,44 +1905,6 @@ Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *
 void   surrealdb__protocol__rpc__v1__export_directory_request__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *message,
                       ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ManifestEntry methods */
-void   surrealdb__protocol__rpc__v1__manifest_entry__init
-                     (Surrealdb__Protocol__Rpc__V1__ManifestEntry         *message);
-size_t surrealdb__protocol__rpc__v1__manifest_entry__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry   *message);
-size_t surrealdb__protocol__rpc__v1__manifest_entry__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__manifest_entry__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ManifestEntry   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ManifestEntry *
-       surrealdb__protocol__rpc__v1__manifest_entry__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__manifest_entry__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__Manifest methods */
-void   surrealdb__protocol__rpc__v1__manifest__init
-                     (Surrealdb__Protocol__Rpc__V1__Manifest         *message);
-size_t surrealdb__protocol__rpc__v1__manifest__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__Manifest   *message);
-size_t surrealdb__protocol__rpc__v1__manifest__pack
-                     (const Surrealdb__Protocol__Rpc__V1__Manifest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__manifest__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__Manifest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__Manifest *
-       surrealdb__protocol__rpc__v1__manifest__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__manifest__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__Manifest *message,
-                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin methods */
 void   surrealdb__protocol__rpc__v1__export_directory_begin__init
                      (Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin         *message);
@@ -2467,12 +2411,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDestination_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryRequest *message,
                   void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ManifestEntry_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ManifestEntry *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__Manifest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__Manifest *message,
-                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ExportDirectoryBegin *message,
                   void *closure_data);
@@ -2736,8 +2674,6 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__client_str
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__bucket_destination__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_destination__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__manifest_entry__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__manifest__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_begin__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__file_begin__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__file_chunk__descriptor;

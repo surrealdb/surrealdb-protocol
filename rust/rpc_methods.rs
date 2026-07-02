@@ -39,6 +39,12 @@ impl QueryResponse {
 }
 
 /// Consumes a stream of query responses and returns a stream of values.
+///
+/// Values are concatenated across every query index in arrival order, so this
+/// is only suitable for single-statement queries. Multi-statement consumers
+/// must demultiplex [`QueryResponse`]s by `query_index` instead: responses for
+/// different query indexes may be interleaved, and flattening them loses the
+/// statement boundaries.
 pub struct QueryResponseValueStream {
     stream: Streaming<QueryResponse>,
     current_values: VecDeque<Value>,
@@ -58,48 +64,45 @@ impl Stream for QueryResponseValueStream {
     type Item = Result<Value, anyhow::Error>;
 
     fn poll_next(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Option<Self::Item>> {
         use std::task::Poll;
 
-        let this = self.as_mut().get_mut();
+        let this = self.get_mut();
 
-        // If we have values in the current batch, yield the next one
-        if let Some(value) = this.current_values.pop_front() {
-            return Poll::Ready(Some(Ok(value)));
-        }
+        // Loop rather than recurse so that a run of consecutive empty batches
+        // cannot grow the stack.
+        loop {
+            // If we have values in the current batch, yield the next one
+            if let Some(value) = this.current_values.pop_front() {
+                return Poll::Ready(Some(Ok(value)));
+            }
 
-        // Otherwise, try to get the next batch from the stream
-        match this.stream.poll_next_unpin(cx) {
-            Poll::Ready(Some(Ok(response))) => {
-                // Check for errors in the response
-                if let Some(err) = response.error {
-                    return Poll::Ready(Some(Err(anyhow!("{}", err.message))));
+            // Otherwise, try to get the next batch from the stream
+            match this.stream.poll_next_unpin(cx) {
+                Poll::Ready(Some(Ok(response))) => {
+                    // Check for errors in the response
+                    if let Some(err) = response.error {
+                        return Poll::Ready(Some(Err(anyhow!("{}", err.message))));
+                    }
+
+                    // Extract values from the response and add them to the
+                    // queue; an empty batch simply loops for the next one
+                    this.current_values.extend(response.values);
                 }
-
-                // Extract values from the response and add them to the queue
-                this.current_values.extend(response.values);
-
-                // Yield the first value from this batch
-                if let Some(value) = this.current_values.pop_front() {
-                    Poll::Ready(Some(Ok(value)))
-                } else {
-                    // Empty batch, try again
-                    self.poll_next(cx)
+                Poll::Ready(Some(Err(e))) => {
+                    // Stream error
+                    return Poll::Ready(Some(Err(anyhow!("Stream error: {}", e))));
                 }
-            }
-            Poll::Ready(Some(Err(e))) => {
-                // Stream error
-                Poll::Ready(Some(Err(anyhow!("Stream error: {}", e))))
-            }
-            Poll::Ready(None) => {
-                // Stream ended
-                Poll::Ready(None)
-            }
-            Poll::Pending => {
-                // Stream not ready yet
-                Poll::Pending
+                Poll::Ready(None) => {
+                    // Stream ended
+                    return Poll::Ready(None);
+                }
+                Poll::Pending => {
+                    // Stream not ready yet
+                    return Poll::Pending;
+                }
             }
         }
     }
@@ -139,6 +142,10 @@ impl Display for QueryError {
 impl std::error::Error for QueryError {}
 
 /// A trait for converting a stream of query responses into a specific type.
+///
+/// The provided implementations flatten values across every query index (see
+/// [`QueryResponseValueStream`]), so they are only suitable for
+/// single-statement queries.
 #[async_trait]
 pub trait TryFromQueryStream {
     /// Converts a stream of query responses into a specific type.

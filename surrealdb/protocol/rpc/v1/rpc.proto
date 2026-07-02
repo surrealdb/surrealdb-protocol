@@ -41,13 +41,19 @@ service SurrealDBService {
     // files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
     // FileEnd, so neither peer ever buffers a whole file; the file's byte count
     // and SHA-256 are carried in the FileEnd trailer, computed incrementally as
-    // chunks are produced.
+    // chunks are produced. The manifest is streamed as the final file, and the
+    // End frame is the completion token.
     rpc ExportDirectory(ExportDirectoryRequest) returns (stream ExportDirectoryResponse);
 
     // Export the ML model.
     rpc ExportMlModel(ExportMlModelRequest) returns (stream ExportMlModelResponse);
 
     // Query the database and get a stream of values.
+    //
+    // Cancelling the RPC aborts execution: without a txn_id, the implicit
+    // transaction is rolled back (streamed results do not imply a commit;
+    // only a completed stream does). With a txn_id, the transaction is
+    // session-owned and remains open across a cancelled RPC.
     rpc Query(QueryRequest) returns (stream QueryResponse);
     // Issue a live query and get a stream of notifications.
     rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
@@ -203,7 +209,7 @@ message ExportMlModelResponse {
 // Compression applied to exported data files.
 enum ExportCompression {
     // No explicit compression was specified. On a request this selects the
-    // server default; it should never appear on a response frame.
+    // server default; it MUST NOT appear on a response frame.
     EXPORT_COMPRESSION_UNSPECIFIED = 0;
     // Files are streamed uncompressed.
     EXPORT_COMPRESSION_NONE = 1;
@@ -287,42 +293,13 @@ message ExportDirectoryRequest {
     // server chooses a default.
     uint32 parallelism = 3;
     // The directory format version the client expects. Empty means the client
-    // accepts whatever the server produces.
+    // accepts whatever the server produces. A server that cannot produce the
+    // requested version rejects the request before sending any frame.
     string format_version = 4;
-    // Where the server should write the exported files.
+    // Where the server should write the exported files. Unset is equivalent
+    // to a client_stream destination. A server that does not support the
+    // requested destination rejects the request before sending any frame.
     ExportDestination destination = 5;
-}
-
-// Manifest entry describing a single exported file.
-message ManifestEntry {
-    // The file's path relative to the export root.
-    string path = 1;
-    // The number of bytes written for the file (the on-disk size).
-    uint64 bytes = 2;
-    // The SHA-256 of the file's on-disk bytes, lowercase hex.
-    string sha256 = 3;
-    // The table the file holds data for. Empty for schema or metadata files
-    // (table names are never empty).
-    string table = 4;
-}
-
-// Manifest describing a complete directory export.
-//
-// The client writes this verbatim as `manifest.json` once the stream
-// completes; it is the wire analogue of the manifest being written last.
-message Manifest {
-    // The directory format version.
-    string format_version = 1;
-    // The namespace that was exported.
-    string namespace = 2;
-    // The database that was exported.
-    string database = 3;
-    // The SurrealDB version that produced the export.
-    string surrealdb_version = 4;
-    // The compression applied to the data files.
-    ExportCompression compression = 5;
-    // One entry per file in the export, in replay order.
-    repeated ManifestEntry files = 6;
 }
 
 // Frame: the export has begun. Sent once, before any files.
@@ -346,9 +323,14 @@ message ExportDirectoryBegin {
 // different files MAY be interleaved when the server streams files
 // concurrently.
 message FileBegin {
-    // Correlates this file's frames within the stream.
+    // Correlates this file's frames within the stream. Values are unique for
+    // the lifetime of the stream and are never reused, even after the file's
+    // FileEnd; a FileBegin repeating a previously seen file_id is a protocol
+    // error.
     uint64 file_id = 1;
-    // The file's path relative to the export root.
+    // The file's path relative to the export root. Paths use `/` separators
+    // and MUST NOT be absolute, contain `..` components, or repeat within the
+    // stream; clients MUST reject a violating path before opening any file.
     string relative_path = 2;
     // The table the file holds data for. Empty for schema or metadata files
     // (table names are never empty).
@@ -360,9 +342,11 @@ message FileBegin {
 // Frame: a chunk of a file's content.
 //
 // `data` carries the file's on-disk bytes verbatim — already zstd-compressed
-// when the file's compression is ZSTD. Chunks are bounded in size (see the
-// `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
-// bindings) so neither peer buffers a whole file.
+// when the file's compression is ZSTD. Producers MUST NOT exceed 1 MiB
+// (1,048,576 bytes) of data per chunk (256 KiB is the recommended default),
+// so neither peer ever buffers a whole file; consumers MAY treat a larger
+// chunk as a protocol error. Chunk boundaries carry no meaning: a file may be
+// split at any byte position, and empty chunks are permitted.
 message FileChunk {
     // The file this chunk belongs to.
     uint64 file_id = 1;
@@ -374,7 +358,9 @@ message FileChunk {
 //
 // The trailer carries the file's total size and hash, both computed
 // incrementally while the chunks were produced — so no whole-file buffering is
-// needed to learn them up front.
+// needed to learn them up front. Clients MUST verify that the bytes they
+// received for the file match both `bytes` and `sha256`, and treat any
+// mismatch as a failed export.
 message FileEnd {
     // The file these totals apply to.
     uint64 file_id = 1;
@@ -386,15 +372,28 @@ message FileEnd {
 
 // Frame: the export completed successfully.
 //
-// This is the completion token, the wire analogue of `manifest.json` being
-// written last. A stream that ends without this frame MUST be treated as
-// failed, and the client MUST NOT leave behind an importable directory.
+// This is the completion token. A stream that ends without this frame MUST be
+// treated as failed, and the client MUST NOT leave behind an importable
+// directory.
+//
+// The manifest is not carried here: `manifest.json` is streamed as the final
+// file of the export, listing every other file in replay order (the order an
+// importer must apply them) in the schema defined by the directory format
+// version, and its content MUST agree with the streamed FileBegin and FileEnd
+// frames. This keeps the terminal frame O(1) regardless of how many files the
+// export contains.
 message ExportDirectoryEnd {
-    // The full manifest for the export.
-    Manifest manifest = 1;
+    // The total number of files streamed, including `manifest.json`.
+    uint64 file_count = 1;
+    // The sum of every streamed file's size (the sum of all `FileEnd.bytes`).
+    uint64 total_bytes = 2;
 }
 
-// Frame: the export failed mid-stream. Terminates the stream.
+// Frame: the export failed. Terminates the stream.
+//
+// An Error frame MAY arrive at any point, including before Begin and while
+// files are still open. All open files are abandoned and no further frames
+// follow.
 message ExportError {
     // The error code.
     int64 code = 1;
@@ -404,9 +403,20 @@ message ExportError {
 
 // A single frame in a directory export stream.
 //
-// Modelled on the QueryResponse streaming envelope. The frames for one export
-// arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
-// either End (success) or Error (failure).
+// Modelled on the QueryResponse streaming envelope. A successful export
+// arrives as: Begin (exactly once, first), then for each file
+// FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed is
+// always `manifest.json`, which lists every other file. An Error frame MAY
+// terminate the stream at any point instead.
+//
+// A single file's frames are always sent in order, but frames belonging to
+// different `file_id`s MAY be interleaved; clients MUST demultiplex by
+// `file_id`.
+//
+// Clients MUST treat any deviation from this grammar as a failed export,
+// including a response whose frame is unset (an unrecognised variant from a
+// newer server). Servers MUST NOT send frame variants that the format version
+// negotiated with the client does not define.
 message ExportDirectoryResponse {
     oneof frame {
         // The export has begun.
@@ -417,7 +427,7 @@ message ExportDirectoryResponse {
         FileChunk file_chunk = 3;
         // The current file has ended (size + hash trailer).
         FileEnd file_end = 4;
-        // The export completed successfully (carries the manifest).
+        // The export completed successfully (carries the stream totals).
         ExportDirectoryEnd end = 5;
         // The export failed.
         ExportError error = 6;
@@ -459,14 +469,24 @@ message QueryRequest {
     string query = 1;
     surrealdb.protocol.v1.Variables variables = 2;
     surrealdb.protocol.v1.Uuid txn_id = 3;
+
+    // Field 4 is earmarked for a future capability list (e.g. accepted result
+    // encodings such as columnar Arrow batches). Servers MUST NOT emit result
+    // payloads or response kinds a client has not explicitly opted in to.
 }
 
 // The kind of query response.
+//
+// New kinds will only ever be sent to clients that explicitly opt in via a
+// QueryRequest capability; clients MAY treat an unrecognised kind as a
+// protocol error.
 enum QueryResponseKind {
     QUERY_RESPONSE_KIND_UNSPECIFIED = 0;
     // A single value is contained in the response and no further responses are expected.
     //
     // This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+    //
+    // This is the final response for its query index and carries the query stats.
     QUERY_RESPONSE_KIND_SINGLE = 1;
     // A batch of values is contained in the response and further responses may be expected.
     QUERY_RESPONSE_KIND_BATCHED = 2;
@@ -480,20 +500,31 @@ enum QueryResponseKind {
 
 // Streaming response to a query request.
 //
-// When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
-// ID's response can be assumed to be sent in order, but may be interleaved in the future.
+// When a query has 5 statements, there will be 5 unique query indexes (0..4).
 //
-// Expect only the last response for each query ID to contain the query stats.
-// 
-// Responses are ordered by query index, then batch index. For example:
-//  QueryResponse(query_index=0, batch_index=0, stats=None)
-//  QueryResponse(query_index=0, batch_index=1, stats=Some(..))
-//  QueryResponse(query_index=1, batch_index=0, stats=Some(..))
-//  QueryResponse(query_index=2, batch_index=0, stats=None)
-//  QueryResponse(query_index=2, batch_index=1, stats=None)
-//  QueryResponse(query_index=2, batch_index=2, stats=Some(..))
-//  QueryResponse(query_index=3, batch_index=0, stats=Some(..))
-//  QueryResponse(query_index=4, batch_index=0, stats=Some(..))
+// Ordering: responses that share a query_index are always sent in ascending
+// batch_index order. Responses for DIFFERENT query indexes MAY be interleaved
+// arbitrarily; clients MUST demultiplex by query_index and MUST NOT assume
+// one statement's responses finish before another's begin. This is what
+// allows a server to stream each statement's batches as soon as they are
+// produced. For example:
+//  QueryResponse(query_index=0, batch_index=0)
+//  QueryResponse(query_index=1, batch_index=0, stats=Some(..))  // q1 complete
+//  QueryResponse(query_index=0, batch_index=1, stats=Some(..))  // q0 complete
+//  QueryResponse(query_index=2, batch_index=0)
+//  QueryResponse(query_index=2, batch_index=1, stats=Some(..))  // q2 complete
+//
+// Lifecycle: every query index in 0..result_count emits at least one
+// response. The final response for a query index is the one carrying stats
+// and/or error; treat their presence as the authoritative end-of-results
+// signal for that index.
+//
+// Errors: a response with error set is the final response for its
+// query index; its values are empty, stats MAY be present, and responses for
+// other query indexes continue to arrive. result_count includes errored
+// statements. Failures that occur before execution begins (parse errors,
+// authentication, an unknown txn_id) terminate the RPC with a gRPC status
+// error and no QueryResponse frames.
 message QueryResponse {
     // The index of the query result.
     uint32 query_index = 1;
@@ -527,11 +558,16 @@ message QueryResponse {
     // The kind of query response.
     QueryResponseKind kind = 4;
     // The query stats.
-    // This is only expected to be present in the last batch of each query.
+    // Present only on the final response of each query index.
     QueryStats stats = 5;
-    // The error, if any.
+    // The error, if any. A response carrying an error is the final response
+    // for its query index.
     QueryError error = 6;
-    // A batch of values.
+    // A batch of values. This is the only result payload in this version of
+    // the protocol. Future result encodings (for example a columnar Arrow
+    // batch) will be added as sibling submessage fields (field 8 onwards) and
+    // MUST only be emitted when the client explicitly opts in via
+    // QueryRequest; exactly one payload field is populated per response.
     repeated surrealdb.protocol.v1.Value values = 7;
 }
 

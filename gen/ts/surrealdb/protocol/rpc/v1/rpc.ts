@@ -17,7 +17,7 @@ export const protobufPackage = "surrealdb.protocol.rpc.v1";
 export enum ExportCompression {
   /**
    * UNSPECIFIED - No explicit compression was specified. On a request this selects the
-   * server default; it should never appear on a response frame.
+   * server default; it MUST NOT appear on a response frame.
    */
   UNSPECIFIED = 0,
   /** NONE - Files are streamed uncompressed. */
@@ -111,13 +111,21 @@ export function actionToJSON(object: Action): string {
   }
 }
 
-/** The kind of query response. */
+/**
+ * The kind of query response.
+ *
+ * New kinds will only ever be sent to clients that explicitly opt in via a
+ * QueryRequest capability; clients MAY treat an unrecognised kind as a
+ * protocol error.
+ */
 export enum QueryResponseKind {
   UNSPECIFIED = 0,
   /**
    * SINGLE - A single value is contained in the response and no further responses are expected.
    *
    * This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
+   *
+   * This is the final response for its query index and carries the query stats.
    */
   SINGLE = 1,
   /** BATCHED - A batch of values is contained in the response and further responses may be expected. */
@@ -424,47 +432,16 @@ export interface ExportDirectoryRequest {
   parallelism: number;
   /**
    * The directory format version the client expects. Empty means the client
-   * accepts whatever the server produces.
+   * accepts whatever the server produces. A server that cannot produce the
+   * requested version rejects the request before sending any frame.
    */
   formatVersion: string;
-  /** Where the server should write the exported files. */
-  destination: ExportDestination | undefined;
-}
-
-/** Manifest entry describing a single exported file. */
-export interface ManifestEntry {
-  /** The file's path relative to the export root. */
-  path: string;
-  /** The number of bytes written for the file (the on-disk size). */
-  bytes: bigint;
-  /** The SHA-256 of the file's on-disk bytes, lowercase hex. */
-  sha256: string;
   /**
-   * The table the file holds data for. Empty for schema or metadata files
-   * (table names are never empty).
+   * Where the server should write the exported files. Unset is equivalent
+   * to a client_stream destination. A server that does not support the
+   * requested destination rejects the request before sending any frame.
    */
-  table: string;
-}
-
-/**
- * Manifest describing a complete directory export.
- *
- * The client writes this verbatim as `manifest.json` once the stream
- * completes; it is the wire analogue of the manifest being written last.
- */
-export interface Manifest {
-  /** The directory format version. */
-  formatVersion: string;
-  /** The namespace that was exported. */
-  namespace: string;
-  /** The database that was exported. */
-  database: string;
-  /** The SurrealDB version that produced the export. */
-  surrealdbVersion: string;
-  /** The compression applied to the data files. */
-  compression: ExportCompression;
-  /** One entry per file in the export, in replay order. */
-  files: ManifestEntry[];
+  destination: ExportDestination | undefined;
 }
 
 /** Frame: the export has begun. Sent once, before any files. */
@@ -490,9 +467,18 @@ export interface ExportDirectoryBegin {
  * concurrently.
  */
 export interface FileBegin {
-  /** Correlates this file's frames within the stream. */
+  /**
+   * Correlates this file's frames within the stream. Values are unique for
+   * the lifetime of the stream and are never reused, even after the file's
+   * FileEnd; a FileBegin repeating a previously seen file_id is a protocol
+   * error.
+   */
   fileId: bigint;
-  /** The file's path relative to the export root. */
+  /**
+   * The file's path relative to the export root. Paths use `/` separators
+   * and MUST NOT be absolute, contain `..` components, or repeat within the
+   * stream; clients MUST reject a violating path before opening any file.
+   */
   relativePath: string;
   /**
    * The table the file holds data for. Empty for schema or metadata files
@@ -507,9 +493,11 @@ export interface FileBegin {
  * Frame: a chunk of a file's content.
  *
  * `data` carries the file's on-disk bytes verbatim — already zstd-compressed
- * when the file's compression is ZSTD. Chunks are bounded in size (see the
- * `DEFAULT_FILE_CHUNK_SIZE` / `MAX_FILE_CHUNK_SIZE` contract in the Rust
- * bindings) so neither peer buffers a whole file.
+ * when the file's compression is ZSTD. Producers MUST NOT exceed 1 MiB
+ * (1,048,576 bytes) of data per chunk (256 KiB is the recommended default),
+ * so neither peer ever buffers a whole file; consumers MAY treat a larger
+ * chunk as a protocol error. Chunk boundaries carry no meaning: a file may be
+ * split at any byte position, and empty chunks are permitted.
  */
 export interface FileChunk {
   /** The file this chunk belongs to. */
@@ -523,7 +511,9 @@ export interface FileChunk {
  *
  * The trailer carries the file's total size and hash, both computed
  * incrementally while the chunks were produced — so no whole-file buffering is
- * needed to learn them up front.
+ * needed to learn them up front. Clients MUST verify that the bytes they
+ * received for the file match both `bytes` and `sha256`, and treat any
+ * mismatch as a failed export.
  */
 export interface FileEnd {
   /** The file these totals apply to. */
@@ -537,16 +527,31 @@ export interface FileEnd {
 /**
  * Frame: the export completed successfully.
  *
- * This is the completion token, the wire analogue of `manifest.json` being
- * written last. A stream that ends without this frame MUST be treated as
- * failed, and the client MUST NOT leave behind an importable directory.
+ * This is the completion token. A stream that ends without this frame MUST be
+ * treated as failed, and the client MUST NOT leave behind an importable
+ * directory.
+ *
+ * The manifest is not carried here: `manifest.json` is streamed as the final
+ * file of the export, listing every other file in replay order (the order an
+ * importer must apply them) in the schema defined by the directory format
+ * version, and its content MUST agree with the streamed FileBegin and FileEnd
+ * frames. This keeps the terminal frame O(1) regardless of how many files the
+ * export contains.
  */
 export interface ExportDirectoryEnd {
-  /** The full manifest for the export. */
-  manifest: Manifest | undefined;
+  /** The total number of files streamed, including `manifest.json`. */
+  fileCount: bigint;
+  /** The sum of every streamed file's size (the sum of all `FileEnd.bytes`). */
+  totalBytes: bigint;
 }
 
-/** Frame: the export failed mid-stream. Terminates the stream. */
+/**
+ * Frame: the export failed. Terminates the stream.
+ *
+ * An Error frame MAY arrive at any point, including before Begin and while
+ * files are still open. All open files are abandoned and no further frames
+ * follow.
+ */
 export interface ExportError {
   /** The error code. */
   code: bigint;
@@ -557,9 +562,20 @@ export interface ExportError {
 /**
  * A single frame in a directory export stream.
  *
- * Modelled on the QueryResponse streaming envelope. The frames for one export
- * arrive as: Begin, then for each file FileBegin -> FileChunk* -> FileEnd, then
- * either End (success) or Error (failure).
+ * Modelled on the QueryResponse streaming envelope. A successful export
+ * arrives as: Begin (exactly once, first), then for each file
+ * FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed is
+ * always `manifest.json`, which lists every other file. An Error frame MAY
+ * terminate the stream at any point instead.
+ *
+ * A single file's frames are always sent in order, but frames belonging to
+ * different `file_id`s MAY be interleaved; clients MUST demultiplex by
+ * `file_id`.
+ *
+ * Clients MUST treat any deviation from this grammar as a failed export,
+ * including a response whose frame is unset (an unrecognised variant from a
+ * newer server). Servers MUST NOT send frame variants that the format version
+ * negotiated with the client does not define.
  */
 export interface ExportDirectoryResponse {
   frame:
@@ -576,7 +592,7 @@ export interface ExportDirectoryResponse {
     /** The current file has ended (size + hash trailer). */
     { $case: "fileEnd"; fileEnd: FileEnd }
     | //
-    /** The export completed successfully (carries the manifest). */
+    /** The export completed successfully (carries the stream totals). */
     { $case: "end"; end: ExportDirectoryEnd }
     | //
     /** The export failed. */
@@ -612,20 +628,31 @@ export interface QueryRequest {
 /**
  * Streaming response to a query request.
  *
- * When a query has 5 statements, there will be 5 unique query IDs (0..4). Each query
- * ID's response can be assumed to be sent in order, but may be interleaved in the future.
+ * When a query has 5 statements, there will be 5 unique query indexes (0..4).
  *
- * Expect only the last response for each query ID to contain the query stats.
+ * Ordering: responses that share a query_index are always sent in ascending
+ * batch_index order. Responses for DIFFERENT query indexes MAY be interleaved
+ * arbitrarily; clients MUST demultiplex by query_index and MUST NOT assume
+ * one statement's responses finish before another's begin. This is what
+ * allows a server to stream each statement's batches as soon as they are
+ * produced. For example:
+ *  QueryResponse(query_index=0, batch_index=0)
+ *  QueryResponse(query_index=1, batch_index=0, stats=Some(..))  // q1 complete
+ *  QueryResponse(query_index=0, batch_index=1, stats=Some(..))  // q0 complete
+ *  QueryResponse(query_index=2, batch_index=0)
+ *  QueryResponse(query_index=2, batch_index=1, stats=Some(..))  // q2 complete
  *
- * Responses are ordered by query index, then batch index. For example:
- *  QueryResponse(query_index=0, batch_index=0, stats=None)
- *  QueryResponse(query_index=0, batch_index=1, stats=Some(..))
- *  QueryResponse(query_index=1, batch_index=0, stats=Some(..))
- *  QueryResponse(query_index=2, batch_index=0, stats=None)
- *  QueryResponse(query_index=2, batch_index=1, stats=None)
- *  QueryResponse(query_index=2, batch_index=2, stats=Some(..))
- *  QueryResponse(query_index=3, batch_index=0, stats=Some(..))
- *  QueryResponse(query_index=4, batch_index=0, stats=Some(..))
+ * Lifecycle: every query index in 0..result_count emits at least one
+ * response. The final response for a query index is the one carrying stats
+ * and/or error; treat their presence as the authoritative end-of-results
+ * signal for that index.
+ *
+ * Errors: a response with error set is the final response for its
+ * query index; its values are empty, stats MAY be present, and responses for
+ * other query indexes continue to arrive. result_count includes errored
+ * statements. Failures that occur before execution begins (parse errors,
+ * authentication, an unknown txn_id) terminate the RPC with a gRPC status
+ * error and no QueryResponse frames.
  */
 export interface QueryResponse {
   /** The index of the query result. */
@@ -663,16 +690,25 @@ export interface QueryResponse {
   kind: QueryResponseKind;
   /**
    * The query stats.
-   * This is only expected to be present in the last batch of each query.
+   * Present only on the final response of each query index.
    */
   stats:
     | QueryStats
     | undefined;
-  /** The error, if any. */
+  /**
+   * The error, if any. A response carrying an error is the final response
+   * for its query index.
+   */
   error:
     | QueryError
     | undefined;
-  /** A batch of values. */
+  /**
+   * A batch of values. This is the only result payload in this version of
+   * the protocol. Future result encodings (for example a columnar Arrow
+   * batch) will be added as sibling submessage fields (field 8 onwards) and
+   * MUST only be emitted when the client explicitly opts in via
+   * QueryRequest; exactly one payload field is populated per response.
+   */
   values: Value[];
 }
 
@@ -3299,265 +3335,6 @@ export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
   },
 };
 
-function createBaseManifestEntry(): ManifestEntry {
-  return { path: "", bytes: 0n, sha256: "", table: "" };
-}
-
-export const ManifestEntry: MessageFns<ManifestEntry> = {
-  encode(message: ManifestEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.path !== "") {
-      writer.uint32(10).string(message.path);
-    }
-    if (message.bytes !== 0n) {
-      if (BigInt.asUintN(64, message.bytes) !== message.bytes) {
-        throw new globalThis.Error("value provided for field message.bytes of type uint64 too large");
-      }
-      writer.uint32(16).uint64(message.bytes);
-    }
-    if (message.sha256 !== "") {
-      writer.uint32(26).string(message.sha256);
-    }
-    if (message.table !== "") {
-      writer.uint32(34).string(message.table);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ManifestEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseManifestEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.path = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.bytes = reader.uint64() as bigint;
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.sha256 = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.table = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ManifestEntry {
-    return {
-      path: isSet(object.path) ? globalThis.String(object.path) : "",
-      bytes: isSet(object.bytes) ? BigInt(object.bytes) : 0n,
-      sha256: isSet(object.sha256) ? globalThis.String(object.sha256) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-    };
-  },
-
-  toJSON(message: ManifestEntry): unknown {
-    const obj: any = {};
-    if (message.path !== "") {
-      obj.path = message.path;
-    }
-    if (message.bytes !== 0n) {
-      obj.bytes = message.bytes.toString();
-    }
-    if (message.sha256 !== "") {
-      obj.sha256 = message.sha256;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ManifestEntry>, I>>(base?: I): ManifestEntry {
-    return ManifestEntry.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ManifestEntry>, I>>(object: I): ManifestEntry {
-    const message = createBaseManifestEntry();
-    message.path = object.path ?? "";
-    message.bytes = object.bytes ?? 0n;
-    message.sha256 = object.sha256 ?? "";
-    message.table = object.table ?? "";
-    return message;
-  },
-};
-
-function createBaseManifest(): Manifest {
-  return { formatVersion: "", namespace: "", database: "", surrealdbVersion: "", compression: 0, files: [] };
-}
-
-export const Manifest: MessageFns<Manifest> = {
-  encode(message: Manifest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.formatVersion !== "") {
-      writer.uint32(10).string(message.formatVersion);
-    }
-    if (message.namespace !== "") {
-      writer.uint32(18).string(message.namespace);
-    }
-    if (message.database !== "") {
-      writer.uint32(26).string(message.database);
-    }
-    if (message.surrealdbVersion !== "") {
-      writer.uint32(34).string(message.surrealdbVersion);
-    }
-    if (message.compression !== 0) {
-      writer.uint32(40).int32(message.compression);
-    }
-    for (const v of message.files) {
-      ManifestEntry.encode(v!, writer.uint32(50).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Manifest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseManifest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.formatVersion = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.namespace = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.surrealdbVersion = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.compression = reader.int32() as any;
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.files.push(ManifestEntry.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Manifest {
-    return {
-      formatVersion: isSet(object.formatVersion)
-        ? globalThis.String(object.formatVersion)
-        : isSet(object.format_version)
-        ? globalThis.String(object.format_version)
-        : "",
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      surrealdbVersion: isSet(object.surrealdbVersion)
-        ? globalThis.String(object.surrealdbVersion)
-        : isSet(object.surrealdb_version)
-        ? globalThis.String(object.surrealdb_version)
-        : "",
-      compression: isSet(object.compression) ? exportCompressionFromJSON(object.compression) : 0,
-      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => ManifestEntry.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: Manifest): unknown {
-    const obj: any = {};
-    if (message.formatVersion !== "") {
-      obj.formatVersion = message.formatVersion;
-    }
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.surrealdbVersion !== "") {
-      obj.surrealdbVersion = message.surrealdbVersion;
-    }
-    if (message.compression !== 0) {
-      obj.compression = exportCompressionToJSON(message.compression);
-    }
-    if (message.files?.length) {
-      obj.files = message.files.map((e) => ManifestEntry.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Manifest>, I>>(base?: I): Manifest {
-    return Manifest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Manifest>, I>>(object: I): Manifest {
-    const message = createBaseManifest();
-    message.formatVersion = object.formatVersion ?? "";
-    message.namespace = object.namespace ?? "";
-    message.database = object.database ?? "";
-    message.surrealdbVersion = object.surrealdbVersion ?? "";
-    message.compression = object.compression ?? 0;
-    message.files = object.files?.map((e) => ManifestEntry.fromPartial(e)) || [];
-    return message;
-  },
-};
-
 function createBaseExportDirectoryBegin(): ExportDirectoryBegin {
   return { formatVersion: "", namespace: "", database: "", surrealdbVersion: "", compression: 0 };
 }
@@ -3983,13 +3760,22 @@ export const FileEnd: MessageFns<FileEnd> = {
 };
 
 function createBaseExportDirectoryEnd(): ExportDirectoryEnd {
-  return { manifest: undefined };
+  return { fileCount: 0n, totalBytes: 0n };
 }
 
 export const ExportDirectoryEnd: MessageFns<ExportDirectoryEnd> = {
   encode(message: ExportDirectoryEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.manifest !== undefined) {
-      Manifest.encode(message.manifest, writer.uint32(10).fork()).join();
+    if (message.fileCount !== 0n) {
+      if (BigInt.asUintN(64, message.fileCount) !== message.fileCount) {
+        throw new globalThis.Error("value provided for field message.fileCount of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.fileCount);
+    }
+    if (message.totalBytes !== 0n) {
+      if (BigInt.asUintN(64, message.totalBytes) !== message.totalBytes) {
+        throw new globalThis.Error("value provided for field message.totalBytes of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.totalBytes);
     }
     return writer;
   },
@@ -4002,11 +3788,19 @@ export const ExportDirectoryEnd: MessageFns<ExportDirectoryEnd> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.manifest = Manifest.decode(reader, reader.uint32());
+          message.fileCount = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.totalBytes = reader.uint64() as bigint;
           continue;
         }
       }
@@ -4019,13 +3813,27 @@ export const ExportDirectoryEnd: MessageFns<ExportDirectoryEnd> = {
   },
 
   fromJSON(object: any): ExportDirectoryEnd {
-    return { manifest: isSet(object.manifest) ? Manifest.fromJSON(object.manifest) : undefined };
+    return {
+      fileCount: isSet(object.fileCount)
+        ? BigInt(object.fileCount)
+        : isSet(object.file_count)
+        ? BigInt(object.file_count)
+        : 0n,
+      totalBytes: isSet(object.totalBytes)
+        ? BigInt(object.totalBytes)
+        : isSet(object.total_bytes)
+        ? BigInt(object.total_bytes)
+        : 0n,
+    };
   },
 
   toJSON(message: ExportDirectoryEnd): unknown {
     const obj: any = {};
-    if (message.manifest !== undefined) {
-      obj.manifest = Manifest.toJSON(message.manifest);
+    if (message.fileCount !== 0n) {
+      obj.fileCount = message.fileCount.toString();
+    }
+    if (message.totalBytes !== 0n) {
+      obj.totalBytes = message.totalBytes.toString();
     }
     return obj;
   },
@@ -4035,9 +3843,8 @@ export const ExportDirectoryEnd: MessageFns<ExportDirectoryEnd> = {
   },
   fromPartial<I extends Exact<DeepPartial<ExportDirectoryEnd>, I>>(object: I): ExportDirectoryEnd {
     const message = createBaseExportDirectoryEnd();
-    message.manifest = (object.manifest !== undefined && object.manifest !== null)
-      ? Manifest.fromPartial(object.manifest)
-      : undefined;
+    message.fileCount = object.fileCount ?? 0n;
+    message.totalBytes = object.totalBytes ?? 0n;
     return message;
   },
 };
@@ -5877,12 +5684,20 @@ export interface SurrealDBService {
    * files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
    * FileEnd, so neither peer ever buffers a whole file; the file's byte count
    * and SHA-256 are carried in the FileEnd trailer, computed incrementally as
-   * chunks are produced.
+   * chunks are produced. The manifest is streamed as the final file, and the
+   * End frame is the completion token.
    */
   ExportDirectory(request: ExportDirectoryRequest): Observable<ExportDirectoryResponse>;
   /** Export the ML model. */
   ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse>;
-  /** Query the database and get a stream of values. */
+  /**
+   * Query the database and get a stream of values.
+   *
+   * Cancelling the RPC aborts execution: without a txn_id, the implicit
+   * transaction is rolled back (streamed results do not imply a commit;
+   * only a completed stream does). With a txn_id, the transaction is
+   * session-owned and remains open across a cancelled RPC.
+   */
   Query(request: QueryRequest): Observable<QueryResponse>;
   /** Issue a live query and get a stream of notifications. */
   Subscribe(request: SubscribeRequest): Observable<SubscribeResponse>;
