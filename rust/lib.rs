@@ -243,6 +243,10 @@ mod tests {
         assert_json_eq!(serialized, expected);
     }
 
+    fn hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{b:02x}")).collect()
+    }
+
     /// `NONE`, `NULL`, and an absent key are three distinct states, and all
     /// three must survive an encode/decode round trip.
     ///
@@ -284,7 +288,21 @@ mod tests {
             "NONE must be distinguishable on the wire from a missing value"
         );
 
+        // The exact bytes, shared with the TypeScript test in
+        // typescript/parity.test.ts so both languages are pinned to one
+        // encoding rather than merely to their own round trip.
+        //
+        //   0a 08              items, length 8
+        //     0a 01 6b           key = "k"
+        //     12 03              value, length 3
+        //       aa 01 00           field 21 (none), length 0
+        //
+        // Under the old schema this was `0a 03 0a 01 6b` -- the key with no
+        // value field at all, which is what TypeScript then discarded.
         let none_bytes = none.encode_to_vec();
+        assert_eq!(hex(&none_bytes), "0a080a016b1203aa0100");
+        assert_eq!(hex(&null.encode_to_vec()), "0a070a016b12020a00");
+        assert_eq!(hex(&absent.encode_to_vec()), "");
 
         // And distinct after a round trip.
         let none_decoded = Object::decode(none_bytes.as_slice()).unwrap();
