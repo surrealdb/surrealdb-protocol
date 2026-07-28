@@ -906,6 +906,181 @@ impl ::prost::Name for Kind {
 const NAME: &'static str = "Kind";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Kind".into() }}
+/// The specific reason behind an error, within its `ErrorKind`.
+///
+/// Deliberately open rather than a mirror of the server's per-kind detail
+/// enums. Those are `#\[non_exhaustive\]` and grow with the engine; reproducing
+/// all eight of them here would make every new server-side variant a protocol
+/// change, which is exactly the coupling this schema is trying to remove. The
+/// server already serialises details as a value, so nothing is lost.
+///
+/// Clients MUST NOT branch on `reason` for control flow that has a first-class
+/// representation elsewhere — notably retryability, which is `SurrealError.retry`.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ErrorDetails {
+    /// The reason name, as the server spells it: for example "TransactionConflict",
+    /// "TimedOut", "Parse", "Thrown". Empty when the kind carries no detail.
+    #[prost(string, tag = "1")]
+    pub reason: ::prost::alloc::string::String,
+    /// The reason's payload, if it has one. For example `TimedOut` carries the
+    /// duration after which the query gave up.
+    #[prost(message, optional, tag = "2")]
+    pub content: ::core::option::Option<Value>,
+}
+impl ::prost::Name for ErrorDetails {
+const NAME: &'static str = "ErrorDetails";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.ErrorDetails".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.ErrorDetails".into() }}
+/// Advice about retrying the operation that failed.
+///
+/// Presence means the failure is transient and the operation MAY be retried;
+/// absence means it MUST NOT be assumed retryable. Presence is the signal
+/// rather than a boolean so that "not retryable" and "the server did not say"
+/// cannot be confused, which a proto3 `bool` cannot express.
+///
+/// This is what makes a transaction conflict structurally detectable. Clients
+/// MUST use it instead of matching on `message` or on the legacy numeric
+/// `code`; the JS SDK's current reliance on code -32009 (which its own
+/// `CODE_TO_KIND` table omits, so conflicts surface as `Internal`) is the bug
+/// this field exists to prevent.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct RetryHint {
+    /// How long the client SHOULD wait before retrying. Absent or zero means
+    /// the client chooses, typically with its own backoff.
+    #[prost(message, optional, tag = "1")]
+    pub after: ::core::option::Option<Duration>,
+}
+impl ::prost::Name for RetryHint {
+const NAME: &'static str = "RetryHint";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RetryHint".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RetryHint".into() }}
+/// A structured SurrealDB error.
+///
+/// One error type for the whole protocol: transport-level failures,
+/// per-statement query failures, and streaming-export failures all use this
+/// message, so a client has one thing to parse and one taxonomy to branch on.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SurrealError {
+    /// The error category. Always set on a well-formed message.
+    #[prost(enumeration = "ErrorKind", tag = "1")]
+    pub kind: i32,
+    /// Human-readable, for logs and for showing a user.
+    ///
+    /// Clients MUST NOT parse this or branch on it. Everything a client needs
+    /// to make a decision is in `kind`, `details`, and `retry`; the wording of
+    /// this string is not part of the contract and will change.
+    #[prost(string, tag = "2")]
+    pub message: ::prost::alloc::string::String,
+    /// The legacy JSON-RPC numeric code, carried only so clients that predate
+    /// the structured model keep working. 0 means "not supplied".
+    ///
+    /// New clients MUST NOT branch on this. It cannot express the taxonomy
+    /// faithfully -- several distinct kinds share -32000 -- which is why the
+    /// structured fields exist.
+    #[prost(int64, tag = "3")]
+    pub code: i64,
+    /// The specific reason, if the server supplied one.
+    #[prost(message, optional, tag = "4")]
+    pub details: ::core::option::Option<ErrorDetails>,
+    /// The error that caused this one, innermost last.
+    ///
+    /// Recursive message fields are legal in proto3; prost boxes them and
+    /// ts-proto emits a recursive interface. Servers SHOULD bound the depth of
+    /// the chain they emit, and clients SHOULD bound the depth they walk.
+    #[prost(message, optional, boxed, tag = "5")]
+    pub cause: ::core::option::Option<::prost::alloc::boxed::Box<SurrealError>>,
+    /// Present when the operation may be retried. See `RetryHint`.
+    #[prost(message, optional, tag = "6")]
+    pub retry: ::core::option::Option<RetryHint>,
+}
+impl ::prost::Name for SurrealError {
+const NAME: &'static str = "SurrealError";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.SurrealError".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.SurrealError".into() }}
+/// The category of an error.
+///
+/// Mirrors `ErrorDetails` in the server's `surrealdb-types` crate and
+/// `ErrorKind` in the JavaScript SDK, variant for variant, because the server
+/// already ships that taxonomy over the CBOR and flatbuffers wires and the JS
+/// SDK already parses it. A third spelling would guarantee drift.
+///
+/// Decoders MUST preserve an unrecognised numeric value rather than normalising
+/// it to `UNSPECIFIED`, and MUST treat it as `INTERNAL` for behavioural
+/// purposes. This matches the server's `#\[surreal(other)\] Internal` catch-all
+/// and keeps a newer server's error kinds from being misread as "no error kind".
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ErrorKind {
+    Unspecified = 0,
+    /// Parse error, invalid request, or invalid params.
+    Validation = 1,
+    /// A feature or configuration is not supported.
+    Configuration = 2,
+    /// Query execution failed: timed out, cancelled, not executed, or a
+    /// transaction conflict.
+    Query = 3,
+    /// Serialization or deserialization failed.
+    Serialization = 4,
+    /// Permission or authorization failure.
+    NotAllowed = 5,
+    /// The requested resource does not exist.
+    NotFound = 6,
+    /// The resource already exists.
+    AlreadyExists = 7,
+    /// Client-side connection failure.
+    Connection = 8,
+    /// Raised by `THROW` in SurrealQL.
+    Thrown = 9,
+    /// Internal or unexpected failure. Also the behavioural fallback for a kind
+    /// this build does not recognise.
+    Internal = 10,
+    /// Pure chaining context; carries no detail of its own.
+    Context = 11,
+}
+impl ErrorKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "ERROR_KIND_UNSPECIFIED",
+            Self::Validation => "ERROR_KIND_VALIDATION",
+            Self::Configuration => "ERROR_KIND_CONFIGURATION",
+            Self::Query => "ERROR_KIND_QUERY",
+            Self::Serialization => "ERROR_KIND_SERIALIZATION",
+            Self::NotAllowed => "ERROR_KIND_NOT_ALLOWED",
+            Self::NotFound => "ERROR_KIND_NOT_FOUND",
+            Self::AlreadyExists => "ERROR_KIND_ALREADY_EXISTS",
+            Self::Connection => "ERROR_KIND_CONNECTION",
+            Self::Thrown => "ERROR_KIND_THROWN",
+            Self::Internal => "ERROR_KIND_INTERNAL",
+            Self::Context => "ERROR_KIND_CONTEXT",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "ERROR_KIND_UNSPECIFIED" => Some(Self::Unspecified),
+            "ERROR_KIND_VALIDATION" => Some(Self::Validation),
+            "ERROR_KIND_CONFIGURATION" => Some(Self::Configuration),
+            "ERROR_KIND_QUERY" => Some(Self::Query),
+            "ERROR_KIND_SERIALIZATION" => Some(Self::Serialization),
+            "ERROR_KIND_NOT_ALLOWED" => Some(Self::NotAllowed),
+            "ERROR_KIND_NOT_FOUND" => Some(Self::NotFound),
+            "ERROR_KIND_ALREADY_EXISTS" => Some(Self::AlreadyExists),
+            "ERROR_KIND_CONNECTION" => Some(Self::Connection),
+            "ERROR_KIND_THROWN" => Some(Self::Thrown),
+            "ERROR_KIND_INTERNAL" => Some(Self::Internal),
+            "ERROR_KIND_CONTEXT" => Some(Self::Context),
+            _ => None,
+        }
+    }
+}
 /// Identifier.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]

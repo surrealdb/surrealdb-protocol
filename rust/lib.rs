@@ -3,6 +3,8 @@
 #[cfg(feature = "proto")]
 mod convert;
 #[cfg(feature = "proto")]
+mod error;
+#[cfg(feature = "proto")]
 mod methods;
 
 #[cfg(feature = "proto")]

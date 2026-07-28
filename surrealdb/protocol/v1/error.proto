@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package surrealdb.protocol.v1;
+
+import "surrealdb/protocol/v1/value.proto";
+
+// The category of an error.
+//
+// Mirrors `ErrorDetails` in the server's `surrealdb-types` crate and
+// `ErrorKind` in the JavaScript SDK, variant for variant, because the server
+// already ships that taxonomy over the CBOR and flatbuffers wires and the JS
+// SDK already parses it. A third spelling would guarantee drift.
+//
+// Decoders MUST preserve an unrecognised numeric value rather than normalising
+// it to `UNSPECIFIED`, and MUST treat it as `INTERNAL` for behavioural
+// purposes. This matches the server's `#[surreal(other)] Internal` catch-all
+// and keeps a newer server's error kinds from being misread as "no error kind".
+enum ErrorKind {
+    ERROR_KIND_UNSPECIFIED = 0;
+    // Parse error, invalid request, or invalid params.
+    ERROR_KIND_VALIDATION = 1;
+    // A feature or configuration is not supported.
+    ERROR_KIND_CONFIGURATION = 2;
+    // Query execution failed: timed out, cancelled, not executed, or a
+    // transaction conflict.
+    ERROR_KIND_QUERY = 3;
+    // Serialization or deserialization failed.
+    ERROR_KIND_SERIALIZATION = 4;
+    // Permission or authorization failure.
+    ERROR_KIND_NOT_ALLOWED = 5;
+    // The requested resource does not exist.
+    ERROR_KIND_NOT_FOUND = 6;
+    // The resource already exists.
+    ERROR_KIND_ALREADY_EXISTS = 7;
+    // Client-side connection failure.
+    ERROR_KIND_CONNECTION = 8;
+    // Raised by `THROW` in SurrealQL.
+    ERROR_KIND_THROWN = 9;
+    // Internal or unexpected failure. Also the behavioural fallback for a kind
+    // this build does not recognise.
+    ERROR_KIND_INTERNAL = 10;
+    // Pure chaining context; carries no detail of its own.
+    ERROR_KIND_CONTEXT = 11;
+}
+
+// The specific reason behind an error, within its `ErrorKind`.
+//
+// Deliberately open rather than a mirror of the server's per-kind detail
+// enums. Those are `#[non_exhaustive]` and grow with the engine; reproducing
+// all eight of them here would make every new server-side variant a protocol
+// change, which is exactly the coupling this schema is trying to remove. The
+// server already serialises details as a value, so nothing is lost.
+//
+// Clients MUST NOT branch on `reason` for control flow that has a first-class
+// representation elsewhere — notably retryability, which is `SurrealError.retry`.
+message ErrorDetails {
+    // The reason name, as the server spells it: for example "TransactionConflict",
+    // "TimedOut", "Parse", "Thrown". Empty when the kind carries no detail.
+    string reason = 1;
+    // The reason's payload, if it has one. For example `TimedOut` carries the
+    // duration after which the query gave up.
+    Value content = 2;
+}
+
+// Advice about retrying the operation that failed.
+//
+// Presence means the failure is transient and the operation MAY be retried;
+// absence means it MUST NOT be assumed retryable. Presence is the signal
+// rather than a boolean so that "not retryable" and "the server did not say"
+// cannot be confused, which a proto3 `bool` cannot express.
+//
+// This is what makes a transaction conflict structurally detectable. Clients
+// MUST use it instead of matching on `message` or on the legacy numeric
+// `code`; the JS SDK's current reliance on code -32009 (which its own
+// `CODE_TO_KIND` table omits, so conflicts surface as `Internal`) is the bug
+// this field exists to prevent.
+message RetryHint {
+    // How long the client SHOULD wait before retrying. Absent or zero means
+    // the client chooses, typically with its own backoff.
+    Duration after = 1;
+}
+
+// A structured SurrealDB error.
+//
+// One error type for the whole protocol: transport-level failures,
+// per-statement query failures, and streaming-export failures all use this
+// message, so a client has one thing to parse and one taxonomy to branch on.
+message SurrealError {
+    // The error category. Always set on a well-formed message.
+    ErrorKind kind = 1;
+
+    // Human-readable, for logs and for showing a user.
+    //
+    // Clients MUST NOT parse this or branch on it. Everything a client needs
+    // to make a decision is in `kind`, `details`, and `retry`; the wording of
+    // this string is not part of the contract and will change.
+    string message = 2;
+
+    // The legacy JSON-RPC numeric code, carried only so clients that predate
+    // the structured model keep working. 0 means "not supplied".
+    //
+    // New clients MUST NOT branch on this. It cannot express the taxonomy
+    // faithfully -- several distinct kinds share -32000 -- which is why the
+    // structured fields exist.
+    int64 code = 3;
+
+    // The specific reason, if the server supplied one.
+    ErrorDetails details = 4;
+
+    // The error that caused this one, innermost last.
+    //
+    // Recursive message fields are legal in proto3; prost boxes them and
+    // ts-proto emits a recursive interface. Servers SHOULD bound the depth of
+    // the chain they emit, and clients SHOULD bound the depth they walk.
+    SurrealError cause = 5;
+
+    // Present when the operation may be retried. See `RetryHint`.
+    RetryHint retry = 6;
+}
