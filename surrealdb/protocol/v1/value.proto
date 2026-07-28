@@ -15,12 +15,6 @@ message NullValue {}
 // `NONE`. See the note on `Value`.
 message NoneValue {}
 
-// An empty payload for tag-only `oneof` arms.
-//
-// Use this rather than `NullValue`, which is a real SurrealDB value and would
-// conflate "this arm carries nothing" with "this arm carries NULL".
-message Unit {}
-
 // A duration.
 //
 // Replaces `google.protobuf.Duration`, whose specification caps `seconds` at

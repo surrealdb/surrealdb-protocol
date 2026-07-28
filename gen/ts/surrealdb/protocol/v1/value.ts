@@ -28,15 +28,6 @@ export interface NoneValue {
 }
 
 /**
- * An empty payload for tag-only `oneof` arms.
- *
- * Use this rather than `NullValue`, which is a real SurrealDB value and would
- * conflate "this arm carries nothing" with "this arm carries NULL".
- */
-export interface Unit {
-}
-
-/**
  * A duration.
  *
  * Replaces `google.protobuf.Duration`, whose specification caps `seconds` at
@@ -548,49 +539,6 @@ export const NoneValue: MessageFns<NoneValue> = {
   },
   fromPartial<I extends Exact<DeepPartial<NoneValue>, I>>(_: I): NoneValue {
     const message = createBaseNoneValue();
-    return message;
-  },
-};
-
-function createBaseUnit(): Unit {
-  return {};
-}
-
-export const Unit: MessageFns<Unit> = {
-  encode(_: Unit, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Unit {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnit();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): Unit {
-    return {};
-  },
-
-  toJSON(_: Unit): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Unit>, I>>(base?: I): Unit {
-    return Unit.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Unit>, I>>(_: I): Unit {
-    const message = createBaseUnit();
     return message;
   },
 };

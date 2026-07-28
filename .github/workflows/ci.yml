@@ -64,10 +64,10 @@ jobs:
   # Generated code is checked in. This asserts it still matches the schemas, so
   # a schema change cannot land without its generated counterpart.
   #
-  # gen/c is deliberately out of scope: protoc-gen-c has no pinnable release
-  # channel that matches the macOS (brew) build maintainers use locally, so
-  # diffing it would fail on formatting noise rather than real drift. Pin it and
-  # add `gen/c` to the diff paths below when that changes.
+  # Runs `make gen-check`, which regenerates everything -- protobuf AND
+  # flatbuffers -- and diffs the paths the Makefile declares. Re-deriving that
+  # scope here by hand is how the flatbuffers half went unchecked before: the
+  # job ran proto-gen only, but diffed gen/rust, which contains gen/rust/fb.
   proto-gen-check:
     runs-on: ubuntu-latest
     steps:
@@ -83,32 +83,18 @@ jobs:
         with:
           setup_only: true
 
-      - name: Install pinned generators
-        run: |
-          set -euo pipefail
-          eval "$(make --no-print-directory print-versions)"
-          cargo install --locked --version "$PROTOC_GEN_PROST_VERSION" protoc-gen-prost
-          cargo install --locked --version "$PROTOC_GEN_TONIC_VERSION" protoc-gen-tonic
-          bun install
-          mkdir -p plugins
-          cp "$(command -v protoc-gen-prost)" plugins/protoc-gen-prost
-          cp "$(command -v protoc-gen-tonic)" plugins/protoc-gen-tonic
-          ln -sf "$PWD/node_modules/.bin/protoc-gen-ts_proto" plugins/protoc-gen-ts_proto
-          chmod +x plugins/protoc-gen-prost plugins/protoc-gen-tonic
-          # protoc-gen-c is required for `buf generate` to run at all, but its
-          # output is not diffed (see the note above).
-          sudo apt-get update && sudo apt-get install -y protobuf-c-compiler
-          cp "$(command -v protoc-gen-c)" plugins/protoc-gen-c
+      # The generators are pinned, so a hit here skips compiling
+      # protoc-gen-prost and protoc-gen-tonic from source on every run.
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
+        with:
+          path: plugins
+          key: plugins-${{ runner.os }}-${{ hashFiles('Makefile') }}
 
-      - name: Regenerate
-        run: make proto-gen
+      # protoc-gen-c is needed for `buf generate` to run at all, but its output
+      # is not in GEN_CHECK_PATHS, so its version does not have to be pinned.
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-c-compiler unzip
 
-      - name: Assert generated code matches the schemas
-        run: |
-          if ! git diff --exit-code -- gen/rust gen/ts; then
-            echo "::error::Generated code is stale. Run 'make gen' and commit the result."
-            exit 1
-          fi
+      - run: make gen-check
 
   rust-fmt:
     runs-on: ubuntu-latest

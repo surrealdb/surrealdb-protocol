@@ -91,12 +91,16 @@ mod serde_key_values {
     where
         S: Serializer,
     {
+        // Borrowed, not cloned: `Value` is a recursive tree and a nested
+        // object re-enters this function, so cloning each entry would copy
+        // every subtree once per level it sits under.
+        let unset = Value::default();
         let mut map = serializer.serialize_map(Some(entries.len()))?;
         for entry in entries {
             // A missing value is a protocol error, but Serialize cannot fail
             // usefully here; an unset Value round-trips as the unset variant,
             // which decoders already reject.
-            map.serialize_entry(&entry.key, &entry.value.clone().unwrap_or_default())?;
+            map.serialize_entry(&entry.key, entry.value.as_ref().unwrap_or(&unset))?;
         }
         map.end()
     }

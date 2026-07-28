@@ -24,18 +24,6 @@ impl ::prost::Name for NoneValue {
 const NAME: &'static str = "NoneValue";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.NoneValue".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.NoneValue".into() }}
-/// An empty payload for tag-only `oneof` arms.
-///
-/// Use this rather than `NullValue`, which is a real SurrealDB value and would
-/// conflate "this arm carries nothing" with "this arm carries NULL".
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct Unit {
-}
-impl ::prost::Name for Unit {
-const NAME: &'static str = "Unit";
-const PACKAGE: &'static str = "surrealdb.protocol.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Unit".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Unit".into() }}
 /// A duration.
 ///
 /// Replaces `google.protobuf.Duration`, whose specification caps `seconds` at

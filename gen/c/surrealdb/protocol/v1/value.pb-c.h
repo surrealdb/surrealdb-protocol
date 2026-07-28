@@ -17,7 +17,6 @@ PROTOBUF_C__BEGIN_DECLS
 
 typedef struct Surrealdb__Protocol__V1__NullValue Surrealdb__Protocol__V1__NullValue;
 typedef struct Surrealdb__Protocol__V1__NoneValue Surrealdb__Protocol__V1__NoneValue;
-typedef struct Surrealdb__Protocol__V1__Unit Surrealdb__Protocol__V1__Unit;
 typedef struct Surrealdb__Protocol__V1__Duration Surrealdb__Protocol__V1__Duration;
 typedef struct Surrealdb__Protocol__V1__Datetime Surrealdb__Protocol__V1__Datetime;
 typedef struct Surrealdb__Protocol__V1__Decimal Surrealdb__Protocol__V1__Decimal;
@@ -106,20 +105,6 @@ struct  Surrealdb__Protocol__V1__NoneValue
 };
 #define SURREALDB__PROTOCOL__V1__NONE_VALUE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__none_value__descriptor) \
- }
-
-
-/*
- * An empty payload for tag-only `oneof` arms.
- * Use this rather than `NullValue`, which is a real SurrealDB value and would
- * conflate "this arm carries nothing" with "this arm carries NULL".
- */
-struct  Surrealdb__Protocol__V1__Unit
-{
-  ProtobufCMessage base;
-};
-#define SURREALDB__PROTOCOL__V1__UNIT__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__unit__descriptor) \
  }
 
 
@@ -1107,25 +1092,6 @@ Surrealdb__Protocol__V1__NoneValue *
                       const uint8_t       *data);
 void   surrealdb__protocol__v1__none_value__free_unpacked
                      (Surrealdb__Protocol__V1__NoneValue *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__V1__Unit methods */
-void   surrealdb__protocol__v1__unit__init
-                     (Surrealdb__Protocol__V1__Unit         *message);
-size_t surrealdb__protocol__v1__unit__get_packed_size
-                     (const Surrealdb__Protocol__V1__Unit   *message);
-size_t surrealdb__protocol__v1__unit__pack
-                     (const Surrealdb__Protocol__V1__Unit   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__v1__unit__pack_to_buffer
-                     (const Surrealdb__Protocol__V1__Unit   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__V1__Unit *
-       surrealdb__protocol__v1__unit__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__v1__unit__free_unpacked
-                     (Surrealdb__Protocol__V1__Unit *message,
                       ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__V1__Duration methods */
 void   surrealdb__protocol__v1__duration__init
@@ -2199,9 +2165,6 @@ typedef void (*Surrealdb__Protocol__V1__NullValue_Closure)
 typedef void (*Surrealdb__Protocol__V1__NoneValue_Closure)
                  (const Surrealdb__Protocol__V1__NoneValue *message,
                   void *closure_data);
-typedef void (*Surrealdb__Protocol__V1__Unit_Closure)
-                 (const Surrealdb__Protocol__V1__Unit *message,
-                  void *closure_data);
 typedef void (*Surrealdb__Protocol__V1__Duration_Closure)
                  (const Surrealdb__Protocol__V1__Duration *message,
                   void *closure_data);
@@ -2378,7 +2341,6 @@ typedef void (*Surrealdb__Protocol__V1__Kind_Closure)
 
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__null_value__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__none_value__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__unit__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__duration__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__datetime__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__decimal__descriptor;

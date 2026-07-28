@@ -4,7 +4,7 @@ use crate::{
     convert::TryFromValue,
     proto::{
         rpc::v1::{
-            QueryBatchFrame, QueryResponse, ValueBatch, export_config, query_batch_frame::Payload,
+            QueryBatchFrame, QueryResponse, export_config, query_batch_frame::Payload,
             query_response::Frame,
         },
         v1::{SurrealError, Value},
@@ -43,29 +43,9 @@ impl QueryResponse {
             frame: Some(Frame::Error(error)),
         }
     }
-
-    /// Returns the batch frame, if this response carries one.
-    pub fn as_batch(&self) -> Option<&QueryBatchFrame> {
-        match &self.frame {
-            Some(Frame::Batch(batch)) => Some(batch),
-            _ => None,
-        }
-    }
 }
 
 impl QueryBatchFrame {
-    /// Returns the row-oriented values in this batch.
-    ///
-    /// Empty when the batch carries a different encoding; check
-    /// [`QueryBatchFrame::payload`] directly to distinguish "no rows" from "not
-    /// row-oriented".
-    pub fn values(&self) -> &[Value] {
-        match &self.payload {
-            Some(Payload::Values(ValueBatch { values })) => values,
-            _ => &[],
-        }
-    }
-
     /// Consumes the frame, returning its values, or the error it carries.
     pub fn into_values(self) -> Result<Vec<Value>> {
         if let Some(error) = self.error {

@@ -20,15 +20,6 @@ PROTOC_GEN_TONIC_VERSION := 0.5.0
 TS_PROTO_VERSION         := 2.11.5
 FLATC_VERSION            := 25.12.19
 
-# Single source of truth for the pinned versions, consumed by CI via
-# `eval "$(make print-versions)"` so the pins live in exactly one place.
-.PHONY: print-versions
-print-versions:
-	@echo "PROTOC_GEN_PROST_VERSION=$(PROTOC_GEN_PROST_VERSION)"
-	@echo "PROTOC_GEN_TONIC_VERSION=$(PROTOC_GEN_TONIC_VERSION)"
-	@echo "TS_PROTO_VERSION=$(TS_PROTO_VERSION)"
-	@echo "FLATC_VERSION=$(FLATC_VERSION)"
-
 build:
 	mkdir -p build
 
@@ -36,14 +27,14 @@ plugins:
 	mkdir -p plugins
 
 # Rust
-plugins/protoc-gen-prost: plugins
+plugins/protoc-gen-prost: | plugins
 	rm -f $@
 	cargo install --locked --version $(PROTOC_GEN_PROST_VERSION) protoc-gen-prost
 	hash -r
 	cp $(shell bash -c "which protoc-gen-prost") $@
 	chmod +x $@
 
-plugins/protoc-gen-tonic: plugins
+plugins/protoc-gen-tonic: | plugins
 	rm -f $@
 	cargo install --locked --version $(PROTOC_GEN_TONIC_VERSION) protoc-gen-tonic
 	hash -r
@@ -51,7 +42,7 @@ plugins/protoc-gen-tonic: plugins
 	chmod +x $@
 
 # C
-plugins/protoc-gen-c: plugins
+plugins/protoc-gen-c: | plugins
 	rm -f $@
 	brew install protobuf-c
 	hash -r
@@ -59,26 +50,38 @@ plugins/protoc-gen-c: plugins
 	chmod +x $@
 
 # Typescript
-plugins/protoc-gen-ts_proto: plugins
+plugins/protoc-gen-ts_proto: | plugins
 	rm -f $@
 	bun install ts-proto@$(TS_PROTO_VERSION)
 	ln -s $(shell pwd)/node_modules/.bin/protoc-gen-ts_proto $(shell pwd)/$@
 	chmod +x $@
 
 # Flatbuffers
+# Resolved inside the recipe, not by $(shell): make expands every recipe line
+# before running the first, so a $(shell which flatc) would evaluate before the
+# install below had a chance to provide it.
 FLATC := plugins/flatc
-$(FLATC): plugins
-	rm -f $@
-	brew install flatbuffers
-	hash -r
-	@installed="$$($(shell bash -c "which flatc") --version | sed 's/.*version //')"; \
+$(FLATC): | plugins
+	@set -e; \
+	  if [ "$$(uname)" = "Darwin" ]; then \
+	    brew install flatbuffers; \
+	    src="$$(command -v flatc)"; \
+	  else \
+	    tmp="$$(mktemp -d)"; \
+	    curl -fsSL -o "$$tmp/flatc.zip" \
+	      "https://github.com/google/flatbuffers/releases/download/v$(FLATC_VERSION)/Linux.flatc.binary.g++-13.zip"; \
+	    unzip -q -o "$$tmp/flatc.zip" -d "$$tmp"; \
+	    src="$$tmp/flatc"; \
+	    chmod +x "$$src"; \
+	  fi; \
+	  installed="$$("$$src" --version | sed 's/.*version //')"; \
 	  if [ "$$installed" != "$(FLATC_VERSION)" ]; then \
 	    echo "flatc $$installed found, expected $(FLATC_VERSION);"; \
 	    echo "generated flatbuffers code is version-sensitive and CI diffs it."; \
 	    exit 1; \
-	  fi
-	cp $(shell bash -c "which flatc") $@
-	chmod +x $@
+	  fi; \
+	  cp "$$src" $@; \
+	  chmod +x $@
 
 ALL_PLUGINS := plugins/protoc-gen-prost plugins/protoc-gen-tonic plugins/protoc-gen-c plugins/protoc-gen-ts_proto
 
@@ -101,14 +104,22 @@ proto-gen: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
 proto-check: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
 	buf lint
 
+# The generated output CI diffs.
+#
+# gen/c is excluded: protoc-gen-c has no pinnable release channel matching the
+# macOS build maintainers use locally, so diffing it fails on formatting noise
+# rather than real drift. Pin it and add it here when that changes.
+GEN_CHECK_PATHS := gen/rust gen/ts
+
 # Fails when the checked-in generated code no longer matches the schemas.
 .PHONY: gen-check
 gen-check: gen
-	git diff --exit-code -- gen/
+	@git diff --exit-code -- $(GEN_CHECK_PATHS) \
+	  || { echo "Generated code is stale. Run 'make gen' and commit the result."; exit 1; }
 
 # Fails when value.proto and value.fbs have drifted apart.
 .PHONY: parity-check
-parity-check: build/descriptor.json
+parity-check:
 	bun run scripts/parity.ts
 
 # flatc --rust-module-root-file overwrites mod.rs per input file. root.fbs
@@ -133,16 +144,13 @@ fb-gen: gen/rust/fb
 # Build artefact, not checked in: it is derived from the .proto files that sit
 # beside it, and committing ~200 KiB that churns on every schema edit buys
 # nothing. Regenerate with `make descriptor-gen`.
-build/descriptor.binpb: buf.yaml $(PROTO_SCHEMA_SRCS) | build
-	buf build -o $@
-
 build/descriptor.json: buf.yaml $(PROTO_SCHEMA_SRCS) | build
 	buf build -o $@
 
 .PHONY: descriptor-gen
-descriptor-gen: build/descriptor.binpb build/descriptor.json
+descriptor-gen: build/descriptor.json
 
-gen: proto-gen fb-gen descriptor-gen
+gen: proto-gen fb-gen
 
 ################################################################################
 # Rust

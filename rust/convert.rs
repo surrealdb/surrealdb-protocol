@@ -468,32 +468,31 @@ where
     }
 }
 
-impl FromIterator<(String, v1::Value)> for v1::Variables {
-    fn from_iter<T: IntoIterator<Item = (String, v1::Value)>>(iter: T) -> Self {
-        // Build the entries explicitly rather than re-collecting the BTreeMap:
-        // `BTreeMap<String, Value>::into_iter()` yields `(String, Value)`, so
-        // a trailing `.collect()` would re-select this very impl and recurse
-        // until the stack overflows.
-        //
-        // The BTreeMap is still what gives us the ascending key order the
-        // schema requires, and collapses duplicates rather than emitting a
-        // message a decoder must reject.
-        Self {
-            variables: iter
-                .into_iter()
-                .collect::<BTreeMap<_, _>>()
-                .into_iter()
-                .map(|(key, value)| v1::KeyValue::new(key, value))
-                .collect(),
-        }
-    }
+/// Builds the `repeated KeyValue` payload `Object` and `Variables` share.
+///
+/// Routing through a `BTreeMap` is what gives the entries the ascending key
+/// order the schema requires and collapses duplicates, rather than emitting a
+/// message a conforming decoder must reject.
+///
+/// Note this deliberately does not `collect()` into the target type: those
+/// types implement `FromIterator<(String, Value)>`, so a trailing `.collect()`
+/// inside one of those impls would re-select it and recurse.
+fn key_values<T, E>(pairs: impl IntoIterator<Item = (String, T)>) -> Result<Vec<v1::KeyValue>, E>
+where
+    T: TryInto<v1::Value, Error = E>,
+{
+    pairs
+        .into_iter()
+        .collect::<BTreeMap<_, _>>()
+        .into_iter()
+        .map(|(key, value)| Ok(v1::KeyValue::new(key, value.try_into()?)))
+        .collect()
 }
 
-impl FromIterator<v1::KeyValue> for v1::Variables {
-    fn from_iter<T: IntoIterator<Item = v1::KeyValue>>(iter: T) -> Self {
-        Self {
-            variables: iter.into_iter().collect(),
-        }
+impl FromIterator<(String, v1::Value)> for v1::Variables {
+    fn from_iter<T: IntoIterator<Item = (String, v1::Value)>>(iter: T) -> Self {
+        let Ok(variables) = key_values::<_, std::convert::Infallible>(iter);
+        Self { variables }
     }
 }
 
@@ -521,24 +520,16 @@ where
 
     #[inline]
     fn try_from(value: BTreeMap<String, T>) -> Result<Self, Self::Error> {
-        // BTreeMap iteration is already in ascending key order.
-        let mut variables = Vec::with_capacity(value.len());
-        for (key, value) in value {
-            variables.push(v1::KeyValue::new(key, value.try_into()?));
-        }
-
-        Ok(Self { variables })
+        Ok(Self {
+            variables: key_values(value)?,
+        })
     }
 }
 
 impl From<BTreeMap<String, v1::Value>> for v1::Object {
     #[inline]
     fn from(value: BTreeMap<String, v1::Value>) -> Self {
-        Self {
-            items: value
-                .into_iter()
-                .map(|(key, value)| v1::KeyValue::new(key, value))
-                .collect(),
-        }
+        let Ok(items) = key_values::<_, std::convert::Infallible>(value);
+        Self { items }
     }
 }

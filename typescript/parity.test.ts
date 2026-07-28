@@ -32,12 +32,9 @@ const RUST_ENCODED = {
 } as const;
 
 function decode(hex: string): ProtoObject {
-	const bytes = new Uint8Array(
-		hex.length === 0
-			? []
-			: (hex.match(/.{2}/g) ?? []).map((byte) => Number.parseInt(byte, 16)),
-	);
-	return ProtoObject.decode(bytes);
+	// Buffer is a Uint8Array, and this is the inverse of the
+	// Buffer.from(...).toString("hex") used in the re-encode test below.
+	return ProtoObject.decode(Buffer.from(hex, "hex"));
 }
 
 describe("NONE / NULL / absent survive Rust -> TypeScript", () => {

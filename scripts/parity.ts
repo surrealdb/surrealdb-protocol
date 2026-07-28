@@ -10,14 +10,17 @@
  * data-loss bugs.
  *
  * Compares the discriminated unions that carry SurrealDB's type system --
- * proto `oneof`s against flatbuffers `union`s -- by member name and number.
- * Those are where drift actually happened, and where it costs the most: a
- * variant present in one encoding and not the other is a value that cannot
- * round-trip.
+ * proto `oneof`s against flatbuffers `union`s -- by member id and name. Those
+ * are where drift actually happened, and where it costs the most: a variant
+ * present in one encoding and not the other is a value that cannot round-trip.
+ *
+ * The pairs are DISCOVERED, not listed. Every flatbuffers union must resolve
+ * to a proto oneof and vice versa, so adding a union to either schema without
+ * its counterpart fails here rather than going quietly unguarded.
  *
  * Accepted differences live in parity.toml with a written reason.
  *
- * Run: bun run scripts/parity.ts   (regenerates the descriptor set first)
+ * Run: bun run scripts/parity.ts
  */
 
 import { execFileSync } from "node:child_process";
@@ -26,6 +29,7 @@ import { dirname } from "node:path";
 
 const DESCRIPTOR = "build/descriptor.json";
 const FBS = "surrealdb/protocol/v1/value.fbs";
+const PROTO = "surrealdb/protocol/v1/value.proto";
 const ALLOW = "parity.toml";
 
 interface Member {
@@ -45,75 +49,67 @@ interface MessageDescriptor {
 	oneofDecl?: Array<{ name: string }>;
 }
 interface DescriptorSet {
-	file?: Array<{ messageType?: MessageDescriptor[] }>;
-}
-
-/** Pairs of (proto oneof, flatbuffers union) that must agree. */
-const PAIRS: Array<{ proto: string; oneof: string; fb: string }> = [
-	{ proto: "Value", oneof: "value", fb: "ValueType" },
-	{ proto: "RecordIdKey", oneof: "id", fb: "RecordIdKeyType" },
-];
-
-/** Reads the accepted-divergence list: `Union.Member = "reason"`. */
-function readAllowlist(): Map<string, string> {
-	const allowed = new Map<string, string>();
-	let source: string;
-	try {
-		source = readFileSync(ALLOW, "utf8");
-	} catch {
-		return allowed;
-	}
-	for (const line of source.split("\n")) {
-		const match = line.match(/^\s*"?([\w.]+)"?\s*=\s*"(.*)"\s*$/);
-		if (match?.[1] && match[2]) allowed.set(match[1], match[2]);
-	}
-	return allowed;
-}
-
-/** Extracts a proto oneof's members from the descriptor set. */
-function protoOneof(
-	descriptor: DescriptorSet,
-	message: string,
-	oneof: string,
-): Member[] {
-	for (const file of descriptor.file ?? []) {
-		for (const type of file.messageType ?? []) {
-			if (type.name !== message) continue;
-			const index = (type.oneofDecl ?? []).findIndex((d) => d.name === oneof);
-			if (index < 0) continue;
-			return (type.field ?? [])
-				.filter((f) => f.oneofIndex === index)
-				.map((f) => ({ name: pascal(f.name), number: f.number }));
-		}
-	}
-	throw new Error(`proto ${message}.${oneof} not found in ${DESCRIPTOR}`);
+	file?: Array<{ name?: string; messageType?: MessageDescriptor[] }>;
 }
 
 /**
- * Extracts a flatbuffers union's members by parsing the schema text.
- *
- * Parsed rather than read from `flatc --bfbs` reflection because that needs a
- * second toolchain round trip to become readable, and a union declaration is
- * a handful of lines of unambiguous syntax. Members are `Name: Type (id: N)`
- * or, when the member type doubles as its name, `Name (id: N)`.
+ * Flatbuffers unions whose proto counterpart the naming convention cannot
+ * derive. Everything else resolves as `<Name>Type -> <Name>` or `<Name> ->
+ * <Name>`; only genuine exceptions belong here.
  */
-function fbUnion(source: string, name: string): Member[] {
-	const block = source.match(
-		new RegExp(`union\\s+${name}\\s*\\{([\\s\\S]*?)\\n\\}`),
-	);
-	if (!block?.[1]) throw new Error(`flatbuffers union ${name} not found`);
+const UNION_TO_MESSAGE: Record<string, string> = {
+	LiteralType: "LiteralKind",
+};
 
-	const members: Member[] = [];
-	for (const line of block[1].split("\n")) {
-		const stripped = line.replace(/\/\/.*$/, "").trim();
-		if (!stripped) continue;
-		const match = stripped.match(/^(\w+)\s*(?::\s*[\w.]+)?\s*\(id:\s*(\d+)\)/);
-		if (match?.[1] && match[2]) {
-			members.push({ name: match[1], number: Number(match[2]) });
+/** Every `union X { ... }` in the flatbuffers schema, with its members. */
+function fbUnions(source: string): Map<string, Member[]> {
+	const unions = new Map<string, Member[]>();
+	const pattern = /union\s+(\w+)\s*\{([\s\S]*?)\n\}/g;
+
+	for (const [, name, body] of source.matchAll(pattern)) {
+		if (!name || !body) continue;
+		const members: Member[] = [];
+		for (const line of body.split("\n")) {
+			const stripped = line.replace(/\/\/.*$/, "").trim();
+			if (!stripped) continue;
+			// `Name: Type (id: N)`, or `Name (id: N)` when the member type
+			// doubles as its name.
+			const match = stripped.match(
+				/^(\w+)\s*(?::\s*[\w.]+)?\s*\(id:\s*(\d+)\)/,
+			);
+			if (match?.[1] && match[2]) {
+				members.push({ name: match[1], number: Number(match[2]) });
+			}
+		}
+		if (members.length > 0) unions.set(name, members);
+	}
+	return unions;
+}
+
+/**
+ * Every `oneof` in value.proto, keyed `Message.oneof`, with its members.
+ *
+ * Scoped to that one file because the flatbuffers schema only models the value
+ * type system. The RPC layer's oneofs (frame envelopes, credentials, and so
+ * on) have no flatbuffers counterpart by design, and pairing them would be
+ * noise rather than a finding.
+ */
+function protoOneofs(descriptor: DescriptorSet): Map<string, Member[]> {
+	const oneofs = new Map<string, Member[]>();
+	for (const file of descriptor.file ?? []) {
+		if (file.name !== PROTO) continue;
+		for (const type of file.messageType ?? []) {
+			(type.oneofDecl ?? []).forEach((decl, index) => {
+				const members = (type.field ?? [])
+					.filter((f) => f.oneofIndex === index)
+					.map((f) => ({ name: pascal(f.name), number: f.number }));
+				if (members.length > 0) {
+					oneofs.set(`${type.name}.${decl.name}`, members);
+				}
+			});
 		}
 	}
-	if (members.length === 0) throw new Error(`union ${name} parsed as empty`);
-	return members;
+	return oneofs;
 }
 
 /** proto field names are snake_case; flatbuffers members are PascalCase. */
@@ -122,6 +118,22 @@ function pascal(name: string): string {
 		.split("_")
 		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
 		.join("");
+}
+
+/** Reads the accepted-divergence list from the `[allow]` table. */
+function readAllowlist(): Map<string, string> {
+	let source: string;
+	try {
+		source = readFileSync(ALLOW, "utf8");
+	} catch {
+		return new Map();
+	}
+	// Bun parses TOML natively. A line-regex would match `key = "value"` under
+	// any table, so an entry that drifted out of `[allow]` would still silently
+	// suppress a parity error -- in the one file whose whole job is to make
+	// suppression deliberate.
+	const parsed = Bun.TOML.parse(source) as { allow?: Record<string, string> };
+	return new Map(Object.entries(parsed.allow ?? {}));
 }
 
 function main(): void {
@@ -133,62 +145,83 @@ function main(): void {
 	const descriptor: DescriptorSet = JSON.parse(
 		readFileSync(DESCRIPTOR, "utf8"),
 	);
-	const fbs = readFileSync(FBS, "utf8");
+	const unions = fbUnions(readFileSync(FBS, "utf8"));
+	const oneofs = protoOneofs(descriptor);
 	const allowed = readAllowlist();
 	const problems: string[] = [];
 
-	for (const pair of PAIRS) {
-		const left = protoOneof(descriptor, pair.proto, pair.oneof);
-		const right = fbUnion(fbs, pair.fb);
-		const label = `${pair.proto}.${pair.oneof} <-> ${pair.fb}`;
+	// Allowlist keys, narrowest first:
+	//   <Union>.<Member>.<id|name>   one member, one kind of check
+	//   <Union>.*.<id|name>          every member, one kind of check
+	//   <Union>.*                    the whole union
+	//
+	// Splitting id from name is what stops "these two are spelled differently"
+	// from also switching off renumbering detection, which is the check that
+	// actually catches a value failing to round-trip.
+	const excused = (union: string, member: string, check: "id" | "name") =>
+		allowed.has(`${union}.${member}.${check}`) ||
+		allowed.has(`${union}.*.${check}`) ||
+		allowed.has(`${union}.*`);
 
-		const byNumber = new Map(right.map((m) => [m.number, m]));
-		const fbNames = new Set(right.map((m) => m.name.toLowerCase()));
+	const unpaired = new Set(oneofs.keys());
+	let checked = 0;
 
-		for (const member of left) {
-			const key = `${pair.fb}.${member.name}`;
-			if (allowed.has(key)) continue;
+	for (const [union, fbMembers] of unions) {
+		const message = UNION_TO_MESSAGE[union] ?? union.replace(/Type$/, "");
+		// Every message in these schemas carries at most one oneof, so the
+		// message name is enough to find it.
+		const key = [...oneofs.keys()].find((k) => k.startsWith(`${message}.`));
+		if (!key) {
+			problems.push(
+				`flatbuffers union ${union} has no proto counterpart (looked for a oneof on message ${message})`,
+			);
+			continue;
+		}
+		unpaired.delete(key);
+		checked += 1;
 
+		const protoMembers = oneofs.get(key) ?? [];
+		const byNumber = new Map(fbMembers.map((m) => [m.number, m]));
+		const label = `${key} <-> ${union}`;
+
+		for (const member of protoMembers) {
 			const counterpart = byNumber.get(member.number);
 			if (!counterpart) {
-				problems.push(
-					`${label}: proto has ${member.name} = ${member.number}, flatbuffers has no member with that id`,
-				);
+				if (!excused(union, member.name, "id")) {
+					problems.push(
+						`${label}: proto has ${member.name} = ${member.number}, flatbuffers has no member with that id`,
+					);
+				}
 				continue;
 			}
-			if (counterpart.name.toLowerCase() !== member.name.toLowerCase()) {
+			if (
+				counterpart.name.toLowerCase() !== member.name.toLowerCase() &&
+				!excused(union, member.name, "name")
+			) {
 				problems.push(
 					`${label}: id ${member.number} is ${member.name} in proto but ${counterpart.name} in flatbuffers`,
 				);
 			}
 		}
 
-		for (const member of right) {
-			const key = `${pair.fb}.${member.name}`;
-			if (allowed.has(key)) continue;
-			if (!left.some((m) => m.number === member.number)) {
-				problems.push(
-					`${label}: flatbuffers has ${member.name} = ${member.number}, proto has no field with that tag`,
-				);
-			}
+		for (const member of fbMembers) {
+			if (protoMembers.some((m) => m.number === member.number)) continue;
+			if (excused(union, member.name, "id")) continue;
+			problems.push(
+				`${label}: flatbuffers has ${member.name} = ${member.number}, proto has no field with that tag`,
+			);
 		}
+	}
 
-		// Surfaced separately: a name-only mismatch is a readability problem,
-		// an id mismatch is a correctness one.
-		for (const member of left) {
-			if (allowed.has(`${pair.fb}.${member.name}`)) continue;
-			if (!fbNames.has(member.name.toLowerCase())) {
-				problems.push(
-					`${label}: proto member ${member.name} has no same-named flatbuffers member`,
-				);
-			}
-		}
+	for (const key of unpaired) {
+		problems.push(
+			`proto oneof ${key} has no flatbuffers counterpart; add the union or record it in ${ALLOW}`,
+		);
 	}
 
 	if (problems.length > 0) {
 		console.error("proto <-> flatbuffers parity failed:\n");
-		for (const problem of [...new Set(problems)])
-			console.error(`  - ${problem}`);
+		for (const problem of problems) console.error(`  - ${problem}`);
 		console.error(
 			`\nFix the schemas, or record the difference in ${ALLOW} with a reason.`,
 		);
@@ -196,7 +229,7 @@ function main(): void {
 	}
 
 	console.log(
-		`proto <-> flatbuffers parity OK (${PAIRS.length} unions, ${allowed.size} accepted differences)`,
+		`proto <-> flatbuffers parity OK (${checked} unions, ${allowed.size} accepted differences)`,
 	);
 }
 
