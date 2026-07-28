@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package surrealdb.protocol.rpc.v1;
+
+import "surrealdb/protocol/v1/value.proto";
+
+// The session and transaction a request applies to.
+//
+// Carried as field 1 of EVERY request message in `SurrealDBService`, with no
+// exceptions, so context always sits at the same wire position. That
+// uniformity is the point: a connection pool, sharding proxy, tracing layer or
+// audit log can answer "which session is this about?" without a per-RPC table
+// of field numbers, and without being rebuilt when an RPC is added.
+//
+// Context lives in the message body, never in transport metadata. The
+// WebSocket and HTTP-chunked bindings of this service have no metadata
+// concept, and gRPC-Web strips trailers, so anything carried out-of-band would
+// make the bindings different contracts.
+message RequestContext {
+    // The session this request applies to.
+    //
+    // Absent means the connection's implicit root session, matching
+    // `Option<Uuid>` in the Rust bridge and `Session = Uuid | undefined` in
+    // the TypeScript one.
+    surrealdb.protocol.v1.Uuid session = 1;
+
+    // The explicit transaction this request runs in.
+    //
+    // Absent means the request runs in its own implicit transaction. Only
+    // meaningful on RPCs whose documentation says so; servers MUST reject a
+    // request that sets it elsewhere rather than ignoring it.
+    surrealdb.protocol.v1.Uuid transaction = 2;
+
+    // How long the server should spend on this request before failing it.
+    //
+    // Absent means the server's configured default. This is a ceiling, not a
+    // reservation: the server MAY fail sooner.
+    surrealdb.protocol.v1.Duration timeout = 3;
+
+    // 4 to 15 are held for future cross-cutting fields -- a priority hint, an
+    // idempotency key, a trace context. Tags 1 to 15 encode in a single byte,
+    // and this message rides on every request, so the cheap tags are worth
+    // reserving even though the fields do not exist yet.
+    reserved 4 to 15;
+}
+
+// A semantic version.
+//
+// A structured triple rather than a string so that comparison does not require
+// every client to ship a semver parser, and so an unparseable version cannot
+// silently compare as "older than everything".
+message SemVer {
+    uint32 major = 1;
+    uint32 minor = 2;
+    uint32 patch = 3;
+    // Pre-release identifier without the leading `-`, for example "beta.4".
+    // Empty for a release.
+    string pre_release = 4;
+}
+
+// A three-state optional string: leave unchanged, clear, or set.
+//
+// Mirrors `Nullable<String>` in the Rust bridge and `string | null | undefined`
+// in TypeScript. Used where clearing a value and leaving it alone are
+// different operations, such as `Use`.
+//
+//   leave unchanged -> the field is absent
+//   clear           -> `null` is set
+//   set             -> `some` is set
+//
+// A present message with an unset oneof is treated as "leave unchanged", the
+// same as absence. That collapse is deliberate: naming it here is cheaper than
+// any encoding contrived to make the fourth state unrepresentable.
+message NullableString {
+    oneof value {
+        surrealdb.protocol.v1.NullValue null = 1;
+        string some = 2;
+    }
+}
+
+// A chunk of an opaque byte stream.
+//
+// Used by the SurrealQL import and export RPCs and by the ML-model export.
+// Those carry bytes rather than parsed statements: a single INSERT can be
+// hundreds of megabytes, so statement framing has no bound on message size,
+// forces the server to parse before it can stream, and forces both peers to
+// reassemble statement boundaries that neither SDK actually wants.
+//
+// Producers MUST NOT exceed 1 MiB (1,048,576 bytes) of data per chunk; 256 KiB
+// is the recommended default. Consumers MAY treat a larger chunk as a protocol
+// error. Chunk boundaries carry no meaning -- a stream may be split at any
+// byte position, and empty chunks are permitted.
+message DataChunk {
+    bytes data = 1;
+}
+
+// The trailer that completes a byte stream.
+//
+// Carries the totals for what was streamed, computed incrementally as the
+// chunks were produced, so neither peer has to buffer the whole stream to know
+// them. Receiving this frame is what marks the stream complete: a stream that
+// ends without it MUST be treated as failed and its output discarded.
+message DataTrailer {
+    // Total bytes streamed, excluding framing.
+    uint64 bytes = 1;
+    // SHA-256 of the streamed bytes, lowercase hex. Consumers MUST verify it
+    // and treat a mismatch as a failed transfer.
+    string sha256 = 2;
+}

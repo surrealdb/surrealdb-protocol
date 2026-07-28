@@ -10,14 +10,13 @@
 //! `Begin` frame and terminated by either an `End` frame (success) or an
 //! `Error` frame.
 
-use std::fmt::Display;
-
 use bytes::Bytes;
 
 use crate::proto::rpc::v1::{
-    ExportDirectoryBegin, ExportDirectoryEnd, ExportDirectoryResponse, ExportError, FileBegin,
-    FileChunk, FileEnd, export_config, export_directory_response::Frame,
+    ExportDirectoryBegin, ExportDirectoryEnd, ExportDirectoryResponse, FileBegin, FileChunk,
+    FileEnd, export_directory_response::Frame,
 };
+use crate::proto::v1::SurrealError;
 
 /// The default size, in bytes, of a [`FileChunk`]'s payload (256 KiB).
 ///
@@ -32,32 +31,6 @@ pub const DEFAULT_FILE_CHUNK_SIZE: usize = 256 * 1024;
 /// message-size limit (gRPC's 4 MiB default, the WebSocket 128 MiB cap) while
 /// guaranteeing neither peer has to buffer a whole file.
 pub const MAX_FILE_CHUNK_SIZE: usize = 1024 * 1024;
-
-impl From<bool> for export_config::Tables {
-    fn from(value: bool) -> Self {
-        if value {
-            export_config::Tables {
-                selection: Some(export_config::tables::Selection::All(Default::default())),
-            }
-        } else {
-            export_config::Tables {
-                selection: Some(export_config::tables::Selection::None(Default::default())),
-            }
-        }
-    }
-}
-
-impl From<Vec<&str>> for export_config::Tables {
-    fn from(values: Vec<&str>) -> Self {
-        let mut selected_tables = export_config::SelectedTables::default();
-        for v in values {
-            selected_tables.tables.push(v.to_string());
-        }
-        export_config::Tables {
-            selection: Some(export_config::tables::Selection::Selected(selected_tables)),
-        }
-    }
-}
 
 impl ExportDirectoryResponse {
     /// Wraps the opening [`ExportDirectoryBegin`] frame of the stream.
@@ -104,28 +77,13 @@ impl ExportDirectoryResponse {
         }
     }
 
-    /// Builds an [`ExportError`] frame terminating the stream.
-    pub fn error(code: i64, message: String) -> Self {
+    /// Builds a terminal error frame.
+    pub fn error(error: SurrealError) -> Self {
         Self {
-            frame: Some(Frame::Error(ExportError { code, message })),
+            frame: Some(Frame::Error(error)),
         }
     }
 }
-
-impl ExportError {
-    /// Creates a new [`ExportError`] with the given code and message.
-    pub fn new(code: i64, message: String) -> Self {
-        Self { code, message }
-    }
-}
-
-impl Display for ExportError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({}): {}", self.code, self.message)
-    }
-}
-
-impl std::error::Error for ExportError {}
 
 #[cfg(test)]
 mod tests {
@@ -133,35 +91,7 @@ mod tests {
 
     use super::*;
     use crate::proto::rpc::v1::{ExportCompression, FileBegin};
-
-    #[test]
-    fn tables_from_bool() {
-        let all: export_config::Tables = true.into();
-        assert!(matches!(
-            all.selection,
-            Some(export_config::tables::Selection::All(_))
-        ));
-
-        let none: export_config::Tables = false.into();
-        assert!(matches!(
-            none.selection,
-            Some(export_config::tables::Selection::None(_))
-        ));
-    }
-
-    #[test]
-    fn tables_from_vec() {
-        let tables: export_config::Tables = vec!["users", "posts"].into();
-        match tables.selection {
-            Some(export_config::tables::Selection::Selected(selected)) => {
-                assert_eq!(
-                    selected.tables,
-                    vec!["users".to_string(), "posts".to_string()]
-                );
-            }
-            other => panic!("expected Selected, got {other:?}"),
-        }
-    }
+    use crate::proto::v1::ErrorKind;
 
     #[test]
     fn frame_constructors() {
@@ -186,15 +116,9 @@ mod tests {
             Some(Frame::End(_))
         ));
         assert!(matches!(
-            ExportDirectoryResponse::error(1, "boom".to_string()).frame,
+            ExportDirectoryResponse::error(SurrealError::new(ErrorKind::Internal, "boom")).frame,
             Some(Frame::Error(_))
         ));
-    }
-
-    #[test]
-    fn export_error_display() {
-        let err = ExportError::new(7, "nope".to_string());
-        assert_eq!(err.to_string(), "(7): nope");
     }
 
     /// Every frame variant must survive a prost encode/decode round-trip, and
@@ -218,7 +142,7 @@ mod tests {
             ExportDirectoryResponse::file_chunk(42, Bytes::from_static(b"chunk-bytes")),
             ExportDirectoryResponse::file_end(42, 4096, "deadbeef".to_string()),
             ExportDirectoryResponse::end(3, 4096),
-            ExportDirectoryResponse::error(500, "boom".to_string()),
+            ExportDirectoryResponse::error(SurrealError::new(ErrorKind::Internal, "boom")),
         ];
 
         for frame in frames {
