@@ -14,97 +14,6 @@ import { DataChunk, DataTrailer, NullableString, RequestContext, SemVer } from "
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
 
-/**
- * A coarse feature the server either supports or does not.
- *
- * A repeated enum rather than a message of bools: adding an enum value is
- * additive, whereas a bool field cannot distinguish "not supported" from "this
- * server is too old to have an opinion". Clients MUST ignore values they do
- * not recognise.
- */
-export enum Capability {
-  UNSPECIFIED = 0,
-  /** SESSIONS - Multiple sessions may be multiplexed over one connection. */
-  SESSIONS = 1,
-  /** TRANSACTIONS - Explicit client-driven transactions. */
-  TRANSACTIONS = 2,
-  /** LIVE_QUERIES - Live queries and subscriptions. */
-  LIVE_QUERIES = 3,
-  /** REFRESH_TOKENS - Refresh-token exchange. */
-  REFRESH_TOKENS = 4,
-  /** EXPORT_DIRECTORY - Directory-format export. */
-  EXPORT_DIRECTORY = 5,
-  /** ML_MODELS - SurrealML model export. */
-  ML_MODELS = 6,
-  /** COLUMNAR_RESULTS - Columnar (Arrow) query results. */
-  COLUMNAR_RESULTS = 7,
-  /** QUERY_CONTROL - Cancelling and listing in-flight queries. */
-  QUERY_CONTROL = 8,
-  UNRECOGNIZED = -1,
-}
-
-export function capabilityFromJSON(object: any): Capability {
-  switch (object) {
-    case 0:
-    case "CAPABILITY_UNSPECIFIED":
-      return Capability.UNSPECIFIED;
-    case 1:
-    case "CAPABILITY_SESSIONS":
-      return Capability.SESSIONS;
-    case 2:
-    case "CAPABILITY_TRANSACTIONS":
-      return Capability.TRANSACTIONS;
-    case 3:
-    case "CAPABILITY_LIVE_QUERIES":
-      return Capability.LIVE_QUERIES;
-    case 4:
-    case "CAPABILITY_REFRESH_TOKENS":
-      return Capability.REFRESH_TOKENS;
-    case 5:
-    case "CAPABILITY_EXPORT_DIRECTORY":
-      return Capability.EXPORT_DIRECTORY;
-    case 6:
-    case "CAPABILITY_ML_MODELS":
-      return Capability.ML_MODELS;
-    case 7:
-    case "CAPABILITY_COLUMNAR_RESULTS":
-      return Capability.COLUMNAR_RESULTS;
-    case 8:
-    case "CAPABILITY_QUERY_CONTROL":
-      return Capability.QUERY_CONTROL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Capability.UNRECOGNIZED;
-  }
-}
-
-export function capabilityToJSON(object: Capability): string {
-  switch (object) {
-    case Capability.UNSPECIFIED:
-      return "CAPABILITY_UNSPECIFIED";
-    case Capability.SESSIONS:
-      return "CAPABILITY_SESSIONS";
-    case Capability.TRANSACTIONS:
-      return "CAPABILITY_TRANSACTIONS";
-    case Capability.LIVE_QUERIES:
-      return "CAPABILITY_LIVE_QUERIES";
-    case Capability.REFRESH_TOKENS:
-      return "CAPABILITY_REFRESH_TOKENS";
-    case Capability.EXPORT_DIRECTORY:
-      return "CAPABILITY_EXPORT_DIRECTORY";
-    case Capability.ML_MODELS:
-      return "CAPABILITY_ML_MODELS";
-    case Capability.COLUMNAR_RESULTS:
-      return "CAPABILITY_COLUMNAR_RESULTS";
-    case Capability.QUERY_CONTROL:
-      return "CAPABILITY_QUERY_CONTROL";
-    case Capability.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 /** How hard the server tries to deliver a live-query notification. */
 export enum LiveQueryDelivery {
   UNSPECIFIED = 0,
@@ -542,8 +451,34 @@ export interface ServerCapabilities {
   highApiVersion:
     | SemVer
     | undefined;
-  /** Coarse features. Clients MUST ignore unrecognised values. */
-  capabilities: Capability[];
+  /**
+   * Coarse features this server supports, as free-form names.
+   *
+   * Strings rather than an enum so SurrealDB can introduce a capability
+   * without a protocol release: the set of things a server might support
+   * grows faster than this schema does, and gating that on a new enum value
+   * would make every feature flag a coordinated change across four repos.
+   *
+   * Names are UPPER_SNAKE_CASE and, once published, permanent -- a client
+   * matching on one must keep working. Clients MUST ignore names they do not
+   * recognise rather than treating them as an error.
+   *
+   * The names this protocol version defines, and which a server SHOULD use
+   * where they apply, are:
+   *
+   *   SESSIONS           several sessions multiplexed over one connection
+   *   TRANSACTIONS       explicit client-driven transactions
+   *   LIVE_QUERIES       live queries and subscriptions
+   *   REFRESH_TOKENS     refresh-token exchange
+   *   EXPORT_DIRECTORY   directory-format export
+   *   ML_MODELS          SurrealML model export
+   *   COLUMNAR_RESULTS   columnar (Arrow) query results
+   *   QUERY_CONTROL      cancelling and listing in-flight queries
+   *
+   * This list is documentation, not a constraint. A server may report names
+   * that are not on it.
+   */
+  capabilities: string[];
   /**
    * Fully-qualified names of RPCs the operator has disabled, for example
    * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
@@ -1944,11 +1879,9 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
     if (message.highApiVersion !== undefined) {
       SemVer.encode(message.highApiVersion, writer.uint32(26).fork()).join();
     }
-    writer.uint32(34).fork();
     for (const v of message.capabilities) {
-      writer.int32(v);
+      writer.uint32(34).string(v!);
     }
-    writer.join();
     for (const v of message.deniedMethods) {
       writer.uint32(42).string(v!);
     }
@@ -1993,22 +1926,12 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
           continue;
         }
         case 4: {
-          if (tag === 32) {
-            message.capabilities.push(reader.int32() as any);
-
-            continue;
+          if (tag !== 34) {
+            break;
           }
 
-          if (tag === 34) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.capabilities.push(reader.int32() as any);
-            }
-
-            continue;
-          }
-
-          break;
+          message.capabilities.push(reader.string());
+          continue;
         }
         case 5: {
           if (tag !== 42) {
@@ -2061,7 +1984,7 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
         ? SemVer.fromJSON(object.high_api_version)
         : undefined,
       capabilities: globalThis.Array.isArray(object?.capabilities)
-        ? object.capabilities.map((e: any) => capabilityFromJSON(e))
+        ? object.capabilities.map((e: any) => globalThis.String(e))
         : [],
       deniedMethods: globalThis.Array.isArray(object?.deniedMethods)
         ? object.deniedMethods.map((e: any) => globalThis.String(e))
@@ -2089,7 +2012,7 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
       obj.highApiVersion = SemVer.toJSON(message.highApiVersion);
     }
     if (message.capabilities?.length) {
-      obj.capabilities = message.capabilities.map((e) => capabilityToJSON(e));
+      obj.capabilities = message.capabilities;
     }
     if (message.deniedMethods?.length) {
       obj.deniedMethods = message.deniedMethods;

@@ -59,7 +59,6 @@
   },
   "files": [
     "build/ts",
-    "bridge/contract.yaml",
     "README.md",
     "LICENCE",
     "SECURITY.md"

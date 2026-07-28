@@ -235,9 +235,33 @@ pub struct ServerCapabilities {
     /// Newest protocol version this server speaks.
     #[prost(message, optional, tag = "3")]
     pub high_api_version: ::core::option::Option<SemVer>,
-    /// Coarse features. Clients MUST ignore unrecognised values.
-    #[prost(enumeration = "Capability", repeated, tag = "4")]
-    pub capabilities: ::prost::alloc::vec::Vec<i32>,
+    /// Coarse features this server supports, as free-form names.
+    ///
+    /// Strings rather than an enum so SurrealDB can introduce a capability
+    /// without a protocol release: the set of things a server might support
+    /// grows faster than this schema does, and gating that on a new enum value
+    /// would make every feature flag a coordinated change across four repos.
+    ///
+    /// Names are UPPER_SNAKE_CASE and, once published, permanent -- a client
+    /// matching on one must keep working. Clients MUST ignore names they do not
+    /// recognise rather than treating them as an error.
+    ///
+    /// The names this protocol version defines, and which a server SHOULD use
+    /// where they apply, are:
+    ///
+    ///    SESSIONS           several sessions multiplexed over one connection
+    ///    TRANSACTIONS       explicit client-driven transactions
+    ///    LIVE_QUERIES       live queries and subscriptions
+    ///    REFRESH_TOKENS     refresh-token exchange
+    ///    EXPORT_DIRECTORY   directory-format export
+    ///    ML_MODELS          SurrealML model export
+    ///    COLUMNAR_RESULTS   columnar (Arrow) query results
+    ///    QUERY_CONTROL      cancelling and listing in-flight queries
+    ///
+    /// This list is documentation, not a constraint. A server may report names
+    /// that are not on it.
+    #[prost(string, repeated, tag = "4")]
+    pub capabilities: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// Fully-qualified names of RPCs the operator has disabled, for example
     /// "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
     /// coarse; deny lists are per-method, and both exist server-side, so both
@@ -1864,68 +1888,6 @@ impl ::prost::Name for ExportDirectoryResponse {
 const NAME: &'static str = "ExportDirectoryResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryResponse".into() }}
-/// A coarse feature the server either supports or does not.
-///
-/// A repeated enum rather than a message of bools: adding an enum value is
-/// additive, whereas a bool field cannot distinguish "not supported" from "this
-/// server is too old to have an opinion". Clients MUST ignore values they do
-/// not recognise.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum Capability {
-    Unspecified = 0,
-    /// Multiple sessions may be multiplexed over one connection.
-    Sessions = 1,
-    /// Explicit client-driven transactions.
-    Transactions = 2,
-    /// Live queries and subscriptions.
-    LiveQueries = 3,
-    /// Refresh-token exchange.
-    RefreshTokens = 4,
-    /// Directory-format export.
-    ExportDirectory = 5,
-    /// SurrealML model export.
-    MlModels = 6,
-    /// Columnar (Arrow) query results.
-    ColumnarResults = 7,
-    /// Cancelling and listing in-flight queries.
-    QueryControl = 8,
-}
-impl Capability {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            Self::Unspecified => "CAPABILITY_UNSPECIFIED",
-            Self::Sessions => "CAPABILITY_SESSIONS",
-            Self::Transactions => "CAPABILITY_TRANSACTIONS",
-            Self::LiveQueries => "CAPABILITY_LIVE_QUERIES",
-            Self::RefreshTokens => "CAPABILITY_REFRESH_TOKENS",
-            Self::ExportDirectory => "CAPABILITY_EXPORT_DIRECTORY",
-            Self::MlModels => "CAPABILITY_ML_MODELS",
-            Self::ColumnarResults => "CAPABILITY_COLUMNAR_RESULTS",
-            Self::QueryControl => "CAPABILITY_QUERY_CONTROL",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "CAPABILITY_UNSPECIFIED" => Some(Self::Unspecified),
-            "CAPABILITY_SESSIONS" => Some(Self::Sessions),
-            "CAPABILITY_TRANSACTIONS" => Some(Self::Transactions),
-            "CAPABILITY_LIVE_QUERIES" => Some(Self::LiveQueries),
-            "CAPABILITY_REFRESH_TOKENS" => Some(Self::RefreshTokens),
-            "CAPABILITY_EXPORT_DIRECTORY" => Some(Self::ExportDirectory),
-            "CAPABILITY_ML_MODELS" => Some(Self::MlModels),
-            "CAPABILITY_COLUMNAR_RESULTS" => Some(Self::ColumnarResults),
-            "CAPABILITY_QUERY_CONTROL" => Some(Self::QueryControl),
-            _ => None,
-        }
-    }
-}
 /// How hard the server tries to deliver a live-query notification.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

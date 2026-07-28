@@ -111,15 +111,6 @@ gen-check: gen
 parity-check: build/descriptor.json
 	bun run scripts/parity.ts
 
-# The machine-readable list of what every SDK must expose.
-.PHONY: contract
-contract:
-	bun run scripts/contract.ts --write
-
-.PHONY: contract-check
-contract-check:
-	bun run scripts/contract.ts
-
 # flatc --rust-module-root-file overwrites mod.rs per input file. root.fbs
 # includes all other schemas, so its mod.rs has every type. We pass all
 # schemas for individual file generation, with root.fbs last so its
@@ -137,12 +128,11 @@ gen/rust/fb: $(FB_SCHEMA_SRCS) $(FLATC)
 fb-gen: gen/rust/fb
 
 # A FileDescriptorSet is the machine-readable form of the schema, consumed by
-# `make contract` and by the proto<->flatbuffers parity check.
+# the proto<->flatbuffers parity check.
 #
 # Build artefact, not checked in: it is derived from the .proto files that sit
 # beside it, and committing ~200 KiB that churns on every schema edit buys
-# nothing. Downstream consumers get bridge/contract.json instead, which is small
-# and stable. Regenerate with `make descriptor-gen`.
+# nothing. Regenerate with `make descriptor-gen`.
 build/descriptor.binpb: buf.yaml $(PROTO_SCHEMA_SRCS) | build
 	buf build -o $@
 

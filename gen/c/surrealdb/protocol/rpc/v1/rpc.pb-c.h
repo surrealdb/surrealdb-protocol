@@ -114,49 +114,6 @@ typedef struct Surrealdb__Protocol__Rpc__V1__ExportDirectoryResponse Surrealdb__
 /* --- enums --- */
 
 /*
- * A coarse feature the server either supports or does not.
- * A repeated enum rather than a message of bools: adding an enum value is
- * additive, whereas a bool field cannot distinguish "not supported" from "this
- * server is too old to have an opinion". Clients MUST ignore values they do
- * not recognise.
- */
-typedef enum _Surrealdb__Protocol__Rpc__V1__Capability {
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_UNSPECIFIED = 0,
-  /*
-   * Multiple sessions may be multiplexed over one connection.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_SESSIONS = 1,
-  /*
-   * Explicit client-driven transactions.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_TRANSACTIONS = 2,
-  /*
-   * Live queries and subscriptions.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_LIVE_QUERIES = 3,
-  /*
-   * Refresh-token exchange.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_REFRESH_TOKENS = 4,
-  /*
-   * Directory-format export.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_EXPORT_DIRECTORY = 5,
-  /*
-   * SurrealML model export.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_ML_MODELS = 6,
-  /*
-   * Columnar (Arrow) query results.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_COLUMNAR_RESULTS = 7,
-  /*
-   * Cancelling and listing in-flight queries.
-   */
-  SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_QUERY_CONTROL = 8
-    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__CAPABILITY)
-} Surrealdb__Protocol__Rpc__V1__Capability;
-/*
  * How hard the server tries to deliver a live-query notification.
  */
 typedef enum _Surrealdb__Protocol__Rpc__V1__LiveQueryDelivery {
@@ -409,10 +366,29 @@ struct  Surrealdb__Protocol__Rpc__V1__ServerCapabilities
    */
   Surrealdb__Protocol__Rpc__V1__SemVer *high_api_version;
   /*
-   * Coarse features. Clients MUST ignore unrecognised values.
+   * Coarse features this server supports, as free-form names.
+   * Strings rather than an enum so SurrealDB can introduce a capability
+   * without a protocol release: the set of things a server might support
+   * grows faster than this schema does, and gating that on a new enum value
+   * would make every feature flag a coordinated change across four repos.
+   * Names are UPPER_SNAKE_CASE and, once published, permanent -- a client
+   * matching on one must keep working. Clients MUST ignore names they do not
+   * recognise rather than treating them as an error.
+   * The names this protocol version defines, and which a server SHOULD use
+   * where they apply, are:
+   *   SESSIONS           several sessions multiplexed over one connection
+   *   TRANSACTIONS       explicit client-driven transactions
+   *   LIVE_QUERIES       live queries and subscriptions
+   *   REFRESH_TOKENS     refresh-token exchange
+   *   EXPORT_DIRECTORY   directory-format export
+   *   ML_MODELS          SurrealML model export
+   *   COLUMNAR_RESULTS   columnar (Arrow) query results
+   *   QUERY_CONTROL      cancelling and listing in-flight queries
+   * This list is documentation, not a constraint. A server may report names
+   * that are not on it.
    */
   size_t n_capabilities;
-  Surrealdb__Protocol__Rpc__V1__Capability *capabilities;
+  char **capabilities;
   /*
    * Fully-qualified names of RPCs the operator has disabled, for example
    * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
@@ -4545,7 +4521,6 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__export_ml_model(ProtobufCS
 
 /* --- descriptors --- */
 
-extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__capability__descriptor;
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__live_query_delivery__descriptor;
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__result_encoding__descriptor;
 extern const ProtobufCEnumDescriptor    surrealdb__protocol__rpc__v1__query_statement_kind__descriptor;

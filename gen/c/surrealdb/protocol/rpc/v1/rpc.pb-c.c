@@ -4284,12 +4284,12 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__server_capab
     "capabilities",
     4,
     PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_ENUM,
+    PROTOBUF_C_TYPE_STRING,
     offsetof(Surrealdb__Protocol__Rpc__V1__ServerCapabilities, n_capabilities),
     offsetof(Surrealdb__Protocol__Rpc__V1__ServerCapabilities, capabilities),
-    &surrealdb__protocol__rpc__v1__capability__descriptor,
     NULL,
-    PROTOBUF_C_FIELD_FLAG_PACKED,             /* flags */
+    &protobuf_c_empty_string,
+    0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
@@ -8911,48 +8911,6 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_directory_
   1,  surrealdb__protocol__rpc__v1__export_directory_response__number_ranges,
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_directory_response__init,
   NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCEnumValue surrealdb__protocol__rpc__v1__capability__enum_values_by_number[9] =
-{
-  { "CAPABILITY_UNSPECIFIED", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_UNSPECIFIED", 0 },
-  { "CAPABILITY_SESSIONS", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_SESSIONS", 1 },
-  { "CAPABILITY_TRANSACTIONS", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_TRANSACTIONS", 2 },
-  { "CAPABILITY_LIVE_QUERIES", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_LIVE_QUERIES", 3 },
-  { "CAPABILITY_REFRESH_TOKENS", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_REFRESH_TOKENS", 4 },
-  { "CAPABILITY_EXPORT_DIRECTORY", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_EXPORT_DIRECTORY", 5 },
-  { "CAPABILITY_ML_MODELS", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_ML_MODELS", 6 },
-  { "CAPABILITY_COLUMNAR_RESULTS", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_COLUMNAR_RESULTS", 7 },
-  { "CAPABILITY_QUERY_CONTROL", "SURREALDB__PROTOCOL__RPC__V1__CAPABILITY__CAPABILITY_QUERY_CONTROL", 8 },
-};
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__capability__value_ranges[] = {
-{0, 0},{0, 9}
-};
-static const ProtobufCEnumValueIndex surrealdb__protocol__rpc__v1__capability__enum_values_by_name[9] =
-{
-  { "CAPABILITY_COLUMNAR_RESULTS", 7 },
-  { "CAPABILITY_EXPORT_DIRECTORY", 5 },
-  { "CAPABILITY_LIVE_QUERIES", 3 },
-  { "CAPABILITY_ML_MODELS", 6 },
-  { "CAPABILITY_QUERY_CONTROL", 8 },
-  { "CAPABILITY_REFRESH_TOKENS", 4 },
-  { "CAPABILITY_SESSIONS", 1 },
-  { "CAPABILITY_TRANSACTIONS", 2 },
-  { "CAPABILITY_UNSPECIFIED", 0 },
-};
-const ProtobufCEnumDescriptor surrealdb__protocol__rpc__v1__capability__descriptor =
-{
-  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.Capability",
-  "Capability",
-  "Surrealdb__Protocol__Rpc__V1__Capability",
-  "surrealdb.protocol.rpc.v1",
-  9,
-  surrealdb__protocol__rpc__v1__capability__enum_values_by_number,
-  9,
-  surrealdb__protocol__rpc__v1__capability__enum_values_by_name,
-  1,
-  surrealdb__protocol__rpc__v1__capability__value_ranges,
-  NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
 static const ProtobufCEnumValue surrealdb__protocol__rpc__v1__live_query_delivery__enum_values_by_number[3] =
 {
