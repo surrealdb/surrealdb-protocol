@@ -26,35 +26,51 @@ build:
 plugins:
 	mkdir -p plugins
 
+# Every recipe below resolves its binary with `command -v` INSIDE the recipe,
+# never with $(shell ...). Make expands all of a recipe's lines before running
+# the first one, so a $(shell which foo) would evaluate before the install line
+# above it had a chance to provide foo -- empty on any machine that does not
+# already have it, which is every CI runner.
+
 # Rust
 plugins/protoc-gen-prost: | plugins
-	rm -f $@
-	cargo install --locked --version $(PROTOC_GEN_PROST_VERSION) protoc-gen-prost
-	hash -r
-	cp $(shell bash -c "which protoc-gen-prost") $@
-	chmod +x $@
+	@set -e; \
+	  rm -f $@; \
+	  cargo install --locked --version $(PROTOC_GEN_PROST_VERSION) protoc-gen-prost; \
+	  cp "$$(command -v protoc-gen-prost)" $@; \
+	  chmod +x $@
 
 plugins/protoc-gen-tonic: | plugins
-	rm -f $@
-	cargo install --locked --version $(PROTOC_GEN_TONIC_VERSION) protoc-gen-tonic
-	hash -r
-	cp $(shell bash -c "which protoc-gen-tonic") $@
-	chmod +x $@
+	@set -e; \
+	  rm -f $@; \
+	  cargo install --locked --version $(PROTOC_GEN_TONIC_VERSION) protoc-gen-tonic; \
+	  cp "$$(command -v protoc-gen-tonic)" $@; \
+	  chmod +x $@
 
 # C
+#
+# Unpinned, unlike the others: gen/c is not in GEN_CHECK_PATHS, so its output
+# is never diffed and the exact version does not matter. It is still required
+# for `buf generate` to run at all.
 plugins/protoc-gen-c: | plugins
-	rm -f $@
-	brew install protobuf-c
-	hash -r
-	cp $(shell bash -c "which protoc-gen-c") $@
-	chmod +x $@
+	@set -e; \
+	  rm -f $@; \
+	  if ! command -v protoc-gen-c >/dev/null 2>&1; then \
+	    if [ "$$(uname)" = "Darwin" ]; then \
+	      brew install protobuf-c; \
+	    else \
+	      sudo apt-get update && sudo apt-get install -y protobuf-c-compiler; \
+	    fi; \
+	  fi; \
+	  cp "$$(command -v protoc-gen-c)" $@; \
+	  chmod +x $@
 
 # Typescript
 plugins/protoc-gen-ts_proto: | plugins
-	rm -f $@
-	bun install ts-proto@$(TS_PROTO_VERSION)
-	ln -s $(shell pwd)/node_modules/.bin/protoc-gen-ts_proto $(shell pwd)/$@
-	chmod +x $@
+	@set -e; \
+	  rm -f $@; \
+	  bun install ts-proto@$(TS_PROTO_VERSION); \
+	  ln -sf "$(CURDIR)/node_modules/.bin/protoc-gen-ts_proto" $@
 
 # Flatbuffers
 # Resolved inside the recipe, not by $(shell): make expands every recipe line

@@ -90,10 +90,8 @@ jobs:
           path: plugins
           key: plugins-${{ runner.os }}-${{ hashFiles('Makefile') }}
 
-      # protoc-gen-c is needed for `buf generate` to run at all, but its output
-      # is not in GEN_CHECK_PATHS, so its version does not have to be pinned.
-      - run: sudo apt-get update && sudo apt-get install -y protobuf-c-compiler unzip
-
+      # The Makefile installs the generators it needs, including protoc-gen-c
+      # and the pinned flatc, so there is nothing to install by hand here.
       - run: make gen-check
 
   rust-fmt:
