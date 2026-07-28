@@ -145,12 +145,12 @@ void   surrealdb__protocol__v1__surreal_error__free_unpacked
 static const ProtobufCFieldDescriptor surrealdb__protocol__v1__error_details__field_descriptors[2] =
 {
   {
-    "reason",
+    "kind",
     1,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__V1__ErrorDetails, reason),
+    offsetof(Surrealdb__Protocol__V1__ErrorDetails, kind),
     NULL,
     &protobuf_c_empty_string,
     0,             /* flags */
@@ -171,7 +171,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__error_details__fi
 };
 static const unsigned surrealdb__protocol__v1__error_details__field_indices_by_name[] = {
   1,   /* field[1] = content */
-  0,   /* field[0] = reason */
+  0,   /* field[0] = kind */
 };
 static const ProtobufCIntRange surrealdb__protocol__v1__error_details__number_ranges[1 + 1] =
 {

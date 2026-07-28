@@ -43,9 +43,9 @@ impl SurrealError {
     }
 
     /// Attaches the specific reason and its payload.
-    pub fn with_details(mut self, reason: impl Into<String>, content: Option<Value>) -> Self {
+    pub fn with_details(mut self, kind: impl Into<String>, content: Option<Value>) -> Self {
         self.details = Some(ErrorDetails {
-            reason: reason.into(),
+            kind: kind.into(),
             content,
         });
         self
@@ -72,10 +72,13 @@ impl SurrealError {
         self.retry.is_some()
     }
 
-    /// The reason name the server supplied, if any — for example
-    /// `"TransactionConflict"` or `"TimedOut"`.
-    pub fn reason(&self) -> Option<&str> {
-        self.details.as_ref().map(|details| details.reason.as_str())
+    /// The specific reason the server supplied, if any — for example
+    /// `"TransactionConflict"`, `"TimedOut"` or `"Auth"`.
+    ///
+    /// Named to distinguish it from the top-level [`SurrealError::kind_or_internal`];
+    /// on the wire both are spelled `kind`, one nested inside the other.
+    pub fn detail_kind(&self) -> Option<&str> {
+        self.details.as_ref().map(|details| details.kind.as_str())
     }
 
     /// Iterates the error chain, starting with this error.
@@ -89,7 +92,7 @@ impl Display for SurrealError {
     /// chain, so a single `{}` gives the full picture in a log line.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.kind_or_internal())?;
-        if let Some(reason) = self.reason().filter(|reason| !reason.is_empty()) {
+        if let Some(reason) = self.detail_kind().filter(|reason| !reason.is_empty()) {
             write!(f, "/{reason}")?;
         }
         write!(f, ": {}", self.message)?;
@@ -113,6 +116,50 @@ mod tests {
     use prost::Message;
 
     use super::*;
+
+    /// The taxonomy must stay identical to `ErrorDetails` in the server's
+    /// surrealdb-types crate: same variants, same order, same names.
+    ///
+    /// Verified against surrealdb-private#642, the crate split that gave
+    /// fourteen layers their own error types. That PR leaves
+    /// `surrealdb/types/src/error.rs` byte-identical, and ten of these eleven
+    /// appear in its 250-row wire snapshot -- `Context` does not, because it
+    /// only ever wraps another error rather than being raised alone.
+    ///
+    /// A server-side rename or reorder will not fail anything else here, so
+    /// this list is the guard.
+    #[test]
+    fn kind_taxonomy_matches_the_server() {
+        let expected = [
+            (ErrorKind::Validation, 1, "Validation"),
+            (ErrorKind::Configuration, 2, "Configuration"),
+            (ErrorKind::Query, 3, "Query"),
+            (ErrorKind::Serialization, 4, "Serialization"),
+            (ErrorKind::NotAllowed, 5, "NotAllowed"),
+            (ErrorKind::NotFound, 6, "NotFound"),
+            (ErrorKind::AlreadyExists, 7, "AlreadyExists"),
+            (ErrorKind::Connection, 8, "Connection"),
+            (ErrorKind::Thrown, 9, "Thrown"),
+            (ErrorKind::Internal, 10, "Internal"),
+            (ErrorKind::Context, 11, "Context"),
+        ];
+
+        for (kind, number, server_name) in expected {
+            assert_eq!(kind as i32, number, "{server_name} changed tag");
+            // The proto spelling is the server's name upper-snake-cased.
+            let mut snake = String::new();
+            for (index, ch) in server_name.char_indices() {
+                if ch.is_uppercase() && index > 0 {
+                    snake.push('_');
+                }
+                snake.push(ch.to_ascii_uppercase());
+            }
+            assert_eq!(kind.as_str_name(), format!("ERROR_KIND_{snake}"));
+        }
+
+        // Nothing beyond the eleven, plus the zero value.
+        assert!(ErrorKind::try_from(12).is_err(), "a 12th kind appeared");
+    }
 
     #[test]
     fn unknown_kind_degrades_to_internal() {
@@ -141,13 +188,13 @@ mod tests {
             .with_retry(Some(Duration::new(0, 50_000_000)));
 
         assert!(error.is_retryable());
-        assert_eq!(error.reason(), Some("TransactionConflict"));
+        assert_eq!(error.detail_kind(), Some("TransactionConflict"));
         assert_eq!(error.kind_or_internal(), ErrorKind::Query);
 
         // Survives the wire.
         let decoded = SurrealError::decode(error.encode_to_vec().as_slice()).unwrap();
         assert!(decoded.is_retryable());
-        assert_eq!(decoded.reason(), Some("TransactionConflict"));
+        assert_eq!(decoded.detail_kind(), Some("TransactionConflict"));
 
         // And a non-retryable error is not merely "unset" -- absence is the
         // signal, so it must read as not retryable.

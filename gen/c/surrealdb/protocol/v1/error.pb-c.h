@@ -29,6 +29,11 @@ typedef struct Surrealdb__Protocol__V1__SurrealError Surrealdb__Protocol__V1__Su
  * `ErrorKind` in the JavaScript SDK, variant for variant, because the server
  * already ships that taxonomy over the CBOR and flatbuffers wires and the JS
  * SDK already parses it. A third spelling would guarantee drift.
+ * Checked against surrealdb-private#642, the crate split that gave fourteen
+ * layers their own error types: those all converge on this same taxonomy, and
+ * `surrealdb/types/src/error.rs` is unchanged by it. Ten of the eleven appear
+ * in that PR's 250-row wire snapshot; `CONTEXT` does not, because it only ever
+ * wraps another error rather than being raised on its own.
  * Decoders MUST preserve an unrecognised numeric value rather than normalising
  * it to `UNSPECIFIED`, and MUST treat it as `INTERNAL` for behavioural
  * purposes. This matches the server's `#[surreal(other)] Internal` catch-all
@@ -90,24 +95,35 @@ typedef enum _Surrealdb__Protocol__V1__ErrorKind {
 /*
  * The specific reason behind an error, within its `ErrorKind`.
  * Deliberately open rather than a mirror of the server's per-kind detail
- * enums. Those are `#[non_exhaustive]` and grow with the engine; reproducing
- * all eight of them here would make every new server-side variant a protocol
- * change, which is exactly the coupling this schema is trying to remove. The
- * server already serialises details as a value, so nothing is lost.
- * Clients MUST NOT branch on `reason` for control flow that has a first-class
- * representation elsewhere — notably retryability, which is `SurrealError.retry`.
+ * enums. Those are `#[non_exhaustive]`, they grow with the engine, and the
+ * crate split gave fourteen layers their own error types that all converge
+ * here — reproducing them would make every new server-side variant a protocol
+ * change, which is the coupling this schema exists to remove. The server
+ * already serialises details as a value, so nothing is lost.
+ * Details nest. The server emits, for example:
+ *   kind: 'NotAllowed'
+ *   details: { kind: 'Auth',
+ *              details: { kind: 'InvalidRole',
+ *                         details: { name: 'sample' } } }
+ * so `content` holds the next level down, whether that is a further detail
+ * object or a leaf payload.
+ * Clients MUST NOT branch on `kind` here for control flow that has a
+ * first-class representation elsewhere — notably retryability, which is
+ * `SurrealError.retry`.
  */
 struct  Surrealdb__Protocol__V1__ErrorDetails
 {
   ProtobufCMessage base;
   /*
-   * The reason name, as the server spells it: for example "TransactionConflict",
-   * "TimedOut", "Parse", "Thrown". Empty when the kind carries no detail.
+   * The reason name, as the server spells it: for example
+   * "TransactionConflict", "TimedOut", "Auth", "Parse". Named `kind` to match
+   * the field the server already emits, nested inside the outer `kind`.
+   * Empty when there is no further detail.
    */
-  char *reason;
+  char *kind;
   /*
-   * The reason's payload, if it has one. For example `TimedOut` carries the
-   * duration after which the query gave up.
+   * The payload, if there is one: either a nested detail object or a leaf
+   * such as the duration a `TimedOut` query gave up after.
    */
   Surrealdb__Protocol__V1__Value *content;
 };
