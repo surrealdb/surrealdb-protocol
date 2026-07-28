@@ -131,10 +131,15 @@ pub struct DataTrailer {
     /// Total bytes streamed, excluding framing.
     #[prost(uint64, tag = "1")]
     pub bytes: u64,
-    /// SHA-256 of the streamed bytes, lowercase hex. Consumers MUST verify it
-    /// and treat a mismatch as a failed transfer.
+    /// BLAKE3 of the streamed bytes, lowercase hex, 32 bytes / 64 characters.
+    /// Consumers MUST verify it and treat a mismatch as a failed transfer.
+    ///
+    /// BLAKE3 rather than SHA-256: these hashes are computed over every byte of
+    /// an export that may run to terabytes, and BLAKE3 saturates memory
+    /// bandwidth where SHA-256 does not, so the hash stops being the bottleneck.
+    /// Both are 32 bytes, so nothing downstream changes shape.
     #[prost(string, tag = "2")]
-    pub sha256: ::prost::alloc::string::String,
+    pub blake3: ::prost::alloc::string::String,
 }
 impl ::prost::Name for DataTrailer {
 const NAME: &'static str = "DataTrailer";
@@ -1791,7 +1796,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Fi
 /// The trailer carries the file's total size and hash, both computed
 /// incrementally while the chunks were produced — so no whole-file buffering is
 /// needed to learn them up front. Clients MUST verify that the bytes they
-/// received for the file match both `bytes` and `sha256`, and treat any
+/// received for the file match both `bytes` and `blake3`, and treat any
 /// mismatch as a failed export.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
@@ -1802,9 +1807,9 @@ pub struct FileEnd {
     /// The total number of bytes streamed for the file.
     #[prost(uint64, tag = "2")]
     pub bytes: u64,
-    /// The SHA-256 of the streamed bytes, lowercase hex.
+    /// The BLAKE3 of the streamed bytes, lowercase hex.
     #[prost(string, tag = "3")]
-    pub sha256: ::prost::alloc::string::String,
+    pub blake3: ::prost::alloc::string::String,
 }
 impl ::prost::Name for FileEnd {
 const NAME: &'static str = "FileEnd";

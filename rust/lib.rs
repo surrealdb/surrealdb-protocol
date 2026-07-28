@@ -24,8 +24,6 @@ pub use rpc_methods::{QueryResponseValueStream, TryFromQueryStream};
 pub mod proto {
     //! Protobuf generated code.
 
-    pub use prost_types;
-
     mod generated {
         #![allow(missing_docs, clippy::allow_attributes)]
 
@@ -292,16 +290,16 @@ mod tests {
         // typescript/parity.test.ts so both languages are pinned to one
         // encoding rather than merely to their own round trip.
         //
-        //   0a 08              items, length 8
+        //   0a 07              items, length 7
         //     0a 01 6b           key = "k"
-        //     12 03              value, length 3
-        //       aa 01 00           field 21 (none), length 0
+        //     12 02              value, length 2
+        //       0a 00              field 1 (none), length 0
         //
         // Under the old schema this was `0a 03 0a 01 6b` -- the key with no
         // value field at all, which is what TypeScript then discarded.
         let none_bytes = none.encode_to_vec();
-        assert_eq!(hex(&none_bytes), "0a080a016b1203aa0100");
-        assert_eq!(hex(&null.encode_to_vec()), "0a070a016b12020a00");
+        assert_eq!(hex(&none_bytes), "0a070a016b12020a00");
+        assert_eq!(hex(&null.encode_to_vec()), "0a070a016b12021200");
         assert_eq!(hex(&absent.encode_to_vec()), "");
 
         // And distinct after a round trip.

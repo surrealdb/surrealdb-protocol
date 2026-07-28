@@ -121,10 +121,15 @@ export interface DataTrailer {
   /** Total bytes streamed, excluding framing. */
   bytes: bigint;
   /**
-   * SHA-256 of the streamed bytes, lowercase hex. Consumers MUST verify it
-   * and treat a mismatch as a failed transfer.
+   * BLAKE3 of the streamed bytes, lowercase hex, 32 bytes / 64 characters.
+   * Consumers MUST verify it and treat a mismatch as a failed transfer.
+   *
+   * BLAKE3 rather than SHA-256: these hashes are computed over every byte of
+   * an export that may run to terabytes, and BLAKE3 saturates memory
+   * bandwidth where SHA-256 does not, so the hash stops being the bottleneck.
+   * Both are 32 bytes, so nothing downstream changes shape.
    */
-  sha256: string;
+  blake3: string;
 }
 
 function createBaseRequestContext(): RequestContext {
@@ -488,7 +493,7 @@ export const DataChunk: MessageFns<DataChunk> = {
 };
 
 function createBaseDataTrailer(): DataTrailer {
-  return { bytes: 0n, sha256: "" };
+  return { bytes: 0n, blake3: "" };
 }
 
 export const DataTrailer: MessageFns<DataTrailer> = {
@@ -499,8 +504,8 @@ export const DataTrailer: MessageFns<DataTrailer> = {
       }
       writer.uint32(8).uint64(message.bytes);
     }
-    if (message.sha256 !== "") {
-      writer.uint32(18).string(message.sha256);
+    if (message.blake3 !== "") {
+      writer.uint32(18).string(message.blake3);
     }
     return writer;
   },
@@ -525,7 +530,7 @@ export const DataTrailer: MessageFns<DataTrailer> = {
             break;
           }
 
-          message.sha256 = reader.string();
+          message.blake3 = reader.string();
           continue;
         }
       }
@@ -540,7 +545,7 @@ export const DataTrailer: MessageFns<DataTrailer> = {
   fromJSON(object: any): DataTrailer {
     return {
       bytes: isSet(object.bytes) ? BigInt(object.bytes) : 0n,
-      sha256: isSet(object.sha256) ? globalThis.String(object.sha256) : "",
+      blake3: isSet(object.blake3) ? globalThis.String(object.blake3) : "",
     };
   },
 
@@ -549,8 +554,8 @@ export const DataTrailer: MessageFns<DataTrailer> = {
     if (message.bytes !== 0n) {
       obj.bytes = message.bytes.toString();
     }
-    if (message.sha256 !== "") {
-      obj.sha256 = message.sha256;
+    if (message.blake3 !== "") {
+      obj.blake3 = message.blake3;
     }
     return obj;
   },
@@ -561,7 +566,7 @@ export const DataTrailer: MessageFns<DataTrailer> = {
   fromPartial<I extends Exact<DeepPartial<DataTrailer>, I>>(object: I): DataTrailer {
     const message = createBaseDataTrailer();
     message.bytes = object.bytes ?? 0n;
-    message.sha256 = object.sha256 ?? "";
+    message.blake3 = object.blake3 ?? "";
     return message;
   },
 };

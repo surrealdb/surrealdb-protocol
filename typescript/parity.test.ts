@@ -23,10 +23,10 @@ import { Object as ProtoObject } from "../gen/ts/surrealdb/protocol/v1/value";
 
 /** Bytes produced by Rust. See the matching assertions in rust/lib.rs. */
 const RUST_ENCODED = {
-	// items { key: "k", value { none {} } }  -- field 21 is present on the wire
-	none: "0a080a016b1203aa0100",
+	// items { key: "k", value { none {} } }  -- field 1 is present on the wire
+	none: "0a070a016b12020a00",
 	// items { key: "k", value { null {} } }
-	null: "0a070a016b12020a00",
+	null: "0a070a016b12021200",
 	// no items at all
 	absent: "",
 } as const;

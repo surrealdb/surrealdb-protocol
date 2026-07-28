@@ -57,11 +57,18 @@ where
 {
     #[inline]
     fn try_from_value(value: v1::Value) -> Result<Self> {
+        // An unset oneof is NOT `NONE`. It means the peer sent a variant this
+        // build does not know about, or the message is malformed. Mapping it
+        // to `None` would let a client silently downgrade a newer server's
+        // value and write that back -- exactly what value.proto forbids.
         let Some(inner) = value.value else {
-            return Ok(None);
+            return Err(anyhow::anyhow!(
+                "unrecognised Value variant: this build cannot represent it, and it must not be read as NONE"
+            ));
         };
         match inner {
-            ValueInner::Null(_) => Ok(None),
+            // SurrealDB NONE and NULL both read as an absent Rust value.
+            ValueInner::None(_) | ValueInner::Null(_) => Ok(None),
             v => T::try_from_value(v1::Value { value: Some(v) }).map(Some),
         }
     }
@@ -463,13 +470,22 @@ where
 
 impl FromIterator<(String, v1::Value)> for v1::Variables {
     fn from_iter<T: IntoIterator<Item = (String, v1::Value)>>(iter: T) -> Self {
-        // Collect through a BTreeMap so the wire ordering is the ascending
-        // key order the schema requires, and duplicate keys collapse here
-        // rather than producing a message a decoder must reject.
-        iter.into_iter()
-            .collect::<BTreeMap<_, _>>()
-            .into_iter()
-            .collect()
+        // Build the entries explicitly rather than re-collecting the BTreeMap:
+        // `BTreeMap<String, Value>::into_iter()` yields `(String, Value)`, so
+        // a trailing `.collect()` would re-select this very impl and recurse
+        // until the stack overflows.
+        //
+        // The BTreeMap is still what gives us the ascending key order the
+        // schema requires, and collapses duplicates rather than emitting a
+        // message a decoder must reject.
+        Self {
+            variables: iter
+                .into_iter()
+                .collect::<BTreeMap<_, _>>()
+                .into_iter()
+                .map(|(key, value)| v1::KeyValue::new(key, value))
+                .collect(),
+        }
     }
 }
 

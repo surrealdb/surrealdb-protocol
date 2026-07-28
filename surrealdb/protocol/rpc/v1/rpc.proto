@@ -188,7 +188,7 @@ service SurrealDBService {
     // reproduces a directory-format export (manifest + schema + per-table data
     // files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
     // FileEnd, so neither peer ever buffers a whole file; the file's byte count
-    // and SHA-256 are carried in the FileEnd trailer, computed incrementally as
+    // and BLAKE3 hash are carried in the FileEnd trailer, computed incrementally as
     // chunks are produced. The manifest is streamed as the final file, and the
     // End frame is the completion token.
     rpc ExportDirectory(ExportDirectoryRequest) returns (stream ExportDirectoryResponse);
@@ -1216,15 +1216,15 @@ message FileChunk {
 // The trailer carries the file's total size and hash, both computed
 // incrementally while the chunks were produced — so no whole-file buffering is
 // needed to learn them up front. Clients MUST verify that the bytes they
-// received for the file match both `bytes` and `sha256`, and treat any
+// received for the file match both `bytes` and `blake3`, and treat any
 // mismatch as a failed export.
 message FileEnd {
     // The file these totals apply to.
     uint64 file_id = 1;
     // The total number of bytes streamed for the file.
     uint64 bytes = 2;
-    // The SHA-256 of the streamed bytes, lowercase hex.
-    string sha256 = 3;
+    // The BLAKE3 of the streamed bytes, lowercase hex.
+    string blake3 = 3;
 }
 
 // Frame: the export completed successfully.

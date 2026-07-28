@@ -162,10 +162,14 @@ struct  Surrealdb__Protocol__Rpc__V1__DataTrailer
    */
   uint64_t bytes;
   /*
-   * SHA-256 of the streamed bytes, lowercase hex. Consumers MUST verify it
-   * and treat a mismatch as a failed transfer.
+   * BLAKE3 of the streamed bytes, lowercase hex, 32 bytes / 64 characters.
+   * Consumers MUST verify it and treat a mismatch as a failed transfer.
+   * BLAKE3 rather than SHA-256: these hashes are computed over every byte of
+   * an export that may run to terabytes, and BLAKE3 saturates memory
+   * bandwidth where SHA-256 does not, so the hash stops being the bottleneck.
+   * Both are 32 bytes, so nothing downstream changes shape.
    */
-  char *sha256;
+  char *blake3;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__DATA_TRAILER__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__data_trailer__descriptor) \

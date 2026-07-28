@@ -265,9 +265,23 @@ impl From<std::time::Duration> for Duration {
     }
 }
 
-impl From<Duration> for std::time::Duration {
-    fn from(value: Duration) -> Self {
-        std::time::Duration::new(value.seconds, value.nanos)
+impl TryFrom<Duration> for std::time::Duration {
+    type Error = anyhow::Error;
+
+    /// Fallible because the wire type is wider than what it is allowed to
+    /// carry: `nanos` is a `uint32`, so a peer can send a value that both
+    /// violates the documented `[0, 999999999]` bound and, once carried into
+    /// `seconds`, overflows `u64`. `std::time::Duration::new` panics on that,
+    /// and `timeout` rides on every request -- so an infallible conversion
+    /// here is a remotely triggerable abort.
+    fn try_from(value: Duration) -> Result<Self, Self::Error> {
+        if value.nanos > 999_999_999 {
+            return Err(anyhow::anyhow!(
+                "invalid Duration: nanos must be in [0, 999999999], got {}",
+                value.nanos
+            ));
+        }
+        Ok(std::time::Duration::new(value.seconds, value.nanos))
     }
 }
 

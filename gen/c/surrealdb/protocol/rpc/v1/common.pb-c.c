@@ -477,12 +477,12 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__data_trailer
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "sha256",
+    "blake3",
     2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__DataTrailer, sha256),
+    offsetof(Surrealdb__Protocol__Rpc__V1__DataTrailer, blake3),
     NULL,
     &protobuf_c_empty_string,
     0,             /* flags */
@@ -490,8 +490,8 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__data_trailer
   },
 };
 static const unsigned surrealdb__protocol__rpc__v1__data_trailer__field_indices_by_name[] = {
+  1,   /* field[1] = blake3 */
   0,   /* field[0] = bytes */
-  1,   /* field[1] = sha256 */
 };
 static const ProtobufCIntRange surrealdb__protocol__rpc__v1__data_trailer__number_ranges[1 + 1] =
 {

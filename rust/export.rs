@@ -55,13 +55,13 @@ impl ExportDirectoryResponse {
     }
 
     /// Builds a [`FileEnd`] trailer frame carrying the file's total `bytes` and
-    /// `sha256` (lowercase hex).
-    pub fn file_end(file_id: u64, bytes: u64, sha256: String) -> Self {
+    /// `blake3` hash (lowercase hex).
+    pub fn file_end(file_id: u64, bytes: u64, blake3: String) -> Self {
         Self {
             frame: Some(Frame::FileEnd(FileEnd {
                 file_id,
                 bytes,
-                sha256,
+                blake3,
             })),
         }
     }
@@ -160,7 +160,7 @@ mod tests {
             Some(Frame::FileEnd(end)) => {
                 assert_eq!(end.file_id, 9);
                 assert_eq!(end.bytes, 1_234_567);
-                assert_eq!(end.sha256, "abc123");
+                assert_eq!(end.blake3, "abc123");
             }
             other => panic!("expected FileEnd, got {other:?}"),
         }

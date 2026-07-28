@@ -3,12 +3,7 @@
 # Checked by `bun run scripts/parity.ts`. Every entry needs a reason: the point
 # is that a difference is a decision someone made, not something that drifted.
 #
-# Key is `<FlatbuffersUnion>.<MemberName>`.
+# Key is `<FlatbuffersUnion>.<MemberName>`. Note that an entry disables both the
+# id and the name check for that member, so prefer fixing the schemas.
 
 [allow]
-# The flatbuffers table is named Timestamp while the proto message is Datetime.
-# Both are {seconds, nanos} with identical widths, and the union member is
-# already called Datetime in both, so only the referenced table's name differs.
-# Renaming the table would break `surrealdb_protocol::fb::v1::Timestamp`, which
-# surrealdb/types consumes on a live wire path, for no functional gain.
-"ValueType.Datetime" = "fb table is Timestamp, proto message is Datetime; same shape, renaming breaks a live consumer"

@@ -2154,7 +2154,7 @@ struct  Surrealdb__Protocol__Rpc__V1__FileChunk
  * The trailer carries the file's total size and hash, both computed
  * incrementally while the chunks were produced — so no whole-file buffering is
  * needed to learn them up front. Clients MUST verify that the bytes they
- * received for the file match both `bytes` and `sha256`, and treat any
+ * received for the file match both `bytes` and `blake3`, and treat any
  * mismatch as a failed export.
  */
 struct  Surrealdb__Protocol__Rpc__V1__FileEnd
@@ -2169,9 +2169,9 @@ struct  Surrealdb__Protocol__Rpc__V1__FileEnd
    */
   uint64_t bytes;
   /*
-   * The SHA-256 of the streamed bytes, lowercase hex.
+   * The BLAKE3 of the streamed bytes, lowercase hex.
    */
-  char *sha256;
+  char *blake3;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__FILE_END__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__file_end__descriptor) \

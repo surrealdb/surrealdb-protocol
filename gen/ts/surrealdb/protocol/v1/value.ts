@@ -242,6 +242,7 @@ export interface Range {
  */
 export interface Value {
   value:
+    | { $case: "none"; none: NoneValue }
     | { $case: "null"; null: NullValue }
     | { $case: "bool"; bool: boolean }
     | { $case: "int64"; int64: bigint }
@@ -249,16 +250,7 @@ export interface Value {
     | { $case: "decimal"; decimal: Decimal }
     | { $case: "string"; string: string }
     | { $case: "bytes"; bytes: Uint8Array }
-    | //
-    /**
-     * Tags 8 and 9 previously carried google.protobuf.Duration and
-     * google.protobuf.Timestamp. They are reused rather than burned: the
-     * proto surface has no consumers yet (every dependant uses the
-     * flatbuffers schema), so no payload exists that could be misread, and
-     * keeping these slots preserves both the tag ordering and the
-     * correspondence with `ValueType` in value.fbs.
-     */
-    { $case: "duration"; duration: Duration }
+    | { $case: "duration"; duration: Duration }
     | { $case: "datetime"; datetime: Datetime }
     | { $case: "uuid"; uuid: Uuid }
     | { $case: "geometry"; geometry: Geometry }
@@ -271,7 +263,6 @@ export interface Value {
     | { $case: "object"; object: Object }
     | { $case: "array"; array: Array }
     | { $case: "set"; set: Set }
-    | { $case: "none"; none: NoneValue }
     | undefined;
 }
 
@@ -2137,71 +2128,71 @@ function createBaseValue(): Value {
 export const Value: MessageFns<Value> = {
   encode(message: Value, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     switch (message.value?.$case) {
+      case "none":
+        NoneValue.encode(message.value.none, writer.uint32(10).fork()).join();
+        break;
       case "null":
-        NullValue.encode(message.value.null, writer.uint32(10).fork()).join();
+        NullValue.encode(message.value.null, writer.uint32(18).fork()).join();
         break;
       case "bool":
-        writer.uint32(16).bool(message.value.bool);
+        writer.uint32(24).bool(message.value.bool);
         break;
       case "int64":
         if (BigInt.asIntN(64, message.value.int64) !== message.value.int64) {
           throw new globalThis.Error("value provided for field message.value.int64 of type int64 too large");
         }
-        writer.uint32(24).int64(message.value.int64);
+        writer.uint32(32).int64(message.value.int64);
         break;
       case "float64":
-        writer.uint32(33).double(message.value.float64);
+        writer.uint32(41).double(message.value.float64);
         break;
       case "decimal":
-        Decimal.encode(message.value.decimal, writer.uint32(42).fork()).join();
+        Decimal.encode(message.value.decimal, writer.uint32(50).fork()).join();
         break;
       case "string":
-        writer.uint32(50).string(message.value.string);
+        writer.uint32(58).string(message.value.string);
         break;
       case "bytes":
-        writer.uint32(58).bytes(message.value.bytes);
+        writer.uint32(66).bytes(message.value.bytes);
         break;
       case "duration":
-        Duration.encode(message.value.duration, writer.uint32(66).fork()).join();
+        Duration.encode(message.value.duration, writer.uint32(74).fork()).join();
         break;
       case "datetime":
-        Datetime.encode(message.value.datetime, writer.uint32(74).fork()).join();
+        Datetime.encode(message.value.datetime, writer.uint32(82).fork()).join();
         break;
       case "uuid":
-        Uuid.encode(message.value.uuid, writer.uint32(82).fork()).join();
+        Uuid.encode(message.value.uuid, writer.uint32(90).fork()).join();
         break;
       case "geometry":
-        Geometry.encode(message.value.geometry, writer.uint32(90).fork()).join();
+        Geometry.encode(message.value.geometry, writer.uint32(98).fork()).join();
         break;
       case "table":
-        writer.uint32(98).string(message.value.table);
+        writer.uint32(106).string(message.value.table);
         break;
       case "recordId":
-        RecordId.encode(message.value.recordId, writer.uint32(106).fork()).join();
+        RecordId.encode(message.value.recordId, writer.uint32(114).fork()).join();
         break;
       case "stringRecordId":
-        writer.uint32(114).string(message.value.stringRecordId);
+        writer.uint32(122).string(message.value.stringRecordId);
         break;
       case "file":
-        File.encode(message.value.file, writer.uint32(122).fork()).join();
+        File.encode(message.value.file, writer.uint32(130).fork()).join();
         break;
       case "range":
-        Range.encode(message.value.range, writer.uint32(130).fork()).join();
+        Range.encode(message.value.range, writer.uint32(138).fork()).join();
         break;
       case "regex":
-        writer.uint32(138).string(message.value.regex);
+        writer.uint32(146).string(message.value.regex);
         break;
       case "object":
-        Object.encode(message.value.object, writer.uint32(146).fork()).join();
+        Object.encode(message.value.object, writer.uint32(154).fork()).join();
         break;
       case "array":
-        Array.encode(message.value.array, writer.uint32(154).fork()).join();
+        Array.encode(message.value.array, writer.uint32(162).fork()).join();
         break;
       case "set":
-        Set.encode(message.value.set, writer.uint32(162).fork()).join();
-        break;
-      case "none":
-        NoneValue.encode(message.value.none, writer.uint32(170).fork()).join();
+        Set.encode(message.value.set, writer.uint32(170).fork()).join();
         break;
     }
     return writer;
@@ -2219,15 +2210,15 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "null", null: NullValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "none", none: NoneValue.decode(reader, reader.uint32()) };
           continue;
         }
         case 2: {
-          if (tag !== 16) {
+          if (tag !== 18) {
             break;
           }
 
-          message.value = { $case: "bool", bool: reader.bool() };
+          message.value = { $case: "null", null: NullValue.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -2235,23 +2226,23 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "int64", int64: reader.int64() as bigint };
+          message.value = { $case: "bool", bool: reader.bool() };
           continue;
         }
         case 4: {
-          if (tag !== 33) {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.value = { $case: "int64", int64: reader.int64() as bigint };
+          continue;
+        }
+        case 5: {
+          if (tag !== 41) {
             break;
           }
 
           message.value = { $case: "float64", float64: reader.double() };
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.value = { $case: "decimal", decimal: Decimal.decode(reader, reader.uint32()) };
           continue;
         }
         case 6: {
@@ -2259,7 +2250,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "string", string: reader.string() };
+          message.value = { $case: "decimal", decimal: Decimal.decode(reader, reader.uint32()) };
           continue;
         }
         case 7: {
@@ -2267,7 +2258,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "bytes", bytes: reader.bytes() };
+          message.value = { $case: "string", string: reader.string() };
           continue;
         }
         case 8: {
@@ -2275,7 +2266,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "duration", duration: Duration.decode(reader, reader.uint32()) };
+          message.value = { $case: "bytes", bytes: reader.bytes() };
           continue;
         }
         case 9: {
@@ -2283,7 +2274,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "datetime", datetime: Datetime.decode(reader, reader.uint32()) };
+          message.value = { $case: "duration", duration: Duration.decode(reader, reader.uint32()) };
           continue;
         }
         case 10: {
@@ -2291,7 +2282,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "uuid", uuid: Uuid.decode(reader, reader.uint32()) };
+          message.value = { $case: "datetime", datetime: Datetime.decode(reader, reader.uint32()) };
           continue;
         }
         case 11: {
@@ -2299,7 +2290,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "geometry", geometry: Geometry.decode(reader, reader.uint32()) };
+          message.value = { $case: "uuid", uuid: Uuid.decode(reader, reader.uint32()) };
           continue;
         }
         case 12: {
@@ -2307,7 +2298,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "table", table: reader.string() };
+          message.value = { $case: "geometry", geometry: Geometry.decode(reader, reader.uint32()) };
           continue;
         }
         case 13: {
@@ -2315,7 +2306,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "recordId", recordId: RecordId.decode(reader, reader.uint32()) };
+          message.value = { $case: "table", table: reader.string() };
           continue;
         }
         case 14: {
@@ -2323,7 +2314,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "stringRecordId", stringRecordId: reader.string() };
+          message.value = { $case: "recordId", recordId: RecordId.decode(reader, reader.uint32()) };
           continue;
         }
         case 15: {
@@ -2331,7 +2322,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "file", file: File.decode(reader, reader.uint32()) };
+          message.value = { $case: "stringRecordId", stringRecordId: reader.string() };
           continue;
         }
         case 16: {
@@ -2339,7 +2330,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "range", range: Range.decode(reader, reader.uint32()) };
+          message.value = { $case: "file", file: File.decode(reader, reader.uint32()) };
           continue;
         }
         case 17: {
@@ -2347,7 +2338,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "regex", regex: reader.string() };
+          message.value = { $case: "range", range: Range.decode(reader, reader.uint32()) };
           continue;
         }
         case 18: {
@@ -2355,7 +2346,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "object", object: Object.decode(reader, reader.uint32()) };
+          message.value = { $case: "regex", regex: reader.string() };
           continue;
         }
         case 19: {
@@ -2363,7 +2354,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "array", array: Array.decode(reader, reader.uint32()) };
+          message.value = { $case: "object", object: Object.decode(reader, reader.uint32()) };
           continue;
         }
         case 20: {
@@ -2371,7 +2362,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "set", set: Set.decode(reader, reader.uint32()) };
+          message.value = { $case: "array", array: Array.decode(reader, reader.uint32()) };
           continue;
         }
         case 21: {
@@ -2379,7 +2370,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "none", none: NoneValue.decode(reader, reader.uint32()) };
+          message.value = { $case: "set", set: Set.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -2393,7 +2384,9 @@ export const Value: MessageFns<Value> = {
 
   fromJSON(object: any): Value {
     return {
-      value: isSet(object.null)
+      value: isSet(object.none)
+        ? { $case: "none", none: NoneValue.fromJSON(object.none) }
+        : isSet(object.null)
         ? { $case: "null", null: NullValue.fromJSON(object.null) }
         : isSet(object.bool)
         ? { $case: "bool", bool: globalThis.Boolean(object.bool) }
@@ -2437,15 +2430,15 @@ export const Value: MessageFns<Value> = {
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : isSet(object.set)
         ? { $case: "set", set: Set.fromJSON(object.set) }
-        : isSet(object.none)
-        ? { $case: "none", none: NoneValue.fromJSON(object.none) }
         : undefined,
     };
   },
 
   toJSON(message: Value): unknown {
     const obj: any = {};
-    if (message.value?.$case === "null") {
+    if (message.value?.$case === "none") {
+      obj.none = NoneValue.toJSON(message.value.none);
+    } else if (message.value?.$case === "null") {
       obj.null = NullValue.toJSON(message.value.null);
     } else if (message.value?.$case === "bool") {
       obj.bool = message.value.bool;
@@ -2485,8 +2478,6 @@ export const Value: MessageFns<Value> = {
       obj.array = Array.toJSON(message.value.array);
     } else if (message.value?.$case === "set") {
       obj.set = Set.toJSON(message.value.set);
-    } else if (message.value?.$case === "none") {
-      obj.none = NoneValue.toJSON(message.value.none);
     }
     return obj;
   },
@@ -2497,6 +2488,12 @@ export const Value: MessageFns<Value> = {
   fromPartial<I extends Exact<DeepPartial<Value>, I>>(object: I): Value {
     const message = createBaseValue();
     switch (object.value?.$case) {
+      case "none": {
+        if (object.value?.none !== undefined && object.value?.none !== null) {
+          message.value = { $case: "none", none: NoneValue.fromPartial(object.value.none) };
+        }
+        break;
+      }
       case "null": {
         if (object.value?.null !== undefined && object.value?.null !== null) {
           message.value = { $case: "null", null: NullValue.fromPartial(object.value.null) };
@@ -2614,12 +2611,6 @@ export const Value: MessageFns<Value> = {
       case "set": {
         if (object.value?.set !== undefined && object.value?.set !== null) {
           message.value = { $case: "set", set: Set.fromPartial(object.value.set) };
-        }
-        break;
-      }
-      case "none": {
-        if (object.value?.none !== undefined && object.value?.none !== null) {
-          message.value = { $case: "none", none: NoneValue.fromPartial(object.value.none) };
         }
         break;
       }

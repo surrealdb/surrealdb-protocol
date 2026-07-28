@@ -1447,7 +1447,7 @@ export interface FileChunk {
  * The trailer carries the file's total size and hash, both computed
  * incrementally while the chunks were produced — so no whole-file buffering is
  * needed to learn them up front. Clients MUST verify that the bytes they
- * received for the file match both `bytes` and `sha256`, and treat any
+ * received for the file match both `bytes` and `blake3`, and treat any
  * mismatch as a failed export.
  */
 export interface FileEnd {
@@ -1455,8 +1455,8 @@ export interface FileEnd {
   fileId: bigint;
   /** The total number of bytes streamed for the file. */
   bytes: bigint;
-  /** The SHA-256 of the streamed bytes, lowercase hex. */
-  sha256: string;
+  /** The BLAKE3 of the streamed bytes, lowercase hex. */
+  blake3: string;
 }
 
 /**
@@ -9102,7 +9102,7 @@ export const FileChunk: MessageFns<FileChunk> = {
 };
 
 function createBaseFileEnd(): FileEnd {
-  return { fileId: 0n, bytes: 0n, sha256: "" };
+  return { fileId: 0n, bytes: 0n, blake3: "" };
 }
 
 export const FileEnd: MessageFns<FileEnd> = {
@@ -9119,8 +9119,8 @@ export const FileEnd: MessageFns<FileEnd> = {
       }
       writer.uint32(16).uint64(message.bytes);
     }
-    if (message.sha256 !== "") {
-      writer.uint32(26).string(message.sha256);
+    if (message.blake3 !== "") {
+      writer.uint32(26).string(message.blake3);
     }
     return writer;
   },
@@ -9153,7 +9153,7 @@ export const FileEnd: MessageFns<FileEnd> = {
             break;
           }
 
-          message.sha256 = reader.string();
+          message.blake3 = reader.string();
           continue;
         }
       }
@@ -9169,7 +9169,7 @@ export const FileEnd: MessageFns<FileEnd> = {
     return {
       fileId: isSet(object.fileId) ? BigInt(object.fileId) : isSet(object.file_id) ? BigInt(object.file_id) : 0n,
       bytes: isSet(object.bytes) ? BigInt(object.bytes) : 0n,
-      sha256: isSet(object.sha256) ? globalThis.String(object.sha256) : "",
+      blake3: isSet(object.blake3) ? globalThis.String(object.blake3) : "",
     };
   },
 
@@ -9181,8 +9181,8 @@ export const FileEnd: MessageFns<FileEnd> = {
     if (message.bytes !== 0n) {
       obj.bytes = message.bytes.toString();
     }
-    if (message.sha256 !== "") {
-      obj.sha256 = message.sha256;
+    if (message.blake3 !== "") {
+      obj.blake3 = message.blake3;
     }
     return obj;
   },
@@ -9194,7 +9194,7 @@ export const FileEnd: MessageFns<FileEnd> = {
     const message = createBaseFileEnd();
     message.fileId = object.fileId ?? 0n;
     message.bytes = object.bytes ?? 0n;
-    message.sha256 = object.sha256 ?? "";
+    message.blake3 = object.blake3 ?? "";
     return message;
   },
 };
@@ -9613,7 +9613,7 @@ export interface SurrealDBService {
    * reproduces a directory-format export (manifest + schema + per-table data
    * files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
    * FileEnd, so neither peer ever buffers a whole file; the file's byte count
-   * and SHA-256 are carried in the FileEnd trailer, computed incrementally as
+   * and BLAKE3 hash are carried in the FileEnd trailer, computed incrementally as
    * chunks are produced. The manifest is streamed as the final file, and the
    * End frame is the completion token.
    */

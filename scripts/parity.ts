@@ -21,7 +21,8 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const DESCRIPTOR = "build/descriptor.json";
 const FBS = "surrealdb/protocol/v1/value.fbs";
@@ -124,6 +125,9 @@ function pascal(name: string): string {
 }
 
 function main(): void {
+	// buf does not create parent directories, and build/ is gitignored, so it
+	// is absent on a fresh checkout -- which is every CI run.
+	mkdirSync(dirname(DESCRIPTOR), { recursive: true });
 	execFileSync("buf", ["build", "-o", DESCRIPTOR], { stdio: "inherit" });
 
 	const descriptor: DescriptorSet = JSON.parse(

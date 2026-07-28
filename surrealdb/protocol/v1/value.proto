@@ -211,33 +211,27 @@ message Range {
 //   absent key  -> no `KeyValue` entry for that key at all
 message Value {
     oneof value {
-        NullValue null = 1;
-        bool bool = 2;
-        int64 int64 = 3;
-        double float64 = 4;
-        Decimal decimal = 5;
-        string string = 6;
-        bytes bytes = 7;
-        // Tags 8 and 9 previously carried google.protobuf.Duration and
-        // google.protobuf.Timestamp. They are reused rather than burned: the
-        // proto surface has no consumers yet (every dependant uses the
-        // flatbuffers schema), so no payload exists that could be misread, and
-        // keeping these slots preserves both the tag ordering and the
-        // correspondence with `ValueType` in value.fbs.
-        Duration duration = 8;
-        Datetime datetime = 9;
-        Uuid uuid = 10;
-        Geometry geometry = 11;
-        string table = 12;
-        RecordId record_id = 13;
-        string string_record_id = 14;
-        File file = 15;
-        Range range = 16;
-        string regex = 17;
-        Object object = 18;
-        Array array = 19;
-        Set set = 20;
-        NoneValue none = 21;
+        NoneValue none = 1;
+        NullValue null = 2;
+        bool bool = 3;
+        int64 int64 = 4;
+        double float64 = 5;
+        Decimal decimal = 6;
+        string string = 7;
+        bytes bytes = 8;
+        Duration duration = 9;
+        Datetime datetime = 10;
+        Uuid uuid = 11;
+        Geometry geometry = 12;
+        string table = 13;
+        RecordId record_id = 14;
+        string string_record_id = 15;
+        File file = 16;
+        Range range = 17;
+        string regex = 18;
+        Object object = 19;
+        Array array = 20;
+        Set set = 21;
     }
 }
 

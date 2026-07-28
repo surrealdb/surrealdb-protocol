@@ -388,53 +388,47 @@ pub mod value {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Value {
         #[prost(message, tag = "1")]
-        Null(super::NullValue),
-        #[prost(bool, tag = "2")]
-        Bool(bool),
-        #[prost(int64, tag = "3")]
-        Int64(i64),
-        #[prost(double, tag = "4")]
-        Float64(f64),
-        #[prost(message, tag = "5")]
-        Decimal(super::Decimal),
-        #[prost(string, tag = "6")]
-        String(::prost::alloc::string::String),
-        #[prost(bytes, tag = "7")]
-        Bytes(::prost::bytes::Bytes),
-        /// Tags 8 and 9 previously carried google.protobuf.Duration and
-        /// google.protobuf.Timestamp. They are reused rather than burned: the
-        /// proto surface has no consumers yet (every dependant uses the
-        /// flatbuffers schema), so no payload exists that could be misread, and
-        /// keeping these slots preserves both the tag ordering and the
-        /// correspondence with `ValueType` in value.fbs.
-        #[prost(message, tag = "8")]
-        Duration(super::Duration),
-        #[prost(message, tag = "9")]
-        Datetime(super::Datetime),
-        #[prost(message, tag = "10")]
-        Uuid(super::Uuid),
-        #[prost(message, tag = "11")]
-        Geometry(super::Geometry),
-        #[prost(string, tag = "12")]
-        Table(::prost::alloc::string::String),
-        #[prost(message, tag = "13")]
-        RecordId(super::RecordId),
-        #[prost(string, tag = "14")]
-        StringRecordId(::prost::alloc::string::String),
-        #[prost(message, tag = "15")]
-        File(super::File),
-        #[prost(message, tag = "16")]
-        Range(::prost::alloc::boxed::Box<super::Range>),
-        #[prost(string, tag = "17")]
-        Regex(::prost::alloc::string::String),
-        #[prost(message, tag = "18")]
-        Object(super::Object),
-        #[prost(message, tag = "19")]
-        Array(super::Array),
-        #[prost(message, tag = "20")]
-        Set(super::Set),
-        #[prost(message, tag = "21")]
         None(super::NoneValue),
+        #[prost(message, tag = "2")]
+        Null(super::NullValue),
+        #[prost(bool, tag = "3")]
+        Bool(bool),
+        #[prost(int64, tag = "4")]
+        Int64(i64),
+        #[prost(double, tag = "5")]
+        Float64(f64),
+        #[prost(message, tag = "6")]
+        Decimal(super::Decimal),
+        #[prost(string, tag = "7")]
+        String(::prost::alloc::string::String),
+        #[prost(bytes, tag = "8")]
+        Bytes(::prost::bytes::Bytes),
+        #[prost(message, tag = "9")]
+        Duration(super::Duration),
+        #[prost(message, tag = "10")]
+        Datetime(super::Datetime),
+        #[prost(message, tag = "11")]
+        Uuid(super::Uuid),
+        #[prost(message, tag = "12")]
+        Geometry(super::Geometry),
+        #[prost(string, tag = "13")]
+        Table(::prost::alloc::string::String),
+        #[prost(message, tag = "14")]
+        RecordId(super::RecordId),
+        #[prost(string, tag = "15")]
+        StringRecordId(::prost::alloc::string::String),
+        #[prost(message, tag = "16")]
+        File(super::File),
+        #[prost(message, tag = "17")]
+        Range(::prost::alloc::boxed::Box<super::Range>),
+        #[prost(string, tag = "18")]
+        Regex(::prost::alloc::string::String),
+        #[prost(message, tag = "19")]
+        Object(super::Object),
+        #[prost(message, tag = "20")]
+        Array(super::Array),
+        #[prost(message, tag = "21")]
+        Set(super::Set),
     }
 }
 impl ::prost::Name for Value {
