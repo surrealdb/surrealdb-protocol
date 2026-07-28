@@ -26,14 +26,10 @@ typedef struct Surrealdb__Protocol__Rpc__V1__GetCapabilitiesRequest Surrealdb__P
 typedef struct Surrealdb__Protocol__Rpc__V1__GetCapabilitiesResponse Surrealdb__Protocol__Rpc__V1__GetCapabilitiesResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__HealthRequest Surrealdb__Protocol__Rpc__V1__HealthRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__HealthResponse Surrealdb__Protocol__Rpc__V1__HealthResponse;
-typedef struct Surrealdb__Protocol__Rpc__V1__VersionRequest Surrealdb__Protocol__Rpc__V1__VersionRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__VersionResponse Surrealdb__Protocol__Rpc__V1__VersionResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__AttachSessionRequest Surrealdb__Protocol__Rpc__V1__AttachSessionRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__AttachSessionResponse Surrealdb__Protocol__Rpc__V1__AttachSessionResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__DetachSessionRequest Surrealdb__Protocol__Rpc__V1__DetachSessionRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__DetachSessionResponse Surrealdb__Protocol__Rpc__V1__DetachSessionResponse;
-typedef struct Surrealdb__Protocol__Rpc__V1__ListSessionsRequest Surrealdb__Protocol__Rpc__V1__ListSessionsRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__ListSessionsResponse Surrealdb__Protocol__Rpc__V1__ListSessionsResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__ResetSessionRequest Surrealdb__Protocol__Rpc__V1__ResetSessionRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ResetSessionResponse Surrealdb__Protocol__Rpc__V1__ResetSessionResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__UseRequest Surrealdb__Protocol__Rpc__V1__UseRequest;
@@ -65,8 +61,6 @@ typedef struct Surrealdb__Protocol__Rpc__V1__CommitTransactionRequest Surrealdb_
 typedef struct Surrealdb__Protocol__Rpc__V1__CommitTransactionResponse Surrealdb__Protocol__Rpc__V1__CommitTransactionResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__CancelTransactionRequest Surrealdb__Protocol__Rpc__V1__CancelTransactionRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse;
-typedef struct Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryRequest Surrealdb__Protocol__Rpc__V1__QueryRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ValueBatch Surrealdb__Protocol__Rpc__V1__ValueBatch;
 typedef struct Surrealdb__Protocol__Rpc__V1__ArrowBatch Surrealdb__Protocol__Rpc__V1__ArrowBatch;
@@ -75,11 +69,6 @@ typedef struct Surrealdb__Protocol__Rpc__V1__QueryBegin Surrealdb__Protocol__Rpc
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryBatchFrame Surrealdb__Protocol__Rpc__V1__QueryBatchFrame;
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryEnd Surrealdb__Protocol__Rpc__V1__QueryEnd;
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryResponse Surrealdb__Protocol__Rpc__V1__QueryResponse;
-typedef struct Surrealdb__Protocol__Rpc__V1__CancelQueryRequest Surrealdb__Protocol__Rpc__V1__CancelQueryRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__CancelQueryResponse Surrealdb__Protocol__Rpc__V1__CancelQueryResponse;
-typedef struct Surrealdb__Protocol__Rpc__V1__QueryInfo Surrealdb__Protocol__Rpc__V1__QueryInfo;
-typedef struct Surrealdb__Protocol__Rpc__V1__ListQueriesRequest Surrealdb__Protocol__Rpc__V1__ListQueriesRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__ListQueriesResponse Surrealdb__Protocol__Rpc__V1__ListQueriesResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__LiveQueryCursor Surrealdb__Protocol__Rpc__V1__LiveQueryCursor;
 typedef struct Surrealdb__Protocol__Rpc__V1__LiveQueryRegistration Surrealdb__Protocol__Rpc__V1__LiveQueryRegistration;
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeRequest Surrealdb__Protocol__Rpc__V1__SubscribeRequest;
@@ -87,8 +76,6 @@ typedef struct Surrealdb__Protocol__Rpc__V1__Notification Surrealdb__Protocol__R
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeBegin Surrealdb__Protocol__Rpc__V1__SubscribeBegin;
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeEnd Surrealdb__Protocol__Rpc__V1__SubscribeEnd;
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeResponse Surrealdb__Protocol__Rpc__V1__SubscribeResponse;
-typedef struct Surrealdb__Protocol__Rpc__V1__KillRequest Surrealdb__Protocol__Rpc__V1__KillRequest;
-typedef struct Surrealdb__Protocol__Rpc__V1__KillResponse Surrealdb__Protocol__Rpc__V1__KillResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__ImportSqlBegin Surrealdb__Protocol__Rpc__V1__ImportSqlBegin;
 typedef struct Surrealdb__Protocol__Rpc__V1__ImportSqlRequest Surrealdb__Protocol__Rpc__V1__ImportSqlRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ImportSqlResponse Surrealdb__Protocol__Rpc__V1__ImportSqlResponse;
@@ -206,7 +193,9 @@ typedef enum _Surrealdb__Protocol__Rpc__V1__Action {
 typedef enum _Surrealdb__Protocol__Rpc__V1__SubscribeEndReason {
   SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_END_REASON__SUBSCRIBE_END_REASON_UNSPECIFIED = 0,
   /*
-   * The live query was killed. It is gone; do not re-subscribe.
+   * The live query was killed, by a `KILL` statement through `Query` or by
+   * the server. It is gone; do not re-subscribe. Every other subscription to
+   * the same live query ends with this reason too.
    */
   SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_END_REASON__SUBSCRIBE_END_REASON_KILLED = 1,
   /*
@@ -383,7 +372,6 @@ struct  Surrealdb__Protocol__Rpc__V1__ServerCapabilities
    *   EXPORT_DIRECTORY   directory-format export
    *   ML_MODELS          SurrealML model export
    *   COLUMNAR_RESULTS   columnar (Arrow) query results
-   *   QUERY_CONTROL      cancelling and listing in-flight queries
    * This list is documentation, not a constraint. A server may report names
    * that are not on it.
    */
@@ -481,32 +469,6 @@ struct  Surrealdb__Protocol__Rpc__V1__HealthResponse
 
 
 /*
- * Request to get the version of the database.
- */
-struct  Surrealdb__Protocol__Rpc__V1__VersionRequest
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__VERSION_REQUEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__version_request__descriptor) \
-, NULL }
-
-
-/*
- * Response to a version request.
- */
-struct  Surrealdb__Protocol__Rpc__V1__VersionResponse
-{
-  ProtobufCMessage base;
-  char *version;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__VERSION_RESPONSE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__version_response__descriptor) \
-, (char *)protobuf_c_empty_string }
-
-
-/*
  * Request to create or adopt a session.
  */
 struct  Surrealdb__Protocol__Rpc__V1__AttachSessionRequest
@@ -574,33 +536,6 @@ struct  Surrealdb__Protocol__Rpc__V1__DetachSessionResponse
 #define SURREALDB__PROTOCOL__RPC__V1__DETACH_SESSION_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__detach_session_response__descriptor) \
  }
-
-
-/*
- * Request to list addressable sessions.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ListSessionsRequest
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__LIST_SESSIONS_REQUEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__list_sessions_request__descriptor) \
-, NULL }
-
-
-/*
- * Response listing addressable sessions.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ListSessionsResponse
-{
-  ProtobufCMessage base;
-  size_t n_sessions;
-  Surrealdb__Protocol__V1__Uuid **sessions;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__LIST_SESSIONS_RESPONSE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__list_sessions_response__descriptor) \
-, 0,NULL }
 
 
 /*
@@ -1106,33 +1041,6 @@ struct  Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse
 
 
 /*
- * Request to list a session's open transactions.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__LIST_TRANSACTIONS_REQUEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__list_transactions_request__descriptor) \
-, NULL }
-
-
-/*
- * Response listing open transactions.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse
-{
-  ProtobufCMessage base;
-  size_t n_transactions;
-  Surrealdb__Protocol__V1__Uuid **transactions;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__LIST_TRANSACTIONS_RESPONSE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__list_transactions_response__descriptor) \
-, 0,NULL }
-
-
-/*
  * Request to execute SurrealQL.
  */
 struct  Surrealdb__Protocol__Rpc__V1__QueryRequest
@@ -1245,15 +1153,20 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryStats
 /*
  * The opening frame of a query stream.
  * The server MUST send this on accepting the query, before it starts
- * executing. Sending it later would deliver `query_id` too late to cancel
- * anything, which is most of the reason it exists.
+ * executing, so that a long-running query is identifiable while it is still
+ * running rather than only once it finishes.
  */
 struct  Surrealdb__Protocol__Rpc__V1__QueryBegin
 {
   ProtobufCMessage base;
   /*
-   * Identifies this execution, for `CancelQuery` and for correlating server
-   * logs, traces and slow-query records.
+   * Identifies this execution.
+   * Lets a caller name a query that is still running -- to correlate it with
+   * server logs, traces and slow-query records, or to report it to an
+   * operator. There is no RPC to stop another connection's query: a client
+   * stops its own by cancelling the `Query` stream, and anything beyond that
+   * goes through SurrealQL. Should a cancellation method be wanted later,
+   * this is the handle it would take, and adding it is additive.
    */
   Surrealdb__Protocol__V1__Uuid *query_id;
   /*
@@ -1373,102 +1286,6 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_response__descriptor) \
 , SURREALDB__PROTOCOL__RPC__V1__QUERY_RESPONSE__FRAME__NOT_SET, {0} }
-
-
-/*
- * Request to abort a running query.
- */
-struct  Surrealdb__Protocol__Rpc__V1__CancelQueryRequest
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
-  /*
-   * The id from the query's `begin` frame or from `ListQueries`.
-   */
-  Surrealdb__Protocol__V1__Uuid *query_id;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__CANCEL_QUERY_REQUEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__cancel_query_request__descriptor) \
-, NULL, NULL }
-
-
-/*
- * Response to a query cancellation.
- */
-struct  Surrealdb__Protocol__Rpc__V1__CancelQueryResponse
-{
-  ProtobufCMessage base;
-  /*
-   * False when the query had already finished, which is not an error --
-   * cancellation races completion by nature.
-   */
-  protobuf_c_boolean cancelled;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__CANCEL_QUERY_RESPONSE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__cancel_query_response__descriptor) \
-, 0 }
-
-
-/*
- * A query currently executing.
- */
-struct  Surrealdb__Protocol__Rpc__V1__QueryInfo
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__V1__Uuid *query_id;
-  /*
-   * The session that issued it.
-   */
-  Surrealdb__Protocol__V1__Uuid *session;
-  /*
-   * The transaction it runs in, if any.
-   */
-  Surrealdb__Protocol__V1__Uuid *transaction;
-  /*
-   * The SurrealQL being executed. Servers MAY truncate this, and MUST omit
-   * it from callers not permitted to see other sessions' statements.
-   */
-  char *query;
-  /*
-   * When execution started.
-   */
-  Surrealdb__Protocol__V1__Datetime *started_at;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__QUERY_INFO__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_info__descriptor) \
-, NULL, NULL, NULL, (char *)protobuf_c_empty_string, NULL }
-
-
-/*
- * Request to list in-flight queries.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ListQueriesRequest
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
-  /*
-   * List every session's queries rather than only `context.session`'s.
-   * Requires permission; refused otherwise rather than silently narrowed.
-   */
-  protobuf_c_boolean all_sessions;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__LIST_QUERIES_REQUEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__list_queries_request__descriptor) \
-, NULL, 0 }
-
-
-/*
- * Response listing in-flight queries.
- */
-struct  Surrealdb__Protocol__Rpc__V1__ListQueriesResponse
-{
-  ProtobufCMessage base;
-  size_t n_queries;
-  Surrealdb__Protocol__Rpc__V1__QueryInfo **queries;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__LIST_QUERIES_RESPONSE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__list_queries_response__descriptor) \
-, 0,NULL }
 
 
 /*
@@ -1672,32 +1489,6 @@ struct  Surrealdb__Protocol__Rpc__V1__SubscribeResponse
 #define SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__subscribe_response__descriptor) \
 , SURREALDB__PROTOCOL__RPC__V1__SUBSCRIBE_RESPONSE__FRAME__NOT_SET, {0} }
-
-
-/*
- * Request to remove a live query.
- */
-struct  Surrealdb__Protocol__Rpc__V1__KillRequest
-{
-  ProtobufCMessage base;
-  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
-  Surrealdb__Protocol__V1__Uuid *live_query_id;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__KILL_REQUEST__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__kill_request__descriptor) \
-, NULL, NULL }
-
-
-/*
- * Response to a kill.
- */
-struct  Surrealdb__Protocol__Rpc__V1__KillResponse
-{
-  ProtobufCMessage base;
-};
-#define SURREALDB__PROTOCOL__RPC__V1__KILL_RESPONSE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__kill_response__descriptor) \
- }
 
 
 /*
@@ -2422,44 +2213,6 @@ Surrealdb__Protocol__Rpc__V1__HealthResponse *
 void   surrealdb__protocol__rpc__v1__health_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__HealthResponse *message,
                       ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__VersionRequest methods */
-void   surrealdb__protocol__rpc__v1__version_request__init
-                     (Surrealdb__Protocol__Rpc__V1__VersionRequest         *message);
-size_t surrealdb__protocol__rpc__v1__version_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__VersionRequest   *message);
-size_t surrealdb__protocol__rpc__v1__version_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__VersionRequest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__version_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__VersionRequest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__VersionRequest *
-       surrealdb__protocol__rpc__v1__version_request__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__version_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__VersionRequest *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__VersionResponse methods */
-void   surrealdb__protocol__rpc__v1__version_response__init
-                     (Surrealdb__Protocol__Rpc__V1__VersionResponse         *message);
-size_t surrealdb__protocol__rpc__v1__version_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__VersionResponse   *message);
-size_t surrealdb__protocol__rpc__v1__version_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__VersionResponse   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__version_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__VersionResponse   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__VersionResponse *
-       surrealdb__protocol__rpc__v1__version_response__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__version_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__VersionResponse *message,
-                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__AttachSessionRequest methods */
 void   surrealdb__protocol__rpc__v1__attach_session_request__init
                      (Surrealdb__Protocol__Rpc__V1__AttachSessionRequest         *message);
@@ -2535,44 +2288,6 @@ Surrealdb__Protocol__Rpc__V1__DetachSessionResponse *
                       const uint8_t       *data);
 void   surrealdb__protocol__rpc__v1__detach_session_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__DetachSessionResponse *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ListSessionsRequest methods */
-void   surrealdb__protocol__rpc__v1__list_sessions_request__init
-                     (Surrealdb__Protocol__Rpc__V1__ListSessionsRequest         *message);
-size_t surrealdb__protocol__rpc__v1__list_sessions_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ListSessionsRequest   *message);
-size_t surrealdb__protocol__rpc__v1__list_sessions_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ListSessionsRequest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__list_sessions_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ListSessionsRequest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ListSessionsRequest *
-       surrealdb__protocol__rpc__v1__list_sessions_request__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__list_sessions_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ListSessionsRequest *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ListSessionsResponse methods */
-void   surrealdb__protocol__rpc__v1__list_sessions_response__init
-                     (Surrealdb__Protocol__Rpc__V1__ListSessionsResponse         *message);
-size_t surrealdb__protocol__rpc__v1__list_sessions_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ListSessionsResponse   *message);
-size_t surrealdb__protocol__rpc__v1__list_sessions_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ListSessionsResponse   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__list_sessions_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ListSessionsResponse   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ListSessionsResponse *
-       surrealdb__protocol__rpc__v1__list_sessions_response__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__list_sessions_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ListSessionsResponse *message,
                       ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__ResetSessionRequest methods */
 void   surrealdb__protocol__rpc__v1__reset_session_request__init
@@ -3163,44 +2878,6 @@ Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse *
 void   surrealdb__protocol__rpc__v1__cancel_transaction_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse *message,
                       ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest methods */
-void   surrealdb__protocol__rpc__v1__list_transactions_request__init
-                     (Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest         *message);
-size_t surrealdb__protocol__rpc__v1__list_transactions_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest   *message);
-size_t surrealdb__protocol__rpc__v1__list_transactions_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__list_transactions_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest *
-       surrealdb__protocol__rpc__v1__list_transactions_request__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__list_transactions_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse methods */
-void   surrealdb__protocol__rpc__v1__list_transactions_response__init
-                     (Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse         *message);
-size_t surrealdb__protocol__rpc__v1__list_transactions_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse   *message);
-size_t surrealdb__protocol__rpc__v1__list_transactions_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__list_transactions_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse *
-       surrealdb__protocol__rpc__v1__list_transactions_response__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__list_transactions_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse *message,
-                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__QueryRequest methods */
 void   surrealdb__protocol__rpc__v1__query_request__init
                      (Surrealdb__Protocol__Rpc__V1__QueryRequest         *message);
@@ -3353,101 +3030,6 @@ Surrealdb__Protocol__Rpc__V1__QueryResponse *
 void   surrealdb__protocol__rpc__v1__query_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__QueryResponse *message,
                       ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__CancelQueryRequest methods */
-void   surrealdb__protocol__rpc__v1__cancel_query_request__init
-                     (Surrealdb__Protocol__Rpc__V1__CancelQueryRequest         *message);
-size_t surrealdb__protocol__rpc__v1__cancel_query_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__CancelQueryRequest   *message);
-size_t surrealdb__protocol__rpc__v1__cancel_query_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__CancelQueryRequest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__cancel_query_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__CancelQueryRequest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__CancelQueryRequest *
-       surrealdb__protocol__rpc__v1__cancel_query_request__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__cancel_query_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__CancelQueryRequest *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__CancelQueryResponse methods */
-void   surrealdb__protocol__rpc__v1__cancel_query_response__init
-                     (Surrealdb__Protocol__Rpc__V1__CancelQueryResponse         *message);
-size_t surrealdb__protocol__rpc__v1__cancel_query_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__CancelQueryResponse   *message);
-size_t surrealdb__protocol__rpc__v1__cancel_query_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__CancelQueryResponse   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__cancel_query_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__CancelQueryResponse   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__CancelQueryResponse *
-       surrealdb__protocol__rpc__v1__cancel_query_response__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__cancel_query_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__CancelQueryResponse *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__QueryInfo methods */
-void   surrealdb__protocol__rpc__v1__query_info__init
-                     (Surrealdb__Protocol__Rpc__V1__QueryInfo         *message);
-size_t surrealdb__protocol__rpc__v1__query_info__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__QueryInfo   *message);
-size_t surrealdb__protocol__rpc__v1__query_info__pack
-                     (const Surrealdb__Protocol__Rpc__V1__QueryInfo   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__query_info__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__QueryInfo   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__QueryInfo *
-       surrealdb__protocol__rpc__v1__query_info__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__query_info__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__QueryInfo *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ListQueriesRequest methods */
-void   surrealdb__protocol__rpc__v1__list_queries_request__init
-                     (Surrealdb__Protocol__Rpc__V1__ListQueriesRequest         *message);
-size_t surrealdb__protocol__rpc__v1__list_queries_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ListQueriesRequest   *message);
-size_t surrealdb__protocol__rpc__v1__list_queries_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ListQueriesRequest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__list_queries_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ListQueriesRequest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ListQueriesRequest *
-       surrealdb__protocol__rpc__v1__list_queries_request__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__list_queries_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ListQueriesRequest *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__ListQueriesResponse methods */
-void   surrealdb__protocol__rpc__v1__list_queries_response__init
-                     (Surrealdb__Protocol__Rpc__V1__ListQueriesResponse         *message);
-size_t surrealdb__protocol__rpc__v1__list_queries_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ListQueriesResponse   *message);
-size_t surrealdb__protocol__rpc__v1__list_queries_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ListQueriesResponse   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__list_queries_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ListQueriesResponse   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__ListQueriesResponse *
-       surrealdb__protocol__rpc__v1__list_queries_response__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__list_queries_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ListQueriesResponse *message,
-                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__LiveQueryCursor methods */
 void   surrealdb__protocol__rpc__v1__live_query_cursor__init
                      (Surrealdb__Protocol__Rpc__V1__LiveQueryCursor         *message);
@@ -3580,44 +3162,6 @@ Surrealdb__Protocol__Rpc__V1__SubscribeResponse *
                       const uint8_t       *data);
 void   surrealdb__protocol__rpc__v1__subscribe_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__SubscribeResponse *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__KillRequest methods */
-void   surrealdb__protocol__rpc__v1__kill_request__init
-                     (Surrealdb__Protocol__Rpc__V1__KillRequest         *message);
-size_t surrealdb__protocol__rpc__v1__kill_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__KillRequest   *message);
-size_t surrealdb__protocol__rpc__v1__kill_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__KillRequest   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__kill_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__KillRequest   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__KillRequest *
-       surrealdb__protocol__rpc__v1__kill_request__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__kill_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__KillRequest *message,
-                      ProtobufCAllocator *allocator);
-/* Surrealdb__Protocol__Rpc__V1__KillResponse methods */
-void   surrealdb__protocol__rpc__v1__kill_response__init
-                     (Surrealdb__Protocol__Rpc__V1__KillResponse         *message);
-size_t surrealdb__protocol__rpc__v1__kill_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__KillResponse   *message);
-size_t surrealdb__protocol__rpc__v1__kill_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__KillResponse   *message,
-                      uint8_t             *out);
-size_t surrealdb__protocol__rpc__v1__kill_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__KillResponse   *message,
-                      ProtobufCBuffer     *buffer);
-Surrealdb__Protocol__Rpc__V1__KillResponse *
-       surrealdb__protocol__rpc__v1__kill_response__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   surrealdb__protocol__rpc__v1__kill_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__KillResponse *message,
                       ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__ImportSqlBegin methods */
 void   surrealdb__protocol__rpc__v1__import_sql_begin__init
@@ -3993,12 +3537,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__HealthRequest_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__HealthResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__HealthResponse *message,
                   void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__VersionRequest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__VersionRequest *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__VersionResponse_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__VersionResponse *message,
-                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__AttachSessionRequest_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__AttachSessionRequest *message,
                   void *closure_data);
@@ -4010,12 +3548,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__DetachSessionRequest_Closure)
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__DetachSessionResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__DetachSessionResponse *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ListSessionsRequest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ListSessionsRequest *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ListSessionsResponse_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ListSessionsResponse *message,
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__ResetSessionRequest_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ResetSessionRequest *message,
@@ -4110,12 +3642,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__CancelTransactionRequest_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse *message,
                   void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse *message,
-                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__QueryRequest_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__QueryRequest *message,
                   void *closure_data);
@@ -4140,21 +3666,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__QueryEnd_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__QueryResponse *message,
                   void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__CancelQueryRequest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__CancelQueryRequest *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__CancelQueryResponse_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__CancelQueryResponse *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__QueryInfo_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__QueryInfo *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ListQueriesRequest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ListQueriesRequest *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__ListQueriesResponse_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__ListQueriesResponse *message,
-                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__LiveQueryCursor_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__LiveQueryCursor *message,
                   void *closure_data);
@@ -4175,12 +3686,6 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__SubscribeEnd_Closure)
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__SubscribeResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__SubscribeResponse *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__KillRequest_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__KillRequest *message,
-                  void *closure_data);
-typedef void (*Surrealdb__Protocol__Rpc__V1__KillResponse_Closure)
-                 (const Surrealdb__Protocol__Rpc__V1__KillResponse *message,
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__ImportSqlBegin_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *message,
@@ -4257,10 +3762,6 @@ struct Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service
                  const Surrealdb__Protocol__Rpc__V1__HealthRequest *input,
                  Surrealdb__Protocol__Rpc__V1__HealthResponse_Closure closure,
                  void *closure_data);
-  void (*version)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
-                  const Surrealdb__Protocol__Rpc__V1__VersionRequest *input,
-                  Surrealdb__Protocol__Rpc__V1__VersionResponse_Closure closure,
-                  void *closure_data);
   void (*attach_session)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                          const Surrealdb__Protocol__Rpc__V1__AttachSessionRequest *input,
                          Surrealdb__Protocol__Rpc__V1__AttachSessionResponse_Closure closure,
@@ -4269,10 +3770,6 @@ struct Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service
                          const Surrealdb__Protocol__Rpc__V1__DetachSessionRequest *input,
                          Surrealdb__Protocol__Rpc__V1__DetachSessionResponse_Closure closure,
                          void *closure_data);
-  void (*list_sessions)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
-                        const Surrealdb__Protocol__Rpc__V1__ListSessionsRequest *input,
-                        Surrealdb__Protocol__Rpc__V1__ListSessionsResponse_Closure closure,
-                        void *closure_data);
   void (*reset_session)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                         const Surrealdb__Protocol__Rpc__V1__ResetSessionRequest *input,
                         Surrealdb__Protocol__Rpc__V1__ResetSessionResponse_Closure closure,
@@ -4325,30 +3822,14 @@ struct Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service
                              const Surrealdb__Protocol__Rpc__V1__CancelTransactionRequest *input,
                              Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse_Closure closure,
                              void *closure_data);
-  void (*list_transactions)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
-                            const Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest *input,
-                            Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse_Closure closure,
-                            void *closure_data);
   void (*query)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                 const Surrealdb__Protocol__Rpc__V1__QueryRequest *input,
                 Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure closure,
                 void *closure_data);
-  void (*cancel_query)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
-                       const Surrealdb__Protocol__Rpc__V1__CancelQueryRequest *input,
-                       Surrealdb__Protocol__Rpc__V1__CancelQueryResponse_Closure closure,
-                       void *closure_data);
-  void (*list_queries)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
-                       const Surrealdb__Protocol__Rpc__V1__ListQueriesRequest *input,
-                       Surrealdb__Protocol__Rpc__V1__ListQueriesResponse_Closure closure,
-                       void *closure_data);
   void (*subscribe)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                     const Surrealdb__Protocol__Rpc__V1__SubscribeRequest *input,
                     Surrealdb__Protocol__Rpc__V1__SubscribeResponse_Closure closure,
                     void *closure_data);
-  void (*kill)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
-               const Surrealdb__Protocol__Rpc__V1__KillRequest *input,
-               Surrealdb__Protocol__Rpc__V1__KillResponse_Closure closure,
-               void *closure_data);
   void (*import_sql)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                      const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *input,
                      Surrealdb__Protocol__Rpc__V1__ImportSqlResponse_Closure closure,
@@ -4375,10 +3856,8 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__init (Surrealdb__Protocol_
     { SURREALDB__PROTOCOL__RPC__V1__SURREAL_DBSERVICE__BASE_INIT,\
       function_prefix__ ## get_capabilities,\
       function_prefix__ ## health,\
-      function_prefix__ ## version,\
       function_prefix__ ## attach_session,\
       function_prefix__ ## detach_session,\
-      function_prefix__ ## list_sessions,\
       function_prefix__ ## reset_session,\
       function_prefix__ ## use,\
       function_prefix__ ## set_variable,\
@@ -4392,12 +3871,8 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__init (Surrealdb__Protocol_
       function_prefix__ ## begin_transaction,\
       function_prefix__ ## commit_transaction,\
       function_prefix__ ## cancel_transaction,\
-      function_prefix__ ## list_transactions,\
       function_prefix__ ## query,\
-      function_prefix__ ## cancel_query,\
-      function_prefix__ ## list_queries,\
       function_prefix__ ## subscribe,\
-      function_prefix__ ## kill,\
       function_prefix__ ## import_sql,\
       function_prefix__ ## export_sql,\
       function_prefix__ ## export_directory,\
@@ -4410,10 +3885,6 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__health(ProtobufCService *s
                                                              const Surrealdb__Protocol__Rpc__V1__HealthRequest *input,
                                                              Surrealdb__Protocol__Rpc__V1__HealthResponse_Closure closure,
                                                              void *closure_data);
-void surrealdb__protocol__rpc__v1__surreal_dbservice__version(ProtobufCService *service,
-                                                              const Surrealdb__Protocol__Rpc__V1__VersionRequest *input,
-                                                              Surrealdb__Protocol__Rpc__V1__VersionResponse_Closure closure,
-                                                              void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__attach_session(ProtobufCService *service,
                                                                      const Surrealdb__Protocol__Rpc__V1__AttachSessionRequest *input,
                                                                      Surrealdb__Protocol__Rpc__V1__AttachSessionResponse_Closure closure,
@@ -4422,10 +3893,6 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__detach_session(ProtobufCSe
                                                                      const Surrealdb__Protocol__Rpc__V1__DetachSessionRequest *input,
                                                                      Surrealdb__Protocol__Rpc__V1__DetachSessionResponse_Closure closure,
                                                                      void *closure_data);
-void surrealdb__protocol__rpc__v1__surreal_dbservice__list_sessions(ProtobufCService *service,
-                                                                    const Surrealdb__Protocol__Rpc__V1__ListSessionsRequest *input,
-                                                                    Surrealdb__Protocol__Rpc__V1__ListSessionsResponse_Closure closure,
-                                                                    void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__reset_session(ProtobufCService *service,
                                                                     const Surrealdb__Protocol__Rpc__V1__ResetSessionRequest *input,
                                                                     Surrealdb__Protocol__Rpc__V1__ResetSessionResponse_Closure closure,
@@ -4478,30 +3945,14 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__cancel_transaction(Protobu
                                                                          const Surrealdb__Protocol__Rpc__V1__CancelTransactionRequest *input,
                                                                          Surrealdb__Protocol__Rpc__V1__CancelTransactionResponse_Closure closure,
                                                                          void *closure_data);
-void surrealdb__protocol__rpc__v1__surreal_dbservice__list_transactions(ProtobufCService *service,
-                                                                        const Surrealdb__Protocol__Rpc__V1__ListTransactionsRequest *input,
-                                                                        Surrealdb__Protocol__Rpc__V1__ListTransactionsResponse_Closure closure,
-                                                                        void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__query(ProtobufCService *service,
                                                             const Surrealdb__Protocol__Rpc__V1__QueryRequest *input,
                                                             Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure closure,
                                                             void *closure_data);
-void surrealdb__protocol__rpc__v1__surreal_dbservice__cancel_query(ProtobufCService *service,
-                                                                   const Surrealdb__Protocol__Rpc__V1__CancelQueryRequest *input,
-                                                                   Surrealdb__Protocol__Rpc__V1__CancelQueryResponse_Closure closure,
-                                                                   void *closure_data);
-void surrealdb__protocol__rpc__v1__surreal_dbservice__list_queries(ProtobufCService *service,
-                                                                   const Surrealdb__Protocol__Rpc__V1__ListQueriesRequest *input,
-                                                                   Surrealdb__Protocol__Rpc__V1__ListQueriesResponse_Closure closure,
-                                                                   void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__subscribe(ProtobufCService *service,
                                                                 const Surrealdb__Protocol__Rpc__V1__SubscribeRequest *input,
                                                                 Surrealdb__Protocol__Rpc__V1__SubscribeResponse_Closure closure,
                                                                 void *closure_data);
-void surrealdb__protocol__rpc__v1__surreal_dbservice__kill(ProtobufCService *service,
-                                                           const Surrealdb__Protocol__Rpc__V1__KillRequest *input,
-                                                           Surrealdb__Protocol__Rpc__V1__KillResponse_Closure closure,
-                                                           void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__import_sql(ProtobufCService *service,
                                                                  const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *input,
                                                                  Surrealdb__Protocol__Rpc__V1__ImportSqlResponse_Closure closure,
@@ -4536,14 +3987,10 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__get_capabi
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__get_capabilities_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__health_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__health_response__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__version_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__version_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__attach_session_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__attach_session_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__detach_session_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__detach_session_response__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__list_sessions_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__list_sessions_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__reset_session_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__reset_session_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__use_request__descriptor;
@@ -4575,8 +4022,6 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__commit_tra
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__commit_transaction_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__cancel_transaction_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__cancel_transaction_response__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__list_transactions_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__list_transactions_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__value_batch__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__arrow_batch__descriptor;
@@ -4585,11 +4030,6 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_begi
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_batch_frame__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_end__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_response__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__cancel_query_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__cancel_query_response__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_info__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__list_queries_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__list_queries_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__live_query_cursor__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__live_query_registration__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_request__descriptor;
@@ -4597,8 +4037,6 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__notificati
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_begin__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_end__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_response__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__kill_request__descriptor;
-extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__kill_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sql_begin__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sql_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sql_response__descriptor;

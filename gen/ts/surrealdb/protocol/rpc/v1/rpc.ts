@@ -265,7 +265,11 @@ export function actionToJSON(object: Action): string {
 /** Why a subscription stream ended. */
 export enum SubscribeEndReason {
   UNSPECIFIED = 0,
-  /** KILLED - The live query was killed. It is gone; do not re-subscribe. */
+  /**
+   * KILLED - The live query was killed, by a `KILL` statement through `Query` or by
+   * the server. It is gone; do not re-subscribe. Every other subscription to
+   * the same live query ends with this reason too.
+   */
   KILLED = 1,
   /** SESSION_CLOSED - The owning session was detached or reset. */
   SESSION_CLOSED = 2,
@@ -473,7 +477,6 @@ export interface ServerCapabilities {
    *   EXPORT_DIRECTORY   directory-format export
    *   ML_MODELS          SurrealML model export
    *   COLUMNAR_RESULTS   columnar (Arrow) query results
-   *   QUERY_CONTROL      cancelling and listing in-flight queries
    *
    * This list is documentation, not a constraint. A server may report names
    * that are not on it.
@@ -535,16 +538,6 @@ export interface HealthRequest {
 export interface HealthResponse {
 }
 
-/** Request to get the version of the database. */
-export interface VersionRequest {
-  context: RequestContext | undefined;
-}
-
-/** Response to a version request. */
-export interface VersionResponse {
-  version: string;
-}
-
 /** Request to create or adopt a session. */
 export interface AttachSessionRequest {
   /**
@@ -581,16 +574,6 @@ export interface DetachSessionRequest {
 
 /** Response to a session detach. */
 export interface DetachSessionResponse {
-}
-
-/** Request to list addressable sessions. */
-export interface ListSessionsRequest {
-  context: RequestContext | undefined;
-}
-
-/** Response listing addressable sessions. */
-export interface ListSessionsResponse {
-  sessions: Uuid[];
 }
 
 /** Request to reset a session. */
@@ -826,16 +809,6 @@ export interface CancelTransactionRequest {
 export interface CancelTransactionResponse {
 }
 
-/** Request to list a session's open transactions. */
-export interface ListTransactionsRequest {
-  context: RequestContext | undefined;
-}
-
-/** Response listing open transactions. */
-export interface ListTransactionsResponse {
-  transactions: Uuid[];
-}
-
 /** Request to execute SurrealQL. */
 export interface QueryRequest {
   context:
@@ -914,13 +887,19 @@ export interface QueryStats {
  * The opening frame of a query stream.
  *
  * The server MUST send this on accepting the query, before it starts
- * executing. Sending it later would deliver `query_id` too late to cancel
- * anything, which is most of the reason it exists.
+ * executing, so that a long-running query is identifiable while it is still
+ * running rather than only once it finishes.
  */
 export interface QueryBegin {
   /**
-   * Identifies this execution, for `CancelQuery` and for correlating server
-   * logs, traces and slow-query records.
+   * Identifies this execution.
+   *
+   * Lets a caller name a query that is still running -- to correlate it with
+   * server logs, traces and slow-query records, or to report it to an
+   * operator. There is no RPC to stop another connection's query: a client
+   * stops its own by cancelling the `Query` stream, and anything beyond that
+   * goes through SurrealQL. Should a cancellation method be wanted later,
+   * this is the handle it would take, and adding it is additive.
    */
   queryId:
     | Uuid
@@ -997,63 +976,6 @@ export interface QueryResponse {
     | { $case: "end"; end: QueryEnd }
     | { $case: "error"; error: SurrealError }
     | undefined;
-}
-
-/** Request to abort a running query. */
-export interface CancelQueryRequest {
-  context:
-    | RequestContext
-    | undefined;
-  /** The id from the query's `begin` frame or from `ListQueries`. */
-  queryId: Uuid | undefined;
-}
-
-/** Response to a query cancellation. */
-export interface CancelQueryResponse {
-  /**
-   * False when the query had already finished, which is not an error --
-   * cancellation races completion by nature.
-   */
-  cancelled: boolean;
-}
-
-/** A query currently executing. */
-export interface QueryInfo {
-  queryId:
-    | Uuid
-    | undefined;
-  /** The session that issued it. */
-  session:
-    | Uuid
-    | undefined;
-  /** The transaction it runs in, if any. */
-  transaction:
-    | Uuid
-    | undefined;
-  /**
-   * The SurrealQL being executed. Servers MAY truncate this, and MUST omit
-   * it from callers not permitted to see other sessions' statements.
-   */
-  query: string;
-  /** When execution started. */
-  startedAt: Datetime | undefined;
-}
-
-/** Request to list in-flight queries. */
-export interface ListQueriesRequest {
-  context:
-    | RequestContext
-    | undefined;
-  /**
-   * List every session's queries rather than only `context.session`'s.
-   * Requires permission; refused otherwise rather than silently narrowed.
-   */
-  allSessions: boolean;
-}
-
-/** Response listing in-flight queries. */
-export interface ListQueriesResponse {
-  queries: QueryInfo[];
 }
 
 /**
@@ -1196,16 +1118,6 @@ export interface SubscribeResponse {
     | { $case: "end"; end: SubscribeEnd }
     | { $case: "error"; error: SurrealError }
     | undefined;
-}
-
-/** Request to remove a live query. */
-export interface KillRequest {
-  context: RequestContext | undefined;
-  liveQueryId: Uuid | undefined;
-}
-
-/** Response to a kill. */
-export interface KillResponse {
 }
 
 /** The opening frame of an import stream, carrying the request's context. */
@@ -2293,124 +2205,6 @@ export const HealthResponse: MessageFns<HealthResponse> = {
   },
 };
 
-function createBaseVersionRequest(): VersionRequest {
-  return { context: undefined };
-}
-
-export const VersionRequest: MessageFns<VersionRequest> = {
-  encode(message: VersionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.context !== undefined) {
-      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): VersionRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVersionRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.context = RequestContext.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): VersionRequest {
-    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
-  },
-
-  toJSON(message: VersionRequest): unknown {
-    const obj: any = {};
-    if (message.context !== undefined) {
-      obj.context = RequestContext.toJSON(message.context);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<VersionRequest>, I>>(base?: I): VersionRequest {
-    return VersionRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<VersionRequest>, I>>(object: I): VersionRequest {
-    const message = createBaseVersionRequest();
-    message.context = (object.context !== undefined && object.context !== null)
-      ? RequestContext.fromPartial(object.context)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseVersionResponse(): VersionResponse {
-  return { version: "" };
-}
-
-export const VersionResponse: MessageFns<VersionResponse> = {
-  encode(message: VersionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.version !== "") {
-      writer.uint32(10).string(message.version);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): VersionResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVersionResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.version = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): VersionResponse {
-    return { version: isSet(object.version) ? globalThis.String(object.version) : "" };
-  },
-
-  toJSON(message: VersionResponse): unknown {
-    const obj: any = {};
-    if (message.version !== "") {
-      obj.version = message.version;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<VersionResponse>, I>>(base?: I): VersionResponse {
-    return VersionResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<VersionResponse>, I>>(object: I): VersionResponse {
-    const message = createBaseVersionResponse();
-    message.version = object.version ?? "";
-    return message;
-  },
-};
-
 function createBaseAttachSessionRequest(): AttachSessionRequest {
   return { context: undefined };
 }
@@ -2648,126 +2442,6 @@ export const DetachSessionResponse: MessageFns<DetachSessionResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<DetachSessionResponse>, I>>(_: I): DetachSessionResponse {
     const message = createBaseDetachSessionResponse();
-    return message;
-  },
-};
-
-function createBaseListSessionsRequest(): ListSessionsRequest {
-  return { context: undefined };
-}
-
-export const ListSessionsRequest: MessageFns<ListSessionsRequest> = {
-  encode(message: ListSessionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.context !== undefined) {
-      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListSessionsRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListSessionsRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.context = RequestContext.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListSessionsRequest {
-    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
-  },
-
-  toJSON(message: ListSessionsRequest): unknown {
-    const obj: any = {};
-    if (message.context !== undefined) {
-      obj.context = RequestContext.toJSON(message.context);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ListSessionsRequest>, I>>(base?: I): ListSessionsRequest {
-    return ListSessionsRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ListSessionsRequest>, I>>(object: I): ListSessionsRequest {
-    const message = createBaseListSessionsRequest();
-    message.context = (object.context !== undefined && object.context !== null)
-      ? RequestContext.fromPartial(object.context)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseListSessionsResponse(): ListSessionsResponse {
-  return { sessions: [] };
-}
-
-export const ListSessionsResponse: MessageFns<ListSessionsResponse> = {
-  encode(message: ListSessionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.sessions) {
-      Uuid.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListSessionsResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListSessionsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.sessions.push(Uuid.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListSessionsResponse {
-    return {
-      sessions: globalThis.Array.isArray(object?.sessions) ? object.sessions.map((e: any) => Uuid.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: ListSessionsResponse): unknown {
-    const obj: any = {};
-    if (message.sessions?.length) {
-      obj.sessions = message.sessions.map((e) => Uuid.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ListSessionsResponse>, I>>(base?: I): ListSessionsResponse {
-    return ListSessionsResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ListSessionsResponse>, I>>(object: I): ListSessionsResponse {
-    const message = createBaseListSessionsResponse();
-    message.sessions = object.sessions?.map((e) => Uuid.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5014,128 +4688,6 @@ export const CancelTransactionResponse: MessageFns<CancelTransactionResponse> = 
   },
 };
 
-function createBaseListTransactionsRequest(): ListTransactionsRequest {
-  return { context: undefined };
-}
-
-export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
-  encode(message: ListTransactionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.context !== undefined) {
-      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListTransactionsRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListTransactionsRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.context = RequestContext.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListTransactionsRequest {
-    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
-  },
-
-  toJSON(message: ListTransactionsRequest): unknown {
-    const obj: any = {};
-    if (message.context !== undefined) {
-      obj.context = RequestContext.toJSON(message.context);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ListTransactionsRequest>, I>>(base?: I): ListTransactionsRequest {
-    return ListTransactionsRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ListTransactionsRequest>, I>>(object: I): ListTransactionsRequest {
-    const message = createBaseListTransactionsRequest();
-    message.context = (object.context !== undefined && object.context !== null)
-      ? RequestContext.fromPartial(object.context)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseListTransactionsResponse(): ListTransactionsResponse {
-  return { transactions: [] };
-}
-
-export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
-  encode(message: ListTransactionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.transactions) {
-      Uuid.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListTransactionsResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListTransactionsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.transactions.push(Uuid.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListTransactionsResponse {
-    return {
-      transactions: globalThis.Array.isArray(object?.transactions)
-        ? object.transactions.map((e: any) => Uuid.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: ListTransactionsResponse): unknown {
-    const obj: any = {};
-    if (message.transactions?.length) {
-      obj.transactions = message.transactions.map((e) => Uuid.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ListTransactionsResponse>, I>>(base?: I): ListTransactionsResponse {
-    return ListTransactionsResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ListTransactionsResponse>, I>>(object: I): ListTransactionsResponse {
-    const message = createBaseListTransactionsResponse();
-    message.transactions = object.transactions?.map((e) => Uuid.fromPartial(e)) || [];
-    return message;
-  },
-};
-
 function createBaseQueryRequest(): QueryRequest {
   return { context: undefined, query: "", variables: undefined, acceptedEncodings: [] };
 }
@@ -6038,430 +5590,6 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   },
 };
 
-function createBaseCancelQueryRequest(): CancelQueryRequest {
-  return { context: undefined, queryId: undefined };
-}
-
-export const CancelQueryRequest: MessageFns<CancelQueryRequest> = {
-  encode(message: CancelQueryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.context !== undefined) {
-      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
-    }
-    if (message.queryId !== undefined) {
-      Uuid.encode(message.queryId, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): CancelQueryRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCancelQueryRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.context = RequestContext.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.queryId = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CancelQueryRequest {
-    return {
-      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
-      queryId: isSet(object.queryId)
-        ? Uuid.fromJSON(object.queryId)
-        : isSet(object.query_id)
-        ? Uuid.fromJSON(object.query_id)
-        : undefined,
-    };
-  },
-
-  toJSON(message: CancelQueryRequest): unknown {
-    const obj: any = {};
-    if (message.context !== undefined) {
-      obj.context = RequestContext.toJSON(message.context);
-    }
-    if (message.queryId !== undefined) {
-      obj.queryId = Uuid.toJSON(message.queryId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<CancelQueryRequest>, I>>(base?: I): CancelQueryRequest {
-    return CancelQueryRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<CancelQueryRequest>, I>>(object: I): CancelQueryRequest {
-    const message = createBaseCancelQueryRequest();
-    message.context = (object.context !== undefined && object.context !== null)
-      ? RequestContext.fromPartial(object.context)
-      : undefined;
-    message.queryId = (object.queryId !== undefined && object.queryId !== null)
-      ? Uuid.fromPartial(object.queryId)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseCancelQueryResponse(): CancelQueryResponse {
-  return { cancelled: false };
-}
-
-export const CancelQueryResponse: MessageFns<CancelQueryResponse> = {
-  encode(message: CancelQueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.cancelled !== false) {
-      writer.uint32(8).bool(message.cancelled);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): CancelQueryResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCancelQueryResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.cancelled = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CancelQueryResponse {
-    return { cancelled: isSet(object.cancelled) ? globalThis.Boolean(object.cancelled) : false };
-  },
-
-  toJSON(message: CancelQueryResponse): unknown {
-    const obj: any = {};
-    if (message.cancelled !== false) {
-      obj.cancelled = message.cancelled;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<CancelQueryResponse>, I>>(base?: I): CancelQueryResponse {
-    return CancelQueryResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<CancelQueryResponse>, I>>(object: I): CancelQueryResponse {
-    const message = createBaseCancelQueryResponse();
-    message.cancelled = object.cancelled ?? false;
-    return message;
-  },
-};
-
-function createBaseQueryInfo(): QueryInfo {
-  return { queryId: undefined, session: undefined, transaction: undefined, query: "", startedAt: undefined };
-}
-
-export const QueryInfo: MessageFns<QueryInfo> = {
-  encode(message: QueryInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.queryId !== undefined) {
-      Uuid.encode(message.queryId, writer.uint32(10).fork()).join();
-    }
-    if (message.session !== undefined) {
-      Uuid.encode(message.session, writer.uint32(18).fork()).join();
-    }
-    if (message.transaction !== undefined) {
-      Uuid.encode(message.transaction, writer.uint32(26).fork()).join();
-    }
-    if (message.query !== "") {
-      writer.uint32(34).string(message.query);
-    }
-    if (message.startedAt !== undefined) {
-      Datetime.encode(message.startedAt, writer.uint32(42).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryInfo {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryInfo();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.queryId = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.session = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.transaction = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.query = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.startedAt = Datetime.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): QueryInfo {
-    return {
-      queryId: isSet(object.queryId)
-        ? Uuid.fromJSON(object.queryId)
-        : isSet(object.query_id)
-        ? Uuid.fromJSON(object.query_id)
-        : undefined,
-      session: isSet(object.session) ? Uuid.fromJSON(object.session) : undefined,
-      transaction: isSet(object.transaction) ? Uuid.fromJSON(object.transaction) : undefined,
-      query: isSet(object.query) ? globalThis.String(object.query) : "",
-      startedAt: isSet(object.startedAt)
-        ? Datetime.fromJSON(object.startedAt)
-        : isSet(object.started_at)
-        ? Datetime.fromJSON(object.started_at)
-        : undefined,
-    };
-  },
-
-  toJSON(message: QueryInfo): unknown {
-    const obj: any = {};
-    if (message.queryId !== undefined) {
-      obj.queryId = Uuid.toJSON(message.queryId);
-    }
-    if (message.session !== undefined) {
-      obj.session = Uuid.toJSON(message.session);
-    }
-    if (message.transaction !== undefined) {
-      obj.transaction = Uuid.toJSON(message.transaction);
-    }
-    if (message.query !== "") {
-      obj.query = message.query;
-    }
-    if (message.startedAt !== undefined) {
-      obj.startedAt = Datetime.toJSON(message.startedAt);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<QueryInfo>, I>>(base?: I): QueryInfo {
-    return QueryInfo.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<QueryInfo>, I>>(object: I): QueryInfo {
-    const message = createBaseQueryInfo();
-    message.queryId = (object.queryId !== undefined && object.queryId !== null)
-      ? Uuid.fromPartial(object.queryId)
-      : undefined;
-    message.session = (object.session !== undefined && object.session !== null)
-      ? Uuid.fromPartial(object.session)
-      : undefined;
-    message.transaction = (object.transaction !== undefined && object.transaction !== null)
-      ? Uuid.fromPartial(object.transaction)
-      : undefined;
-    message.query = object.query ?? "";
-    message.startedAt = (object.startedAt !== undefined && object.startedAt !== null)
-      ? Datetime.fromPartial(object.startedAt)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseListQueriesRequest(): ListQueriesRequest {
-  return { context: undefined, allSessions: false };
-}
-
-export const ListQueriesRequest: MessageFns<ListQueriesRequest> = {
-  encode(message: ListQueriesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.context !== undefined) {
-      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
-    }
-    if (message.allSessions !== false) {
-      writer.uint32(16).bool(message.allSessions);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListQueriesRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListQueriesRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.context = RequestContext.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.allSessions = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListQueriesRequest {
-    return {
-      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
-      allSessions: isSet(object.allSessions)
-        ? globalThis.Boolean(object.allSessions)
-        : isSet(object.all_sessions)
-        ? globalThis.Boolean(object.all_sessions)
-        : false,
-    };
-  },
-
-  toJSON(message: ListQueriesRequest): unknown {
-    const obj: any = {};
-    if (message.context !== undefined) {
-      obj.context = RequestContext.toJSON(message.context);
-    }
-    if (message.allSessions !== false) {
-      obj.allSessions = message.allSessions;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ListQueriesRequest>, I>>(base?: I): ListQueriesRequest {
-    return ListQueriesRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ListQueriesRequest>, I>>(object: I): ListQueriesRequest {
-    const message = createBaseListQueriesRequest();
-    message.context = (object.context !== undefined && object.context !== null)
-      ? RequestContext.fromPartial(object.context)
-      : undefined;
-    message.allSessions = object.allSessions ?? false;
-    return message;
-  },
-};
-
-function createBaseListQueriesResponse(): ListQueriesResponse {
-  return { queries: [] };
-}
-
-export const ListQueriesResponse: MessageFns<ListQueriesResponse> = {
-  encode(message: ListQueriesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.queries) {
-      QueryInfo.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListQueriesResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListQueriesResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.queries.push(QueryInfo.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListQueriesResponse {
-    return {
-      queries: globalThis.Array.isArray(object?.queries) ? object.queries.map((e: any) => QueryInfo.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: ListQueriesResponse): unknown {
-    const obj: any = {};
-    if (message.queries?.length) {
-      obj.queries = message.queries.map((e) => QueryInfo.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ListQueriesResponse>, I>>(base?: I): ListQueriesResponse {
-    return ListQueriesResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ListQueriesResponse>, I>>(object: I): ListQueriesResponse {
-    const message = createBaseListQueriesResponse();
-    message.queries = object.queries?.map((e) => QueryInfo.fromPartial(e)) || [];
-    return message;
-  },
-};
-
 function createBaseLiveQueryCursor(): LiveQueryCursor {
   return { versionstamp: 0n, sequence: 0 };
 }
@@ -7205,133 +6333,6 @@ export const SubscribeResponse: MessageFns<SubscribeResponse> = {
         break;
       }
     }
-    return message;
-  },
-};
-
-function createBaseKillRequest(): KillRequest {
-  return { context: undefined, liveQueryId: undefined };
-}
-
-export const KillRequest: MessageFns<KillRequest> = {
-  encode(message: KillRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.context !== undefined) {
-      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
-    }
-    if (message.liveQueryId !== undefined) {
-      Uuid.encode(message.liveQueryId, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): KillRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseKillRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.context = RequestContext.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.liveQueryId = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): KillRequest {
-    return {
-      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
-      liveQueryId: isSet(object.liveQueryId)
-        ? Uuid.fromJSON(object.liveQueryId)
-        : isSet(object.live_query_id)
-        ? Uuid.fromJSON(object.live_query_id)
-        : undefined,
-    };
-  },
-
-  toJSON(message: KillRequest): unknown {
-    const obj: any = {};
-    if (message.context !== undefined) {
-      obj.context = RequestContext.toJSON(message.context);
-    }
-    if (message.liveQueryId !== undefined) {
-      obj.liveQueryId = Uuid.toJSON(message.liveQueryId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<KillRequest>, I>>(base?: I): KillRequest {
-    return KillRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<KillRequest>, I>>(object: I): KillRequest {
-    const message = createBaseKillRequest();
-    message.context = (object.context !== undefined && object.context !== null)
-      ? RequestContext.fromPartial(object.context)
-      : undefined;
-    message.liveQueryId = (object.liveQueryId !== undefined && object.liveQueryId !== null)
-      ? Uuid.fromPartial(object.liveQueryId)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseKillResponse(): KillResponse {
-  return {};
-}
-
-export const KillResponse: MessageFns<KillResponse> = {
-  encode(_: KillResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): KillResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseKillResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): KillResponse {
-    return {};
-  },
-
-  toJSON(_: KillResponse): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<KillResponse>, I>>(base?: I): KillResponse {
-    return KillResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<KillResponse>, I>>(_: I): KillResponse {
-    const message = createBaseKillResponse();
     return message;
   },
 };
@@ -9499,10 +8500,14 @@ export interface SurrealDBService {
    * well as build version, and a version table cannot model that.
    */
   GetCapabilities(request: GetCapabilitiesRequest): Promise<GetCapabilitiesResponse>;
-  /** Check that the server is reachable and able to serve requests. */
+  /**
+   * Check that the server is reachable and able to serve requests.
+   *
+   * The server's version is reported by `GetCapabilities`, not here: a
+   * version string is the wrong thing to branch on, which is that method's
+   * whole premise.
+   */
   Health(request: HealthRequest): Promise<HealthResponse>;
-  /** Get the version of the SurrealDB server. */
-  Version(request: VersionRequest): Promise<VersionResponse>;
   /**
    * Create a session, or adopt an existing one onto this connection.
    *
@@ -9518,8 +8523,6 @@ export interface SurrealDBService {
    * SUBSCRIBE_END_REASON_SESSION_CLOSED.
    */
   DetachSession(request: DetachSessionRequest): Promise<DetachSessionResponse>;
-  /** List the sessions the caller may address. */
-  ListSessions(request: ListSessionsRequest): Promise<ListSessionsResponse>;
   /**
    * Return a session to its initial state without releasing it.
    *
@@ -9557,8 +8560,6 @@ export interface SurrealDBService {
   CommitTransaction(request: CommitTransactionRequest): Promise<CommitTransactionResponse>;
   /** Cancel `context.transaction`, discarding everything done in it. */
   CancelTransaction(request: CancelTransactionRequest): Promise<CancelTransactionResponse>;
-  /** List the transactions the session currently holds open. */
-  ListTransactions(request: ListTransactionsRequest): Promise<ListTransactionsResponse>;
   /**
    * Execute SurrealQL and stream the results.
    *
@@ -9569,23 +8570,6 @@ export interface SurrealDBService {
    */
   Query(request: QueryRequest): Observable<QueryResponse>;
   /**
-   * Abort a running query by id.
-   *
-   * Cancelling the `Query` RPC stream is the normal way to stop your own
-   * query. This exists for what a transport cannot express: stopping a
-   * runaway query from a different connection or session, using an id
-   * obtained from `ListQueries` or from the query's own `begin` frame.
-   */
-  CancelQuery(request: CancelQueryRequest): Promise<CancelQueryResponse>;
-  /**
-   * List queries currently executing.
-   *
-   * Scoped to `context.session` unless the caller has permission to see the
-   * whole server. Without this, `CancelQuery` is unusable from another
-   * connection: there would be no way to discover the id.
-   */
-  ListQueries(request: ListQueriesRequest): Promise<ListQueriesResponse>;
-  /**
    * Stream one live query's notifications.
    *
    * One stream per subscription; there is no multiplexed notification
@@ -9594,14 +8578,6 @@ export interface SurrealDBService {
    * the two ways to name the live query and what each implies for lifetime.
    */
   Subscribe(request: SubscribeRequest): Observable<SubscribeResponse>;
-  /**
-   * Remove a live query from the datastore.
-   *
-   * Distinct from ending a `Subscribe` stream, which stops delivery on that
-   * one stream. `Kill` stops the server computing the live query at all and
-   * ends every subscription to it with SUBSCRIBE_END_REASON_KILLED.
-   */
-  Kill(request: KillRequest): Promise<KillResponse>;
   /** Import a SurrealQL byte stream. All statements run in one transaction. */
   ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse>;
   /** Export the database as a flat SurrealQL byte stream. */
@@ -9631,10 +8607,8 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.rpc = rpc;
     this.GetCapabilities = this.GetCapabilities.bind(this);
     this.Health = this.Health.bind(this);
-    this.Version = this.Version.bind(this);
     this.AttachSession = this.AttachSession.bind(this);
     this.DetachSession = this.DetachSession.bind(this);
-    this.ListSessions = this.ListSessions.bind(this);
     this.ResetSession = this.ResetSession.bind(this);
     this.Use = this.Use.bind(this);
     this.SetVariable = this.SetVariable.bind(this);
@@ -9648,12 +8622,8 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.BeginTransaction = this.BeginTransaction.bind(this);
     this.CommitTransaction = this.CommitTransaction.bind(this);
     this.CancelTransaction = this.CancelTransaction.bind(this);
-    this.ListTransactions = this.ListTransactions.bind(this);
     this.Query = this.Query.bind(this);
-    this.CancelQuery = this.CancelQuery.bind(this);
-    this.ListQueries = this.ListQueries.bind(this);
     this.Subscribe = this.Subscribe.bind(this);
-    this.Kill = this.Kill.bind(this);
     this.ImportSql = this.ImportSql.bind(this);
     this.ExportSql = this.ExportSql.bind(this);
     this.ExportDirectory = this.ExportDirectory.bind(this);
@@ -9671,12 +8641,6 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return promise.then((data) => HealthResponse.decode(new BinaryReader(data)));
   }
 
-  Version(request: VersionRequest): Promise<VersionResponse> {
-    const data = VersionRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Version", data);
-    return promise.then((data) => VersionResponse.decode(new BinaryReader(data)));
-  }
-
   AttachSession(request: AttachSessionRequest): Promise<AttachSessionResponse> {
     const data = AttachSessionRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "AttachSession", data);
@@ -9687,12 +8651,6 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     const data = DetachSessionRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "DetachSession", data);
     return promise.then((data) => DetachSessionResponse.decode(new BinaryReader(data)));
-  }
-
-  ListSessions(request: ListSessionsRequest): Promise<ListSessionsResponse> {
-    const data = ListSessionsRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListSessions", data);
-    return promise.then((data) => ListSessionsResponse.decode(new BinaryReader(data)));
   }
 
   ResetSession(request: ResetSessionRequest): Promise<ResetSessionResponse> {
@@ -9773,40 +8731,16 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return promise.then((data) => CancelTransactionResponse.decode(new BinaryReader(data)));
   }
 
-  ListTransactions(request: ListTransactionsRequest): Promise<ListTransactionsResponse> {
-    const data = ListTransactionsRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListTransactions", data);
-    return promise.then((data) => ListTransactionsResponse.decode(new BinaryReader(data)));
-  }
-
   Query(request: QueryRequest): Observable<QueryResponse> {
     const data = QueryRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "Query", data);
     return result.pipe(map((data) => QueryResponse.decode(new BinaryReader(data))));
   }
 
-  CancelQuery(request: CancelQueryRequest): Promise<CancelQueryResponse> {
-    const data = CancelQueryRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CancelQuery", data);
-    return promise.then((data) => CancelQueryResponse.decode(new BinaryReader(data)));
-  }
-
-  ListQueries(request: ListQueriesRequest): Promise<ListQueriesResponse> {
-    const data = ListQueriesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListQueries", data);
-    return promise.then((data) => ListQueriesResponse.decode(new BinaryReader(data)));
-  }
-
   Subscribe(request: SubscribeRequest): Observable<SubscribeResponse> {
     const data = SubscribeRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "Subscribe", data);
     return result.pipe(map((data) => SubscribeResponse.decode(new BinaryReader(data))));
-  }
-
-  Kill(request: KillRequest): Promise<KillResponse> {
-    const data = KillRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Kill", data);
-    return promise.then((data) => KillResponse.decode(new BinaryReader(data)));
   }
 
   ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse> {

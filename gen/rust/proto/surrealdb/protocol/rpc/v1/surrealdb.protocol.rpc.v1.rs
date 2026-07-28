@@ -261,7 +261,6 @@ pub struct ServerCapabilities {
     ///    EXPORT_DIRECTORY   directory-format export
     ///    ML_MODELS          SurrealML model export
     ///    COLUMNAR_RESULTS   columnar (Arrow) query results
-    ///    QUERY_CONTROL      cancelling and listing in-flight queries
     ///
     /// This list is documentation, not a constraint. A server may report names
     /// that are not on it.
@@ -347,28 +346,6 @@ impl ::prost::Name for HealthResponse {
 const NAME: &'static str = "HealthResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.HealthResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.HealthResponse".into() }}
-/// Request to get the version of the database.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct VersionRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-}
-impl ::prost::Name for VersionRequest {
-const NAME: &'static str = "VersionRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.VersionRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.VersionRequest".into() }}
-/// Response to a version request.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct VersionResponse {
-    #[prost(string, tag = "1")]
-    pub version: ::prost::alloc::string::String,
-}
-impl ::prost::Name for VersionResponse {
-const NAME: &'static str = "VersionResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.VersionResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.VersionResponse".into() }}
 // ==================================================================== //
 //                               Sessions                                //
 // ==================================================================== //
@@ -427,28 +404,6 @@ impl ::prost::Name for DetachSessionResponse {
 const NAME: &'static str = "DetachSessionResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.DetachSessionResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.DetachSessionResponse".into() }}
-/// Request to list addressable sessions.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ListSessionsRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-}
-impl ::prost::Name for ListSessionsRequest {
-const NAME: &'static str = "ListSessionsRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ListSessionsRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ListSessionsRequest".into() }}
-/// Response listing addressable sessions.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ListSessionsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub sessions: ::prost::alloc::vec::Vec<super::super::v1::Uuid>,
-}
-impl ::prost::Name for ListSessionsResponse {
-const NAME: &'static str = "ListSessionsResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ListSessionsResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ListSessionsResponse".into() }}
 /// Request to reset a session.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
@@ -890,28 +845,6 @@ impl ::prost::Name for CancelTransactionResponse {
 const NAME: &'static str = "CancelTransactionResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.CancelTransactionResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.CancelTransactionResponse".into() }}
-/// Request to list a session's open transactions.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ListTransactionsRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-}
-impl ::prost::Name for ListTransactionsRequest {
-const NAME: &'static str = "ListTransactionsRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ListTransactionsRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ListTransactionsRequest".into() }}
-/// Response listing open transactions.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ListTransactionsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub transactions: ::prost::alloc::vec::Vec<super::super::v1::Uuid>,
-}
-impl ::prost::Name for ListTransactionsResponse {
-const NAME: &'static str = "ListTransactionsResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ListTransactionsResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ListTransactionsResponse".into() }}
 // ==================================================================== //
 //                                Query                                  //
 // ==================================================================== //
@@ -1011,13 +944,19 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 /// The opening frame of a query stream.
 ///
 /// The server MUST send this on accepting the query, before it starts
-/// executing. Sending it later would deliver `query_id` too late to cancel
-/// anything, which is most of the reason it exists.
+/// executing, so that a long-running query is identifiable while it is still
+/// running rather than only once it finishes.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct QueryBegin {
-    /// Identifies this execution, for `CancelQuery` and for correlating server
-    /// logs, traces and slow-query records.
+    /// Identifies this execution.
+    ///
+    /// Lets a caller name a query that is still running -- to correlate it with
+    /// server logs, traces and slow-query records, or to report it to an
+    /// operator. There is no RPC to stop another connection's query: a client
+    /// stops its own by cancelling the `Query` stream, and anything beyond that
+    /// goes through SurrealQL. Should a cancellation method be wanted later,
+    /// this is the handle it would take, and adding it is additive.
     #[prost(message, optional, tag = "1")]
     pub query_id: ::core::option::Option<super::super::v1::Uuid>,
     /// How many statements the query parsed into, and therefore how many query
@@ -1132,83 +1071,6 @@ impl ::prost::Name for QueryResponse {
 const NAME: &'static str = "QueryResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.QueryResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.QueryResponse".into() }}
-/// Request to abort a running query.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct CancelQueryRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-    /// The id from the query's `begin` frame or from `ListQueries`.
-    #[prost(message, optional, tag = "2")]
-    pub query_id: ::core::option::Option<super::super::v1::Uuid>,
-}
-impl ::prost::Name for CancelQueryRequest {
-const NAME: &'static str = "CancelQueryRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.CancelQueryRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.CancelQueryRequest".into() }}
-/// Response to a query cancellation.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct CancelQueryResponse {
-    /// False when the query had already finished, which is not an error --
-    /// cancellation races completion by nature.
-    #[prost(bool, tag = "1")]
-    pub cancelled: bool,
-}
-impl ::prost::Name for CancelQueryResponse {
-const NAME: &'static str = "CancelQueryResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.CancelQueryResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.CancelQueryResponse".into() }}
-/// A query currently executing.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct QueryInfo {
-    #[prost(message, optional, tag = "1")]
-    pub query_id: ::core::option::Option<super::super::v1::Uuid>,
-    /// The session that issued it.
-    #[prost(message, optional, tag = "2")]
-    pub session: ::core::option::Option<super::super::v1::Uuid>,
-    /// The transaction it runs in, if any.
-    #[prost(message, optional, tag = "3")]
-    pub transaction: ::core::option::Option<super::super::v1::Uuid>,
-    /// The SurrealQL being executed. Servers MAY truncate this, and MUST omit
-    /// it from callers not permitted to see other sessions' statements.
-    #[prost(string, tag = "4")]
-    pub query: ::prost::alloc::string::String,
-    /// When execution started.
-    #[prost(message, optional, tag = "5")]
-    pub started_at: ::core::option::Option<super::super::v1::Datetime>,
-}
-impl ::prost::Name for QueryInfo {
-const NAME: &'static str = "QueryInfo";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.QueryInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.QueryInfo".into() }}
-/// Request to list in-flight queries.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ListQueriesRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-    /// List every session's queries rather than only `context.session`'s.
-    /// Requires permission; refused otherwise rather than silently narrowed.
-    #[prost(bool, tag = "2")]
-    pub all_sessions: bool,
-}
-impl ::prost::Name for ListQueriesRequest {
-const NAME: &'static str = "ListQueriesRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ListQueriesRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ListQueriesRequest".into() }}
-/// Response listing in-flight queries.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ListQueriesResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub queries: ::prost::alloc::vec::Vec<QueryInfo>,
-}
-impl ::prost::Name for ListQueriesResponse {
-const NAME: &'static str = "ListQueriesResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ListQueriesResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ListQueriesResponse".into() }}
 // ==================================================================== //
 //                             Live queries                              //
 // ==================================================================== //
@@ -1388,28 +1250,6 @@ impl ::prost::Name for SubscribeResponse {
 const NAME: &'static str = "SubscribeResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.SubscribeResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.SubscribeResponse".into() }}
-/// Request to remove a live query.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct KillRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-    #[prost(message, optional, tag = "2")]
-    pub live_query_id: ::core::option::Option<super::super::v1::Uuid>,
-}
-impl ::prost::Name for KillRequest {
-const NAME: &'static str = "KillRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.KillRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.KillRequest".into() }}
-/// Response to a kill.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct KillResponse {
-}
-impl ::prost::Name for KillResponse {
-const NAME: &'static str = "KillResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.KillResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.KillResponse".into() }}
 // ==================================================================== //
 //                           Import and export                           //
 // ==================================================================== //
@@ -2083,7 +1923,9 @@ impl Action {
 #[repr(i32)]
 pub enum SubscribeEndReason {
     Unspecified = 0,
-    /// The live query was killed. It is gone; do not re-subscribe.
+    /// The live query was killed, by a `KILL` statement through `Query` or by
+    /// the server. It is gone; do not re-subscribe. Every other subscription to
+    /// the same live query ends with this reason too.
     Killed = 1,
     /// The owning session was detached or reset.
     SessionClosed = 2,

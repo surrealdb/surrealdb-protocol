@@ -40,10 +40,11 @@ service SurrealDBService {
     // ---------------------------------------------------------------- //
 
     // Check that the server is reachable and able to serve requests.
+    //
+    // The server's version is reported by `GetCapabilities`, not here: a
+    // version string is the wrong thing to branch on, which is that method's
+    // whole premise.
     rpc Health(HealthRequest) returns (HealthResponse);
-
-    // Get the version of the SurrealDB server.
-    rpc Version(VersionRequest) returns (VersionResponse);
 
     // ---------------------------------------------------------------- //
     //                           Sessions                               //
@@ -61,9 +62,6 @@ service SurrealDBService {
     // Open transactions are cancelled and open subscriptions end with
     // SUBSCRIBE_END_REASON_SESSION_CLOSED.
     rpc DetachSession(DetachSessionRequest) returns (DetachSessionResponse);
-
-    // List the sessions the caller may address.
-    rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
 
     // Return a session to its initial state without releasing it.
     //
@@ -123,9 +121,6 @@ service SurrealDBService {
     // Cancel `context.transaction`, discarding everything done in it.
     rpc CancelTransaction(CancelTransactionRequest) returns (CancelTransactionResponse);
 
-    // List the transactions the session currently holds open.
-    rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
-
     // ---------------------------------------------------------------- //
     //                            Query                                 //
     // ---------------------------------------------------------------- //
@@ -138,21 +133,6 @@ service SurrealDBService {
     // transaction is session-owned and survives a cancelled RPC.
     rpc Query(QueryRequest) returns (stream QueryResponse);
 
-    // Abort a running query by id.
-    //
-    // Cancelling the `Query` RPC stream is the normal way to stop your own
-    // query. This exists for what a transport cannot express: stopping a
-    // runaway query from a different connection or session, using an id
-    // obtained from `ListQueries` or from the query's own `begin` frame.
-    rpc CancelQuery(CancelQueryRequest) returns (CancelQueryResponse);
-
-    // List queries currently executing.
-    //
-    // Scoped to `context.session` unless the caller has permission to see the
-    // whole server. Without this, `CancelQuery` is unusable from another
-    // connection: there would be no way to discover the id.
-    rpc ListQueries(ListQueriesRequest) returns (ListQueriesResponse);
-
     // ---------------------------------------------------------------- //
     //                         Live queries                             //
     // ---------------------------------------------------------------- //
@@ -164,13 +144,6 @@ service SurrealDBService {
     // its own stream and its own `subscription_id`. See `SubscribeRequest` for
     // the two ways to name the live query and what each implies for lifetime.
     rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
-
-    // Remove a live query from the datastore.
-    //
-    // Distinct from ending a `Subscribe` stream, which stops delivery on that
-    // one stream. `Kill` stops the server computing the live query at all and
-    // ends every subscription to it with SUBSCRIBE_END_REASON_KILLED.
-    rpc Kill(KillRequest) returns (KillResponse);
 
     // ---------------------------------------------------------------- //
     //                       Import and export                          //
@@ -292,7 +265,6 @@ message ServerCapabilities {
     //   EXPORT_DIRECTORY   directory-format export
     //   ML_MODELS          SurrealML model export
     //   COLUMNAR_RESULTS   columnar (Arrow) query results
-    //   QUERY_CONTROL      cancelling and listing in-flight queries
     //
     // This list is documentation, not a constraint. A server may report names
     // that are not on it.
@@ -346,16 +318,6 @@ message HealthRequest {
 // Response to a health check request.
 message HealthResponse {}
 
-// Request to get the version of the database.
-message VersionRequest {
-    RequestContext context = 1;
-}
-
-// Response to a version request.
-message VersionResponse {
-    string version = 1;
-}
-
 // ==================================================================== //
 //                              Sessions                                //
 // ==================================================================== //
@@ -388,16 +350,6 @@ message DetachSessionRequest {
 
 // Response to a session detach.
 message DetachSessionResponse {}
-
-// Request to list addressable sessions.
-message ListSessionsRequest {
-    RequestContext context = 1;
-}
-
-// Response listing addressable sessions.
-message ListSessionsResponse {
-    repeated surrealdb.protocol.v1.Uuid sessions = 1;
-}
 
 // Request to reset a session.
 message ResetSessionRequest {
@@ -620,16 +572,6 @@ message CancelTransactionRequest {
 // Response to a cancellation.
 message CancelTransactionResponse {}
 
-// Request to list a session's open transactions.
-message ListTransactionsRequest {
-    RequestContext context = 1;
-}
-
-// Response listing open transactions.
-message ListTransactionsResponse {
-    repeated surrealdb.protocol.v1.Uuid transactions = 1;
-}
-
 // ==================================================================== //
 //                               Query                                  //
 // ==================================================================== //
@@ -737,11 +679,17 @@ message QueryStats {
 // The opening frame of a query stream.
 //
 // The server MUST send this on accepting the query, before it starts
-// executing. Sending it later would deliver `query_id` too late to cancel
-// anything, which is most of the reason it exists.
+// executing, so that a long-running query is identifiable while it is still
+// running rather than only once it finishes.
 message QueryBegin {
-    // Identifies this execution, for `CancelQuery` and for correlating server
-    // logs, traces and slow-query records.
+    // Identifies this execution.
+    //
+    // Lets a caller name a query that is still running -- to correlate it with
+    // server logs, traces and slow-query records, or to report it to an
+    // operator. There is no RPC to stop another connection's query: a client
+    // stops its own by cancelling the `Query` stream, and anything beyond that
+    // goes through SurrealQL. Should a cancellation method be wanted later,
+    // this is the handle it would take, and adding it is additive.
     surrealdb.protocol.v1.Uuid query_id = 1;
     // How many statements the query parsed into, and therefore how many query
     // indexes to expect. Every index in `[0, result_count)` emits at least one
@@ -805,47 +753,6 @@ message QueryResponse {
         QueryEnd end = 3;
         surrealdb.protocol.v1.SurrealError error = 4;
     }
-}
-
-// Request to abort a running query.
-message CancelQueryRequest {
-    RequestContext context = 1;
-    // The id from the query's `begin` frame or from `ListQueries`.
-    surrealdb.protocol.v1.Uuid query_id = 2;
-}
-
-// Response to a query cancellation.
-message CancelQueryResponse {
-    // False when the query had already finished, which is not an error --
-    // cancellation races completion by nature.
-    bool cancelled = 1;
-}
-
-// A query currently executing.
-message QueryInfo {
-    surrealdb.protocol.v1.Uuid query_id = 1;
-    // The session that issued it.
-    surrealdb.protocol.v1.Uuid session = 2;
-    // The transaction it runs in, if any.
-    surrealdb.protocol.v1.Uuid transaction = 3;
-    // The SurrealQL being executed. Servers MAY truncate this, and MUST omit
-    // it from callers not permitted to see other sessions' statements.
-    string query = 4;
-    // When execution started.
-    surrealdb.protocol.v1.Datetime started_at = 5;
-}
-
-// Request to list in-flight queries.
-message ListQueriesRequest {
-    RequestContext context = 1;
-    // List every session's queries rather than only `context.session`'s.
-    // Requires permission; refused otherwise rather than silently narrowed.
-    bool all_sessions = 2;
-}
-
-// Response listing in-flight queries.
-message ListQueriesResponse {
-    repeated QueryInfo queries = 1;
 }
 
 // ==================================================================== //
@@ -947,7 +854,9 @@ message SubscribeBegin {
 // Why a subscription stream ended.
 enum SubscribeEndReason {
     SUBSCRIBE_END_REASON_UNSPECIFIED = 0;
-    // The live query was killed. It is gone; do not re-subscribe.
+    // The live query was killed, by a `KILL` statement through `Query` or by
+    // the server. It is gone; do not re-subscribe. Every other subscription to
+    // the same live query ends with this reason too.
     SUBSCRIBE_END_REASON_KILLED = 1;
     // The owning session was detached or reset.
     SUBSCRIBE_END_REASON_SESSION_CLOSED = 2;
@@ -987,15 +896,6 @@ message SubscribeResponse {
         surrealdb.protocol.v1.SurrealError error = 4;
     }
 }
-
-// Request to remove a live query.
-message KillRequest {
-    RequestContext context = 1;
-    surrealdb.protocol.v1.Uuid live_query_id = 2;
-}
-
-// Response to a kill.
-message KillResponse {}
 
 // ==================================================================== //
 //                          Import and export                           //
