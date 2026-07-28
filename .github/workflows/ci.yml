@@ -5,6 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+# Every job here checks out, builds, lints or tests, and writes nothing back:
+# no comments, no releases, no packages. Read access to the repository is all
+# any of them needs, so the token is scoped to that rather than inheriting the
+# repository default.
+#
+# Declared once at the top level so it applies to jobs added later too -- a
+# per-job block would leave the next job to opt in and quietly get the default.
+permissions:
+  contents: read
+
 jobs:
   proto-lint:
     runs-on: ubuntu-latest
