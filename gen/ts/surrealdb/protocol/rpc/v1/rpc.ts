@@ -8,8 +8,7 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { Duration } from "../../../../google/protobuf/duration";
-import { NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
+import { Duration, NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
 

@@ -4800,7 +4800,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__query_stats_
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__Rpc__V1__QueryStats, execution_duration),
-    &google__protobuf__duration__descriptor,
+    &surrealdb__protocol__v1__duration__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */

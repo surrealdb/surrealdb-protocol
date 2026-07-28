@@ -15,7 +15,6 @@ PROTOBUF_C__BEGIN_DECLS
 #endif
 
 #include "surrealdb/protocol/v1/value.pb-c.h"
-#include "google/protobuf/duration.pb-c.h"
 
 typedef struct Surrealdb__Protocol__Rpc__V1__HealthRequest Surrealdb__Protocol__Rpc__V1__HealthRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__HealthResponse Surrealdb__Protocol__Rpc__V1__HealthResponse;
@@ -1155,7 +1154,7 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryStats
   /*
    * The duration of the query.
    */
-  Google__Protobuf__Duration *execution_duration;
+  Surrealdb__Protocol__V1__Duration *execution_duration;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__QUERY_STATS__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__query_stats__descriptor) \

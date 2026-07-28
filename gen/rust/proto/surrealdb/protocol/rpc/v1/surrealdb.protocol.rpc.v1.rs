@@ -867,8 +867,7 @@ pub struct QueryStats {
     pub bytes_scanned: i64,
     /// The duration of the query.
     #[prost(message, optional, tag = "5")]
-    #[serde(with = "crate::serde_duration_optional")]
-    pub execution_duration: ::core::option::Option<::prost_types::Duration>,
+    pub execution_duration: ::core::option::Option<super::super::v1::Duration>,
 }
 impl ::prost::Name for QueryStats {
 const NAME: &'static str = "QueryStats";

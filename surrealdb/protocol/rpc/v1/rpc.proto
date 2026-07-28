@@ -3,7 +3,6 @@ syntax = "proto3";
 package surrealdb.protocol.rpc.v1;
 
 import "surrealdb/protocol/v1/value.proto";
-import "google/protobuf/duration.proto";
 
 // SurrealDB service.
 service SurrealDBService {
@@ -582,7 +581,7 @@ message QueryStats {
     // The number of bytes scanned. -1 if unknown.
     int64 bytes_scanned = 4;
     // The duration of the query.
-    google.protobuf.Duration execution_duration = 5;
+    surrealdb.protocol.v1.Duration execution_duration = 5;
 }
 
 // Query error.

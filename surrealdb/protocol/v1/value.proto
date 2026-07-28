@@ -3,11 +3,52 @@ syntax = "proto3";
 
 package surrealdb.protocol.v1;
 
-import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
-
-// Null value.
+// SurrealDB `NULL` — the value here is explicitly null.
+//
+// Distinct from `NoneValue`. See the note on `Value`.
 message NullValue {}
+
+// SurrealDB `NONE` — there is no value here.
+//
+// Distinct from `NullValue`, and distinct from an absent object key. Encoders
+// MUST emit this variant for `NONE`; an unset `Value.value` oneof is NOT
+// `NONE`. See the note on `Value`.
+message NoneValue {}
+
+// An empty payload for tag-only `oneof` arms.
+//
+// Use this rather than `NullValue`, which is a real SurrealDB value and would
+// conflate "this arm carries nothing" with "this arm carries NULL".
+message Unit {}
+
+// A duration.
+//
+// Replaces `google.protobuf.Duration`, whose specification caps `seconds` at
+// +/-315,576,000,000 — roughly +/-10,000 years. SurrealDB durations are
+// `std::time::Duration`: unsigned, up to `u64::MAX` seconds. The well-known
+// type silently truncated anything larger. Byte-identical to `Duration` in
+// value.fbs.
+message Duration {
+    // Whole seconds. Always non-negative; SurrealDB durations are unsigned.
+    uint64 seconds = 1;
+    // Sub-second remainder. MUST be in [0, 999999999]; decoders MUST reject
+    // larger values rather than normalising them.
+    uint32 nanos = 2;
+}
+
+// A UTC instant.
+//
+// Replaces `google.protobuf.Timestamp`, whose specification caps the range at
+// 0001-01-01 .. 9999-12-31. SurrealDB datetimes are `chrono::DateTime<Utc>`
+// and span roughly +/-262,000 years. Byte-identical to `Timestamp` in
+// value.fbs.
+message Datetime {
+    // Seconds since the Unix epoch. May be negative.
+    int64 seconds = 1;
+    // Sub-second remainder, always ADDED to `seconds` — never subtracted, even
+    // when `seconds` is negative. MUST be in [0, 999999999].
+    uint32 nanos = 2;
+}
 
 // Decimal value.
 message Decimal {
@@ -16,7 +57,13 @@ message Decimal {
 
 // UUID value.
 message Uuid {
-    string value = 1;
+    // The UUID as 16 raw bytes, big-endian (RFC 9562 network byte order).
+    //
+    // Raw bytes rather than the 36-character hyphenated form: UUIDs ride on
+    // every live-query notification and inside record ids, where the string
+    // form costs roughly double and a parse per use. Decoders MUST reject a
+    // value whose length is not exactly 16.
+    bytes bytes = 1;
 }
 
 // Point type.
@@ -97,9 +144,39 @@ message Set {
     repeated Value values = 1;
 }
 
-// Object type.
+// A key and its value.
+//
+// `value` MUST be set. An unset `value` is a protocol error, not an implicit
+// `NONE`: there is exactly one way to express `NONE` (`Value.none`), and a
+// missing submessage is indistinguishable from a truncated or buggy encoder.
+message KeyValue {
+    string key = 1;
+    Value value = 2;
+}
+
+// A SurrealDB object.
+//
+// Mirrors `BTreeMap<String, Value>`: keys MUST be unique and MUST appear in
+// ascending UTF-8 byte order. Decoders MUST reject duplicate keys rather than
+// applying last-wins.
+//
+// This is `repeated`, not `map`, for three reasons:
+//  1. proto3 implementations disagree on how to carry a map entry whose
+//     message value equals its default. prost omits the value field entirely
+//     (`encode_with_default` skips when `val == val_default`, and
+//     `Value::default()` is `NONE`); ts-proto then drops the whole entry
+//     because its decoder guards on `entry.value !== undefined`. The result
+//     was that `{"k": NONE}` encoded in Rust decoded in TypeScript as `{}`,
+//     silently destroying the NONE/absent distinction on one direction only.
+//  2. proto3 map field ordering is unspecified, so a map cannot be canonically
+//     encoded or hashed.
+//  3. It matches `Object` in value.fbs exactly.
+//
+// The encoding is wire-compatible with the map it replaces — proto3 maps are
+// themselves repeated two-field messages — so only the generated accessors and
+// the semantics change.
 message Object {
-    map<string, Value> items = 1;
+    repeated KeyValue items = 1;
 }
 
 
@@ -118,7 +195,20 @@ message Range {
     ValueBound end = 2;
 }
 
-// Value type.
+// A SurrealDB value.
+//
+// EXACTLY ONE arm is populated on a well-formed message. An unset `value`
+// oneof does NOT mean `NONE` — it means the peer sent a variant this build
+// does not know about (a newer server), or the message is malformed. Decoders
+// MUST treat an unset oneof as an error, never as `NONE`. Reinterpreting it
+// would let a client silently downgrade an unknown value to `NONE` and write
+// that back to the database.
+//
+// `NONE`, `NULL`, and an absent object key are three distinct states and all
+// three round-trip:
+//   NONE        -> `none`, an explicit variant
+//   NULL        -> `null`
+//   absent key  -> no `KeyValue` entry for that key at all
 message Value {
     oneof value {
         NullValue null = 1;
@@ -128,8 +218,14 @@ message Value {
         Decimal decimal = 5;
         string string = 6;
         bytes bytes = 7;
-        google.protobuf.Duration duration = 8;
-        google.protobuf.Timestamp datetime = 9;
+        // Tags 8 and 9 previously carried google.protobuf.Duration and
+        // google.protobuf.Timestamp. They are reused rather than burned: the
+        // proto surface has no consumers yet (every dependant uses the
+        // flatbuffers schema), so no payload exists that could be misread, and
+        // keeping these slots preserves both the tag ordering and the
+        // correspondence with `ValueType` in value.fbs.
+        Duration duration = 8;
+        Datetime datetime = 9;
         Uuid uuid = 10;
         Geometry geometry = 11;
         string table = 12;
@@ -141,6 +237,7 @@ message Value {
         Object object = 18;
         Array array = 19;
         Set set = 20;
+        NoneValue none = 21;
     }
 }
 
@@ -158,7 +255,10 @@ message RecordIdKeyRange {
     RecordIdKeyBound end = 2;
 }
 
-// ID type.
+// A record id's key part — the `id` in `table:id`.
+//
+// As with `Value`, an unset `id` oneof means an unknown variant or a malformed
+// message, and MUST be rejected rather than defaulted.
 message RecordIdKey {
     oneof id {
         int64 int64 = 1;
@@ -167,12 +267,19 @@ message RecordIdKey {
         Array array = 4;
         RecordIdKeyRange range = 5;
         Object object = 6;
+        // Tags 7 and 8 match `RecordIdKeyType` in value.fbs, which gained
+        // these variants first.
+        double float64 = 7;
+        Decimal decimal = 8;
     }
 }
 
-// Variables.
+// Query variables, bound as `$name`.
+//
+// Same rules as `Object`: unique keys, ascending UTF-8 byte order, duplicates
+// rejected, and `repeated` rather than `map` for the reasons documented there.
 message Variables {
-    map<string, Value> variables = 1;
+    repeated KeyValue variables = 1;
 }
 
 // Kind system messages
@@ -258,7 +365,7 @@ message LiteralKind {
         uint64 uint64_value = 3;
         double float64_value = 4;
         Decimal decimal_value = 5;
-        google.protobuf.Duration duration_value = 6;
+        Duration duration_value = 6;
         bool bool_value = 7;
         LiteralArray array_value = 8;
         LiteralObject object_value = 9;

@@ -3,7 +3,6 @@ use crate::proto::v1::{self};
 use anyhow::Result;
 use rust_decimal::Decimal;
 use std::collections::BTreeMap;
-use std::str::FromStr;
 use uuid::Uuid;
 
 /// A trait for converting a type into a `v1::Value` protobuf type.
@@ -115,7 +114,7 @@ impl TryFromValue for uuid::Uuid {
             return Err(anyhow::anyhow!("Invalid UUID: missing value"));
         };
         match inner {
-            ValueInner::Uuid(u) => Ok(uuid::Uuid::from_str(&u.value)?),
+            ValueInner::Uuid(u) => u.to_uuid(),
             unexpected => Err(anyhow::anyhow!(
                 "Invalid UUID: expected uuid, got {unexpected:?}"
             )),
@@ -278,20 +277,18 @@ impl From<Decimal> for v1::Decimal {
 }
 
 impl TryFrom<v1::Uuid> for Uuid {
-    type Error = uuid::Error;
+    type Error = anyhow::Error;
 
     #[inline]
     fn try_from(proto: v1::Uuid) -> Result<Self, Self::Error> {
-        Uuid::parse_str(&proto.value)
+        proto.to_uuid()
     }
 }
 
 impl From<Uuid> for v1::Uuid {
     #[inline]
     fn from(value: Uuid) -> Self {
-        v1::Uuid {
-            value: value.to_string(),
-        }
+        v1::Uuid::from_uuid(value)
     }
 }
 
@@ -466,11 +463,21 @@ where
 
 impl FromIterator<(String, v1::Value)> for v1::Variables {
     fn from_iter<T: IntoIterator<Item = (String, v1::Value)>>(iter: T) -> Self {
-        let mut variables = v1::Variables::default();
-        for (key, value) in iter {
-            variables.variables.insert(key, value);
+        // Collect through a BTreeMap so the wire ordering is the ascending
+        // key order the schema requires, and duplicate keys collapse here
+        // rather than producing a message a decoder must reject.
+        iter.into_iter()
+            .collect::<BTreeMap<_, _>>()
+            .into_iter()
+            .collect()
+    }
+}
+
+impl FromIterator<v1::KeyValue> for v1::Variables {
+    fn from_iter<T: IntoIterator<Item = v1::KeyValue>>(iter: T) -> Self {
+        Self {
+            variables: iter.into_iter().collect(),
         }
-        variables
     }
 }
 
@@ -483,8 +490,8 @@ where
     #[inline]
     fn try_from(value: v1::Variables) -> Result<Self, Self::Error> {
         let mut map = BTreeMap::new();
-        for (key, value) in value.variables {
-            map.insert(key, T::try_from(value)?);
+        for entry in value.variables {
+            map.insert(entry.key, T::try_from(entry.value.unwrap_or_default())?);
         }
         Ok(map)
     }
@@ -498,18 +505,24 @@ where
 
     #[inline]
     fn try_from(value: BTreeMap<String, T>) -> Result<Self, Self::Error> {
-        let mut map = BTreeMap::new();
+        // BTreeMap iteration is already in ascending key order.
+        let mut variables = Vec::with_capacity(value.len());
         for (key, value) in value {
-            map.insert(key, value.try_into()?);
+            variables.push(v1::KeyValue::new(key, value.try_into()?));
         }
 
-        Ok(Self { variables: map })
+        Ok(Self { variables })
     }
 }
 
 impl From<BTreeMap<String, v1::Value>> for v1::Object {
     #[inline]
     fn from(value: BTreeMap<String, v1::Value>) -> Self {
-        Self { items: value }
+        Self {
+            items: value
+                .into_iter()
+                .map(|(key, value)| v1::KeyValue::new(key, value))
+                .collect(),
+        }
     }
 }

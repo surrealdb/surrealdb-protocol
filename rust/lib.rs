@@ -69,102 +69,56 @@ pub mod fb {
 }
 
 #[cfg(feature = "proto")]
-mod serde_timestamp {
-    use prost_types::Timestamp;
-    use serde::Deserializer;
-    use serde::Serializer;
-    use serde::{Deserialize, Serialize};
+mod serde_key_values {
+    //! Serialises a `repeated KeyValue` as a JSON object.
+    //!
+    //! `Object` and `Variables` carry a list of key/value pairs on the wire
+    //! (see the note on `Object` in value.proto) but are conceptually maps, so
+    //! their JSON form stays a map. This keeps the JSON representation stable
+    //! across the map-to-repeated encoding change, and is what lets
+    //! `#[serde(flatten)]` apply to the field at all — flatten requires a
+    //! map-shaped value.
 
-    pub fn serialize<S>(timestamp: &Timestamp, serializer: S) -> Result<S::Ok, S::Error>
+    use std::collections::BTreeMap;
+
+    use serde::Deserialize;
+    use serde::de::{Deserializer, Error as _};
+    use serde::ser::{SerializeMap, Serializer};
+
+    use crate::proto::v1::{KeyValue, Value};
+
+    pub fn serialize<S>(entries: &[KeyValue], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        // Convert to RFC3339 string format
-        let seconds = timestamp.seconds;
-        let nanos = timestamp.nanos;
-
-        // Create a DateTime-like string representation
-        let dt = chrono::DateTime::from_timestamp(seconds, nanos as u32)
-            .ok_or_else(|| serde::ser::Error::custom("Invalid timestamp"))?;
-
-        dt.to_rfc3339().serialize(serializer)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Timestamp, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-
-        // Parse RFC3339 string back to timestamp
-        let dt = chrono::DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?;
-
-        Ok(Timestamp {
-            seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
-        })
-    }
-}
-
-#[cfg(feature = "proto")]
-mod serde_duration {
-    use prost_types::Duration;
-    use serde::Deserializer;
-
-    use serde::{Deserialize, Serialize};
-
-    pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let duration = std::time::Duration::from_secs(duration.seconds as u64)
-            + std::time::Duration::from_nanos(duration.nanos as u64);
-        duration.serialize(serializer)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let duration = std::time::Duration::deserialize(deserializer)?;
-
-        Ok(Duration {
-            seconds: duration.as_secs() as i64,
-            nanos: duration.subsec_nanos() as i32,
-        })
-    }
-}
-
-#[cfg(feature = "rpc")]
-mod serde_duration_optional {
-    use prost_types::Duration;
-    use serde::{Deserializer, Serializer};
-
-    pub fn serialize<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match duration {
-            Some(duration) => crate::serde_duration::serialize(duration, serializer),
-            None => serializer.serialize_none(),
+        let mut map = serializer.serialize_map(Some(entries.len()))?;
+        for entry in entries {
+            // A missing value is a protocol error, but Serialize cannot fail
+            // usefully here; an unset Value round-trips as the unset variant,
+            // which decoders already reject.
+            map.serialize_entry(&entry.key, &entry.value.clone().unwrap_or_default())?;
         }
+        map.end()
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<KeyValue>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct Visitor;
-
-        impl serde::de::Visitor<'_> for Visitor {
-            type Value = Option<Duration>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a duration or null")
-            }
-        }
-
-        deserializer.deserialize_option(Visitor)
+        // Collect through a BTreeMap so the result is in ascending key order
+        // and duplicate keys cannot survive, matching the wire contract.
+        let map = BTreeMap::<String, Value>::deserialize(deserializer)?;
+        map.into_iter()
+            .map(|(key, value)| {
+                if key.is_empty() {
+                    return Err(D::Error::custom("empty key"));
+                }
+                Ok(KeyValue {
+                    key,
+                    value: Some(value),
+                })
+            })
+            .collect()
     }
 }
 
@@ -174,11 +128,13 @@ mod tests {
 
     use super::*;
 
-    use crate::proto::v1::{Array, Decimal, File, Geometry, Object, Point, RecordId, Uuid, Value};
+    use crate::proto::v1::{
+        Array, Datetime, Decimal, Duration, File, Geometry, KeyValue, Object, Point, RecordId,
+        Uuid, Value,
+    };
     use crate::proto::v1::{Line, MultiPolygon, Polygon};
     use assert_json_diff::assert_json_eq;
     use bytes::Bytes;
-    use prost_types::{Duration, Timestamp};
 
     use rstest::rstest;
     use serde_json::json;
@@ -201,20 +157,20 @@ mod tests {
     #[case(Value::string("test".to_string()), json!({"String":"test"}))]
     #[case(Value::bytes(Bytes::from_static(b"test")), json!({"Bytes":[116,101,115,116]}))]
     #[case(Value::decimal(Decimal::new("1".to_string())), json!({"Decimal":{"value":"1"}}))]
-    #[case(Value::duration(Duration {
-        seconds: 1,
-        nanos: 0,
-    }), json!({
+    #[case(Value::duration(Duration::new(1, 0)), json!({
         "Duration": {
-            "secs":1,
+            "seconds":1,
             "nanos":0
         }
     }))]
-    #[case(Value::datetime(Timestamp {
-        seconds: 1,
-        nanos: 0,
-    }), json!({"Datetime":"1970-01-01T00:00:01+00:00"}))]
-    #[case(Value::uuid(Uuid::new("00000000-0000-0000-0000-000000000000".to_string())), json!({"Uuid":{"value":"00000000-0000-0000-0000-000000000000"}}))]
+    #[case(Value::datetime(Datetime::new(1, 0)), json!({
+        "Datetime": {
+            "seconds":1,
+            "nanos":0
+        }
+    }))]
+    #[case(Value::uuid(Uuid::new([0; 16])), json!({"Uuid":{"bytes":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}}))]
+    #[case(Value::none(), json!({"None":{}}))]
     #[case(Value::array(Array::new(vec![Value::null()])), json!({"Array":{
         "values": [{"Null":{}}]
     }}))]
@@ -283,5 +239,112 @@ mod tests {
     fn test_serde(#[case] value: Value, #[case] expected: serde_json::Value) {
         let serialized = serde_json::to_value(&value).unwrap();
         assert_json_eq!(serialized, expected);
+    }
+
+    /// `NONE`, `NULL`, and an absent key are three distinct states, and all
+    /// three must survive an encode/decode round trip.
+    ///
+    /// This is a regression test for a silent, one-directional data-loss bug.
+    /// When `Object` was a `map<string, Value>`, prost omitted an entry whose
+    /// value equalled the default — and `Value::default()` was `NONE`, because
+    /// `NONE` was "unset oneof" rather than a variant. ts-proto's decoder then
+    /// dropped the whole entry, so `{"k": NONE}` encoded in Rust arrived in
+    /// TypeScript as `{}`. The fixes are an explicit `NoneValue` variant and
+    /// `repeated KeyValue` instead of a map; this test pins both.
+    #[test]
+    fn none_null_and_absent_are_distinct_across_encoding() {
+        use prost::Message;
+
+        let none = Object::new(BTreeMap::from([("k".to_string(), Value::none())]));
+        let null = Object::new(BTreeMap::from([("k".to_string(), Value::null())]));
+        let absent = Object::new(BTreeMap::new());
+
+        // Distinct before encoding.
+        assert_ne!(none, null);
+        assert_ne!(none, absent);
+        assert_ne!(null, absent);
+
+        // The load-bearing assertion. An entry whose value is NONE must encode
+        // differently from an entry whose value field is absent. Under the old
+        // schema these were byte-identical, because NONE was "unset oneof" and
+        // therefore equal to `Value::default()`, which prost omits. Rust
+        // decoded that back to NONE and looked fine; TypeScript saw a missing
+        // value field and dropped the key. Pinning this here is what makes the
+        // bug unrepresentable rather than merely fixed.
+        let entry_with_none = KeyValue::new("k", Value::none()).encode_to_vec();
+        let entry_with_absent_value = KeyValue {
+            key: "k".to_string(),
+            value: None,
+        }
+        .encode_to_vec();
+        assert_ne!(
+            entry_with_none, entry_with_absent_value,
+            "NONE must be distinguishable on the wire from a missing value"
+        );
+
+        let none_bytes = none.encode_to_vec();
+
+        // And distinct after a round trip.
+        let none_decoded = Object::decode(none_bytes.as_slice()).unwrap();
+        let null_decoded = Object::decode(null.encode_to_vec().as_slice()).unwrap();
+        let absent_decoded = Object::decode(absent.encode_to_vec().as_slice()).unwrap();
+
+        assert_eq!(none_decoded, none);
+        assert_eq!(null_decoded, null);
+        assert_eq!(absent_decoded, absent);
+        assert_ne!(none_decoded, null_decoded);
+        assert_ne!(none_decoded, absent_decoded);
+
+        // The key is present and holds NONE -- not missing, and not NULL.
+        let value = none_decoded.get("k").expect("key must survive");
+        assert!(value.is_none(), "expected NONE, got {value:?}");
+        assert!(!value.is_null());
+        assert!(!value.is_unset());
+        assert!(absent_decoded.get("k").is_none());
+    }
+
+    /// An unset variant means "unknown variant from a newer peer", and must
+    /// never be confused with `NONE`.
+    #[test]
+    fn unset_variant_is_not_none() {
+        let unset = Value::unset();
+        assert!(unset.is_unset());
+        assert!(!unset.is_none(), "an unset oneof must not read as NONE");
+        assert_ne!(unset, Value::none());
+    }
+
+    /// The native temporal types must carry SurrealDB's full range. The
+    /// well-known types they replaced capped at ~10,000 years (Duration) and
+    /// year 9999 (Timestamp), silently truncating anything larger.
+    #[test]
+    fn temporal_types_survive_the_full_surrealdb_range() {
+        use prost::Message;
+
+        let duration = Value::duration(Duration::new(u64::MAX, 999_999_999));
+        let decoded = Value::decode(duration.encode_to_vec().as_slice()).unwrap();
+        assert_eq!(decoded, duration);
+
+        // Comfortably past year 9999 in both directions.
+        for seconds in [-8_000_000_000_000_i64, 8_000_000_000_000_i64] {
+            let datetime = Value::datetime(Datetime::new(seconds, 999_999_999));
+            let decoded = Value::decode(datetime.encode_to_vec().as_slice()).unwrap();
+            assert_eq!(decoded, datetime);
+        }
+    }
+
+    /// UUIDs are 16 raw bytes on the wire and must round-trip exactly.
+    #[test]
+    fn uuid_round_trips_as_sixteen_bytes() {
+        let source = uuid::Uuid::parse_str("0191b3f0-1c2d-7e3f-8a4b-5c6d7e8f9a0b").unwrap();
+        let proto = Uuid::from_uuid(source);
+        assert_eq!(proto.bytes.len(), 16);
+        assert_eq!(proto.to_uuid().unwrap(), source);
+        assert_eq!(proto.to_string(), source.to_string());
+
+        // Anything that is not exactly 16 bytes is rejected rather than padded.
+        let malformed = Uuid {
+            bytes: Bytes::from_static(b"short"),
+        };
+        assert!(malformed.to_uuid().is_err());
     }
 }

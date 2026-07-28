@@ -6,13 +6,71 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { Duration } from "../../../google/protobuf/duration";
-import { Timestamp } from "../../../google/protobuf/timestamp";
 
 export const protobufPackage = "surrealdb.protocol.v1";
 
-/** Null value. */
+/**
+ * SurrealDB `NULL` — the value here is explicitly null.
+ *
+ * Distinct from `NoneValue`. See the note on `Value`.
+ */
 export interface NullValue {
+}
+
+/**
+ * SurrealDB `NONE` — there is no value here.
+ *
+ * Distinct from `NullValue`, and distinct from an absent object key. Encoders
+ * MUST emit this variant for `NONE`; an unset `Value.value` oneof is NOT
+ * `NONE`. See the note on `Value`.
+ */
+export interface NoneValue {
+}
+
+/**
+ * An empty payload for tag-only `oneof` arms.
+ *
+ * Use this rather than `NullValue`, which is a real SurrealDB value and would
+ * conflate "this arm carries nothing" with "this arm carries NULL".
+ */
+export interface Unit {
+}
+
+/**
+ * A duration.
+ *
+ * Replaces `google.protobuf.Duration`, whose specification caps `seconds` at
+ * +/-315,576,000,000 — roughly +/-10,000 years. SurrealDB durations are
+ * `std::time::Duration`: unsigned, up to `u64::MAX` seconds. The well-known
+ * type silently truncated anything larger. Byte-identical to `Duration` in
+ * value.fbs.
+ */
+export interface Duration {
+  /** Whole seconds. Always non-negative; SurrealDB durations are unsigned. */
+  seconds: bigint;
+  /**
+   * Sub-second remainder. MUST be in [0, 999999999]; decoders MUST reject
+   * larger values rather than normalising them.
+   */
+  nanos: number;
+}
+
+/**
+ * A UTC instant.
+ *
+ * Replaces `google.protobuf.Timestamp`, whose specification caps the range at
+ * 0001-01-01 .. 9999-12-31. SurrealDB datetimes are `chrono::DateTime<Utc>`
+ * and span roughly +/-262,000 years. Byte-identical to `Timestamp` in
+ * value.fbs.
+ */
+export interface Datetime {
+  /** Seconds since the Unix epoch. May be negative. */
+  seconds: bigint;
+  /**
+   * Sub-second remainder, always ADDED to `seconds` — never subtracted, even
+   * when `seconds` is negative. MUST be in [0, 999999999].
+   */
+  nanos: number;
 }
 
 /** Decimal value. */
@@ -22,7 +80,15 @@ export interface Decimal {
 
 /** UUID value. */
 export interface Uuid {
-  value: string;
+  /**
+   * The UUID as 16 raw bytes, big-endian (RFC 9562 network byte order).
+   *
+   * Raw bytes rather than the 36-character hyphenated form: UUIDs ride on
+   * every live-query notification and inside record ids, where the string
+   * form costs roughly double and a parse per use. Decoders MUST reject a
+   * value whose length is not exactly 16.
+   */
+  bytes: Uint8Array;
 }
 
 /** Point type. */
@@ -105,14 +171,43 @@ export interface Set {
   values: Value[];
 }
 
-/** Object type. */
-export interface Object {
-  items: { [key: string]: Value };
-}
-
-export interface Object_ItemsEntry {
+/**
+ * A key and its value.
+ *
+ * `value` MUST be set. An unset `value` is a protocol error, not an implicit
+ * `NONE`: there is exactly one way to express `NONE` (`Value.none`), and a
+ * missing submessage is indistinguishable from a truncated or buggy encoder.
+ */
+export interface KeyValue {
   key: string;
   value: Value | undefined;
+}
+
+/**
+ * A SurrealDB object.
+ *
+ * Mirrors `BTreeMap<String, Value>`: keys MUST be unique and MUST appear in
+ * ascending UTF-8 byte order. Decoders MUST reject duplicate keys rather than
+ * applying last-wins.
+ *
+ * This is `repeated`, not `map`, for three reasons:
+ *  1. proto3 implementations disagree on how to carry a map entry whose
+ *     message value equals its default. prost omits the value field entirely
+ *     (`encode_with_default` skips when `val == val_default`, and
+ *     `Value::default()` is `NONE`); ts-proto then drops the whole entry
+ *     because its decoder guards on `entry.value !== undefined`. The result
+ *     was that `{"k": NONE}` encoded in Rust decoded in TypeScript as `{}`,
+ *     silently destroying the NONE/absent distinction on one direction only.
+ *  2. proto3 map field ordering is unspecified, so a map cannot be canonically
+ *     encoded or hashed.
+ *  3. It matches `Object` in value.fbs exactly.
+ *
+ * The encoding is wire-compatible with the map it replaces — proto3 maps are
+ * themselves repeated two-field messages — so only the generated accessors and
+ * the semantics change.
+ */
+export interface Object {
+  items: KeyValue[];
 }
 
 /** Value bound type. */
@@ -129,7 +224,22 @@ export interface Range {
   end: ValueBound | undefined;
 }
 
-/** Value type. */
+/**
+ * A SurrealDB value.
+ *
+ * EXACTLY ONE arm is populated on a well-formed message. An unset `value`
+ * oneof does NOT mean `NONE` — it means the peer sent a variant this build
+ * does not know about (a newer server), or the message is malformed. Decoders
+ * MUST treat an unset oneof as an error, never as `NONE`. Reinterpreting it
+ * would let a client silently downgrade an unknown value to `NONE` and write
+ * that back to the database.
+ *
+ * `NONE`, `NULL`, and an absent object key are three distinct states and all
+ * three round-trip:
+ *   NONE        -> `none`, an explicit variant
+ *   NULL        -> `null`
+ *   absent key  -> no `KeyValue` entry for that key at all
+ */
 export interface Value {
   value:
     | { $case: "null"; null: NullValue }
@@ -139,8 +249,17 @@ export interface Value {
     | { $case: "decimal"; decimal: Decimal }
     | { $case: "string"; string: string }
     | { $case: "bytes"; bytes: Uint8Array }
-    | { $case: "duration"; duration: Duration }
-    | { $case: "datetime"; datetime: Date }
+    | //
+    /**
+     * Tags 8 and 9 previously carried google.protobuf.Duration and
+     * google.protobuf.Timestamp. They are reused rather than burned: the
+     * proto surface has no consumers yet (every dependant uses the
+     * flatbuffers schema), so no payload exists that could be misread, and
+     * keeping these slots preserves both the tag ordering and the
+     * correspondence with `ValueType` in value.fbs.
+     */
+    { $case: "duration"; duration: Duration }
+    | { $case: "datetime"; datetime: Datetime }
     | { $case: "uuid"; uuid: Uuid }
     | { $case: "geometry"; geometry: Geometry }
     | { $case: "table"; table: string }
@@ -152,6 +271,7 @@ export interface Value {
     | { $case: "object"; object: Object }
     | { $case: "array"; array: Array }
     | { $case: "set"; set: Set }
+    | { $case: "none"; none: NoneValue }
     | undefined;
 }
 
@@ -168,7 +288,12 @@ export interface RecordIdKeyRange {
   end: RecordIdKeyBound | undefined;
 }
 
-/** ID type. */
+/**
+ * A record id's key part — the `id` in `table:id`.
+ *
+ * As with `Value`, an unset `id` oneof means an unknown variant or a malformed
+ * message, and MUST be rejected rather than defaulted.
+ */
 export interface RecordIdKey {
   id:
     | { $case: "int64"; int64: bigint }
@@ -177,17 +302,24 @@ export interface RecordIdKey {
     | { $case: "array"; array: Array }
     | { $case: "range"; range: RecordIdKeyRange }
     | { $case: "object"; object: Object }
+    | //
+    /**
+     * Tags 7 and 8 match `RecordIdKeyType` in value.fbs, which gained
+     * these variants first.
+     */
+    { $case: "float64"; float64: number }
+    | { $case: "decimal"; decimal: Decimal }
     | undefined;
 }
 
-/** Variables. */
+/**
+ * Query variables, bound as `$name`.
+ *
+ * Same rules as `Object`: unique keys, ascending UTF-8 byte order, duplicates
+ * rejected, and `repeated` rather than `map` for the reasons documented there.
+ */
 export interface Variables {
-  variables: { [key: string]: Value };
-}
-
-export interface Variables_VariablesEntry {
-  key: string;
-  value: Value | undefined;
+  variables: KeyValue[];
 }
 
 /** Kind system messages */
@@ -386,6 +518,250 @@ export const NullValue: MessageFns<NullValue> = {
   },
 };
 
+function createBaseNoneValue(): NoneValue {
+  return {};
+}
+
+export const NoneValue: MessageFns<NoneValue> = {
+  encode(_: NoneValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NoneValue {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNoneValue();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): NoneValue {
+    return {};
+  },
+
+  toJSON(_: NoneValue): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NoneValue>, I>>(base?: I): NoneValue {
+    return NoneValue.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NoneValue>, I>>(_: I): NoneValue {
+    const message = createBaseNoneValue();
+    return message;
+  },
+};
+
+function createBaseUnit(): Unit {
+  return {};
+}
+
+export const Unit: MessageFns<Unit> = {
+  encode(_: Unit, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Unit {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnit();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): Unit {
+    return {};
+  },
+
+  toJSON(_: Unit): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Unit>, I>>(base?: I): Unit {
+    return Unit.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Unit>, I>>(_: I): Unit {
+    const message = createBaseUnit();
+    return message;
+  },
+};
+
+function createBaseDuration(): Duration {
+  return { seconds: 0n, nanos: 0 };
+}
+
+export const Duration: MessageFns<Duration> = {
+  encode(message: Duration, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.seconds !== 0n) {
+      if (BigInt.asUintN(64, message.seconds) !== message.seconds) {
+        throw new globalThis.Error("value provided for field message.seconds of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.seconds);
+    }
+    if (message.nanos !== 0) {
+      writer.uint32(16).uint32(message.nanos);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Duration {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDuration();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.seconds = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nanos = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Duration {
+    return {
+      seconds: isSet(object.seconds) ? BigInt(object.seconds) : 0n,
+      nanos: isSet(object.nanos) ? globalThis.Number(object.nanos) : 0,
+    };
+  },
+
+  toJSON(message: Duration): unknown {
+    const obj: any = {};
+    if (message.seconds !== 0n) {
+      obj.seconds = message.seconds.toString();
+    }
+    if (message.nanos !== 0) {
+      obj.nanos = Math.round(message.nanos);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Duration>, I>>(base?: I): Duration {
+    return Duration.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Duration>, I>>(object: I): Duration {
+    const message = createBaseDuration();
+    message.seconds = object.seconds ?? 0n;
+    message.nanos = object.nanos ?? 0;
+    return message;
+  },
+};
+
+function createBaseDatetime(): Datetime {
+  return { seconds: 0n, nanos: 0 };
+}
+
+export const Datetime: MessageFns<Datetime> = {
+  encode(message: Datetime, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.seconds !== 0n) {
+      if (BigInt.asIntN(64, message.seconds) !== message.seconds) {
+        throw new globalThis.Error("value provided for field message.seconds of type int64 too large");
+      }
+      writer.uint32(8).int64(message.seconds);
+    }
+    if (message.nanos !== 0) {
+      writer.uint32(16).uint32(message.nanos);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Datetime {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatetime();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.seconds = reader.int64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nanos = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Datetime {
+    return {
+      seconds: isSet(object.seconds) ? BigInt(object.seconds) : 0n,
+      nanos: isSet(object.nanos) ? globalThis.Number(object.nanos) : 0,
+    };
+  },
+
+  toJSON(message: Datetime): unknown {
+    const obj: any = {};
+    if (message.seconds !== 0n) {
+      obj.seconds = message.seconds.toString();
+    }
+    if (message.nanos !== 0) {
+      obj.nanos = Math.round(message.nanos);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Datetime>, I>>(base?: I): Datetime {
+    return Datetime.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Datetime>, I>>(object: I): Datetime {
+    const message = createBaseDatetime();
+    message.seconds = object.seconds ?? 0n;
+    message.nanos = object.nanos ?? 0;
+    return message;
+  },
+};
+
 function createBaseDecimal(): Decimal {
   return { value: "" };
 }
@@ -445,13 +821,13 @@ export const Decimal: MessageFns<Decimal> = {
 };
 
 function createBaseUuid(): Uuid {
-  return { value: "" };
+  return { bytes: new Uint8Array(0) };
 }
 
 export const Uuid: MessageFns<Uuid> = {
   encode(message: Uuid, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== "") {
-      writer.uint32(10).string(message.value);
+    if (message.bytes.length !== 0) {
+      writer.uint32(10).bytes(message.bytes);
     }
     return writer;
   },
@@ -468,7 +844,7 @@ export const Uuid: MessageFns<Uuid> = {
             break;
           }
 
-          message.value = reader.string();
+          message.bytes = reader.bytes();
           continue;
         }
       }
@@ -481,13 +857,13 @@ export const Uuid: MessageFns<Uuid> = {
   },
 
   fromJSON(object: any): Uuid {
-    return { value: isSet(object.value) ? globalThis.String(object.value) : "" };
+    return { bytes: isSet(object.bytes) ? bytesFromBase64(object.bytes) : new Uint8Array(0) };
   },
 
   toJSON(message: Uuid): unknown {
     const obj: any = {};
-    if (message.value !== "") {
-      obj.value = message.value;
+    if (message.bytes.length !== 0) {
+      obj.bytes = base64FromBytes(message.bytes);
     }
     return obj;
   },
@@ -497,7 +873,7 @@ export const Uuid: MessageFns<Uuid> = {
   },
   fromPartial<I extends Exact<DeepPartial<Uuid>, I>>(object: I): Uuid {
     const message = createBaseUuid();
-    message.value = object.value ?? "";
+    message.bytes = object.bytes ?? new Uint8Array(0);
     return message;
   },
 };
@@ -1429,97 +1805,12 @@ export const Set: MessageFns<Set> = {
   },
 };
 
-function createBaseObject(): Object {
-  return { items: {} };
-}
-
-export const Object: MessageFns<Object> = {
-  encode(message: Object, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    globalThis.Object.entries(message.items).forEach(([key, value]: [string, Value]) => {
-      Object_ItemsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
-    });
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Object {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseObject();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          const entry1 = Object_ItemsEntry.decode(reader, reader.uint32());
-          if (entry1.value !== undefined) {
-            message.items[entry1.key] = entry1.value;
-          }
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Object {
-    return {
-      items: isObject(object.items)
-        ? (globalThis.Object.entries(object.items) as [string, any][]).reduce(
-          (acc: { [key: string]: Value }, [key, value]: [string, any]) => {
-            acc[key] = Value.fromJSON(value);
-            return acc;
-          },
-          {},
-        )
-        : {},
-    };
-  },
-
-  toJSON(message: Object): unknown {
-    const obj: any = {};
-    if (message.items) {
-      const entries = globalThis.Object.entries(message.items) as [string, Value][];
-      if (entries.length > 0) {
-        obj.items = {};
-        entries.forEach(([k, v]) => {
-          obj.items[k] = Value.toJSON(v);
-        });
-      }
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Object>, I>>(base?: I): Object {
-    return Object.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Object>, I>>(object: I): Object {
-    const message = createBaseObject();
-    message.items = (globalThis.Object.entries(object.items ?? {}) as [string, Value][]).reduce(
-      (acc: { [key: string]: Value }, [key, value]: [string, Value]) => {
-        if (value !== undefined) {
-          acc[key] = Value.fromPartial(value);
-        }
-        return acc;
-      },
-      {},
-    );
-    return message;
-  },
-};
-
-function createBaseObject_ItemsEntry(): Object_ItemsEntry {
+function createBaseKeyValue(): KeyValue {
   return { key: "", value: undefined };
 }
 
-export const Object_ItemsEntry: MessageFns<Object_ItemsEntry> = {
-  encode(message: Object_ItemsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const KeyValue: MessageFns<KeyValue> = {
+  encode(message: KeyValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -1529,10 +1820,10 @@ export const Object_ItemsEntry: MessageFns<Object_ItemsEntry> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): Object_ItemsEntry {
+  decode(input: BinaryReader | Uint8Array, length?: number): KeyValue {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseObject_ItemsEntry();
+    const message = createBaseKeyValue();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1561,14 +1852,14 @@ export const Object_ItemsEntry: MessageFns<Object_ItemsEntry> = {
     return message;
   },
 
-  fromJSON(object: any): Object_ItemsEntry {
+  fromJSON(object: any): KeyValue {
     return {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
     };
   },
 
-  toJSON(message: Object_ItemsEntry): unknown {
+  toJSON(message: KeyValue): unknown {
     const obj: any = {};
     if (message.key !== "") {
       obj.key = message.key;
@@ -1579,13 +1870,71 @@ export const Object_ItemsEntry: MessageFns<Object_ItemsEntry> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<Object_ItemsEntry>, I>>(base?: I): Object_ItemsEntry {
-    return Object_ItemsEntry.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<KeyValue>, I>>(base?: I): KeyValue {
+    return KeyValue.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<Object_ItemsEntry>, I>>(object: I): Object_ItemsEntry {
-    const message = createBaseObject_ItemsEntry();
+  fromPartial<I extends Exact<DeepPartial<KeyValue>, I>>(object: I): KeyValue {
+    const message = createBaseKeyValue();
     message.key = object.key ?? "";
     message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+    return message;
+  },
+};
+
+function createBaseObject(): Object {
+  return { items: [] };
+}
+
+export const Object: MessageFns<Object> = {
+  encode(message: Object, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.items) {
+      KeyValue.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Object {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObject();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.items.push(KeyValue.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Object {
+    return { items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => KeyValue.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: Object): unknown {
+    const obj: any = {};
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => KeyValue.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Object>, I>>(base?: I): Object {
+    return Object.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Object>, I>>(object: I): Object {
+    const message = createBaseObject();
+    message.items = object.items?.map((e) => KeyValue.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1816,7 +2165,7 @@ export const Value: MessageFns<Value> = {
         Duration.encode(message.value.duration, writer.uint32(66).fork()).join();
         break;
       case "datetime":
-        Timestamp.encode(toTimestamp(message.value.datetime), writer.uint32(74).fork()).join();
+        Datetime.encode(message.value.datetime, writer.uint32(74).fork()).join();
         break;
       case "uuid":
         Uuid.encode(message.value.uuid, writer.uint32(82).fork()).join();
@@ -1850,6 +2199,9 @@ export const Value: MessageFns<Value> = {
         break;
       case "set":
         Set.encode(message.value.set, writer.uint32(162).fork()).join();
+        break;
+      case "none":
+        NoneValue.encode(message.value.none, writer.uint32(170).fork()).join();
         break;
     }
     return writer;
@@ -1931,7 +2283,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.value = { $case: "datetime", datetime: fromTimestamp(Timestamp.decode(reader, reader.uint32())) };
+          message.value = { $case: "datetime", datetime: Datetime.decode(reader, reader.uint32()) };
           continue;
         }
         case 10: {
@@ -2022,6 +2374,14 @@ export const Value: MessageFns<Value> = {
           message.value = { $case: "set", set: Set.decode(reader, reader.uint32()) };
           continue;
         }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.value = { $case: "none", none: NoneValue.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2050,7 +2410,7 @@ export const Value: MessageFns<Value> = {
         : isSet(object.duration)
         ? { $case: "duration", duration: Duration.fromJSON(object.duration) }
         : isSet(object.datetime)
-        ? { $case: "datetime", datetime: fromJsonTimestamp(object.datetime) }
+        ? { $case: "datetime", datetime: Datetime.fromJSON(object.datetime) }
         : isSet(object.uuid)
         ? { $case: "uuid", uuid: Uuid.fromJSON(object.uuid) }
         : isSet(object.geometry)
@@ -2077,6 +2437,8 @@ export const Value: MessageFns<Value> = {
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : isSet(object.set)
         ? { $case: "set", set: Set.fromJSON(object.set) }
+        : isSet(object.none)
+        ? { $case: "none", none: NoneValue.fromJSON(object.none) }
         : undefined,
     };
   },
@@ -2100,7 +2462,7 @@ export const Value: MessageFns<Value> = {
     } else if (message.value?.$case === "duration") {
       obj.duration = Duration.toJSON(message.value.duration);
     } else if (message.value?.$case === "datetime") {
-      obj.datetime = message.value.datetime.toISOString();
+      obj.datetime = Datetime.toJSON(message.value.datetime);
     } else if (message.value?.$case === "uuid") {
       obj.uuid = Uuid.toJSON(message.value.uuid);
     } else if (message.value?.$case === "geometry") {
@@ -2123,6 +2485,8 @@ export const Value: MessageFns<Value> = {
       obj.array = Array.toJSON(message.value.array);
     } else if (message.value?.$case === "set") {
       obj.set = Set.toJSON(message.value.set);
+    } else if (message.value?.$case === "none") {
+      obj.none = NoneValue.toJSON(message.value.none);
     }
     return obj;
   },
@@ -2183,7 +2547,7 @@ export const Value: MessageFns<Value> = {
       }
       case "datetime": {
         if (object.value?.datetime !== undefined && object.value?.datetime !== null) {
-          message.value = { $case: "datetime", datetime: object.value.datetime };
+          message.value = { $case: "datetime", datetime: Datetime.fromPartial(object.value.datetime) };
         }
         break;
       }
@@ -2250,6 +2614,12 @@ export const Value: MessageFns<Value> = {
       case "set": {
         if (object.value?.set !== undefined && object.value?.set !== null) {
           message.value = { $case: "set", set: Set.fromPartial(object.value.set) };
+        }
+        break;
+      }
+      case "none": {
+        if (object.value?.none !== undefined && object.value?.none !== null) {
+          message.value = { $case: "none", none: NoneValue.fromPartial(object.value.none) };
         }
         break;
       }
@@ -2479,6 +2849,12 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
       case "object":
         Object.encode(message.id.object, writer.uint32(50).fork()).join();
         break;
+      case "float64":
+        writer.uint32(57).double(message.id.float64);
+        break;
+      case "decimal":
+        Decimal.encode(message.id.decimal, writer.uint32(66).fork()).join();
+        break;
     }
     return writer;
   },
@@ -2538,6 +2914,22 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
           message.id = { $case: "object", object: Object.decode(reader, reader.uint32()) };
           continue;
         }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.id = { $case: "float64", float64: reader.double() };
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.id = { $case: "decimal", decimal: Decimal.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2561,6 +2953,10 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
         ? { $case: "range", range: RecordIdKeyRange.fromJSON(object.range) }
         : isSet(object.object)
         ? { $case: "object", object: Object.fromJSON(object.object) }
+        : isSet(object.float64)
+        ? { $case: "float64", float64: globalThis.Number(object.float64) }
+        : isSet(object.decimal)
+        ? { $case: "decimal", decimal: Decimal.fromJSON(object.decimal) }
         : undefined,
     };
   },
@@ -2579,6 +2975,10 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
       obj.range = RecordIdKeyRange.toJSON(message.id.range);
     } else if (message.id?.$case === "object") {
       obj.object = Object.toJSON(message.id.object);
+    } else if (message.id?.$case === "float64") {
+      obj.float64 = message.id.float64;
+    } else if (message.id?.$case === "decimal") {
+      obj.decimal = Decimal.toJSON(message.id.decimal);
     }
     return obj;
   },
@@ -2625,20 +3025,32 @@ export const RecordIdKey: MessageFns<RecordIdKey> = {
         }
         break;
       }
+      case "float64": {
+        if (object.id?.float64 !== undefined && object.id?.float64 !== null) {
+          message.id = { $case: "float64", float64: object.id.float64 };
+        }
+        break;
+      }
+      case "decimal": {
+        if (object.id?.decimal !== undefined && object.id?.decimal !== null) {
+          message.id = { $case: "decimal", decimal: Decimal.fromPartial(object.id.decimal) };
+        }
+        break;
+      }
     }
     return message;
   },
 };
 
 function createBaseVariables(): Variables {
-  return { variables: {} };
+  return { variables: [] };
 }
 
 export const Variables: MessageFns<Variables> = {
   encode(message: Variables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    globalThis.Object.entries(message.variables).forEach(([key, value]: [string, Value]) => {
-      Variables_VariablesEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
-    });
+    for (const v of message.variables) {
+      KeyValue.encode(v!, writer.uint32(10).fork()).join();
+    }
     return writer;
   },
 
@@ -2654,10 +3066,7 @@ export const Variables: MessageFns<Variables> = {
             break;
           }
 
-          const entry1 = Variables_VariablesEntry.decode(reader, reader.uint32());
-          if (entry1.value !== undefined) {
-            message.variables[entry1.key] = entry1.value;
-          }
+          message.variables.push(KeyValue.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -2671,28 +3080,16 @@ export const Variables: MessageFns<Variables> = {
 
   fromJSON(object: any): Variables {
     return {
-      variables: isObject(object.variables)
-        ? (globalThis.Object.entries(object.variables) as [string, any][]).reduce(
-          (acc: { [key: string]: Value }, [key, value]: [string, any]) => {
-            acc[key] = Value.fromJSON(value);
-            return acc;
-          },
-          {},
-        )
-        : {},
+      variables: globalThis.Array.isArray(object?.variables)
+        ? object.variables.map((e: any) => KeyValue.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Variables): unknown {
     const obj: any = {};
-    if (message.variables) {
-      const entries = globalThis.Object.entries(message.variables) as [string, Value][];
-      if (entries.length > 0) {
-        obj.variables = {};
-        entries.forEach(([k, v]) => {
-          obj.variables[k] = Value.toJSON(v);
-        });
-      }
+    if (message.variables?.length) {
+      obj.variables = message.variables.map((e) => KeyValue.toJSON(e));
     }
     return obj;
   },
@@ -2702,91 +3099,7 @@ export const Variables: MessageFns<Variables> = {
   },
   fromPartial<I extends Exact<DeepPartial<Variables>, I>>(object: I): Variables {
     const message = createBaseVariables();
-    message.variables = (globalThis.Object.entries(object.variables ?? {}) as [string, Value][]).reduce(
-      (acc: { [key: string]: Value }, [key, value]: [string, Value]) => {
-        if (value !== undefined) {
-          acc[key] = Value.fromPartial(value);
-        }
-        return acc;
-      },
-      {},
-    );
-    return message;
-  },
-};
-
-function createBaseVariables_VariablesEntry(): Variables_VariablesEntry {
-  return { key: "", value: undefined };
-}
-
-export const Variables_VariablesEntry: MessageFns<Variables_VariablesEntry> = {
-  encode(message: Variables_VariablesEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Variables_VariablesEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVariables_VariablesEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Variables_VariablesEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
-    };
-  },
-
-  toJSON(message: Variables_VariablesEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Variables_VariablesEntry>, I>>(base?: I): Variables_VariablesEntry {
-    return Variables_VariablesEntry.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Variables_VariablesEntry>, I>>(object: I): Variables_VariablesEntry {
-    const message = createBaseVariables_VariablesEntry();
-    message.key = object.key ?? "";
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+    message.variables = object.variables?.map((e) => KeyValue.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5265,32 +5578,6 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
-
-function toTimestamp(date: Date): Timestamp {
-  const seconds = BigInt(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (globalThis.Number(t.seconds.toString()) || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof globalThis.Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new globalThis.Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
