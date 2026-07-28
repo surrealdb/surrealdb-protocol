@@ -18,14 +18,14 @@ plugins:
       - file_descriptor_set=false
       - enable_type_names=true
       - type_attribute=.=#[derive(serde::Deserialize\,serde::Serialize)]
-      - field_attribute=timeout=#[serde(with = "crate::serde_duration_optional")]
-      - field_attribute=execution_duration=#[serde(with = "crate::serde_duration_optional")]
-      - field_attribute=surrealdb.protocol.v1.Value.value.duration=#[serde(with = "crate::serde_duration")]
-      - field_attribute=surrealdb.protocol.v1.Value.value.datetime=#[serde(with = "crate::serde_timestamp")]
-      - field_attribute=surrealdb.protocol.v1.LiteralKind.literal.duration_value=#[serde(with = "crate::serde_duration")]
+      # Duration and Datetime are now plain SurrealDB-native messages rather
+      # than well-known types, so they need no custom serde.
       - field_attribute=surrealdb.protocol.v1.Value.value=#[serde(flatten)]
       - field_attribute=surrealdb.protocol.v1.Geometry.geometry=#[serde(flatten)]
-      - field_attribute=surrealdb.protocol.v1.Object.items=#[serde(flatten)]
+      # Object and Variables are repeated KeyValue on the wire but stay JSON
+      # objects, so the JSON form does not leak the encoding change.
+      - field_attribute=surrealdb.protocol.v1.Object.items=#[serde(flatten\, with = "crate::serde_key_values")]
+      - field_attribute=surrealdb.protocol.v1.Variables.variables=#[serde(flatten\, with = "crate::serde_key_values")]
   - local: ./plugins/protoc-gen-tonic
     out: gen/rust/proto
   

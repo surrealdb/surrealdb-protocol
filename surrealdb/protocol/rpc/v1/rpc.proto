@@ -2,225 +2,928 @@ syntax = "proto3";
 
 package surrealdb.protocol.rpc.v1;
 
+import "surrealdb/protocol/rpc/v1/common.proto";
+import "surrealdb/protocol/v1/error.proto";
 import "surrealdb/protocol/v1/value.proto";
-import "google/protobuf/duration.proto";
 
-// SurrealDB service.
+// The SurrealDB data plane.
+//
+// This service is the canonical definition of SurrealDB's RPC surface. The
+// Rust `SurrealBridge` trait and the TypeScript `SurrealProtocol` interface
+// are mirrors of it; where they disagree with it, they are wrong.
+//
+// Every request message carries a `RequestContext` in field 1, naming the
+// session it applies to and, where the RPC supports one, the transaction it
+// runs in. Context is in the body, never in transport metadata, so a gRPC,
+// HTTP-chunked or WebSocket binding of this service is the same contract byte
+// for byte.
+//
+// There are deliberately no CRUD methods. `select`, `create`, `update` and
+// friends are client-side sugar that compiles to SurrealQL and executes
+// through `Query` -- the design both current SDKs already independently chose.
+// One execution path means one thing to stream, optimise and secure.
 service SurrealDBService {
-    // Check the health of the database.
-    rpc Health(HealthRequest) returns (HealthResponse);
-    // Get the version of the database.
-    rpc Version(VersionRequest) returns (VersionResponse);
+    // ---------------------------------------------------------------- //
+    //                          Negotiation                             //
+    // ---------------------------------------------------------------- //
 
-    // Sign up a new user.
-    rpc Signup(SignupRequest) returns (SignupResponse);
-    // Sign in a user.
-    rpc Signin(SigninRequest) returns (SigninResponse);
-    // Authenticate a user with a token.
-    rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
-    // Use a namespace and database.
-    rpc Use(UseRequest) returns (UseResponse);
-    // Set a global variable for the current session.
-    rpc Set(SetRequest) returns (SetResponse);
-    // Unset a global variable for the current session.
-    rpc Unset(UnsetRequest) returns (UnsetResponse);
-    // Clear the current IAM session info.
-    rpc Invalidate(InvalidateRequest) returns (InvalidateResponse);
-    // Clear the current IAM session info and reset all global variables for the current session (ns, db, vars).
-    rpc Reset(ResetRequest) returns (ResetResponse);
-
-    // Import data into the database.
-    // All statements are executed in the same transaction.
-    rpc ImportSql(stream ImportSqlRequest) returns (ImportSqlResponse);
-    // Export data from the database.
-    rpc ExportSql(ExportSqlRequest) returns (stream ExportSqlResponse);
-    // Export data from the database as a stream of directory files.
+    // Report what this server supports.
     //
-    // Unlike ExportSql, which emits a flat SurrealQL statement stream, this
+    // Callable before authenticating and before anything else. Clients SHOULD
+    // call it first and branch on the result rather than inferring behaviour
+    // from a version string: capabilities depend on operator configuration as
+    // well as build version, and a version table cannot model that.
+    rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse);
+
+    // ---------------------------------------------------------------- //
+    //                          Connection                              //
+    // ---------------------------------------------------------------- //
+
+    // Check that the server is reachable and able to serve requests.
+    //
+    // The server's version is reported by `GetCapabilities`, not here: a
+    // version string is the wrong thing to branch on, which is that method's
+    // whole premise.
+    rpc Health(HealthRequest) returns (HealthResponse);
+
+    // ---------------------------------------------------------------- //
+    //                           Sessions                               //
+    // ---------------------------------------------------------------- //
+
+    // Create a session, or adopt an existing one onto this connection.
+    //
+    // The session id is `context.session`; absent asks the server to allocate
+    // one. Attaching an id that is already attached is a no-op, which is what
+    // makes this safe to replay after a reconnect.
+    rpc AttachSession(AttachSessionRequest) returns (AttachSessionResponse);
+
+    // Release a session and everything it owns.
+    //
+    // Open transactions are cancelled and open subscriptions end with
+    // SUBSCRIBE_END_REASON_SESSION_CLOSED.
+    rpc DetachSession(DetachSessionRequest) returns (DetachSessionResponse);
+
+    // Return a session to its initial state without releasing it.
+    //
+    // Clears namespace, database, variables and authentication. The session id
+    // stays valid and stays attached.
+    rpc ResetSession(ResetSessionRequest) returns (ResetSessionResponse);
+
+    // ---------------------------------------------------------------- //
+    //                        Session context                           //
+    // ---------------------------------------------------------------- //
+
+    // Select the namespace and/or database a session operates in.
+    rpc Use(UseRequest) returns (UseResponse);
+
+    // Bind a session-scoped variable, referenced in queries as `$name`.
+    rpc SetVariable(SetVariableRequest) returns (SetVariableResponse);
+
+    // Remove a session-scoped variable.
+    rpc UnsetVariable(UnsetVariableRequest) returns (UnsetVariableResponse);
+
+    // ---------------------------------------------------------------- //
+    //                        Authentication                            //
+    // ---------------------------------------------------------------- //
+
+    // Register a new record user and authenticate the session as them.
+    rpc Signup(SignupRequest) returns (SignupResponse);
+
+    // Authenticate the session with credentials.
+    rpc Signin(SigninRequest) returns (SigninResponse);
+
+    // Authenticate the session with an existing access token.
+    rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+
+    // Exchange a refresh token for a new token pair.
+    rpc RefreshTokens(RefreshTokensRequest) returns (RefreshTokensResponse);
+
+    // Invalidate tokens for all future use, on every session and connection.
+    rpc RevokeTokens(RevokeTokensRequest) returns (RevokeTokensResponse);
+
+    // Clear the session's authentication without touching anything else.
+    rpc Invalidate(InvalidateRequest) returns (InvalidateResponse);
+
+    // ---------------------------------------------------------------- //
+    //                         Transactions                             //
+    // ---------------------------------------------------------------- //
+
+    // Open an explicit transaction owned by the session.
+    //
+    // The transaction outlives this RPC and every `Query` that runs in it;
+    // only `CommitTransaction`, `CancelTransaction`, `DetachSession` or the
+    // server's transaction timeout end it.
+    rpc BeginTransaction(BeginTransactionRequest) returns (BeginTransactionResponse);
+
+    // Commit `context.transaction`, persisting everything done in it.
+    rpc CommitTransaction(CommitTransactionRequest) returns (CommitTransactionResponse);
+
+    // Cancel `context.transaction`, discarding everything done in it.
+    rpc CancelTransaction(CancelTransactionRequest) returns (CancelTransactionResponse);
+
+    // ---------------------------------------------------------------- //
+    //                            Query                                 //
+    // ---------------------------------------------------------------- //
+
+    // Execute SurrealQL and stream the results.
+    //
+    // Cancelling the RPC aborts execution: without `context.transaction` the
+    // implicit transaction is rolled back -- streamed results do not imply a
+    // commit, only a completed stream does. With `context.transaction` the
+    // transaction is session-owned and survives a cancelled RPC.
+    rpc Query(QueryRequest) returns (stream QueryResponse);
+
+    // ---------------------------------------------------------------- //
+    //                         Live queries                             //
+    // ---------------------------------------------------------------- //
+
+    // Stream one live query's notifications.
+    //
+    // One stream per subscription; there is no multiplexed notification
+    // channel. A live query may have many concurrent subscribers, each with
+    // its own stream and its own `subscription_id`. See `SubscribeRequest` for
+    // the two ways to name the live query and what each implies for lifetime.
+    rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+
+    // ---------------------------------------------------------------- //
+    //                       Import and export                          //
+    // ---------------------------------------------------------------- //
+
+    // Import a SurrealQL byte stream. All statements run in one transaction.
+    rpc ImportSql(stream ImportSqlRequest) returns (ImportSqlResponse);
+
+    // Export the database as a flat SurrealQL byte stream.
+    rpc ExportSql(ExportSqlRequest) returns (stream ExportSqlResponse);
+
+    // Export the database as a streamed directory of files.
+    //
+    // Unlike `ExportSql`, which emits a flat SurrealQL byte stream, this
     // reproduces a directory-format export (manifest + schema + per-table data
     // files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
     // FileEnd, so neither peer ever buffers a whole file; the file's byte count
-    // and SHA-256 are carried in the FileEnd trailer, computed incrementally as
+    // and BLAKE3 hash are carried in the FileEnd trailer, computed incrementally as
     // chunks are produced. The manifest is streamed as the final file, and the
     // End frame is the completion token.
     rpc ExportDirectory(ExportDirectoryRequest) returns (stream ExportDirectoryResponse);
 
-    // Export the ML model.
+    // Export a SurrealML model as a byte stream.
     rpc ExportMlModel(ExportMlModelRequest) returns (stream ExportMlModelResponse);
-
-    // Query the database and get a stream of values.
-    //
-    // Cancelling the RPC aborts execution: without a txn_id, the implicit
-    // transaction is rolled back (streamed results do not imply a commit;
-    // only a completed stream does). With a txn_id, the transaction is
-    // session-owned and remains open across a cancelled RPC.
-    rpc Query(QueryRequest) returns (stream QueryResponse);
-    // Issue a live query and get a stream of notifications.
-    rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
 }
+
+// ==================================================================== //
+//                            Negotiation                               //
+// ==================================================================== //
+
+// Who is connecting.
+//
+// Recorded by the server so operators can see which SDKs and runtimes are in
+// use. Sent in the body rather than only as a transport header because the
+// embedded binding has no headers and the question is just as interesting
+// there. Servers SHOULD also record the transport `user-agent` when one is
+// present, and treat it as the fallback for clients that skip the handshake.
+message ClientInfo {
+    // SDK identifier, for example "surrealdb.js" or "surrealdb-go".
+    string name = 1;
+    // SDK version.
+    string version = 2;
+    // Host runtime, for example "node/22.3.0", "browser/chrome-131", "rustc/1.85".
+    string platform = 3;
+    // Anything not worth a field of its own. Servers MUST tolerate unknown
+    // keys, and MUST bound what they retain rather than storing it unbounded.
+    repeated surrealdb.protocol.v1.KeyValue metadata = 4;
+}
+
+// How hard the server tries to deliver a live-query notification.
+enum LiveQueryDelivery {
+    LIVE_QUERY_DELIVERY_UNSPECIFIED = 0;
+    // Best-effort: a notification may be lost and is never redelivered.
+    LIVE_QUERY_DELIVERY_AT_MOST_ONCE = 1;
+    // Durable: a notification is never lost, but MAY be delivered more than
+    // once. Consumers must dedupe on `LiveQueryCursor`.
+    LIVE_QUERY_DELIVERY_AT_LEAST_ONCE = 2;
+}
+
+// What this server's live queries actually guarantee.
+//
+// These vary by deployment -- the live-query engine is an operator setting --
+// so they are reported rather than assumed. An SDK that ignores this and
+// assumes exactly-once will double-apply notifications on an at-least-once
+// server.
+message LiveQueryCapabilities {
+    // Delivery guarantee.
+    LiveQueryDelivery delivery = 1;
+    // Whether `SubscribeRequest.resume_from` is honoured.
+    bool resumable = 2;
+    // Whether several subscribers may attach to one live query at once.
+    bool multiple_subscribers = 3;
+    // How far back `resume_from` can reach. A cursor older than this is
+    // rejected with SUBSCRIBE_END_REASON_CURSOR_TOO_OLD. Zero when the server
+    // does not retain history.
+    surrealdb.protocol.v1.Duration retention = 4;
+}
+
+// Numeric bounds a client must respect.
+message Limits {
+    // Largest message the server will accept or emit, in bytes.
+    uint64 max_message_bytes = 1;
+    // Largest `DataChunk` or `FileChunk` payload, in bytes.
+    uint64 max_chunk_bytes = 2;
+    // Longest a single query may run before the server aborts it.
+    surrealdb.protocol.v1.Duration max_query_duration = 3;
+}
+
+// What this server supports.
+message ServerCapabilities {
+    // The SurrealDB build version.
+    //
+    // Not a gate -- that is what `capabilities` is for. Useful for telemetry,
+    // for error messages, and as the last resort for working around a bug in a
+    // specific version range, which capabilities cannot express.
+    string server_version = 1;
+    // Oldest protocol version this server speaks.
+    SemVer low_api_version = 2;
+    // Newest protocol version this server speaks.
+    SemVer high_api_version = 3;
+    // Coarse features this server supports, as free-form names.
+    //
+    // Strings rather than an enum so SurrealDB can introduce a capability
+    // without a protocol release: the set of things a server might support
+    // grows faster than this schema does, and gating that on a new enum value
+    // would make every feature flag a coordinated change across four repos.
+    //
+    // Names are UPPER_SNAKE_CASE and, once published, permanent -- a client
+    // matching on one must keep working. Clients MUST ignore names they do not
+    // recognise rather than treating them as an error.
+    //
+    // The names this protocol version defines, and which a server SHOULD use
+    // where they apply, are:
+    //
+    //   SESSIONS           several sessions multiplexed over one connection
+    //   TRANSACTIONS       explicit client-driven transactions
+    //   LIVE_QUERIES       live queries and subscriptions
+    //   REFRESH_TOKENS     refresh-token exchange
+    //   EXPORT_DIRECTORY   directory-format export
+    //   ML_MODELS          SurrealML model export
+    //   COLUMNAR_RESULTS   columnar (Arrow) query results
+    //
+    // This list is documentation, not a constraint. A server may report names
+    // that are not on it.
+    repeated string capabilities = 4;
+    // Fully-qualified names of RPCs the operator has disabled, for example
+    // "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
+    // coarse; deny lists are per-method, and both exist server-side, so both
+    // are reported rather than lossily projecting one onto the other.
+    repeated string denied_methods = 5;
+    // Numeric bounds.
+    Limits limits = 6;
+    // Live-query guarantees.
+    LiveQueryCapabilities live_queries = 7;
+}
+
+// Request to report server capabilities.
+message GetCapabilitiesRequest {
+    // Present for uniformity with every other request. `session` and
+    // `transaction` MUST be unset: capabilities are a property of the server
+    // and the connection, not of a session.
+    RequestContext context = 1;
+    // Who is connecting.
+    ClientInfo client = 2;
+}
+
+// Response reporting server capabilities.
+//
+// Capabilities are fixed for the lifetime of a connection and MUST be
+// re-fetched after reconnecting: an operator may have restarted the server
+// with a different configuration, or a load balancer may have routed the new
+// connection to a node running a different version.
+//
+// A capability is an optimisation, never a substitute for handling errors. If
+// any RPC fails as unimplemented or not-allowed, the client MUST clear that
+// capability for the connection and surface a typed error, whatever this
+// response said. That rule is what keeps clients correct when the answer is
+// stale, or synthesised by a proxy.
+message GetCapabilitiesResponse {
+    ServerCapabilities capabilities = 1;
+}
+
+// ==================================================================== //
+//                             Connection                               //
+// ==================================================================== //
 
 // Request to check the health of the database.
-message HealthRequest {}
+message HealthRequest {
+    RequestContext context = 1;
+}
 
 // Response to a health check request.
-message HealthResponse {
+message HealthResponse {}
+
+// ==================================================================== //
+//                              Sessions                                //
+// ==================================================================== //
+
+// Request to create or adopt a session.
+message AttachSessionRequest {
+    // `context.session` names the session to attach. Absent asks the server to
+    // allocate one.
+    RequestContext context = 1;
 }
 
-// Request to get the version of the database.
-message VersionRequest {}
-
-// Response to a version request.
-message VersionResponse {
-    string version = 1;
+// Response to a session attach.
+message AttachSessionResponse {
+    // The attached session's id, allocated by the server when the request did
+    // not name one.
+    surrealdb.protocol.v1.Uuid session = 1;
+    // True when this call created the session, false when it adopted one that
+    // already existed. Lets a client tell "the server still has my session"
+    // from "the server lost it and gave me a fresh one" after a reconnect,
+    // which decides whether its cached namespace, variables and auth are
+    // still in effect.
+    bool created = 2;
 }
 
-// Request to sign up a new user.
-message SignupRequest {
+// Request to release a session.
+message DetachSessionRequest {
+    // `context.session` names the session to release.
+    RequestContext context = 1;
+}
+
+// Response to a session detach.
+message DetachSessionResponse {}
+
+// Request to reset a session.
+message ResetSessionRequest {
+    // `context.session` names the session to reset.
+    RequestContext context = 1;
+}
+
+// Response to a session reset.
+message ResetSessionResponse {}
+
+// ==================================================================== //
+//                           Session context                            //
+// ==================================================================== //
+
+// Request to select the namespace and database.
+//
+// Both fields are three-state: absent leaves the current selection alone,
+// `null` clears it, and a string sets it. Clearing and leaving alone are
+// genuinely different operations, which a plain string cannot express.
+message UseRequest {
+    RequestContext context = 1;
+    NullableString namespace = 2;
+    NullableString database = 3;
+}
+
+// Response reporting the resulting selection.
+message UseResponse {
+    // The namespace now in use; empty when none is selected.
+    string namespace = 1;
+    // The database now in use; empty when none is selected.
+    string database = 2;
+}
+
+// Request to bind a session variable.
+message SetVariableRequest {
+    RequestContext context = 1;
+    // The name, without the leading `$`.
+    string name = 2;
+    surrealdb.protocol.v1.Value value = 3;
+}
+
+// Response to binding a session variable.
+message SetVariableResponse {}
+
+// Request to remove a session variable.
+message UnsetVariableRequest {
+    RequestContext context = 1;
+    string name = 2;
+}
+
+// Response to removing a session variable.
+message UnsetVariableResponse {}
+
+// ==================================================================== //
+//                           Authentication                             //
+// ==================================================================== //
+
+// Username and password credentials, at root, namespace or database level.
+//
+// The level is implied by which scoping fields are set: neither means root,
+// `namespace` alone means namespace level, both means database level.
+//
+// This replaces the previous split into RootUserCredentials,
+// NamespaceUserCredentials and DatabaseUserCredentials. That split claimed to
+// make illegal states unrepresentable but did not -- the database variant
+// could still carry an empty namespace -- while being unable to express a
+// system user authenticating through a named access method at all. Servers
+// validate the combination regardless, so the split bought nothing.
+message UserCredentials {
+    // Empty for a root user.
+    string namespace = 1;
+    // Empty for a root or namespace user.
+    string database = 2;
+    string username = 3;
+    string password = 4;
+    // Optional named system access method.
+    string access = 5;
+}
+
+// Record-access credentials, for users defined by a record access method.
+//
+// The variables are passed to the access method's SIGNIN or SIGNUP clause.
+message RecordCredentials {
     string namespace = 1;
     string database = 2;
-    string access_name = 3;
+    string access = 3;
     surrealdb.protocol.v1.Variables variables = 4;
+}
+
+// Bearer-key credentials for a named access method.
+message BearerCredentials {
+    string namespace = 1;
+    string database = 2;
+    string access = 3;
+    string key = 4;
+}
+
+// How the caller wishes to authenticate.
+message AccessMethod {
+    oneof method {
+        UserCredentials user = 1;
+        RecordCredentials record = 2;
+        BearerCredentials bearer = 3;
+    }
+}
+
+// An access token and its refresh token, with their expiry.
+//
+// Expiry is stated explicitly so that clients can schedule renewal without
+// decoding the access token. Every SDK currently parses the JWT's `exp` claim
+// itself, which couples all of them to SurrealDB's token format for no reason.
+message Tokens {
+    // The access token, presented on subsequent authentication.
+    string access = 1;
+    // The refresh token, exchanged via `RefreshTokens`. Empty when the access
+    // method does not issue one.
+    string refresh = 2;
+    // When the access token stops being accepted.
+    surrealdb.protocol.v1.Datetime expires_at = 3;
+    // When the refresh token stops being accepted.
+    surrealdb.protocol.v1.Datetime refresh_expires_at = 4;
+}
+
+// Request to register a new record user.
+message SignupRequest {
+    RequestContext context = 1;
+    RecordCredentials credentials = 2;
 }
 
 // Response to a signup request.
 message SignupResponse {
-    surrealdb.protocol.v1.Value value = 1;
+    Tokens tokens = 1;
 }
 
-// Request to sign in a user.
+// Request to authenticate with credentials.
 message SigninRequest {
-    AccessMethod access_method = 1;
+    RequestContext context = 1;
+    AccessMethod access_method = 2;
 }
 
 // Response to a signin request.
 message SigninResponse {
-    surrealdb.protocol.v1.Value value = 1;
+    Tokens tokens = 1;
 }
 
-// Request to authenticate a user.
+// Request to authenticate with an existing token.
 message AuthenticateRequest {
-    string token = 1;
+    RequestContext context = 1;
+    string token = 2;
 }
 
 // Response to an authenticate request.
 message AuthenticateResponse {
-    surrealdb.protocol.v1.Value value = 1;
+    // The token's expiry, so a client that authenticated with a token it did
+    // not mint can still schedule renewal.
+    surrealdb.protocol.v1.Datetime expires_at = 1;
 }
 
-// Request to use a namespace and database.
-message UseRequest {
-    // The namespace to use.
-    // An empty namespace will unset the current namespace.
-    string namespace = 1;
-    // The database to use.
-    // An empty database will unset the current database.
-    string database = 2;
+// Request to exchange a refresh token for a new pair.
+message RefreshTokensRequest {
+    RequestContext context = 1;
+    string refresh = 2;
 }
 
-// Response to a use request.
-message UseResponse {
-    // The namespace that is now in use.
-    string namespace = 1;
-    // The database that is now in use.
-    string database = 2;
+// Response carrying the new token pair.
+message RefreshTokensResponse {
+    Tokens tokens = 1;
 }
 
-// Request to set a global variable for the current session.
-message SetRequest {
-    // The name of the variable to set.
-    string name = 1;
-    // The value to set the variable to.
-    surrealdb.protocol.v1.Value value = 2;
+// Request to invalidate tokens everywhere.
+message RevokeTokensRequest {
+    RequestContext context = 1;
+    // The access token to revoke, if any.
+    string access = 2;
+    // The refresh token to revoke, if any.
+    string refresh = 3;
 }
 
-// Response to a set request.
-message SetResponse {}
+// Response to a token revocation.
+message RevokeTokensResponse {}
 
-// Request to unset a global variable for the current session.
-message UnsetRequest {
-    // The name of the variable to unset.
-    string name = 1;
+// Request to clear the session's authentication.
+message InvalidateRequest {
+    RequestContext context = 1;
 }
-
-// Response to an unset request.
-message UnsetResponse {}
-
-// Request to invalidate the current session.
-message InvalidateRequest {}
 
 // Response to an invalidate request.
 message InvalidateResponse {}
 
-// Request to reset all global variables for the current session.
-message ResetRequest {}
+// ==================================================================== //
+//                            Transactions                              //
+// ==================================================================== //
 
-// Response to a reset request.
-message ResetResponse {}
+// Request to open an explicit transaction.
+message BeginTransactionRequest {
+    RequestContext context = 1;
+}
 
-// Request to import data into the database.
+// Response carrying the new transaction's id.
+message BeginTransactionResponse {
+    // Pass this as `context.transaction` on the queries that should run in it.
+    surrealdb.protocol.v1.Uuid transaction = 1;
+}
+
+// Request to commit a transaction.
+message CommitTransactionRequest {
+    // `context.transaction` names the transaction to commit.
+    RequestContext context = 1;
+}
+
+// Response to a commit.
+message CommitTransactionResponse {}
+
+// Request to cancel a transaction.
+message CancelTransactionRequest {
+    // `context.transaction` names the transaction to cancel.
+    RequestContext context = 1;
+}
+
+// Response to a cancellation.
+message CancelTransactionResponse {}
+
+// ==================================================================== //
+//                               Query                                  //
+// ==================================================================== //
+
+// Request to execute SurrealQL.
+message QueryRequest {
+    RequestContext context = 1;
+    // One or more SurrealQL statements.
+    string query = 2;
+    // Values bound as `$name`.
+    surrealdb.protocol.v1.Variables variables = 3;
+    // Result encodings the client is willing to receive, most preferred first.
+    //
+    // The server MUST reply using one of these, and MUST NOT use an encoding
+    // the client did not list. Absent means row-oriented values only. This is
+    // the rule that keeps a future encoding from reaching an old client as an
+    // empty result set, which would look like success.
+    repeated ResultEncoding accepted_encodings = 4;
+}
+
+// A way of encoding query results.
+enum ResultEncoding {
+    RESULT_ENCODING_UNSPECIFIED = 0;
+    // Row-oriented `Value`s. Always supported.
+    RESULT_ENCODING_VALUES = 1;
+    // Columnar Arrow IPC. Only when the server advertises
+    // CAPABILITY_COLUMNAR_RESULTS and the client asks for it.
+    RESULT_ENCODING_ARROW = 2;
+}
+
+// What kind of statement produced a result.
+//
+// Tells a client that a statement's result value is a live-query id without
+// having to inspect the SurrealQL it sent. A single query may contain several
+// LIVE SELECT statements, each returning its own id, and each independently
+// subscribable.
+enum QueryStatementKind {
+    QUERY_STATEMENT_KIND_UNSPECIFIED = 0;
+    // Any ordinary statement.
+    QUERY_STATEMENT_KIND_OTHER = 1;
+    // A LIVE SELECT. The result value is the new live query's id.
+    QUERY_STATEMENT_KIND_LIVE = 2;
+    // A KILL.
+    QUERY_STATEMENT_KIND_KILL = 3;
+}
+
+// The kind of a query result batch.
+enum QueryResponseKind {
+    QUERY_RESPONSE_KIND_UNSPECIFIED = 0;
+    // The statement produces exactly one value and no further batches follow.
+    // Used for `SELECT ONLY ...` and similar. Terminal for its query index and
+    // carries the stats.
+    QUERY_RESPONSE_KIND_SINGLE = 1;
+    // A batch of values; more may follow for this query index.
+    QUERY_RESPONSE_KIND_BATCHED = 2;
+    // The final batch for this query index. Always carries the stats. When a
+    // statement's results fit in one batch this is the first and only batch.
+    QUERY_RESPONSE_KIND_BATCHED_FINAL = 3;
+}
+
+// A batch of row-oriented values.
+//
+// A message rather than a bare repeated field because proto3 forbids
+// `repeated` inside a `oneof`, and the payload has to be a `oneof` so that
+// exactly one encoding is populated per batch. Costs two bytes per batch.
+message ValueBatch {
+    repeated surrealdb.protocol.v1.Value values = 1;
+}
+
+// A batch of columnar results, as Arrow IPC.
+//
+// Not served yet; defined now because the shape cannot be retrofitted. The
+// payload must be a message rather than bare bytes: SurrealDB is schemaless,
+// the Arrow IPC stream format forbids a second schema message mid-stream, and
+// a statement whose rows change shape therefore needs several sequential IPC
+// streams -- which needs a per-frame discriminator that a bare `bytes` field
+// has nowhere to put.
+message ArrowBatch {
+    // One or more complete encapsulated Arrow IPC messages.
+    //
+    // Concatenating the payloads for one query index in `batch_index` order,
+    // within a single `stream_sequence`, yields a valid Arrow IPC stream. That
+    // one rule subsumes schema-first and dictionaries-before-use ordering.
+    bytes payload = 1;
+    // Which IPC stream this belongs to, counting from zero within its query
+    // index. Increments when the row shape changes and the server must start a
+    // fresh stream; readers finish the previous stream before starting this one.
+    uint32 stream_sequence = 2;
+}
+
+// Query statistics.
+message QueryStats {
+    // The number of records returned. -1 if unknown.
+    int64 records_returned = 1;
+    // The number of bytes returned. -1 if unknown.
+    int64 bytes_returned = 2;
+    // The number of records scanned. -1 if unknown.
+    int64 records_scanned = 3;
+    // The number of bytes scanned. -1 if unknown.
+    int64 bytes_scanned = 4;
+    // How long the statement took.
+    surrealdb.protocol.v1.Duration execution_duration = 5;
+}
+
+// The opening frame of a query stream.
+//
+// The server MUST send this on accepting the query, before it starts
+// executing, so that a long-running query is identifiable while it is still
+// running rather than only once it finishes.
+message QueryBegin {
+    // Identifies this execution.
+    //
+    // Lets a caller name a query that is still running -- to correlate it with
+    // server logs, traces and slow-query records, or to report it to an
+    // operator. There is no RPC to stop another connection's query: a client
+    // stops its own by cancelling the `Query` stream, and anything beyond that
+    // goes through SurrealQL. Should a cancellation method be wanted later,
+    // this is the handle it would take, and adding it is additive.
+    surrealdb.protocol.v1.Uuid query_id = 1;
+    // How many statements the query parsed into, and therefore how many query
+    // indexes to expect. Every index in `[0, result_count)` emits at least one
+    // batch.
+    uint32 result_count = 2;
+}
+
+// One statement's results, or part of them.
+message QueryBatchFrame {
+    // Which statement this belongs to, counting from zero.
+    uint32 query_index = 1;
+    // Which batch within that statement, counting from zero.
+    uint64 batch_index = 2;
+    // Whether more batches follow for this query index.
+    QueryResponseKind kind = 3;
+    // What kind of statement produced this.
+    QueryStatementKind statement_kind = 4;
+    // Present only on the final batch of a query index.
+    QueryStats stats = 5;
+    // Set when the statement failed. Terminal for its query index: its payload
+    // is empty, stats MAY still be present, and other query indexes carry on.
+    surrealdb.protocol.v1.SurrealError error = 6;
+    // The results. Exactly one encoding is populated, and it is always one the
+    // client listed in `accepted_encodings`.
+    oneof payload {
+        ValueBatch values = 7;
+        ArrowBatch arrow = 8;
+    }
+}
+
+// The frame that completes a query stream successfully.
+message QueryEnd {}
+
+// Streaming response to a query request.
+//
+// A successful query arrives as: `begin` once, then `batch` frames, then `end`.
+// An `error` frame terminates the stream instead, and is used for failures
+// that are not attributable to a single statement; a statement's own failure
+// travels in that statement's `batch` frame so the rest of the query can
+// continue.
+//
+// Ordering: batches sharing a `query_index` always arrive in ascending
+// `batch_index`. Batches for DIFFERENT query indexes MAY be interleaved
+// arbitrarily, and clients MUST demultiplex by `query_index` rather than
+// assuming one statement finishes before the next begins. That freedom is what
+// lets a server stream each statement's results as soon as it produces them
+// instead of holding them until the whole query finishes.
+//
+// Lifecycle: every query index in `[0, result_count)` emits at least one
+// batch. The final batch for an index is the one carrying `stats`, an `error`,
+// or kind SINGLE or BATCHED_FINAL; treat that as the authoritative
+// end-of-results signal for that statement.
+//
+// Failures before execution begins -- a parse error, authentication, an
+// unknown transaction id -- terminate the RPC with a transport-level error and
+// no frames at all.
+message QueryResponse {
+    oneof frame {
+        QueryBegin begin = 1;
+        QueryBatchFrame batch = 2;
+        QueryEnd end = 3;
+        surrealdb.protocol.v1.SurrealError error = 4;
+    }
+}
+
+// ==================================================================== //
+//                            Live queries                              //
+// ==================================================================== //
+
+// A position in a live query's notification history.
+//
+// Doubles as the dedupe key and the resume point. Under at-least-once
+// delivery, a consumer that has already processed a cursor MUST ignore a
+// repeat of it.
+message LiveQueryCursor {
+    // The commit versionstamp the notification was produced at. Notifications
+    // for one subscription arrive in non-decreasing versionstamp order.
+    uint64 versionstamp = 1;
+    // Distinguishes notifications produced by the same commit, counting from
+    // zero.
+    uint32 sequence = 2;
+}
+
+// A live query to register and subscribe to in one step.
+message LiveQueryRegistration {
+    // A single LIVE SELECT statement.
+    string query = 1;
+    // Values bound as `$name`.
+    surrealdb.protocol.v1.Variables variables = 2;
+}
+
+// Request to stream a live query's notifications.
+//
+// Registering and subscribing in one call closes a race that the two-step
+// alternative cannot: notifications produced between `LIVE SELECT` returning
+// and the subscription attaching have nowhere to go and are lost.
+message SubscribeRequest {
+    RequestContext context = 1;
+
+    oneof subscribe_to {
+        // Attach to a live query that already exists -- including one
+        // registered by an ordinary `Query`. Does not affect its lifetime:
+        // ending this stream leaves the live query running for its other
+        // subscribers.
+        surrealdb.protocol.v1.Uuid live_query_id = 2;
+        // Register a new live query and subscribe to it atomically. Its
+        // lifetime is bound to this stream: ending the stream kills it. You
+        // kill what you created.
+        LiveQueryRegistration query = 3;
+    }
+
+    // Resume from just after this position instead of starting at now.
+    //
+    // Only honoured when the server advertises `resumable`. A cursor the
+    // server no longer retains ends the stream with CURSOR_TOO_OLD rather than
+    // silently skipping the gap.
+    LiveQueryCursor resume_from = 4;
+}
+
+// What happened to a record.
+enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_CREATED = 1;
+    ACTION_UPDATED = 2;
+    ACTION_DELETED = 3;
+    // 4 was ACTION_KILLED. Termination is now the `end` frame, which can say
+    // why; a killed notification carried no record and no value, so it was an
+    // action only in name, and having two ways to end a stream invited clients
+    // to handle one and not the other.
+    reserved 4;
+}
+
+// A change to a record matched by a live query.
+message Notification {
+    // The live query that matched. Present because several subscriptions may
+    // share a stream-independent id, and clients log against it.
+    surrealdb.protocol.v1.Uuid live_query_id = 1;
+    Action action = 2;
+    // The record that changed.
+    surrealdb.protocol.v1.RecordId record_id = 3;
+    // The record's new content, or the diff, depending on how the live query
+    // was declared. Absent for a delete.
+    surrealdb.protocol.v1.Value value = 4;
+    // This notification's position. The dedupe key under at-least-once
+    // delivery, and what to store to resume later.
+    LiveQueryCursor cursor = 5;
+}
+
+// The opening frame of a subscription stream.
+message SubscribeBegin {
+    // Identifies this subscription. Distinct from `live_query_id`, because one
+    // live query may have many concurrent subscribers.
+    surrealdb.protocol.v1.Uuid subscription_id = 1;
+    // The live query being observed, whether it already existed or was created
+    // by this call.
+    surrealdb.protocol.v1.Uuid live_query_id = 2;
+    // The position delivery starts after. Echoes `resume_from` when the
+    // request carried one; otherwise the server's current position.
+    LiveQueryCursor cursor = 3;
+}
+
+// Why a subscription stream ended.
+enum SubscribeEndReason {
+    SUBSCRIBE_END_REASON_UNSPECIFIED = 0;
+    // The live query was killed, by a `KILL` statement through `Query` or by
+    // the server. It is gone; do not re-subscribe. Every other subscription to
+    // the same live query ends with this reason too.
+    SUBSCRIBE_END_REASON_KILLED = 1;
+    // The owning session was detached or reset.
+    SUBSCRIBE_END_REASON_SESSION_CLOSED = 2;
+    // The server is shutting down. Re-subscribing later is reasonable.
+    SUBSCRIBE_END_REASON_SERVER_SHUTDOWN = 3;
+    // The live query moved to another node. Re-subscribe; the id is still
+    // valid.
+    SUBSCRIBE_END_REASON_NODE_REASSIGNED = 4;
+    // `resume_from` names a position the server no longer retains. The client
+    // must re-register and accept that it has missed notifications.
+    SUBSCRIBE_END_REASON_CURSOR_TOO_OLD = 5;
+}
+
+// The frame that ends a subscription stream.
+message SubscribeEnd {
+    SubscribeEndReason reason = 1;
+    // The last position delivered, so a client can resume from here later.
+    LiveQueryCursor cursor = 2;
+}
+
+// Streaming response carrying one live query's notifications.
+//
+// A subscription arrives as: `begin` once, then `notification` frames, then
+// `end`. An `error` frame terminates the stream instead.
+//
+// Delivery depends on the server's live-query engine and is reported by
+// `GetCapabilities`. Under AT_LEAST_ONCE -- the durable engine -- THE SAME
+// NOTIFICATION MAY BE DELIVERED MORE THAN ONCE, and consumers MUST dedupe on
+// `Notification.cursor`. Under AT_MOST_ONCE a notification may instead be lost
+// and is never redelivered. Notifications are emitted only after the write
+// transaction that produced them commits.
+message SubscribeResponse {
+    oneof frame {
+        SubscribeBegin begin = 1;
+        Notification notification = 2;
+        SubscribeEnd end = 3;
+        surrealdb.protocol.v1.SurrealError error = 4;
+    }
+}
+
+// ==================================================================== //
+//                          Import and export                           //
+// ==================================================================== //
+
+// The opening frame of an import stream, carrying the request's context.
+message ImportSqlBegin {
+    RequestContext context = 1;
+}
+
+// A frame of a SurrealQL import stream.
+//
+// Framed as `begin` -> `chunk`* -> `trailer`. Bytes rather than parsed
+// statements: a single INSERT can be hundreds of megabytes, so statement
+// framing puts no bound on message size and forces the sender to parse before
+// it can stream.
 message ImportSqlRequest {
-    string statement = 1;
+    oneof frame {
+        ImportSqlBegin begin = 1;
+        DataChunk chunk = 2;
+        DataTrailer trailer = 3;
+    }
 }
 
 // Response to an import request.
 message ImportSqlResponse {}
 
-// Request to export data from the database.
-message ExportSqlRequest {
-    message SelectedTables {
-        repeated string tables = 1;
-    }
-
-    message Tables {
-        oneof selection {
-            surrealdb.protocol.v1.NullValue all = 1;
-            surrealdb.protocol.v1.NullValue none = 2;
-            SelectedTables selected = 3;
-        }
-    }
-
-    bool users = 1;
-    bool accesses = 2;
-    bool params = 3;
-    bool functions = 4;
-    bool analyzers = 5;
-    Tables tables = 6;
-    bool versions = 7;
-    bool records = 8;
-    bool sequences = 9;
-}
-
-// Response to an export request.
-message ExportSqlResponse {
-    string statement = 1;
-}
-
-// Request to export the ML model.
-message ExportMlModelRequest {
-    string name = 1;
-    string version = 2;
-}
-
-// Response to an export request.
-message ExportMlModelResponse {
-    bytes model = 1;
-}
-
-// Compression applied to exported data files.
-enum ExportCompression {
-    // No explicit compression was specified. On a request this selects the
-    // server default; it MUST NOT appear on a response frame.
-    EXPORT_COMPRESSION_UNSPECIFIED = 0;
-    // Files are streamed uncompressed.
-    EXPORT_COMPRESSION_NONE = 1;
-    // Each file's bytes are zstd-compressed (the on-disk `.surql.zst` form).
-    EXPORT_COMPRESSION_ZSTD = 2;
-}
-
-// Which sections of the database to include in a directory export.
-//
-// Mirrors the fields of `ExportSqlRequest`; kept as a distinct message so the
-// directory export surface can evolve independently of the SurrealQL export.
+// Which parts of the database to export.
 message ExportConfig {
     // An explicit list of tables to export.
     message SelectedTables {
@@ -257,6 +960,59 @@ message ExportConfig {
     bool records = 8;
     // Include sequence definitions.
     bool sequences = 9;
+    // Include API definitions.
+    bool apis = 10;
+    // Include bucket definitions.
+    bool buckets = 11;
+    // Include module definitions.
+    bool modules = 12;
+    // Include config definitions.
+    bool configs = 13;
+}
+
+// Request to export the database as SurrealQL.
+message ExportSqlRequest {
+    RequestContext context = 1;
+    ExportConfig config = 2;
+}
+
+// A frame of a SurrealQL export stream.
+//
+// Framed as `chunk`* -> `trailer`, or terminated by `error`. A stream that
+// ends without a trailer MUST be treated as failed.
+message ExportSqlResponse {
+    oneof frame {
+        DataChunk chunk = 1;
+        DataTrailer trailer = 2;
+        surrealdb.protocol.v1.SurrealError error = 3;
+    }
+}
+
+// Request to export a SurrealML model.
+message ExportMlModelRequest {
+    RequestContext context = 1;
+    string name = 2;
+    string version = 3;
+}
+
+// A frame of an ML-model export stream.
+message ExportMlModelResponse {
+    oneof frame {
+        DataChunk chunk = 1;
+        DataTrailer trailer = 2;
+        surrealdb.protocol.v1.SurrealError error = 3;
+    }
+}
+
+// Compression applied to exported data files.
+enum ExportCompression {
+    // No explicit compression was specified. On a request this selects the
+    // server default; it MUST NOT appear on a response frame.
+    EXPORT_COMPRESSION_UNSPECIFIED = 0;
+    // Files are streamed uncompressed.
+    EXPORT_COMPRESSION_NONE = 1;
+    // Each file's bytes are zstd-compressed (the on-disk `.surql.zst` form).
+    EXPORT_COMPRESSION_ZSTD = 2;
 }
 
 // Stream the export to the requesting client, which writes the files to its
@@ -285,21 +1041,22 @@ message ExportDestination {
 
 // Request to export data from the database as a streamed directory.
 message ExportDirectoryRequest {
+    RequestContext context = 1;
     // Which sections of the database to export.
-    ExportConfig config = 1;
+    ExportConfig config = 2;
     // The compression to apply to each data file.
-    ExportCompression compression = 2;
+    ExportCompression compression = 3;
     // A hint for how many files to produce concurrently. Zero means the
     // server chooses a default.
-    uint32 parallelism = 3;
+    uint32 parallelism = 4;
     // The directory format version the client expects. Empty means the client
     // accepts whatever the server produces. A server that cannot produce the
     // requested version rejects the request before sending any frame.
-    string format_version = 4;
+    string format_version = 5;
     // Where the server should write the exported files. Unset is equivalent
     // to a client_stream destination. A server that does not support the
     // requested destination rejects the request before sending any frame.
-    ExportDestination destination = 5;
+    ExportDestination destination = 6;
 }
 
 // Frame: the export has begun. Sent once, before any files.
@@ -359,15 +1116,15 @@ message FileChunk {
 // The trailer carries the file's total size and hash, both computed
 // incrementally while the chunks were produced — so no whole-file buffering is
 // needed to learn them up front. Clients MUST verify that the bytes they
-// received for the file match both `bytes` and `sha256`, and treat any
+// received for the file match both `bytes` and `blake3`, and treat any
 // mismatch as a failed export.
 message FileEnd {
     // The file these totals apply to.
     uint64 file_id = 1;
     // The total number of bytes streamed for the file.
     uint64 bytes = 2;
-    // The SHA-256 of the streamed bytes, lowercase hex.
-    string sha256 = 3;
+    // The BLAKE3 of the streamed bytes, lowercase hex.
+    string blake3 = 3;
 }
 
 // Frame: the export completed successfully.
@@ -389,25 +1146,14 @@ message ExportDirectoryEnd {
     uint64 total_bytes = 2;
 }
 
-// Frame: the export failed. Terminates the stream.
-//
-// An Error frame MAY arrive at any point, including before Begin and while
-// files are still open. All open files are abandoned and no further frames
-// follow.
-message ExportError {
-    // The error code.
-    int64 code = 1;
-    // The error message.
-    string message = 2;
-}
-
 // A single frame in a directory export stream.
 //
-// Modelled on the QueryResponse streaming envelope. A successful export
-// arrives as: Begin (exactly once, first), then for each file
-// FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed is
-// always `manifest.json`, which lists every other file. An Error frame MAY
-// terminate the stream at any point instead.
+// A successful export arrives as: Begin (exactly once, first), then for each
+// file FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed
+// is always `manifest.json`, which lists every other file. An error frame MAY
+// terminate the stream at any point instead, including before Begin and while
+// files are still open; all open files are then abandoned and no further
+// frames follow.
 //
 // A single file's frames are always sent in order, but frames belonging to
 // different `file_id`s MAY be interleaved; clients MUST demultiplex by
@@ -430,220 +1176,6 @@ message ExportDirectoryResponse {
         // The export completed successfully (carries the stream totals).
         ExportDirectoryEnd end = 5;
         // The export failed.
-        ExportError error = 6;
+        surrealdb.protocol.v1.SurrealError error = 6;
     }
 }
-
-// Request to issue a live query.
-message SubscribeRequest {
-    oneof subscribe_to {
-        surrealdb.protocol.v1.Uuid live_query_id = 1;
-        QueryRequest query = 2;
-    }
-}
-
-// Action type.
-enum Action {
-    ACTION_UNSPECIFIED = 0;
-    ACTION_CREATED = 1;
-    ACTION_UPDATED = 2;
-    ACTION_DELETED = 3;
-    ACTION_KILLED = 4;
-}
-
-// Response to a live query.
-message SubscribeResponse {
-    Notification notification = 1;
-}
-
-// A notification from a live query.
-message Notification {
-    surrealdb.protocol.v1.Uuid live_query_id = 1;
-    Action action = 2;
-    surrealdb.protocol.v1.RecordId record_id = 3;
-    surrealdb.protocol.v1.Value value = 4;
-}
-
-// Request to query the database.
-message QueryRequest {
-    string query = 1;
-    surrealdb.protocol.v1.Variables variables = 2;
-    surrealdb.protocol.v1.Uuid txn_id = 3;
-
-    // Field 4 is earmarked for a future capability list (e.g. accepted result
-    // encodings such as columnar Arrow batches). Servers MUST NOT emit result
-    // payloads or response kinds a client has not explicitly opted in to.
-}
-
-// The kind of query response.
-//
-// New kinds will only ever be sent to clients that explicitly opt in via a
-// QueryRequest capability; clients MAY treat an unrecognised kind as a
-// protocol error.
-enum QueryResponseKind {
-    QUERY_RESPONSE_KIND_UNSPECIFIED = 0;
-    // A single value is contained in the response and no further responses are expected.
-    //
-    // This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
-    //
-    // This is the final response for its query index and carries the query stats.
-    QUERY_RESPONSE_KIND_SINGLE = 1;
-    // A batch of values is contained in the response and further responses may be expected.
-    QUERY_RESPONSE_KIND_BATCHED = 2;
-    // The final response from a batched query. No further responses for this query ID are expected.
-    //
-    // This response should always contain the query stats.
-    //
-    // Note: If all response values can fit in a single batch, this will be the first and only response.
-    QUERY_RESPONSE_KIND_BATCHED_FINAL = 3;
-}
-
-// Streaming response to a query request.
-//
-// When a query has 5 statements, there will be 5 unique query indexes (0..4).
-//
-// Ordering: responses that share a query_index are always sent in ascending
-// batch_index order. Responses for DIFFERENT query indexes MAY be interleaved
-// arbitrarily; clients MUST demultiplex by query_index and MUST NOT assume
-// one statement's responses finish before another's begin. This is what
-// allows a server to stream each statement's batches as soon as they are
-// produced. For example:
-//  QueryResponse(query_index=0, batch_index=0)
-//  QueryResponse(query_index=1, batch_index=0, stats=Some(..))  // q1 complete
-//  QueryResponse(query_index=0, batch_index=1, stats=Some(..))  // q0 complete
-//  QueryResponse(query_index=2, batch_index=0)
-//  QueryResponse(query_index=2, batch_index=1, stats=Some(..))  // q2 complete
-//
-// Lifecycle: every query index in 0..result_count emits at least one
-// response. The final response for a query index is the one carrying stats
-// and/or error; treat their presence as the authoritative end-of-results
-// signal for that index.
-//
-// Errors: a response with error set is the final response for its
-// query index; its values are empty, stats MAY be present, and responses for
-// other query indexes continue to arrive. result_count includes errored
-// statements. Failures that occur before execution begins (parse errors,
-// authentication, an unknown txn_id) terminate the RPC with a gRPC status
-// error and no QueryResponse frames.
-message QueryResponse {
-    // The index of the query result.
-    uint32 query_index = 1;
-    // The index of the batch within the given query.
-    uint64 batch_index = 2;
-    // The total number of query results.
-    //
-    // Every response will contain the same value for this field so you can
-    // use the value from the first response to determine how many query results
-    // to expect.
-    //
-    // Note: This is NOT the number of records returned.
-    //
-    // Examples:
-    //   query = "SELECT * FROM users;"
-    //   result_count = 1
-    //
-    //   query = """
-    //   SELECT * FROM users;
-    //   SELECT * FROM posts;
-    //   """
-    //   result_count = 2
-    //
-    //   query = """
-    //   SELECT * FROM users;
-    //   SELECT * FROM posts;
-    //   SELECT * FROM comments;
-    //   """
-    //   result_count = 3
-    uint32 result_count = 3;
-    // The kind of query response.
-    QueryResponseKind kind = 4;
-    // The query stats.
-    // Present only on the final response of each query index.
-    QueryStats stats = 5;
-    // The error, if any. A response carrying an error is the final response
-    // for its query index.
-    QueryError error = 6;
-    // A batch of values. This is the only result payload in this version of
-    // the protocol. Future result encodings (for example a columnar Arrow
-    // batch) will be added as sibling submessage fields (field 8 onwards) and
-    // MUST only be emitted when the client explicitly opts in via
-    // QueryRequest; exactly one payload field is populated per response.
-    repeated surrealdb.protocol.v1.Value values = 7;
-}
-
-// Query statistics.
-message QueryStats {
-    // The number of records returned. -1 if unknown.
-    int64 records_returned = 1;
-    // The number of bytes returned. -1 if unknown.
-    int64 bytes_returned = 2;
-    // The number of records scanned. -1 if unknown.
-    int64 records_scanned = 3;
-    // The number of bytes scanned. -1 if unknown.
-    int64 bytes_scanned = 4;
-    // The duration of the query.
-    google.protobuf.Duration execution_duration = 5;
-}
-
-// Query error.
-message QueryError {
-    // The error code.
-    int64 code = 1;
-    // The error message.
-    string message = 2;
-}
-
-// Root user credentials.
-message RootUserCredentials {
-    string username = 1;
-    string password = 2;
-}
-
-// Namespace access credentials.
-message NamespaceAccessCredentials {
-    string namespace = 1;
-    string access = 2;
-    string key = 3;
-}
-
-// Database access credentials.
-message DatabaseAccessCredentials {
-    string namespace = 1;
-    string database = 2;
-    string access = 3;
-    string key = 4;
-    string refresh = 5;
-}
-
-// Namespace user credentials.
-message NamespaceUserCredentials {
-    string namespace = 1;
-    string username = 2;
-    string password = 3;
-}
-
-// Database user credentials.
-message DatabaseUserCredentials {
-    string namespace = 1;
-    string database = 2;
-    string username = 3;
-    string password = 4;
-}
-
-// Access token.
-message AccessToken {
-    string token = 1;
-}
-
-// Method of authenticating with the database.
-message AccessMethod {
-    oneof method {
-        RootUserCredentials root = 1;
-        NamespaceAccessCredentials namespace = 2;
-        DatabaseAccessCredentials database = 3;
-        NamespaceUserCredentials namespace_user = 4;
-        DatabaseUserCredentials database_user = 5;
-        AccessToken access_token = 6;
-    }
-}
-

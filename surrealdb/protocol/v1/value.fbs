@@ -13,8 +13,8 @@ table Duration {
     nanos: uint32 (id: 1);
 }
 
-/// Timestamp represented as seconds and nanoseconds since epoch.
-table Timestamp {
+/// A UTC instant, as seconds and nanoseconds since the epoch.
+table Datetime {
     seconds: int64 (id: 0);
     nanos: uint32 (id: 1);
 }
@@ -26,6 +26,11 @@ table Uuid {
 
 /// Null value.
 table NullValue {}
+
+/// SurrealDB `NONE` -- the absence of a value.
+///
+/// Distinct from `NullValue`, and distinct from an absent object key.
+table NoneValue {}
 
 /// Boolean value.
 table BoolValue { value: bool (id: 0); }
@@ -147,29 +152,38 @@ table Range {
 
 /// A union of all possible value types in SurrealDB.
 union ValueType {
-    Null: NullValue (id: 1),
-    Bool: BoolValue (id: 2),
-    Int64: Int64Value (id: 3),
-    Float64: Float64Value (id: 4),
-    Decimal: surrealdb.protocol.v1.Decimal (id: 5),
-    String: StringValue (id: 6),
-    Bytes: surrealdb.protocol.v1.Bytes (id: 7),
-    Duration: surrealdb.protocol.v1.Duration (id: 8),
-    Datetime: surrealdb.protocol.v1.Timestamp (id: 9),
-    Uuid: surrealdb.protocol.v1.Uuid (id: 10),
-    Geometry (id: 11),
-    Table: StringValue (id: 12),
+    /// SurrealDB `NONE`.
+    ///
+    /// Explicit rather than relying on the union's implicit NONE sentinel.
+    /// An unset union is indistinguishable from a member this build does not
+    /// know about, so using it for a real value means a newer peer's variant
+    /// silently decodes as `NONE` -- and a client could then write that back.
+    /// Matches `none = 1` in value.proto.
+    None: NoneValue (id: 1),
+    Null: NullValue (id: 2),
+    Bool: BoolValue (id: 3),
+    Int64: Int64Value (id: 4),
+    Float64: Float64Value (id: 5),
+    Decimal: surrealdb.protocol.v1.Decimal (id: 6),
+    String: StringValue (id: 7),
+    Bytes: surrealdb.protocol.v1.Bytes (id: 8),
+    Duration: surrealdb.protocol.v1.Duration (id: 9),
+    Datetime: surrealdb.protocol.v1.Datetime (id: 10),
+    Uuid: surrealdb.protocol.v1.Uuid (id: 11),
+    Geometry (id: 12),
+    Table: StringValue (id: 13),
     /// A fully-qualified record ID.
-    RecordId (id: 13),
+    RecordId (id: 14),
     /// An unparsed record ID which will be parsed by the server.
-    StringRecordId: StringValue (id: 14),
-    File (id: 15),
-    Range (id: 16),
-    Regex: StringValue (id: 17),
-    Object (id: 18),
-    Array (id: 19),
-    Set (id: 20),
+    StringRecordId: StringValue (id: 15),
+    File (id: 16),
+    Range (id: 17),
+    Regex: StringValue (id: 18),
+    Object (id: 19),
+    Array (id: 20),
+    Set (id: 21),
 }
+
 
 /// A value container that can hold any SurrealDB value type.
 table Value {

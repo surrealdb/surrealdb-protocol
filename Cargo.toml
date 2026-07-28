@@ -28,7 +28,7 @@ path = "rust/lib.rs"
 [features]
 default = ["proto", "flatbuffers", "rpc"]
 
-proto = ["dep:prost", "dep:prost-types"]
+proto = ["dep:prost"]
 flatbuffers = ["dep:flatbuffers"]
 rpc = ["proto", "dep:tonic", "dep:tonic-prost", "dep:futures"]
 
@@ -38,10 +38,11 @@ async-trait = { version = "0.1" }
 bytes = { version = "1", features = ["serde"] }
 chrono = { version = "0", default-features = false, features = ["std"] }
 geo = { version = "0", default-features = false, features = ["use-serde"] }
-flatbuffers = { version = "25.2.10", optional = true }
+# Must match FLATC_VERSION in the Makefile: generated code is
+# version-sensitive and CI diffs it.
+flatbuffers = { version = "25.12.19", optional = true }
 futures = { version = "0.3", optional = true }
 prost = { version = "0.14.1", optional = true }
-prost-types = { version = "0.14.1", optional = true }
 rust_decimal = { version = "1.30", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }

@@ -3,7 +3,6 @@ use crate::proto::v1::{self};
 use anyhow::Result;
 use rust_decimal::Decimal;
 use std::collections::BTreeMap;
-use std::str::FromStr;
 use uuid::Uuid;
 
 /// A trait for converting a type into a `v1::Value` protobuf type.
@@ -58,11 +57,18 @@ where
 {
     #[inline]
     fn try_from_value(value: v1::Value) -> Result<Self> {
+        // An unset oneof is NOT `NONE`. It means the peer sent a variant this
+        // build does not know about, or the message is malformed. Mapping it
+        // to `None` would let a client silently downgrade a newer server's
+        // value and write that back -- exactly what value.proto forbids.
         let Some(inner) = value.value else {
-            return Ok(None);
+            return Err(anyhow::anyhow!(
+                "unrecognised Value variant: this build cannot represent it, and it must not be read as NONE"
+            ));
         };
         match inner {
-            ValueInner::Null(_) => Ok(None),
+            // SurrealDB NONE and NULL both read as an absent Rust value.
+            ValueInner::None(_) | ValueInner::Null(_) => Ok(None),
             v => T::try_from_value(v1::Value { value: Some(v) }).map(Some),
         }
     }
@@ -115,7 +121,7 @@ impl TryFromValue for uuid::Uuid {
             return Err(anyhow::anyhow!("Invalid UUID: missing value"));
         };
         match inner {
-            ValueInner::Uuid(u) => Ok(uuid::Uuid::from_str(&u.value)?),
+            ValueInner::Uuid(u) => u.to_uuid(),
             unexpected => Err(anyhow::anyhow!(
                 "Invalid UUID: expected uuid, got {unexpected:?}"
             )),
@@ -278,20 +284,18 @@ impl From<Decimal> for v1::Decimal {
 }
 
 impl TryFrom<v1::Uuid> for Uuid {
-    type Error = uuid::Error;
+    type Error = anyhow::Error;
 
     #[inline]
     fn try_from(proto: v1::Uuid) -> Result<Self, Self::Error> {
-        Uuid::parse_str(&proto.value)
+        proto.to_uuid()
     }
 }
 
 impl From<Uuid> for v1::Uuid {
     #[inline]
     fn from(value: Uuid) -> Self {
-        v1::Uuid {
-            value: value.to_string(),
-        }
+        v1::Uuid::from_uuid(value)
     }
 }
 
@@ -464,13 +468,31 @@ where
     }
 }
 
+/// Builds the `repeated KeyValue` payload `Object` and `Variables` share.
+///
+/// Routing through a `BTreeMap` is what gives the entries the ascending key
+/// order the schema requires and collapses duplicates, rather than emitting a
+/// message a conforming decoder must reject.
+///
+/// Note this deliberately does not `collect()` into the target type: those
+/// types implement `FromIterator<(String, Value)>`, so a trailing `.collect()`
+/// inside one of those impls would re-select it and recurse.
+fn key_values<T, E>(pairs: impl IntoIterator<Item = (String, T)>) -> Result<Vec<v1::KeyValue>, E>
+where
+    T: TryInto<v1::Value, Error = E>,
+{
+    pairs
+        .into_iter()
+        .collect::<BTreeMap<_, _>>()
+        .into_iter()
+        .map(|(key, value)| Ok(v1::KeyValue::new(key, value.try_into()?)))
+        .collect()
+}
+
 impl FromIterator<(String, v1::Value)> for v1::Variables {
     fn from_iter<T: IntoIterator<Item = (String, v1::Value)>>(iter: T) -> Self {
-        let mut variables = v1::Variables::default();
-        for (key, value) in iter {
-            variables.variables.insert(key, value);
-        }
-        variables
+        let Ok(variables) = key_values::<_, std::convert::Infallible>(iter);
+        Self { variables }
     }
 }
 
@@ -483,8 +505,8 @@ where
     #[inline]
     fn try_from(value: v1::Variables) -> Result<Self, Self::Error> {
         let mut map = BTreeMap::new();
-        for (key, value) in value.variables {
-            map.insert(key, T::try_from(value)?);
+        for entry in value.variables {
+            map.insert(entry.key, T::try_from(entry.value.unwrap_or_default())?);
         }
         Ok(map)
     }
@@ -498,18 +520,16 @@ where
 
     #[inline]
     fn try_from(value: BTreeMap<String, T>) -> Result<Self, Self::Error> {
-        let mut map = BTreeMap::new();
-        for (key, value) in value {
-            map.insert(key, value.try_into()?);
-        }
-
-        Ok(Self { variables: map })
+        Ok(Self {
+            variables: key_values(value)?,
+        })
     }
 }
 
 impl From<BTreeMap<String, v1::Value>> for v1::Object {
     #[inline]
     fn from(value: BTreeMap<String, v1::Value>) -> Self {
-        Self { items: value }
+        let Ok(items) = key_values::<_, std::convert::Infallible>(value);
+        Self { items }
     }
 }

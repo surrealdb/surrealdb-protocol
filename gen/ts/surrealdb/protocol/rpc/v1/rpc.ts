@@ -8,10 +8,332 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { Duration } from "../../../../google/protobuf/duration";
-import { NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
+import { SurrealError } from "../../v1/error";
+import { Datetime, Duration, KeyValue, NullValue, RecordId, Uuid, Value, Variables } from "../../v1/value";
+import { DataChunk, DataTrailer, NullableString, RequestContext, SemVer } from "./common";
 
 export const protobufPackage = "surrealdb.protocol.rpc.v1";
+
+/** How hard the server tries to deliver a live-query notification. */
+export enum LiveQueryDelivery {
+  UNSPECIFIED = 0,
+  /** AT_MOST_ONCE - Best-effort: a notification may be lost and is never redelivered. */
+  AT_MOST_ONCE = 1,
+  /**
+   * AT_LEAST_ONCE - Durable: a notification is never lost, but MAY be delivered more than
+   * once. Consumers must dedupe on `LiveQueryCursor`.
+   */
+  AT_LEAST_ONCE = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function liveQueryDeliveryFromJSON(object: any): LiveQueryDelivery {
+  switch (object) {
+    case 0:
+    case "LIVE_QUERY_DELIVERY_UNSPECIFIED":
+      return LiveQueryDelivery.UNSPECIFIED;
+    case 1:
+    case "LIVE_QUERY_DELIVERY_AT_MOST_ONCE":
+      return LiveQueryDelivery.AT_MOST_ONCE;
+    case 2:
+    case "LIVE_QUERY_DELIVERY_AT_LEAST_ONCE":
+      return LiveQueryDelivery.AT_LEAST_ONCE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return LiveQueryDelivery.UNRECOGNIZED;
+  }
+}
+
+export function liveQueryDeliveryToJSON(object: LiveQueryDelivery): string {
+  switch (object) {
+    case LiveQueryDelivery.UNSPECIFIED:
+      return "LIVE_QUERY_DELIVERY_UNSPECIFIED";
+    case LiveQueryDelivery.AT_MOST_ONCE:
+      return "LIVE_QUERY_DELIVERY_AT_MOST_ONCE";
+    case LiveQueryDelivery.AT_LEAST_ONCE:
+      return "LIVE_QUERY_DELIVERY_AT_LEAST_ONCE";
+    case LiveQueryDelivery.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** A way of encoding query results. */
+export enum ResultEncoding {
+  UNSPECIFIED = 0,
+  /** VALUES - Row-oriented `Value`s. Always supported. */
+  VALUES = 1,
+  /**
+   * ARROW - Columnar Arrow IPC. Only when the server advertises
+   * CAPABILITY_COLUMNAR_RESULTS and the client asks for it.
+   */
+  ARROW = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function resultEncodingFromJSON(object: any): ResultEncoding {
+  switch (object) {
+    case 0:
+    case "RESULT_ENCODING_UNSPECIFIED":
+      return ResultEncoding.UNSPECIFIED;
+    case 1:
+    case "RESULT_ENCODING_VALUES":
+      return ResultEncoding.VALUES;
+    case 2:
+    case "RESULT_ENCODING_ARROW":
+      return ResultEncoding.ARROW;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ResultEncoding.UNRECOGNIZED;
+  }
+}
+
+export function resultEncodingToJSON(object: ResultEncoding): string {
+  switch (object) {
+    case ResultEncoding.UNSPECIFIED:
+      return "RESULT_ENCODING_UNSPECIFIED";
+    case ResultEncoding.VALUES:
+      return "RESULT_ENCODING_VALUES";
+    case ResultEncoding.ARROW:
+      return "RESULT_ENCODING_ARROW";
+    case ResultEncoding.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/**
+ * What kind of statement produced a result.
+ *
+ * Tells a client that a statement's result value is a live-query id without
+ * having to inspect the SurrealQL it sent. A single query may contain several
+ * LIVE SELECT statements, each returning its own id, and each independently
+ * subscribable.
+ */
+export enum QueryStatementKind {
+  UNSPECIFIED = 0,
+  /** OTHER - Any ordinary statement. */
+  OTHER = 1,
+  /** LIVE - A LIVE SELECT. The result value is the new live query's id. */
+  LIVE = 2,
+  /** KILL - A KILL. */
+  KILL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function queryStatementKindFromJSON(object: any): QueryStatementKind {
+  switch (object) {
+    case 0:
+    case "QUERY_STATEMENT_KIND_UNSPECIFIED":
+      return QueryStatementKind.UNSPECIFIED;
+    case 1:
+    case "QUERY_STATEMENT_KIND_OTHER":
+      return QueryStatementKind.OTHER;
+    case 2:
+    case "QUERY_STATEMENT_KIND_LIVE":
+      return QueryStatementKind.LIVE;
+    case 3:
+    case "QUERY_STATEMENT_KIND_KILL":
+      return QueryStatementKind.KILL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return QueryStatementKind.UNRECOGNIZED;
+  }
+}
+
+export function queryStatementKindToJSON(object: QueryStatementKind): string {
+  switch (object) {
+    case QueryStatementKind.UNSPECIFIED:
+      return "QUERY_STATEMENT_KIND_UNSPECIFIED";
+    case QueryStatementKind.OTHER:
+      return "QUERY_STATEMENT_KIND_OTHER";
+    case QueryStatementKind.LIVE:
+      return "QUERY_STATEMENT_KIND_LIVE";
+    case QueryStatementKind.KILL:
+      return "QUERY_STATEMENT_KIND_KILL";
+    case QueryStatementKind.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** The kind of a query result batch. */
+export enum QueryResponseKind {
+  UNSPECIFIED = 0,
+  /**
+   * SINGLE - The statement produces exactly one value and no further batches follow.
+   * Used for `SELECT ONLY ...` and similar. Terminal for its query index and
+   * carries the stats.
+   */
+  SINGLE = 1,
+  /** BATCHED - A batch of values; more may follow for this query index. */
+  BATCHED = 2,
+  /**
+   * BATCHED_FINAL - The final batch for this query index. Always carries the stats. When a
+   * statement's results fit in one batch this is the first and only batch.
+   */
+  BATCHED_FINAL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function queryResponseKindFromJSON(object: any): QueryResponseKind {
+  switch (object) {
+    case 0:
+    case "QUERY_RESPONSE_KIND_UNSPECIFIED":
+      return QueryResponseKind.UNSPECIFIED;
+    case 1:
+    case "QUERY_RESPONSE_KIND_SINGLE":
+      return QueryResponseKind.SINGLE;
+    case 2:
+    case "QUERY_RESPONSE_KIND_BATCHED":
+      return QueryResponseKind.BATCHED;
+    case 3:
+    case "QUERY_RESPONSE_KIND_BATCHED_FINAL":
+      return QueryResponseKind.BATCHED_FINAL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return QueryResponseKind.UNRECOGNIZED;
+  }
+}
+
+export function queryResponseKindToJSON(object: QueryResponseKind): string {
+  switch (object) {
+    case QueryResponseKind.UNSPECIFIED:
+      return "QUERY_RESPONSE_KIND_UNSPECIFIED";
+    case QueryResponseKind.SINGLE:
+      return "QUERY_RESPONSE_KIND_SINGLE";
+    case QueryResponseKind.BATCHED:
+      return "QUERY_RESPONSE_KIND_BATCHED";
+    case QueryResponseKind.BATCHED_FINAL:
+      return "QUERY_RESPONSE_KIND_BATCHED_FINAL";
+    case QueryResponseKind.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** What happened to a record. */
+export enum Action {
+  UNSPECIFIED = 0,
+  CREATED = 1,
+  UPDATED = 2,
+  DELETED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function actionFromJSON(object: any): Action {
+  switch (object) {
+    case 0:
+    case "ACTION_UNSPECIFIED":
+      return Action.UNSPECIFIED;
+    case 1:
+    case "ACTION_CREATED":
+      return Action.CREATED;
+    case 2:
+    case "ACTION_UPDATED":
+      return Action.UPDATED;
+    case 3:
+    case "ACTION_DELETED":
+      return Action.DELETED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Action.UNRECOGNIZED;
+  }
+}
+
+export function actionToJSON(object: Action): string {
+  switch (object) {
+    case Action.UNSPECIFIED:
+      return "ACTION_UNSPECIFIED";
+    case Action.CREATED:
+      return "ACTION_CREATED";
+    case Action.UPDATED:
+      return "ACTION_UPDATED";
+    case Action.DELETED:
+      return "ACTION_DELETED";
+    case Action.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Why a subscription stream ended. */
+export enum SubscribeEndReason {
+  UNSPECIFIED = 0,
+  /**
+   * KILLED - The live query was killed, by a `KILL` statement through `Query` or by
+   * the server. It is gone; do not re-subscribe. Every other subscription to
+   * the same live query ends with this reason too.
+   */
+  KILLED = 1,
+  /** SESSION_CLOSED - The owning session was detached or reset. */
+  SESSION_CLOSED = 2,
+  /** SERVER_SHUTDOWN - The server is shutting down. Re-subscribing later is reasonable. */
+  SERVER_SHUTDOWN = 3,
+  /**
+   * NODE_REASSIGNED - The live query moved to another node. Re-subscribe; the id is still
+   * valid.
+   */
+  NODE_REASSIGNED = 4,
+  /**
+   * CURSOR_TOO_OLD - `resume_from` names a position the server no longer retains. The client
+   * must re-register and accept that it has missed notifications.
+   */
+  CURSOR_TOO_OLD = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function subscribeEndReasonFromJSON(object: any): SubscribeEndReason {
+  switch (object) {
+    case 0:
+    case "SUBSCRIBE_END_REASON_UNSPECIFIED":
+      return SubscribeEndReason.UNSPECIFIED;
+    case 1:
+    case "SUBSCRIBE_END_REASON_KILLED":
+      return SubscribeEndReason.KILLED;
+    case 2:
+    case "SUBSCRIBE_END_REASON_SESSION_CLOSED":
+      return SubscribeEndReason.SESSION_CLOSED;
+    case 3:
+    case "SUBSCRIBE_END_REASON_SERVER_SHUTDOWN":
+      return SubscribeEndReason.SERVER_SHUTDOWN;
+    case 4:
+    case "SUBSCRIBE_END_REASON_NODE_REASSIGNED":
+      return SubscribeEndReason.NODE_REASSIGNED;
+    case 5:
+    case "SUBSCRIBE_END_REASON_CURSOR_TOO_OLD":
+      return SubscribeEndReason.CURSOR_TOO_OLD;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SubscribeEndReason.UNRECOGNIZED;
+  }
+}
+
+export function subscribeEndReasonToJSON(object: SubscribeEndReason): string {
+  switch (object) {
+    case SubscribeEndReason.UNSPECIFIED:
+      return "SUBSCRIBE_END_REASON_UNSPECIFIED";
+    case SubscribeEndReason.KILLED:
+      return "SUBSCRIBE_END_REASON_KILLED";
+    case SubscribeEndReason.SESSION_CLOSED:
+      return "SUBSCRIBE_END_REASON_SESSION_CLOSED";
+    case SubscribeEndReason.SERVER_SHUTDOWN:
+      return "SUBSCRIBE_END_REASON_SERVER_SHUTDOWN";
+    case SubscribeEndReason.NODE_REASSIGNED:
+      return "SUBSCRIBE_END_REASON_NODE_REASSIGNED";
+    case SubscribeEndReason.CURSOR_TOO_OLD:
+      return "SUBSCRIBE_END_REASON_CURSOR_TOO_OLD";
+    case SubscribeEndReason.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
 /** Compression applied to exported data files. */
 export enum ExportCompression {
@@ -59,290 +381,770 @@ export function exportCompressionToJSON(object: ExportCompression): string {
   }
 }
 
-/** Action type. */
-export enum Action {
-  UNSPECIFIED = 0,
-  CREATED = 1,
-  UPDATED = 2,
-  DELETED = 3,
-  KILLED = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function actionFromJSON(object: any): Action {
-  switch (object) {
-    case 0:
-    case "ACTION_UNSPECIFIED":
-      return Action.UNSPECIFIED;
-    case 1:
-    case "ACTION_CREATED":
-      return Action.CREATED;
-    case 2:
-    case "ACTION_UPDATED":
-      return Action.UPDATED;
-    case 3:
-    case "ACTION_DELETED":
-      return Action.DELETED;
-    case 4:
-    case "ACTION_KILLED":
-      return Action.KILLED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Action.UNRECOGNIZED;
-  }
-}
-
-export function actionToJSON(object: Action): string {
-  switch (object) {
-    case Action.UNSPECIFIED:
-      return "ACTION_UNSPECIFIED";
-    case Action.CREATED:
-      return "ACTION_CREATED";
-    case Action.UPDATED:
-      return "ACTION_UPDATED";
-    case Action.DELETED:
-      return "ACTION_DELETED";
-    case Action.KILLED:
-      return "ACTION_KILLED";
-    case Action.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
+/**
+ * Who is connecting.
+ *
+ * Recorded by the server so operators can see which SDKs and runtimes are in
+ * use. Sent in the body rather than only as a transport header because the
+ * embedded binding has no headers and the question is just as interesting
+ * there. Servers SHOULD also record the transport `user-agent` when one is
+ * present, and treat it as the fallback for clients that skip the handshake.
+ */
+export interface ClientInfo {
+  /** SDK identifier, for example "surrealdb.js" or "surrealdb-go". */
+  name: string;
+  /** SDK version. */
+  version: string;
+  /** Host runtime, for example "node/22.3.0", "browser/chrome-131", "rustc/1.85". */
+  platform: string;
+  /**
+   * Anything not worth a field of its own. Servers MUST tolerate unknown
+   * keys, and MUST bound what they retain rather than storing it unbounded.
+   */
+  metadata: KeyValue[];
 }
 
 /**
- * The kind of query response.
+ * What this server's live queries actually guarantee.
  *
- * New kinds will only ever be sent to clients that explicitly opt in via a
- * QueryRequest capability; clients MAY treat an unrecognised kind as a
- * protocol error.
+ * These vary by deployment -- the live-query engine is an operator setting --
+ * so they are reported rather than assumed. An SDK that ignores this and
+ * assumes exactly-once will double-apply notifications on an at-least-once
+ * server.
  */
-export enum QueryResponseKind {
-  UNSPECIFIED = 0,
+export interface LiveQueryCapabilities {
+  /** Delivery guarantee. */
+  delivery: LiveQueryDelivery;
+  /** Whether `SubscribeRequest.resume_from` is honoured. */
+  resumable: boolean;
+  /** Whether several subscribers may attach to one live query at once. */
+  multipleSubscribers: boolean;
   /**
-   * SINGLE - A single value is contained in the response and no further responses are expected.
-   *
-   * This is used in the context of `SELECT ONLY ...` or other queries that should only ever return a single value.
-   *
-   * This is the final response for its query index and carries the query stats.
+   * How far back `resume_from` can reach. A cursor older than this is
+   * rejected with SUBSCRIBE_END_REASON_CURSOR_TOO_OLD. Zero when the server
+   * does not retain history.
    */
-  SINGLE = 1,
-  /** BATCHED - A batch of values is contained in the response and further responses may be expected. */
-  BATCHED = 2,
-  /**
-   * BATCHED_FINAL - The final response from a batched query. No further responses for this query ID are expected.
-   *
-   * This response should always contain the query stats.
-   *
-   * Note: If all response values can fit in a single batch, this will be the first and only response.
-   */
-  BATCHED_FINAL = 3,
-  UNRECOGNIZED = -1,
+  retention: Duration | undefined;
 }
 
-export function queryResponseKindFromJSON(object: any): QueryResponseKind {
-  switch (object) {
-    case 0:
-    case "QUERY_RESPONSE_KIND_UNSPECIFIED":
-      return QueryResponseKind.UNSPECIFIED;
-    case 1:
-    case "QUERY_RESPONSE_KIND_SINGLE":
-      return QueryResponseKind.SINGLE;
-    case 2:
-    case "QUERY_RESPONSE_KIND_BATCHED":
-      return QueryResponseKind.BATCHED;
-    case 3:
-    case "QUERY_RESPONSE_KIND_BATCHED_FINAL":
-      return QueryResponseKind.BATCHED_FINAL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return QueryResponseKind.UNRECOGNIZED;
-  }
+/** Numeric bounds a client must respect. */
+export interface Limits {
+  /** Largest message the server will accept or emit, in bytes. */
+  maxMessageBytes: bigint;
+  /** Largest `DataChunk` or `FileChunk` payload, in bytes. */
+  maxChunkBytes: bigint;
+  /** Longest a single query may run before the server aborts it. */
+  maxQueryDuration: Duration | undefined;
 }
 
-export function queryResponseKindToJSON(object: QueryResponseKind): string {
-  switch (object) {
-    case QueryResponseKind.UNSPECIFIED:
-      return "QUERY_RESPONSE_KIND_UNSPECIFIED";
-    case QueryResponseKind.SINGLE:
-      return "QUERY_RESPONSE_KIND_SINGLE";
-    case QueryResponseKind.BATCHED:
-      return "QUERY_RESPONSE_KIND_BATCHED";
-    case QueryResponseKind.BATCHED_FINAL:
-      return "QUERY_RESPONSE_KIND_BATCHED_FINAL";
-    case QueryResponseKind.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
+/** What this server supports. */
+export interface ServerCapabilities {
+  /**
+   * The SurrealDB build version.
+   *
+   * Not a gate -- that is what `capabilities` is for. Useful for telemetry,
+   * for error messages, and as the last resort for working around a bug in a
+   * specific version range, which capabilities cannot express.
+   */
+  serverVersion: string;
+  /** Oldest protocol version this server speaks. */
+  lowApiVersion:
+    | SemVer
+    | undefined;
+  /** Newest protocol version this server speaks. */
+  highApiVersion:
+    | SemVer
+    | undefined;
+  /**
+   * Coarse features this server supports, as free-form names.
+   *
+   * Strings rather than an enum so SurrealDB can introduce a capability
+   * without a protocol release: the set of things a server might support
+   * grows faster than this schema does, and gating that on a new enum value
+   * would make every feature flag a coordinated change across four repos.
+   *
+   * Names are UPPER_SNAKE_CASE and, once published, permanent -- a client
+   * matching on one must keep working. Clients MUST ignore names they do not
+   * recognise rather than treating them as an error.
+   *
+   * The names this protocol version defines, and which a server SHOULD use
+   * where they apply, are:
+   *
+   *   SESSIONS           several sessions multiplexed over one connection
+   *   TRANSACTIONS       explicit client-driven transactions
+   *   LIVE_QUERIES       live queries and subscriptions
+   *   REFRESH_TOKENS     refresh-token exchange
+   *   EXPORT_DIRECTORY   directory-format export
+   *   ML_MODELS          SurrealML model export
+   *   COLUMNAR_RESULTS   columnar (Arrow) query results
+   *
+   * This list is documentation, not a constraint. A server may report names
+   * that are not on it.
+   */
+  capabilities: string[];
+  /**
+   * Fully-qualified names of RPCs the operator has disabled, for example
+   * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
+   * coarse; deny lists are per-method, and both exist server-side, so both
+   * are reported rather than lossily projecting one onto the other.
+   */
+  deniedMethods: string[];
+  /** Numeric bounds. */
+  limits:
+    | Limits
+    | undefined;
+  /** Live-query guarantees. */
+  liveQueries: LiveQueryCapabilities | undefined;
+}
+
+/** Request to report server capabilities. */
+export interface GetCapabilitiesRequest {
+  /**
+   * Present for uniformity with every other request. `session` and
+   * `transaction` MUST be unset: capabilities are a property of the server
+   * and the connection, not of a session.
+   */
+  context:
+    | RequestContext
+    | undefined;
+  /** Who is connecting. */
+  client: ClientInfo | undefined;
+}
+
+/**
+ * Response reporting server capabilities.
+ *
+ * Capabilities are fixed for the lifetime of a connection and MUST be
+ * re-fetched after reconnecting: an operator may have restarted the server
+ * with a different configuration, or a load balancer may have routed the new
+ * connection to a node running a different version.
+ *
+ * A capability is an optimisation, never a substitute for handling errors. If
+ * any RPC fails as unimplemented or not-allowed, the client MUST clear that
+ * capability for the connection and surface a typed error, whatever this
+ * response said. That rule is what keeps clients correct when the answer is
+ * stale, or synthesised by a proxy.
+ */
+export interface GetCapabilitiesResponse {
+  capabilities: ServerCapabilities | undefined;
 }
 
 /** Request to check the health of the database. */
 export interface HealthRequest {
+  context: RequestContext | undefined;
 }
 
 /** Response to a health check request. */
 export interface HealthResponse {
 }
 
-/** Request to get the version of the database. */
-export interface VersionRequest {
+/** Request to create or adopt a session. */
+export interface AttachSessionRequest {
+  /**
+   * `context.session` names the session to attach. Absent asks the server to
+   * allocate one.
+   */
+  context: RequestContext | undefined;
 }
 
-/** Response to a version request. */
-export interface VersionResponse {
-  version: string;
+/** Response to a session attach. */
+export interface AttachSessionResponse {
+  /**
+   * The attached session's id, allocated by the server when the request did
+   * not name one.
+   */
+  session:
+    | Uuid
+    | undefined;
+  /**
+   * True when this call created the session, false when it adopted one that
+   * already existed. Lets a client tell "the server still has my session"
+   * from "the server lost it and gave me a fresh one" after a reconnect,
+   * which decides whether its cached namespace, variables and auth are
+   * still in effect.
+   */
+  created: boolean;
 }
 
-/** Request to sign up a new user. */
-export interface SignupRequest {
+/** Request to release a session. */
+export interface DetachSessionRequest {
+  /** `context.session` names the session to release. */
+  context: RequestContext | undefined;
+}
+
+/** Response to a session detach. */
+export interface DetachSessionResponse {
+}
+
+/** Request to reset a session. */
+export interface ResetSessionRequest {
+  /** `context.session` names the session to reset. */
+  context: RequestContext | undefined;
+}
+
+/** Response to a session reset. */
+export interface ResetSessionResponse {
+}
+
+/**
+ * Request to select the namespace and database.
+ *
+ * Both fields are three-state: absent leaves the current selection alone,
+ * `null` clears it, and a string sets it. Clearing and leaving alone are
+ * genuinely different operations, which a plain string cannot express.
+ */
+export interface UseRequest {
+  context: RequestContext | undefined;
+  namespace: NullableString | undefined;
+  database: NullableString | undefined;
+}
+
+/** Response reporting the resulting selection. */
+export interface UseResponse {
+  /** The namespace now in use; empty when none is selected. */
+  namespace: string;
+  /** The database now in use; empty when none is selected. */
+  database: string;
+}
+
+/** Request to bind a session variable. */
+export interface SetVariableRequest {
+  context:
+    | RequestContext
+    | undefined;
+  /** The name, without the leading `$`. */
+  name: string;
+  value: Value | undefined;
+}
+
+/** Response to binding a session variable. */
+export interface SetVariableResponse {
+}
+
+/** Request to remove a session variable. */
+export interface UnsetVariableRequest {
+  context: RequestContext | undefined;
+  name: string;
+}
+
+/** Response to removing a session variable. */
+export interface UnsetVariableResponse {
+}
+
+/**
+ * Username and password credentials, at root, namespace or database level.
+ *
+ * The level is implied by which scoping fields are set: neither means root,
+ * `namespace` alone means namespace level, both means database level.
+ *
+ * This replaces the previous split into RootUserCredentials,
+ * NamespaceUserCredentials and DatabaseUserCredentials. That split claimed to
+ * make illegal states unrepresentable but did not -- the database variant
+ * could still carry an empty namespace -- while being unable to express a
+ * system user authenticating through a named access method at all. Servers
+ * validate the combination regardless, so the split bought nothing.
+ */
+export interface UserCredentials {
+  /** Empty for a root user. */
+  namespace: string;
+  /** Empty for a root or namespace user. */
+  database: string;
+  username: string;
+  password: string;
+  /** Optional named system access method. */
+  access: string;
+}
+
+/**
+ * Record-access credentials, for users defined by a record access method.
+ *
+ * The variables are passed to the access method's SIGNIN or SIGNUP clause.
+ */
+export interface RecordCredentials {
   namespace: string;
   database: string;
-  accessName: string;
+  access: string;
   variables: Variables | undefined;
+}
+
+/** Bearer-key credentials for a named access method. */
+export interface BearerCredentials {
+  namespace: string;
+  database: string;
+  access: string;
+  key: string;
+}
+
+/** How the caller wishes to authenticate. */
+export interface AccessMethod {
+  method: { $case: "user"; user: UserCredentials } | { $case: "record"; record: RecordCredentials } | {
+    $case: "bearer";
+    bearer: BearerCredentials;
+  } | undefined;
+}
+
+/**
+ * An access token and its refresh token, with their expiry.
+ *
+ * Expiry is stated explicitly so that clients can schedule renewal without
+ * decoding the access token. Every SDK currently parses the JWT's `exp` claim
+ * itself, which couples all of them to SurrealDB's token format for no reason.
+ */
+export interface Tokens {
+  /** The access token, presented on subsequent authentication. */
+  access: string;
+  /**
+   * The refresh token, exchanged via `RefreshTokens`. Empty when the access
+   * method does not issue one.
+   */
+  refresh: string;
+  /** When the access token stops being accepted. */
+  expiresAt:
+    | Datetime
+    | undefined;
+  /** When the refresh token stops being accepted. */
+  refreshExpiresAt: Datetime | undefined;
+}
+
+/** Request to register a new record user. */
+export interface SignupRequest {
+  context: RequestContext | undefined;
+  credentials: RecordCredentials | undefined;
 }
 
 /** Response to a signup request. */
 export interface SignupResponse {
-  value: Value | undefined;
+  tokens: Tokens | undefined;
 }
 
-/** Request to sign in a user. */
+/** Request to authenticate with credentials. */
 export interface SigninRequest {
+  context: RequestContext | undefined;
   accessMethod: AccessMethod | undefined;
 }
 
 /** Response to a signin request. */
 export interface SigninResponse {
-  value: Value | undefined;
+  tokens: Tokens | undefined;
 }
 
-/** Request to authenticate a user. */
+/** Request to authenticate with an existing token. */
 export interface AuthenticateRequest {
+  context: RequestContext | undefined;
   token: string;
 }
 
 /** Response to an authenticate request. */
 export interface AuthenticateResponse {
-  value: Value | undefined;
-}
-
-/** Request to use a namespace and database. */
-export interface UseRequest {
   /**
-   * The namespace to use.
-   * An empty namespace will unset the current namespace.
+   * The token's expiry, so a client that authenticated with a token it did
+   * not mint can still schedule renewal.
    */
-  namespace: string;
-  /**
-   * The database to use.
-   * An empty database will unset the current database.
-   */
-  database: string;
+  expiresAt: Datetime | undefined;
 }
 
-/** Response to a use request. */
-export interface UseResponse {
-  /** The namespace that is now in use. */
-  namespace: string;
-  /** The database that is now in use. */
-  database: string;
+/** Request to exchange a refresh token for a new pair. */
+export interface RefreshTokensRequest {
+  context: RequestContext | undefined;
+  refresh: string;
 }
 
-/** Request to set a global variable for the current session. */
-export interface SetRequest {
-  /** The name of the variable to set. */
-  name: string;
-  /** The value to set the variable to. */
-  value: Value | undefined;
+/** Response carrying the new token pair. */
+export interface RefreshTokensResponse {
+  tokens: Tokens | undefined;
 }
 
-/** Response to a set request. */
-export interface SetResponse {
+/** Request to invalidate tokens everywhere. */
+export interface RevokeTokensRequest {
+  context:
+    | RequestContext
+    | undefined;
+  /** The access token to revoke, if any. */
+  access: string;
+  /** The refresh token to revoke, if any. */
+  refresh: string;
 }
 
-/** Request to unset a global variable for the current session. */
-export interface UnsetRequest {
-  /** The name of the variable to unset. */
-  name: string;
+/** Response to a token revocation. */
+export interface RevokeTokensResponse {
 }
 
-/** Response to an unset request. */
-export interface UnsetResponse {
-}
-
-/** Request to invalidate the current session. */
+/** Request to clear the session's authentication. */
 export interface InvalidateRequest {
+  context: RequestContext | undefined;
 }
 
 /** Response to an invalidate request. */
 export interface InvalidateResponse {
 }
 
-/** Request to reset all global variables for the current session. */
-export interface ResetRequest {
+/** Request to open an explicit transaction. */
+export interface BeginTransactionRequest {
+  context: RequestContext | undefined;
 }
 
-/** Response to a reset request. */
-export interface ResetResponse {
+/** Response carrying the new transaction's id. */
+export interface BeginTransactionResponse {
+  /** Pass this as `context.transaction` on the queries that should run in it. */
+  transaction: Uuid | undefined;
 }
 
-/** Request to import data into the database. */
+/** Request to commit a transaction. */
+export interface CommitTransactionRequest {
+  /** `context.transaction` names the transaction to commit. */
+  context: RequestContext | undefined;
+}
+
+/** Response to a commit. */
+export interface CommitTransactionResponse {
+}
+
+/** Request to cancel a transaction. */
+export interface CancelTransactionRequest {
+  /** `context.transaction` names the transaction to cancel. */
+  context: RequestContext | undefined;
+}
+
+/** Response to a cancellation. */
+export interface CancelTransactionResponse {
+}
+
+/** Request to execute SurrealQL. */
+export interface QueryRequest {
+  context:
+    | RequestContext
+    | undefined;
+  /** One or more SurrealQL statements. */
+  query: string;
+  /** Values bound as `$name`. */
+  variables:
+    | Variables
+    | undefined;
+  /**
+   * Result encodings the client is willing to receive, most preferred first.
+   *
+   * The server MUST reply using one of these, and MUST NOT use an encoding
+   * the client did not list. Absent means row-oriented values only. This is
+   * the rule that keeps a future encoding from reaching an old client as an
+   * empty result set, which would look like success.
+   */
+  acceptedEncodings: ResultEncoding[];
+}
+
+/**
+ * A batch of row-oriented values.
+ *
+ * A message rather than a bare repeated field because proto3 forbids
+ * `repeated` inside a `oneof`, and the payload has to be a `oneof` so that
+ * exactly one encoding is populated per batch. Costs two bytes per batch.
+ */
+export interface ValueBatch {
+  values: Value[];
+}
+
+/**
+ * A batch of columnar results, as Arrow IPC.
+ *
+ * Not served yet; defined now because the shape cannot be retrofitted. The
+ * payload must be a message rather than bare bytes: SurrealDB is schemaless,
+ * the Arrow IPC stream format forbids a second schema message mid-stream, and
+ * a statement whose rows change shape therefore needs several sequential IPC
+ * streams -- which needs a per-frame discriminator that a bare `bytes` field
+ * has nowhere to put.
+ */
+export interface ArrowBatch {
+  /**
+   * One or more complete encapsulated Arrow IPC messages.
+   *
+   * Concatenating the payloads for one query index in `batch_index` order,
+   * within a single `stream_sequence`, yields a valid Arrow IPC stream. That
+   * one rule subsumes schema-first and dictionaries-before-use ordering.
+   */
+  payload: Uint8Array;
+  /**
+   * Which IPC stream this belongs to, counting from zero within its query
+   * index. Increments when the row shape changes and the server must start a
+   * fresh stream; readers finish the previous stream before starting this one.
+   */
+  streamSequence: number;
+}
+
+/** Query statistics. */
+export interface QueryStats {
+  /** The number of records returned. -1 if unknown. */
+  recordsReturned: bigint;
+  /** The number of bytes returned. -1 if unknown. */
+  bytesReturned: bigint;
+  /** The number of records scanned. -1 if unknown. */
+  recordsScanned: bigint;
+  /** The number of bytes scanned. -1 if unknown. */
+  bytesScanned: bigint;
+  /** How long the statement took. */
+  executionDuration: Duration | undefined;
+}
+
+/**
+ * The opening frame of a query stream.
+ *
+ * The server MUST send this on accepting the query, before it starts
+ * executing, so that a long-running query is identifiable while it is still
+ * running rather than only once it finishes.
+ */
+export interface QueryBegin {
+  /**
+   * Identifies this execution.
+   *
+   * Lets a caller name a query that is still running -- to correlate it with
+   * server logs, traces and slow-query records, or to report it to an
+   * operator. There is no RPC to stop another connection's query: a client
+   * stops its own by cancelling the `Query` stream, and anything beyond that
+   * goes through SurrealQL. Should a cancellation method be wanted later,
+   * this is the handle it would take, and adding it is additive.
+   */
+  queryId:
+    | Uuid
+    | undefined;
+  /**
+   * How many statements the query parsed into, and therefore how many query
+   * indexes to expect. Every index in `[0, result_count)` emits at least one
+   * batch.
+   */
+  resultCount: number;
+}
+
+/** One statement's results, or part of them. */
+export interface QueryBatchFrame {
+  /** Which statement this belongs to, counting from zero. */
+  queryIndex: number;
+  /** Which batch within that statement, counting from zero. */
+  batchIndex: bigint;
+  /** Whether more batches follow for this query index. */
+  kind: QueryResponseKind;
+  /** What kind of statement produced this. */
+  statementKind: QueryStatementKind;
+  /** Present only on the final batch of a query index. */
+  stats:
+    | QueryStats
+    | undefined;
+  /**
+   * Set when the statement failed. Terminal for its query index: its payload
+   * is empty, stats MAY still be present, and other query indexes carry on.
+   */
+  error:
+    | SurrealError
+    | undefined;
+  /**
+   * The results. Exactly one encoding is populated, and it is always one the
+   * client listed in `accepted_encodings`.
+   */
+  payload: { $case: "values"; values: ValueBatch } | { $case: "arrow"; arrow: ArrowBatch } | undefined;
+}
+
+/** The frame that completes a query stream successfully. */
+export interface QueryEnd {
+}
+
+/**
+ * Streaming response to a query request.
+ *
+ * A successful query arrives as: `begin` once, then `batch` frames, then `end`.
+ * An `error` frame terminates the stream instead, and is used for failures
+ * that are not attributable to a single statement; a statement's own failure
+ * travels in that statement's `batch` frame so the rest of the query can
+ * continue.
+ *
+ * Ordering: batches sharing a `query_index` always arrive in ascending
+ * `batch_index`. Batches for DIFFERENT query indexes MAY be interleaved
+ * arbitrarily, and clients MUST demultiplex by `query_index` rather than
+ * assuming one statement finishes before the next begins. That freedom is what
+ * lets a server stream each statement's results as soon as it produces them
+ * instead of holding them until the whole query finishes.
+ *
+ * Lifecycle: every query index in `[0, result_count)` emits at least one
+ * batch. The final batch for an index is the one carrying `stats`, an `error`,
+ * or kind SINGLE or BATCHED_FINAL; treat that as the authoritative
+ * end-of-results signal for that statement.
+ *
+ * Failures before execution begins -- a parse error, authentication, an
+ * unknown transaction id -- terminate the RPC with a transport-level error and
+ * no frames at all.
+ */
+export interface QueryResponse {
+  frame:
+    | { $case: "begin"; begin: QueryBegin }
+    | { $case: "batch"; batch: QueryBatchFrame }
+    | { $case: "end"; end: QueryEnd }
+    | { $case: "error"; error: SurrealError }
+    | undefined;
+}
+
+/**
+ * A position in a live query's notification history.
+ *
+ * Doubles as the dedupe key and the resume point. Under at-least-once
+ * delivery, a consumer that has already processed a cursor MUST ignore a
+ * repeat of it.
+ */
+export interface LiveQueryCursor {
+  /**
+   * The commit versionstamp the notification was produced at. Notifications
+   * for one subscription arrive in non-decreasing versionstamp order.
+   */
+  versionstamp: bigint;
+  /**
+   * Distinguishes notifications produced by the same commit, counting from
+   * zero.
+   */
+  sequence: number;
+}
+
+/** A live query to register and subscribe to in one step. */
+export interface LiveQueryRegistration {
+  /** A single LIVE SELECT statement. */
+  query: string;
+  /** Values bound as `$name`. */
+  variables: Variables | undefined;
+}
+
+/**
+ * Request to stream a live query's notifications.
+ *
+ * Registering and subscribing in one call closes a race that the two-step
+ * alternative cannot: notifications produced between `LIVE SELECT` returning
+ * and the subscription attaching have nowhere to go and are lost.
+ */
+export interface SubscribeRequest {
+  context: RequestContext | undefined;
+  subscribeTo:
+    | //
+    /**
+     * Attach to a live query that already exists -- including one
+     * registered by an ordinary `Query`. Does not affect its lifetime:
+     * ending this stream leaves the live query running for its other
+     * subscribers.
+     */
+    { $case: "liveQueryId"; liveQueryId: Uuid }
+    | //
+    /**
+     * Register a new live query and subscribe to it atomically. Its
+     * lifetime is bound to this stream: ending the stream kills it. You
+     * kill what you created.
+     */
+    { $case: "query"; query: LiveQueryRegistration }
+    | undefined;
+  /**
+   * Resume from just after this position instead of starting at now.
+   *
+   * Only honoured when the server advertises `resumable`. A cursor the
+   * server no longer retains ends the stream with CURSOR_TOO_OLD rather than
+   * silently skipping the gap.
+   */
+  resumeFrom: LiveQueryCursor | undefined;
+}
+
+/** A change to a record matched by a live query. */
+export interface Notification {
+  /**
+   * The live query that matched. Present because several subscriptions may
+   * share a stream-independent id, and clients log against it.
+   */
+  liveQueryId: Uuid | undefined;
+  action: Action;
+  /** The record that changed. */
+  recordId:
+    | RecordId
+    | undefined;
+  /**
+   * The record's new content, or the diff, depending on how the live query
+   * was declared. Absent for a delete.
+   */
+  value:
+    | Value
+    | undefined;
+  /**
+   * This notification's position. The dedupe key under at-least-once
+   * delivery, and what to store to resume later.
+   */
+  cursor: LiveQueryCursor | undefined;
+}
+
+/** The opening frame of a subscription stream. */
+export interface SubscribeBegin {
+  /**
+   * Identifies this subscription. Distinct from `live_query_id`, because one
+   * live query may have many concurrent subscribers.
+   */
+  subscriptionId:
+    | Uuid
+    | undefined;
+  /**
+   * The live query being observed, whether it already existed or was created
+   * by this call.
+   */
+  liveQueryId:
+    | Uuid
+    | undefined;
+  /**
+   * The position delivery starts after. Echoes `resume_from` when the
+   * request carried one; otherwise the server's current position.
+   */
+  cursor: LiveQueryCursor | undefined;
+}
+
+/** The frame that ends a subscription stream. */
+export interface SubscribeEnd {
+  reason: SubscribeEndReason;
+  /** The last position delivered, so a client can resume from here later. */
+  cursor: LiveQueryCursor | undefined;
+}
+
+/**
+ * Streaming response carrying one live query's notifications.
+ *
+ * A subscription arrives as: `begin` once, then `notification` frames, then
+ * `end`. An `error` frame terminates the stream instead.
+ *
+ * Delivery depends on the server's live-query engine and is reported by
+ * `GetCapabilities`. Under AT_LEAST_ONCE -- the durable engine -- THE SAME
+ * NOTIFICATION MAY BE DELIVERED MORE THAN ONCE, and consumers MUST dedupe on
+ * `Notification.cursor`. Under AT_MOST_ONCE a notification may instead be lost
+ * and is never redelivered. Notifications are emitted only after the write
+ * transaction that produced them commits.
+ */
+export interface SubscribeResponse {
+  frame:
+    | { $case: "begin"; begin: SubscribeBegin }
+    | { $case: "notification"; notification: Notification }
+    | { $case: "end"; end: SubscribeEnd }
+    | { $case: "error"; error: SurrealError }
+    | undefined;
+}
+
+/** The opening frame of an import stream, carrying the request's context. */
+export interface ImportSqlBegin {
+  context: RequestContext | undefined;
+}
+
+/**
+ * A frame of a SurrealQL import stream.
+ *
+ * Framed as `begin` -> `chunk`* -> `trailer`. Bytes rather than parsed
+ * statements: a single INSERT can be hundreds of megabytes, so statement
+ * framing puts no bound on message size and forces the sender to parse before
+ * it can stream.
+ */
 export interface ImportSqlRequest {
-  statement: string;
+  frame: { $case: "begin"; begin: ImportSqlBegin } | { $case: "chunk"; chunk: DataChunk } | {
+    $case: "trailer";
+    trailer: DataTrailer;
+  } | undefined;
 }
 
 /** Response to an import request. */
 export interface ImportSqlResponse {
 }
 
-/** Request to export data from the database. */
-export interface ExportSqlRequest {
-  users: boolean;
-  accesses: boolean;
-  params: boolean;
-  functions: boolean;
-  analyzers: boolean;
-  tables: ExportSqlRequest_Tables | undefined;
-  versions: boolean;
-  records: boolean;
-  sequences: boolean;
-}
-
-export interface ExportSqlRequest_SelectedTables {
-  tables: string[];
-}
-
-export interface ExportSqlRequest_Tables {
-  selection: { $case: "all"; all: NullValue } | { $case: "none"; none: NullValue } | {
-    $case: "selected";
-    selected: ExportSqlRequest_SelectedTables;
-  } | undefined;
-}
-
-/** Response to an export request. */
-export interface ExportSqlResponse {
-  statement: string;
-}
-
-/** Request to export the ML model. */
-export interface ExportMlModelRequest {
-  name: string;
-  version: string;
-}
-
-/** Response to an export request. */
-export interface ExportMlModelResponse {
-  model: Uint8Array;
-}
-
-/**
- * Which sections of the database to include in a directory export.
- *
- * Mirrors the fields of `ExportSqlRequest`; kept as a distinct message so the
- * directory export surface can evolve independently of the SurrealQL export.
- */
+/** Which parts of the database to export. */
 export interface ExportConfig {
   /** Include user definitions. */
   users: boolean;
@@ -364,6 +1166,14 @@ export interface ExportConfig {
   records: boolean;
   /** Include sequence definitions. */
   sequences: boolean;
+  /** Include API definitions. */
+  apis: boolean;
+  /** Include bucket definitions. */
+  buckets: boolean;
+  /** Include module definitions. */
+  modules: boolean;
+  /** Include config definitions. */
+  configs: boolean;
 }
 
 /** An explicit list of tables to export. */
@@ -384,6 +1194,40 @@ export interface ExportConfig_Tables {
     /** Export only the named tables. */
     { $case: "selected"; selected: ExportConfig_SelectedTables }
     | undefined;
+}
+
+/** Request to export the database as SurrealQL. */
+export interface ExportSqlRequest {
+  context: RequestContext | undefined;
+  config: ExportConfig | undefined;
+}
+
+/**
+ * A frame of a SurrealQL export stream.
+ *
+ * Framed as `chunk`* -> `trailer`, or terminated by `error`. A stream that
+ * ends without a trailer MUST be treated as failed.
+ */
+export interface ExportSqlResponse {
+  frame: { $case: "chunk"; chunk: DataChunk } | { $case: "trailer"; trailer: DataTrailer } | {
+    $case: "error";
+    error: SurrealError;
+  } | undefined;
+}
+
+/** Request to export a SurrealML model. */
+export interface ExportMlModelRequest {
+  context: RequestContext | undefined;
+  name: string;
+  version: string;
+}
+
+/** A frame of an ML-model export stream. */
+export interface ExportMlModelResponse {
+  frame: { $case: "chunk"; chunk: DataChunk } | { $case: "trailer"; trailer: DataTrailer } | {
+    $case: "error";
+    error: SurrealError;
+  } | undefined;
 }
 
 /**
@@ -419,6 +1263,9 @@ export interface ExportDestination {
 
 /** Request to export data from the database as a streamed directory. */
 export interface ExportDirectoryRequest {
+  context:
+    | RequestContext
+    | undefined;
   /** Which sections of the database to export. */
   config:
     | ExportConfig
@@ -512,7 +1359,7 @@ export interface FileChunk {
  * The trailer carries the file's total size and hash, both computed
  * incrementally while the chunks were produced — so no whole-file buffering is
  * needed to learn them up front. Clients MUST verify that the bytes they
- * received for the file match both `bytes` and `sha256`, and treat any
+ * received for the file match both `bytes` and `blake3`, and treat any
  * mismatch as a failed export.
  */
 export interface FileEnd {
@@ -520,8 +1367,8 @@ export interface FileEnd {
   fileId: bigint;
   /** The total number of bytes streamed for the file. */
   bytes: bigint;
-  /** The SHA-256 of the streamed bytes, lowercase hex. */
-  sha256: string;
+  /** The BLAKE3 of the streamed bytes, lowercase hex. */
+  blake3: string;
 }
 
 /**
@@ -546,27 +1393,14 @@ export interface ExportDirectoryEnd {
 }
 
 /**
- * Frame: the export failed. Terminates the stream.
- *
- * An Error frame MAY arrive at any point, including before Begin and while
- * files are still open. All open files are abandoned and no further frames
- * follow.
- */
-export interface ExportError {
-  /** The error code. */
-  code: bigint;
-  /** The error message. */
-  message: string;
-}
-
-/**
  * A single frame in a directory export stream.
  *
- * Modelled on the QueryResponse streaming envelope. A successful export
- * arrives as: Begin (exactly once, first), then for each file
- * FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed is
- * always `manifest.json`, which lists every other file. An Error frame MAY
- * terminate the stream at any point instead.
+ * A successful export arrives as: Begin (exactly once, first), then for each
+ * file FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed
+ * is always `manifest.json`, which lists every other file. An error frame MAY
+ * terminate the stream at any point instead, including before Begin and while
+ * files are still open; all open files are then abandoned and no further
+ * frames follow.
  *
  * A single file's frames are always sent in order, but frames belonging to
  * different `file_id`s MAY be interleaved; clients MUST demultiplex by
@@ -596,204 +1430,687 @@ export interface ExportDirectoryResponse {
     { $case: "end"; end: ExportDirectoryEnd }
     | //
     /** The export failed. */
-    { $case: "error"; error: ExportError }
+    { $case: "error"; error: SurrealError }
     | undefined;
 }
 
-/** Request to issue a live query. */
-export interface SubscribeRequest {
-  subscribeTo: { $case: "liveQueryId"; liveQueryId: Uuid } | { $case: "query"; query: QueryRequest } | undefined;
+function createBaseClientInfo(): ClientInfo {
+  return { name: "", version: "", platform: "", metadata: [] };
 }
 
-/** Response to a live query. */
-export interface SubscribeResponse {
-  notification: Notification | undefined;
+export const ClientInfo: MessageFns<ClientInfo> = {
+  encode(message: ClientInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.version !== "") {
+      writer.uint32(18).string(message.version);
+    }
+    if (message.platform !== "") {
+      writer.uint32(26).string(message.platform);
+    }
+    for (const v of message.metadata) {
+      KeyValue.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClientInfo {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClientInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.platform = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.metadata.push(KeyValue.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClientInfo {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+      platform: isSet(object.platform) ? globalThis.String(object.platform) : "",
+      metadata: globalThis.Array.isArray(object?.metadata) ? object.metadata.map((e: any) => KeyValue.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ClientInfo): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.platform !== "") {
+      obj.platform = message.platform;
+    }
+    if (message.metadata?.length) {
+      obj.metadata = message.metadata.map((e) => KeyValue.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClientInfo>, I>>(base?: I): ClientInfo {
+    return ClientInfo.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClientInfo>, I>>(object: I): ClientInfo {
+    const message = createBaseClientInfo();
+    message.name = object.name ?? "";
+    message.version = object.version ?? "";
+    message.platform = object.platform ?? "";
+    message.metadata = object.metadata?.map((e) => KeyValue.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLiveQueryCapabilities(): LiveQueryCapabilities {
+  return { delivery: 0, resumable: false, multipleSubscribers: false, retention: undefined };
 }
 
-/** A notification from a live query. */
-export interface Notification {
-  liveQueryId: Uuid | undefined;
-  action: Action;
-  recordId: RecordId | undefined;
-  value: Value | undefined;
+export const LiveQueryCapabilities: MessageFns<LiveQueryCapabilities> = {
+  encode(message: LiveQueryCapabilities, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.delivery !== 0) {
+      writer.uint32(8).int32(message.delivery);
+    }
+    if (message.resumable !== false) {
+      writer.uint32(16).bool(message.resumable);
+    }
+    if (message.multipleSubscribers !== false) {
+      writer.uint32(24).bool(message.multipleSubscribers);
+    }
+    if (message.retention !== undefined) {
+      Duration.encode(message.retention, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiveQueryCapabilities {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiveQueryCapabilities();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.delivery = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.resumable = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.multipleSubscribers = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.retention = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiveQueryCapabilities {
+    return {
+      delivery: isSet(object.delivery) ? liveQueryDeliveryFromJSON(object.delivery) : 0,
+      resumable: isSet(object.resumable) ? globalThis.Boolean(object.resumable) : false,
+      multipleSubscribers: isSet(object.multipleSubscribers)
+        ? globalThis.Boolean(object.multipleSubscribers)
+        : isSet(object.multiple_subscribers)
+        ? globalThis.Boolean(object.multiple_subscribers)
+        : false,
+      retention: isSet(object.retention) ? Duration.fromJSON(object.retention) : undefined,
+    };
+  },
+
+  toJSON(message: LiveQueryCapabilities): unknown {
+    const obj: any = {};
+    if (message.delivery !== 0) {
+      obj.delivery = liveQueryDeliveryToJSON(message.delivery);
+    }
+    if (message.resumable !== false) {
+      obj.resumable = message.resumable;
+    }
+    if (message.multipleSubscribers !== false) {
+      obj.multipleSubscribers = message.multipleSubscribers;
+    }
+    if (message.retention !== undefined) {
+      obj.retention = Duration.toJSON(message.retention);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiveQueryCapabilities>, I>>(base?: I): LiveQueryCapabilities {
+    return LiveQueryCapabilities.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiveQueryCapabilities>, I>>(object: I): LiveQueryCapabilities {
+    const message = createBaseLiveQueryCapabilities();
+    message.delivery = object.delivery ?? 0;
+    message.resumable = object.resumable ?? false;
+    message.multipleSubscribers = object.multipleSubscribers ?? false;
+    message.retention = (object.retention !== undefined && object.retention !== null)
+      ? Duration.fromPartial(object.retention)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseLimits(): Limits {
+  return { maxMessageBytes: 0n, maxChunkBytes: 0n, maxQueryDuration: undefined };
 }
 
-/** Request to query the database. */
-export interface QueryRequest {
-  query: string;
-  variables: Variables | undefined;
-  txnId: Uuid | undefined;
+export const Limits: MessageFns<Limits> = {
+  encode(message: Limits, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.maxMessageBytes !== 0n) {
+      if (BigInt.asUintN(64, message.maxMessageBytes) !== message.maxMessageBytes) {
+        throw new globalThis.Error("value provided for field message.maxMessageBytes of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.maxMessageBytes);
+    }
+    if (message.maxChunkBytes !== 0n) {
+      if (BigInt.asUintN(64, message.maxChunkBytes) !== message.maxChunkBytes) {
+        throw new globalThis.Error("value provided for field message.maxChunkBytes of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.maxChunkBytes);
+    }
+    if (message.maxQueryDuration !== undefined) {
+      Duration.encode(message.maxQueryDuration, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Limits {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLimits();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.maxMessageBytes = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maxChunkBytes = reader.uint64() as bigint;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.maxQueryDuration = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Limits {
+    return {
+      maxMessageBytes: isSet(object.maxMessageBytes)
+        ? BigInt(object.maxMessageBytes)
+        : isSet(object.max_message_bytes)
+        ? BigInt(object.max_message_bytes)
+        : 0n,
+      maxChunkBytes: isSet(object.maxChunkBytes)
+        ? BigInt(object.maxChunkBytes)
+        : isSet(object.max_chunk_bytes)
+        ? BigInt(object.max_chunk_bytes)
+        : 0n,
+      maxQueryDuration: isSet(object.maxQueryDuration)
+        ? Duration.fromJSON(object.maxQueryDuration)
+        : isSet(object.max_query_duration)
+        ? Duration.fromJSON(object.max_query_duration)
+        : undefined,
+    };
+  },
+
+  toJSON(message: Limits): unknown {
+    const obj: any = {};
+    if (message.maxMessageBytes !== 0n) {
+      obj.maxMessageBytes = message.maxMessageBytes.toString();
+    }
+    if (message.maxChunkBytes !== 0n) {
+      obj.maxChunkBytes = message.maxChunkBytes.toString();
+    }
+    if (message.maxQueryDuration !== undefined) {
+      obj.maxQueryDuration = Duration.toJSON(message.maxQueryDuration);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Limits>, I>>(base?: I): Limits {
+    return Limits.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Limits>, I>>(object: I): Limits {
+    const message = createBaseLimits();
+    message.maxMessageBytes = object.maxMessageBytes ?? 0n;
+    message.maxChunkBytes = object.maxChunkBytes ?? 0n;
+    message.maxQueryDuration = (object.maxQueryDuration !== undefined && object.maxQueryDuration !== null)
+      ? Duration.fromPartial(object.maxQueryDuration)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseServerCapabilities(): ServerCapabilities {
+  return {
+    serverVersion: "",
+    lowApiVersion: undefined,
+    highApiVersion: undefined,
+    capabilities: [],
+    deniedMethods: [],
+    limits: undefined,
+    liveQueries: undefined,
+  };
 }
 
-/**
- * Streaming response to a query request.
- *
- * When a query has 5 statements, there will be 5 unique query indexes (0..4).
- *
- * Ordering: responses that share a query_index are always sent in ascending
- * batch_index order. Responses for DIFFERENT query indexes MAY be interleaved
- * arbitrarily; clients MUST demultiplex by query_index and MUST NOT assume
- * one statement's responses finish before another's begin. This is what
- * allows a server to stream each statement's batches as soon as they are
- * produced. For example:
- *  QueryResponse(query_index=0, batch_index=0)
- *  QueryResponse(query_index=1, batch_index=0, stats=Some(..))  // q1 complete
- *  QueryResponse(query_index=0, batch_index=1, stats=Some(..))  // q0 complete
- *  QueryResponse(query_index=2, batch_index=0)
- *  QueryResponse(query_index=2, batch_index=1, stats=Some(..))  // q2 complete
- *
- * Lifecycle: every query index in 0..result_count emits at least one
- * response. The final response for a query index is the one carrying stats
- * and/or error; treat their presence as the authoritative end-of-results
- * signal for that index.
- *
- * Errors: a response with error set is the final response for its
- * query index; its values are empty, stats MAY be present, and responses for
- * other query indexes continue to arrive. result_count includes errored
- * statements. Failures that occur before execution begins (parse errors,
- * authentication, an unknown txn_id) terminate the RPC with a gRPC status
- * error and no QueryResponse frames.
- */
-export interface QueryResponse {
-  /** The index of the query result. */
-  queryIndex: number;
-  /** The index of the batch within the given query. */
-  batchIndex: bigint;
-  /**
-   * The total number of query results.
-   *
-   * Every response will contain the same value for this field so you can
-   * use the value from the first response to determine how many query results
-   * to expect.
-   *
-   * Note: This is NOT the number of records returned.
-   *
-   * Examples:
-   *   query = "SELECT * FROM users;"
-   *   result_count = 1
-   *
-   *   query = """
-   *   SELECT * FROM users;
-   *   SELECT * FROM posts;
-   *   """
-   *   result_count = 2
-   *
-   *   query = """
-   *   SELECT * FROM users;
-   *   SELECT * FROM posts;
-   *   SELECT * FROM comments;
-   *   """
-   *   result_count = 3
-   */
-  resultCount: number;
-  /** The kind of query response. */
-  kind: QueryResponseKind;
-  /**
-   * The query stats.
-   * Present only on the final response of each query index.
-   */
-  stats:
-    | QueryStats
-    | undefined;
-  /**
-   * The error, if any. A response carrying an error is the final response
-   * for its query index.
-   */
-  error:
-    | QueryError
-    | undefined;
-  /**
-   * A batch of values. This is the only result payload in this version of
-   * the protocol. Future result encodings (for example a columnar Arrow
-   * batch) will be added as sibling submessage fields (field 8 onwards) and
-   * MUST only be emitted when the client explicitly opts in via
-   * QueryRequest; exactly one payload field is populated per response.
-   */
-  values: Value[];
+export const ServerCapabilities: MessageFns<ServerCapabilities> = {
+  encode(message: ServerCapabilities, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.serverVersion !== "") {
+      writer.uint32(10).string(message.serverVersion);
+    }
+    if (message.lowApiVersion !== undefined) {
+      SemVer.encode(message.lowApiVersion, writer.uint32(18).fork()).join();
+    }
+    if (message.highApiVersion !== undefined) {
+      SemVer.encode(message.highApiVersion, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.capabilities) {
+      writer.uint32(34).string(v!);
+    }
+    for (const v of message.deniedMethods) {
+      writer.uint32(42).string(v!);
+    }
+    if (message.limits !== undefined) {
+      Limits.encode(message.limits, writer.uint32(50).fork()).join();
+    }
+    if (message.liveQueries !== undefined) {
+      LiveQueryCapabilities.encode(message.liveQueries, writer.uint32(58).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ServerCapabilities {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseServerCapabilities();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.serverVersion = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lowApiVersion = SemVer.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.highApiVersion = SemVer.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.capabilities.push(reader.string());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.deniedMethods.push(reader.string());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.limits = Limits.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.liveQueries = LiveQueryCapabilities.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ServerCapabilities {
+    return {
+      serverVersion: isSet(object.serverVersion)
+        ? globalThis.String(object.serverVersion)
+        : isSet(object.server_version)
+        ? globalThis.String(object.server_version)
+        : "",
+      lowApiVersion: isSet(object.lowApiVersion)
+        ? SemVer.fromJSON(object.lowApiVersion)
+        : isSet(object.low_api_version)
+        ? SemVer.fromJSON(object.low_api_version)
+        : undefined,
+      highApiVersion: isSet(object.highApiVersion)
+        ? SemVer.fromJSON(object.highApiVersion)
+        : isSet(object.high_api_version)
+        ? SemVer.fromJSON(object.high_api_version)
+        : undefined,
+      capabilities: globalThis.Array.isArray(object?.capabilities)
+        ? object.capabilities.map((e: any) => globalThis.String(e))
+        : [],
+      deniedMethods: globalThis.Array.isArray(object?.deniedMethods)
+        ? object.deniedMethods.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.denied_methods)
+        ? object.denied_methods.map((e: any) => globalThis.String(e))
+        : [],
+      limits: isSet(object.limits) ? Limits.fromJSON(object.limits) : undefined,
+      liveQueries: isSet(object.liveQueries)
+        ? LiveQueryCapabilities.fromJSON(object.liveQueries)
+        : isSet(object.live_queries)
+        ? LiveQueryCapabilities.fromJSON(object.live_queries)
+        : undefined,
+    };
+  },
+
+  toJSON(message: ServerCapabilities): unknown {
+    const obj: any = {};
+    if (message.serverVersion !== "") {
+      obj.serverVersion = message.serverVersion;
+    }
+    if (message.lowApiVersion !== undefined) {
+      obj.lowApiVersion = SemVer.toJSON(message.lowApiVersion);
+    }
+    if (message.highApiVersion !== undefined) {
+      obj.highApiVersion = SemVer.toJSON(message.highApiVersion);
+    }
+    if (message.capabilities?.length) {
+      obj.capabilities = message.capabilities;
+    }
+    if (message.deniedMethods?.length) {
+      obj.deniedMethods = message.deniedMethods;
+    }
+    if (message.limits !== undefined) {
+      obj.limits = Limits.toJSON(message.limits);
+    }
+    if (message.liveQueries !== undefined) {
+      obj.liveQueries = LiveQueryCapabilities.toJSON(message.liveQueries);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ServerCapabilities>, I>>(base?: I): ServerCapabilities {
+    return ServerCapabilities.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ServerCapabilities>, I>>(object: I): ServerCapabilities {
+    const message = createBaseServerCapabilities();
+    message.serverVersion = object.serverVersion ?? "";
+    message.lowApiVersion = (object.lowApiVersion !== undefined && object.lowApiVersion !== null)
+      ? SemVer.fromPartial(object.lowApiVersion)
+      : undefined;
+    message.highApiVersion = (object.highApiVersion !== undefined && object.highApiVersion !== null)
+      ? SemVer.fromPartial(object.highApiVersion)
+      : undefined;
+    message.capabilities = object.capabilities?.map((e) => e) || [];
+    message.deniedMethods = object.deniedMethods?.map((e) => e) || [];
+    message.limits = (object.limits !== undefined && object.limits !== null)
+      ? Limits.fromPartial(object.limits)
+      : undefined;
+    message.liveQueries = (object.liveQueries !== undefined && object.liveQueries !== null)
+      ? LiveQueryCapabilities.fromPartial(object.liveQueries)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetCapabilitiesRequest(): GetCapabilitiesRequest {
+  return { context: undefined, client: undefined };
 }
 
-/** Query statistics. */
-export interface QueryStats {
-  /** The number of records returned. -1 if unknown. */
-  recordsReturned: bigint;
-  /** The number of bytes returned. -1 if unknown. */
-  bytesReturned: bigint;
-  /** The number of records scanned. -1 if unknown. */
-  recordsScanned: bigint;
-  /** The number of bytes scanned. -1 if unknown. */
-  bytesScanned: bigint;
-  /** The duration of the query. */
-  executionDuration: Duration | undefined;
+export const GetCapabilitiesRequest: MessageFns<GetCapabilitiesRequest> = {
+  encode(message: GetCapabilitiesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.client !== undefined) {
+      ClientInfo.encode(message.client, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetCapabilitiesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetCapabilitiesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.client = ClientInfo.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetCapabilitiesRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      client: isSet(object.client) ? ClientInfo.fromJSON(object.client) : undefined,
+    };
+  },
+
+  toJSON(message: GetCapabilitiesRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.client !== undefined) {
+      obj.client = ClientInfo.toJSON(message.client);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetCapabilitiesRequest>, I>>(base?: I): GetCapabilitiesRequest {
+    return GetCapabilitiesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetCapabilitiesRequest>, I>>(object: I): GetCapabilitiesRequest {
+    const message = createBaseGetCapabilitiesRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.client = (object.client !== undefined && object.client !== null)
+      ? ClientInfo.fromPartial(object.client)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetCapabilitiesResponse(): GetCapabilitiesResponse {
+  return { capabilities: undefined };
 }
 
-/** Query error. */
-export interface QueryError {
-  /** The error code. */
-  code: bigint;
-  /** The error message. */
-  message: string;
-}
+export const GetCapabilitiesResponse: MessageFns<GetCapabilitiesResponse> = {
+  encode(message: GetCapabilitiesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.capabilities !== undefined) {
+      ServerCapabilities.encode(message.capabilities, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
 
-/** Root user credentials. */
-export interface RootUserCredentials {
-  username: string;
-  password: string;
-}
+  decode(input: BinaryReader | Uint8Array, length?: number): GetCapabilitiesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetCapabilitiesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
 
-/** Namespace access credentials. */
-export interface NamespaceAccessCredentials {
-  namespace: string;
-  access: string;
-  key: string;
-}
+          message.capabilities = ServerCapabilities.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
 
-/** Database access credentials. */
-export interface DatabaseAccessCredentials {
-  namespace: string;
-  database: string;
-  access: string;
-  key: string;
-  refresh: string;
-}
+  fromJSON(object: any): GetCapabilitiesResponse {
+    return { capabilities: isSet(object.capabilities) ? ServerCapabilities.fromJSON(object.capabilities) : undefined };
+  },
 
-/** Namespace user credentials. */
-export interface NamespaceUserCredentials {
-  namespace: string;
-  username: string;
-  password: string;
-}
+  toJSON(message: GetCapabilitiesResponse): unknown {
+    const obj: any = {};
+    if (message.capabilities !== undefined) {
+      obj.capabilities = ServerCapabilities.toJSON(message.capabilities);
+    }
+    return obj;
+  },
 
-/** Database user credentials. */
-export interface DatabaseUserCredentials {
-  namespace: string;
-  database: string;
-  username: string;
-  password: string;
-}
-
-/** Access token. */
-export interface AccessToken {
-  token: string;
-}
-
-/** Method of authenticating with the database. */
-export interface AccessMethod {
-  method:
-    | { $case: "root"; root: RootUserCredentials }
-    | { $case: "namespace"; namespace: NamespaceAccessCredentials }
-    | { $case: "database"; database: DatabaseAccessCredentials }
-    | { $case: "namespaceUser"; namespaceUser: NamespaceUserCredentials }
-    | { $case: "databaseUser"; databaseUser: DatabaseUserCredentials }
-    | { $case: "accessToken"; accessToken: AccessToken }
-    | undefined;
-}
+  create<I extends Exact<DeepPartial<GetCapabilitiesResponse>, I>>(base?: I): GetCapabilitiesResponse {
+    return GetCapabilitiesResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetCapabilitiesResponse>, I>>(object: I): GetCapabilitiesResponse {
+    const message = createBaseGetCapabilitiesResponse();
+    message.capabilities = (object.capabilities !== undefined && object.capabilities !== null)
+      ? ServerCapabilities.fromPartial(object.capabilities)
+      : undefined;
+    return message;
+  },
+};
 
 function createBaseHealthRequest(): HealthRequest {
-  return {};
+  return { context: undefined };
 }
 
 export const HealthRequest: MessageFns<HealthRequest> = {
-  encode(_: HealthRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: HealthRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
     return writer;
   },
 
@@ -804,6 +2121,14 @@ export const HealthRequest: MessageFns<HealthRequest> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -813,20 +2138,26 @@ export const HealthRequest: MessageFns<HealthRequest> = {
     return message;
   },
 
-  fromJSON(_: any): HealthRequest {
-    return {};
+  fromJSON(object: any): HealthRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
   },
 
-  toJSON(_: HealthRequest): unknown {
+  toJSON(message: HealthRequest): unknown {
     const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<HealthRequest>, I>>(base?: I): HealthRequest {
     return HealthRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<HealthRequest>, I>>(_: I): HealthRequest {
+  fromPartial<I extends Exact<DeepPartial<HealthRequest>, I>>(object: I): HealthRequest {
     const message = createBaseHealthRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     return message;
   },
 };
@@ -874,65 +2205,22 @@ export const HealthResponse: MessageFns<HealthResponse> = {
   },
 };
 
-function createBaseVersionRequest(): VersionRequest {
-  return {};
+function createBaseAttachSessionRequest(): AttachSessionRequest {
+  return { context: undefined };
 }
 
-export const VersionRequest: MessageFns<VersionRequest> = {
-  encode(_: VersionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): VersionRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVersionRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): VersionRequest {
-    return {};
-  },
-
-  toJSON(_: VersionRequest): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<VersionRequest>, I>>(base?: I): VersionRequest {
-    return VersionRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<VersionRequest>, I>>(_: I): VersionRequest {
-    const message = createBaseVersionRequest();
-    return message;
-  },
-};
-
-function createBaseVersionResponse(): VersionResponse {
-  return { version: "" };
-}
-
-export const VersionResponse: MessageFns<VersionResponse> = {
-  encode(message: VersionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.version !== "") {
-      writer.uint32(10).string(message.version);
+export const AttachSessionRequest: MessageFns<AttachSessionRequest> = {
+  encode(message: AttachSessionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): VersionResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): AttachSessionRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVersionResponse();
+    const message = createBaseAttachSessionRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -941,7 +2229,7 @@ export const VersionResponse: MessageFns<VersionResponse> = {
             break;
           }
 
-          message.version = reader.string();
+          message.context = RequestContext.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -953,53 +2241,49 @@ export const VersionResponse: MessageFns<VersionResponse> = {
     return message;
   },
 
-  fromJSON(object: any): VersionResponse {
-    return { version: isSet(object.version) ? globalThis.String(object.version) : "" };
+  fromJSON(object: any): AttachSessionRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
   },
 
-  toJSON(message: VersionResponse): unknown {
+  toJSON(message: AttachSessionRequest): unknown {
     const obj: any = {};
-    if (message.version !== "") {
-      obj.version = message.version;
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<VersionResponse>, I>>(base?: I): VersionResponse {
-    return VersionResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<AttachSessionRequest>, I>>(base?: I): AttachSessionRequest {
+    return AttachSessionRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<VersionResponse>, I>>(object: I): VersionResponse {
-    const message = createBaseVersionResponse();
-    message.version = object.version ?? "";
+  fromPartial<I extends Exact<DeepPartial<AttachSessionRequest>, I>>(object: I): AttachSessionRequest {
+    const message = createBaseAttachSessionRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     return message;
   },
 };
 
-function createBaseSignupRequest(): SignupRequest {
-  return { namespace: "", database: "", accessName: "", variables: undefined };
+function createBaseAttachSessionResponse(): AttachSessionResponse {
+  return { session: undefined, created: false };
 }
 
-export const SignupRequest: MessageFns<SignupRequest> = {
-  encode(message: SignupRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.namespace !== "") {
-      writer.uint32(10).string(message.namespace);
+export const AttachSessionResponse: MessageFns<AttachSessionResponse> = {
+  encode(message: AttachSessionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.session !== undefined) {
+      Uuid.encode(message.session, writer.uint32(10).fork()).join();
     }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
-    }
-    if (message.accessName !== "") {
-      writer.uint32(26).string(message.accessName);
-    }
-    if (message.variables !== undefined) {
-      Variables.encode(message.variables, writer.uint32(34).fork()).join();
+    if (message.created !== false) {
+      writer.uint32(16).bool(message.created);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SignupRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): AttachSessionResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSignupRequest();
+    const message = createBaseAttachSessionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1008,31 +2292,15 @@ export const SignupRequest: MessageFns<SignupRequest> = {
             break;
           }
 
-          message.namespace = reader.string();
+          message.session = Uuid.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.database = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.accessName = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.variables = Variables.decode(reader, reader.uint32());
+          message.created = reader.bool();
           continue;
         }
       }
@@ -1044,78 +2312,113 @@ export const SignupRequest: MessageFns<SignupRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SignupRequest {
+  fromJSON(object: any): AttachSessionResponse {
     return {
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      accessName: isSet(object.accessName)
-        ? globalThis.String(object.accessName)
-        : isSet(object.access_name)
-        ? globalThis.String(object.access_name)
-        : "",
-      variables: isSet(object.variables) ? Variables.fromJSON(object.variables) : undefined,
+      session: isSet(object.session) ? Uuid.fromJSON(object.session) : undefined,
+      created: isSet(object.created) ? globalThis.Boolean(object.created) : false,
     };
   },
 
-  toJSON(message: SignupRequest): unknown {
+  toJSON(message: AttachSessionResponse): unknown {
     const obj: any = {};
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
+    if (message.session !== undefined) {
+      obj.session = Uuid.toJSON(message.session);
     }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.accessName !== "") {
-      obj.accessName = message.accessName;
-    }
-    if (message.variables !== undefined) {
-      obj.variables = Variables.toJSON(message.variables);
+    if (message.created !== false) {
+      obj.created = message.created;
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SignupRequest>, I>>(base?: I): SignupRequest {
-    return SignupRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<AttachSessionResponse>, I>>(base?: I): AttachSessionResponse {
+    return AttachSessionResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SignupRequest>, I>>(object: I): SignupRequest {
-    const message = createBaseSignupRequest();
-    message.namespace = object.namespace ?? "";
-    message.database = object.database ?? "";
-    message.accessName = object.accessName ?? "";
-    message.variables = (object.variables !== undefined && object.variables !== null)
-      ? Variables.fromPartial(object.variables)
+  fromPartial<I extends Exact<DeepPartial<AttachSessionResponse>, I>>(object: I): AttachSessionResponse {
+    const message = createBaseAttachSessionResponse();
+    message.session = (object.session !== undefined && object.session !== null)
+      ? Uuid.fromPartial(object.session)
+      : undefined;
+    message.created = object.created ?? false;
+    return message;
+  },
+};
+
+function createBaseDetachSessionRequest(): DetachSessionRequest {
+  return { context: undefined };
+}
+
+export const DetachSessionRequest: MessageFns<DetachSessionRequest> = {
+  encode(message: DetachSessionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DetachSessionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDetachSessionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DetachSessionRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
+  },
+
+  toJSON(message: DetachSessionRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DetachSessionRequest>, I>>(base?: I): DetachSessionRequest {
+    return DetachSessionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DetachSessionRequest>, I>>(object: I): DetachSessionRequest {
+    const message = createBaseDetachSessionRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
       : undefined;
     return message;
   },
 };
 
-function createBaseSignupResponse(): SignupResponse {
-  return { value: undefined };
+function createBaseDetachSessionResponse(): DetachSessionResponse {
+  return {};
 }
 
-export const SignupResponse: MessageFns<SignupResponse> = {
-  encode(message: SignupResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(10).fork()).join();
-    }
+export const DetachSessionResponse: MessageFns<DetachSessionResponse> = {
+  encode(_: DetachSessionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SignupResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): DetachSessionResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSignupResponse();
+    const message = createBaseDetachSessionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1125,44 +2428,40 @@ export const SignupResponse: MessageFns<SignupResponse> = {
     return message;
   },
 
-  fromJSON(object: any): SignupResponse {
-    return { value: isSet(object.value) ? Value.fromJSON(object.value) : undefined };
+  fromJSON(_: any): DetachSessionResponse {
+    return {};
   },
 
-  toJSON(message: SignupResponse): unknown {
+  toJSON(_: DetachSessionResponse): unknown {
     const obj: any = {};
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SignupResponse>, I>>(base?: I): SignupResponse {
-    return SignupResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<DetachSessionResponse>, I>>(base?: I): DetachSessionResponse {
+    return DetachSessionResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SignupResponse>, I>>(object: I): SignupResponse {
-    const message = createBaseSignupResponse();
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+  fromPartial<I extends Exact<DeepPartial<DetachSessionResponse>, I>>(_: I): DetachSessionResponse {
+    const message = createBaseDetachSessionResponse();
     return message;
   },
 };
 
-function createBaseSigninRequest(): SigninRequest {
-  return { accessMethod: undefined };
+function createBaseResetSessionRequest(): ResetSessionRequest {
+  return { context: undefined };
 }
 
-export const SigninRequest: MessageFns<SigninRequest> = {
-  encode(message: SigninRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.accessMethod !== undefined) {
-      AccessMethod.encode(message.accessMethod, writer.uint32(10).fork()).join();
+export const ResetSessionRequest: MessageFns<ResetSessionRequest> = {
+  encode(message: ResetSessionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SigninRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): ResetSessionRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSigninRequest();
+    const message = createBaseResetSessionRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1171,7 +2470,7 @@ export const SigninRequest: MessageFns<SigninRequest> = {
             break;
           }
 
-          message.accessMethod = AccessMethod.decode(reader, reader.uint32());
+          message.context = RequestContext.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1183,63 +2482,46 @@ export const SigninRequest: MessageFns<SigninRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SigninRequest {
-    return {
-      accessMethod: isSet(object.accessMethod)
-        ? AccessMethod.fromJSON(object.accessMethod)
-        : isSet(object.access_method)
-        ? AccessMethod.fromJSON(object.access_method)
-        : undefined,
-    };
+  fromJSON(object: any): ResetSessionRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
   },
 
-  toJSON(message: SigninRequest): unknown {
+  toJSON(message: ResetSessionRequest): unknown {
     const obj: any = {};
-    if (message.accessMethod !== undefined) {
-      obj.accessMethod = AccessMethod.toJSON(message.accessMethod);
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SigninRequest>, I>>(base?: I): SigninRequest {
-    return SigninRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ResetSessionRequest>, I>>(base?: I): ResetSessionRequest {
+    return ResetSessionRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SigninRequest>, I>>(object: I): SigninRequest {
-    const message = createBaseSigninRequest();
-    message.accessMethod = (object.accessMethod !== undefined && object.accessMethod !== null)
-      ? AccessMethod.fromPartial(object.accessMethod)
+  fromPartial<I extends Exact<DeepPartial<ResetSessionRequest>, I>>(object: I): ResetSessionRequest {
+    const message = createBaseResetSessionRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
       : undefined;
     return message;
   },
 };
 
-function createBaseSigninResponse(): SigninResponse {
-  return { value: undefined };
+function createBaseResetSessionResponse(): ResetSessionResponse {
+  return {};
 }
 
-export const SigninResponse: MessageFns<SigninResponse> = {
-  encode(message: SigninResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(10).fork()).join();
-    }
+export const ResetSessionResponse: MessageFns<ResetSessionResponse> = {
+  encode(_: ResetSessionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SigninResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): ResetSessionResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSigninResponse();
+    const message = createBaseResetSessionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1249,155 +2531,38 @@ export const SigninResponse: MessageFns<SigninResponse> = {
     return message;
   },
 
-  fromJSON(object: any): SigninResponse {
-    return { value: isSet(object.value) ? Value.fromJSON(object.value) : undefined };
+  fromJSON(_: any): ResetSessionResponse {
+    return {};
   },
 
-  toJSON(message: SigninResponse): unknown {
+  toJSON(_: ResetSessionResponse): unknown {
     const obj: any = {};
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SigninResponse>, I>>(base?: I): SigninResponse {
-    return SigninResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ResetSessionResponse>, I>>(base?: I): ResetSessionResponse {
+    return ResetSessionResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SigninResponse>, I>>(object: I): SigninResponse {
-    const message = createBaseSigninResponse();
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
-    return message;
-  },
-};
-
-function createBaseAuthenticateRequest(): AuthenticateRequest {
-  return { token: "" };
-}
-
-export const AuthenticateRequest: MessageFns<AuthenticateRequest> = {
-  encode(message: AuthenticateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.token !== "") {
-      writer.uint32(10).string(message.token);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AuthenticateRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAuthenticateRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.token = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AuthenticateRequest {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
-  },
-
-  toJSON(message: AuthenticateRequest): unknown {
-    const obj: any = {};
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<AuthenticateRequest>, I>>(base?: I): AuthenticateRequest {
-    return AuthenticateRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<AuthenticateRequest>, I>>(object: I): AuthenticateRequest {
-    const message = createBaseAuthenticateRequest();
-    message.token = object.token ?? "";
-    return message;
-  },
-};
-
-function createBaseAuthenticateResponse(): AuthenticateResponse {
-  return { value: undefined };
-}
-
-export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
-  encode(message: AuthenticateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AuthenticateResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAuthenticateResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AuthenticateResponse {
-    return { value: isSet(object.value) ? Value.fromJSON(object.value) : undefined };
-  },
-
-  toJSON(message: AuthenticateResponse): unknown {
-    const obj: any = {};
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<AuthenticateResponse>, I>>(base?: I): AuthenticateResponse {
-    return AuthenticateResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<AuthenticateResponse>, I>>(object: I): AuthenticateResponse {
-    const message = createBaseAuthenticateResponse();
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+  fromPartial<I extends Exact<DeepPartial<ResetSessionResponse>, I>>(_: I): ResetSessionResponse {
+    const message = createBaseResetSessionResponse();
     return message;
   },
 };
 
 function createBaseUseRequest(): UseRequest {
-  return { namespace: "", database: "" };
+  return { context: undefined, namespace: undefined, database: undefined };
 }
 
 export const UseRequest: MessageFns<UseRequest> = {
   encode(message: UseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.namespace !== "") {
-      writer.uint32(10).string(message.namespace);
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
     }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
+    if (message.namespace !== undefined) {
+      NullableString.encode(message.namespace, writer.uint32(18).fork()).join();
+    }
+    if (message.database !== undefined) {
+      NullableString.encode(message.database, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -1414,7 +2579,7 @@ export const UseRequest: MessageFns<UseRequest> = {
             break;
           }
 
-          message.namespace = reader.string();
+          message.context = RequestContext.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -1422,7 +2587,15 @@ export const UseRequest: MessageFns<UseRequest> = {
             break;
           }
 
-          message.database = reader.string();
+          message.namespace = NullableString.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.database = NullableString.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1436,18 +2609,22 @@ export const UseRequest: MessageFns<UseRequest> = {
 
   fromJSON(object: any): UseRequest {
     return {
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      namespace: isSet(object.namespace) ? NullableString.fromJSON(object.namespace) : undefined,
+      database: isSet(object.database) ? NullableString.fromJSON(object.database) : undefined,
     };
   },
 
   toJSON(message: UseRequest): unknown {
     const obj: any = {};
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
     }
-    if (message.database !== "") {
-      obj.database = message.database;
+    if (message.namespace !== undefined) {
+      obj.namespace = NullableString.toJSON(message.namespace);
+    }
+    if (message.database !== undefined) {
+      obj.database = NullableString.toJSON(message.database);
     }
     return obj;
   },
@@ -1457,8 +2634,15 @@ export const UseRequest: MessageFns<UseRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<UseRequest>, I>>(object: I): UseRequest {
     const message = createBaseUseRequest();
-    message.namespace = object.namespace ?? "";
-    message.database = object.database ?? "";
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.namespace = (object.namespace !== undefined && object.namespace !== null)
+      ? NullableString.fromPartial(object.namespace)
+      : undefined;
+    message.database = (object.database !== undefined && object.database !== null)
+      ? NullableString.fromPartial(object.database)
+      : undefined;
     return message;
   },
 };
@@ -1539,25 +2723,28 @@ export const UseResponse: MessageFns<UseResponse> = {
   },
 };
 
-function createBaseSetRequest(): SetRequest {
-  return { name: "", value: undefined };
+function createBaseSetVariableRequest(): SetVariableRequest {
+  return { context: undefined, name: "", value: undefined };
 }
 
-export const SetRequest: MessageFns<SetRequest> = {
-  encode(message: SetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SetVariableRequest: MessageFns<SetVariableRequest> = {
+  encode(message: SetVariableRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
     if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+      writer.uint32(18).string(message.name);
     }
     if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(18).fork()).join();
+      Value.encode(message.value, writer.uint32(26).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SetRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): SetVariableRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetRequest();
+    const message = createBaseSetVariableRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1566,11 +2753,19 @@ export const SetRequest: MessageFns<SetRequest> = {
             break;
           }
 
-          message.name = reader.string();
+          message.context = RequestContext.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
           if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
             break;
           }
 
@@ -1586,15 +2781,19 @@ export const SetRequest: MessageFns<SetRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SetRequest {
+  fromJSON(object: any): SetVariableRequest {
     return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
     };
   },
 
-  toJSON(message: SetRequest): unknown {
+  toJSON(message: SetVariableRequest): unknown {
     const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
     if (message.name !== "") {
       obj.name = message.name;
     }
@@ -1604,30 +2803,33 @@ export const SetRequest: MessageFns<SetRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SetRequest>, I>>(base?: I): SetRequest {
-    return SetRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SetVariableRequest>, I>>(base?: I): SetVariableRequest {
+    return SetVariableRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SetRequest>, I>>(object: I): SetRequest {
-    const message = createBaseSetRequest();
+  fromPartial<I extends Exact<DeepPartial<SetVariableRequest>, I>>(object: I): SetVariableRequest {
+    const message = createBaseSetVariableRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     message.name = object.name ?? "";
     message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
     return message;
   },
 };
 
-function createBaseSetResponse(): SetResponse {
+function createBaseSetVariableResponse(): SetVariableResponse {
   return {};
 }
 
-export const SetResponse: MessageFns<SetResponse> = {
-  encode(_: SetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SetVariableResponse: MessageFns<SetVariableResponse> = {
+  encode(_: SetVariableResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SetResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): SetVariableResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetResponse();
+    const message = createBaseSetVariableResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1640,45 +2842,56 @@ export const SetResponse: MessageFns<SetResponse> = {
     return message;
   },
 
-  fromJSON(_: any): SetResponse {
+  fromJSON(_: any): SetVariableResponse {
     return {};
   },
 
-  toJSON(_: SetResponse): unknown {
+  toJSON(_: SetVariableResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SetResponse>, I>>(base?: I): SetResponse {
-    return SetResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SetVariableResponse>, I>>(base?: I): SetVariableResponse {
+    return SetVariableResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SetResponse>, I>>(_: I): SetResponse {
-    const message = createBaseSetResponse();
+  fromPartial<I extends Exact<DeepPartial<SetVariableResponse>, I>>(_: I): SetVariableResponse {
+    const message = createBaseSetVariableResponse();
     return message;
   },
 };
 
-function createBaseUnsetRequest(): UnsetRequest {
-  return { name: "" };
+function createBaseUnsetVariableRequest(): UnsetVariableRequest {
+  return { context: undefined, name: "" };
 }
 
-export const UnsetRequest: MessageFns<UnsetRequest> = {
-  encode(message: UnsetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const UnsetVariableRequest: MessageFns<UnsetVariableRequest> = {
+  encode(message: UnsetVariableRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
     if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+      writer.uint32(18).string(message.name);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): UnsetRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsetVariableRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnsetRequest();
+    const message = createBaseUnsetVariableRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
           if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
             break;
           }
 
@@ -1694,41 +2907,50 @@ export const UnsetRequest: MessageFns<UnsetRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UnsetRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  fromJSON(object: any): UnsetVariableRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+    };
   },
 
-  toJSON(message: UnsetRequest): unknown {
+  toJSON(message: UnsetVariableRequest): unknown {
     const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
     if (message.name !== "") {
       obj.name = message.name;
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<UnsetRequest>, I>>(base?: I): UnsetRequest {
-    return UnsetRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<UnsetVariableRequest>, I>>(base?: I): UnsetVariableRequest {
+    return UnsetVariableRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<UnsetRequest>, I>>(object: I): UnsetRequest {
-    const message = createBaseUnsetRequest();
+  fromPartial<I extends Exact<DeepPartial<UnsetVariableRequest>, I>>(object: I): UnsetVariableRequest {
+    const message = createBaseUnsetVariableRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseUnsetResponse(): UnsetResponse {
+function createBaseUnsetVariableResponse(): UnsetVariableResponse {
   return {};
 }
 
-export const UnsetResponse: MessageFns<UnsetResponse> = {
-  encode(_: UnsetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const UnsetVariableResponse: MessageFns<UnsetVariableResponse> = {
+  encode(_: UnsetVariableResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): UnsetResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsetVariableResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnsetResponse();
+    const message = createBaseUnsetVariableResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1741,30 +2963,1311 @@ export const UnsetResponse: MessageFns<UnsetResponse> = {
     return message;
   },
 
-  fromJSON(_: any): UnsetResponse {
+  fromJSON(_: any): UnsetVariableResponse {
     return {};
   },
 
-  toJSON(_: UnsetResponse): unknown {
+  toJSON(_: UnsetVariableResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<UnsetResponse>, I>>(base?: I): UnsetResponse {
-    return UnsetResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<UnsetVariableResponse>, I>>(base?: I): UnsetVariableResponse {
+    return UnsetVariableResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<UnsetResponse>, I>>(_: I): UnsetResponse {
-    const message = createBaseUnsetResponse();
+  fromPartial<I extends Exact<DeepPartial<UnsetVariableResponse>, I>>(_: I): UnsetVariableResponse {
+    const message = createBaseUnsetVariableResponse();
+    return message;
+  },
+};
+
+function createBaseUserCredentials(): UserCredentials {
+  return { namespace: "", database: "", username: "", password: "", access: "" };
+}
+
+export const UserCredentials: MessageFns<UserCredentials> = {
+  encode(message: UserCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespace !== "") {
+      writer.uint32(10).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    if (message.username !== "") {
+      writer.uint32(26).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(34).string(message.password);
+    }
+    if (message.access !== "") {
+      writer.uint32(42).string(message.access);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserCredentials {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserCredentials();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.access = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserCredentials {
+    return {
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      access: isSet(object.access) ? globalThis.String(object.access) : "",
+    };
+  },
+
+  toJSON(message: UserCredentials): unknown {
+    const obj: any = {};
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.access !== "") {
+      obj.access = message.access;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UserCredentials>, I>>(base?: I): UserCredentials {
+    return UserCredentials.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UserCredentials>, I>>(object: I): UserCredentials {
+    const message = createBaseUserCredentials();
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
+    message.access = object.access ?? "";
+    return message;
+  },
+};
+
+function createBaseRecordCredentials(): RecordCredentials {
+  return { namespace: "", database: "", access: "", variables: undefined };
+}
+
+export const RecordCredentials: MessageFns<RecordCredentials> = {
+  encode(message: RecordCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespace !== "") {
+      writer.uint32(10).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    if (message.access !== "") {
+      writer.uint32(26).string(message.access);
+    }
+    if (message.variables !== undefined) {
+      Variables.encode(message.variables, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RecordCredentials {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecordCredentials();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.access = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.variables = Variables.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RecordCredentials {
+    return {
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      access: isSet(object.access) ? globalThis.String(object.access) : "",
+      variables: isSet(object.variables) ? Variables.fromJSON(object.variables) : undefined,
+    };
+  },
+
+  toJSON(message: RecordCredentials): unknown {
+    const obj: any = {};
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.access !== "") {
+      obj.access = message.access;
+    }
+    if (message.variables !== undefined) {
+      obj.variables = Variables.toJSON(message.variables);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RecordCredentials>, I>>(base?: I): RecordCredentials {
+    return RecordCredentials.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RecordCredentials>, I>>(object: I): RecordCredentials {
+    const message = createBaseRecordCredentials();
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    message.access = object.access ?? "";
+    message.variables = (object.variables !== undefined && object.variables !== null)
+      ? Variables.fromPartial(object.variables)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseBearerCredentials(): BearerCredentials {
+  return { namespace: "", database: "", access: "", key: "" };
+}
+
+export const BearerCredentials: MessageFns<BearerCredentials> = {
+  encode(message: BearerCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespace !== "") {
+      writer.uint32(10).string(message.namespace);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    if (message.access !== "") {
+      writer.uint32(26).string(message.access);
+    }
+    if (message.key !== "") {
+      writer.uint32(34).string(message.key);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BearerCredentials {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBearerCredentials();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespace = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.access = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BearerCredentials {
+    return {
+      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      access: isSet(object.access) ? globalThis.String(object.access) : "",
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+    };
+  },
+
+  toJSON(message: BearerCredentials): unknown {
+    const obj: any = {};
+    if (message.namespace !== "") {
+      obj.namespace = message.namespace;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.access !== "") {
+      obj.access = message.access;
+    }
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BearerCredentials>, I>>(base?: I): BearerCredentials {
+    return BearerCredentials.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BearerCredentials>, I>>(object: I): BearerCredentials {
+    const message = createBaseBearerCredentials();
+    message.namespace = object.namespace ?? "";
+    message.database = object.database ?? "";
+    message.access = object.access ?? "";
+    message.key = object.key ?? "";
+    return message;
+  },
+};
+
+function createBaseAccessMethod(): AccessMethod {
+  return { method: undefined };
+}
+
+export const AccessMethod: MessageFns<AccessMethod> = {
+  encode(message: AccessMethod, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.method?.$case) {
+      case "user":
+        UserCredentials.encode(message.method.user, writer.uint32(10).fork()).join();
+        break;
+      case "record":
+        RecordCredentials.encode(message.method.record, writer.uint32(18).fork()).join();
+        break;
+      case "bearer":
+        BearerCredentials.encode(message.method.bearer, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AccessMethod {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAccessMethod();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.method = { $case: "user", user: UserCredentials.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.method = { $case: "record", record: RecordCredentials.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.method = { $case: "bearer", bearer: BearerCredentials.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AccessMethod {
+    return {
+      method: isSet(object.user)
+        ? { $case: "user", user: UserCredentials.fromJSON(object.user) }
+        : isSet(object.record)
+        ? { $case: "record", record: RecordCredentials.fromJSON(object.record) }
+        : isSet(object.bearer)
+        ? { $case: "bearer", bearer: BearerCredentials.fromJSON(object.bearer) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: AccessMethod): unknown {
+    const obj: any = {};
+    if (message.method?.$case === "user") {
+      obj.user = UserCredentials.toJSON(message.method.user);
+    } else if (message.method?.$case === "record") {
+      obj.record = RecordCredentials.toJSON(message.method.record);
+    } else if (message.method?.$case === "bearer") {
+      obj.bearer = BearerCredentials.toJSON(message.method.bearer);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AccessMethod>, I>>(base?: I): AccessMethod {
+    return AccessMethod.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AccessMethod>, I>>(object: I): AccessMethod {
+    const message = createBaseAccessMethod();
+    switch (object.method?.$case) {
+      case "user": {
+        if (object.method?.user !== undefined && object.method?.user !== null) {
+          message.method = { $case: "user", user: UserCredentials.fromPartial(object.method.user) };
+        }
+        break;
+      }
+      case "record": {
+        if (object.method?.record !== undefined && object.method?.record !== null) {
+          message.method = { $case: "record", record: RecordCredentials.fromPartial(object.method.record) };
+        }
+        break;
+      }
+      case "bearer": {
+        if (object.method?.bearer !== undefined && object.method?.bearer !== null) {
+          message.method = { $case: "bearer", bearer: BearerCredentials.fromPartial(object.method.bearer) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseTokens(): Tokens {
+  return { access: "", refresh: "", expiresAt: undefined, refreshExpiresAt: undefined };
+}
+
+export const Tokens: MessageFns<Tokens> = {
+  encode(message: Tokens, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.access !== "") {
+      writer.uint32(10).string(message.access);
+    }
+    if (message.refresh !== "") {
+      writer.uint32(18).string(message.refresh);
+    }
+    if (message.expiresAt !== undefined) {
+      Datetime.encode(message.expiresAt, writer.uint32(26).fork()).join();
+    }
+    if (message.refreshExpiresAt !== undefined) {
+      Datetime.encode(message.refreshExpiresAt, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Tokens {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTokens();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.access = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.refresh = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.expiresAt = Datetime.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.refreshExpiresAt = Datetime.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Tokens {
+    return {
+      access: isSet(object.access) ? globalThis.String(object.access) : "",
+      refresh: isSet(object.refresh) ? globalThis.String(object.refresh) : "",
+      expiresAt: isSet(object.expiresAt)
+        ? Datetime.fromJSON(object.expiresAt)
+        : isSet(object.expires_at)
+        ? Datetime.fromJSON(object.expires_at)
+        : undefined,
+      refreshExpiresAt: isSet(object.refreshExpiresAt)
+        ? Datetime.fromJSON(object.refreshExpiresAt)
+        : isSet(object.refresh_expires_at)
+        ? Datetime.fromJSON(object.refresh_expires_at)
+        : undefined,
+    };
+  },
+
+  toJSON(message: Tokens): unknown {
+    const obj: any = {};
+    if (message.access !== "") {
+      obj.access = message.access;
+    }
+    if (message.refresh !== "") {
+      obj.refresh = message.refresh;
+    }
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = Datetime.toJSON(message.expiresAt);
+    }
+    if (message.refreshExpiresAt !== undefined) {
+      obj.refreshExpiresAt = Datetime.toJSON(message.refreshExpiresAt);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Tokens>, I>>(base?: I): Tokens {
+    return Tokens.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Tokens>, I>>(object: I): Tokens {
+    const message = createBaseTokens();
+    message.access = object.access ?? "";
+    message.refresh = object.refresh ?? "";
+    message.expiresAt = (object.expiresAt !== undefined && object.expiresAt !== null)
+      ? Datetime.fromPartial(object.expiresAt)
+      : undefined;
+    message.refreshExpiresAt = (object.refreshExpiresAt !== undefined && object.refreshExpiresAt !== null)
+      ? Datetime.fromPartial(object.refreshExpiresAt)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSignupRequest(): SignupRequest {
+  return { context: undefined, credentials: undefined };
+}
+
+export const SignupRequest: MessageFns<SignupRequest> = {
+  encode(message: SignupRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.credentials !== undefined) {
+      RecordCredentials.encode(message.credentials, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SignupRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSignupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.credentials = RecordCredentials.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SignupRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      credentials: isSet(object.credentials) ? RecordCredentials.fromJSON(object.credentials) : undefined,
+    };
+  },
+
+  toJSON(message: SignupRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.credentials !== undefined) {
+      obj.credentials = RecordCredentials.toJSON(message.credentials);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SignupRequest>, I>>(base?: I): SignupRequest {
+    return SignupRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SignupRequest>, I>>(object: I): SignupRequest {
+    const message = createBaseSignupRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.credentials = (object.credentials !== undefined && object.credentials !== null)
+      ? RecordCredentials.fromPartial(object.credentials)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSignupResponse(): SignupResponse {
+  return { tokens: undefined };
+}
+
+export const SignupResponse: MessageFns<SignupResponse> = {
+  encode(message: SignupResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tokens !== undefined) {
+      Tokens.encode(message.tokens, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SignupResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSignupResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tokens = Tokens.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SignupResponse {
+    return { tokens: isSet(object.tokens) ? Tokens.fromJSON(object.tokens) : undefined };
+  },
+
+  toJSON(message: SignupResponse): unknown {
+    const obj: any = {};
+    if (message.tokens !== undefined) {
+      obj.tokens = Tokens.toJSON(message.tokens);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SignupResponse>, I>>(base?: I): SignupResponse {
+    return SignupResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SignupResponse>, I>>(object: I): SignupResponse {
+    const message = createBaseSignupResponse();
+    message.tokens = (object.tokens !== undefined && object.tokens !== null)
+      ? Tokens.fromPartial(object.tokens)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSigninRequest(): SigninRequest {
+  return { context: undefined, accessMethod: undefined };
+}
+
+export const SigninRequest: MessageFns<SigninRequest> = {
+  encode(message: SigninRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.accessMethod !== undefined) {
+      AccessMethod.encode(message.accessMethod, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SigninRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSigninRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.accessMethod = AccessMethod.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SigninRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      accessMethod: isSet(object.accessMethod)
+        ? AccessMethod.fromJSON(object.accessMethod)
+        : isSet(object.access_method)
+        ? AccessMethod.fromJSON(object.access_method)
+        : undefined,
+    };
+  },
+
+  toJSON(message: SigninRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.accessMethod !== undefined) {
+      obj.accessMethod = AccessMethod.toJSON(message.accessMethod);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SigninRequest>, I>>(base?: I): SigninRequest {
+    return SigninRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SigninRequest>, I>>(object: I): SigninRequest {
+    const message = createBaseSigninRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.accessMethod = (object.accessMethod !== undefined && object.accessMethod !== null)
+      ? AccessMethod.fromPartial(object.accessMethod)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSigninResponse(): SigninResponse {
+  return { tokens: undefined };
+}
+
+export const SigninResponse: MessageFns<SigninResponse> = {
+  encode(message: SigninResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tokens !== undefined) {
+      Tokens.encode(message.tokens, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SigninResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSigninResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tokens = Tokens.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SigninResponse {
+    return { tokens: isSet(object.tokens) ? Tokens.fromJSON(object.tokens) : undefined };
+  },
+
+  toJSON(message: SigninResponse): unknown {
+    const obj: any = {};
+    if (message.tokens !== undefined) {
+      obj.tokens = Tokens.toJSON(message.tokens);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SigninResponse>, I>>(base?: I): SigninResponse {
+    return SigninResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SigninResponse>, I>>(object: I): SigninResponse {
+    const message = createBaseSigninResponse();
+    message.tokens = (object.tokens !== undefined && object.tokens !== null)
+      ? Tokens.fromPartial(object.tokens)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAuthenticateRequest(): AuthenticateRequest {
+  return { context: undefined, token: "" };
+}
+
+export const AuthenticateRequest: MessageFns<AuthenticateRequest> = {
+  encode(message: AuthenticateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.token !== "") {
+      writer.uint32(18).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AuthenticateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAuthenticateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AuthenticateRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+    };
+  },
+
+  toJSON(message: AuthenticateRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AuthenticateRequest>, I>>(base?: I): AuthenticateRequest {
+    return AuthenticateRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AuthenticateRequest>, I>>(object: I): AuthenticateRequest {
+    const message = createBaseAuthenticateRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseAuthenticateResponse(): AuthenticateResponse {
+  return { expiresAt: undefined };
+}
+
+export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
+  encode(message: AuthenticateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.expiresAt !== undefined) {
+      Datetime.encode(message.expiresAt, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AuthenticateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAuthenticateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.expiresAt = Datetime.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AuthenticateResponse {
+    return {
+      expiresAt: isSet(object.expiresAt)
+        ? Datetime.fromJSON(object.expiresAt)
+        : isSet(object.expires_at)
+        ? Datetime.fromJSON(object.expires_at)
+        : undefined,
+    };
+  },
+
+  toJSON(message: AuthenticateResponse): unknown {
+    const obj: any = {};
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = Datetime.toJSON(message.expiresAt);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AuthenticateResponse>, I>>(base?: I): AuthenticateResponse {
+    return AuthenticateResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AuthenticateResponse>, I>>(object: I): AuthenticateResponse {
+    const message = createBaseAuthenticateResponse();
+    message.expiresAt = (object.expiresAt !== undefined && object.expiresAt !== null)
+      ? Datetime.fromPartial(object.expiresAt)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRefreshTokensRequest(): RefreshTokensRequest {
+  return { context: undefined, refresh: "" };
+}
+
+export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
+  encode(message: RefreshTokensRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.refresh !== "") {
+      writer.uint32(18).string(message.refresh);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RefreshTokensRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRefreshTokensRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.refresh = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RefreshTokensRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      refresh: isSet(object.refresh) ? globalThis.String(object.refresh) : "",
+    };
+  },
+
+  toJSON(message: RefreshTokensRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.refresh !== "") {
+      obj.refresh = message.refresh;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RefreshTokensRequest>, I>>(base?: I): RefreshTokensRequest {
+    return RefreshTokensRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RefreshTokensRequest>, I>>(object: I): RefreshTokensRequest {
+    const message = createBaseRefreshTokensRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.refresh = object.refresh ?? "";
+    return message;
+  },
+};
+
+function createBaseRefreshTokensResponse(): RefreshTokensResponse {
+  return { tokens: undefined };
+}
+
+export const RefreshTokensResponse: MessageFns<RefreshTokensResponse> = {
+  encode(message: RefreshTokensResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tokens !== undefined) {
+      Tokens.encode(message.tokens, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RefreshTokensResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRefreshTokensResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tokens = Tokens.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RefreshTokensResponse {
+    return { tokens: isSet(object.tokens) ? Tokens.fromJSON(object.tokens) : undefined };
+  },
+
+  toJSON(message: RefreshTokensResponse): unknown {
+    const obj: any = {};
+    if (message.tokens !== undefined) {
+      obj.tokens = Tokens.toJSON(message.tokens);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RefreshTokensResponse>, I>>(base?: I): RefreshTokensResponse {
+    return RefreshTokensResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RefreshTokensResponse>, I>>(object: I): RefreshTokensResponse {
+    const message = createBaseRefreshTokensResponse();
+    message.tokens = (object.tokens !== undefined && object.tokens !== null)
+      ? Tokens.fromPartial(object.tokens)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRevokeTokensRequest(): RevokeTokensRequest {
+  return { context: undefined, access: "", refresh: "" };
+}
+
+export const RevokeTokensRequest: MessageFns<RevokeTokensRequest> = {
+  encode(message: RevokeTokensRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.access !== "") {
+      writer.uint32(18).string(message.access);
+    }
+    if (message.refresh !== "") {
+      writer.uint32(26).string(message.refresh);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RevokeTokensRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRevokeTokensRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.access = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.refresh = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RevokeTokensRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      access: isSet(object.access) ? globalThis.String(object.access) : "",
+      refresh: isSet(object.refresh) ? globalThis.String(object.refresh) : "",
+    };
+  },
+
+  toJSON(message: RevokeTokensRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.access !== "") {
+      obj.access = message.access;
+    }
+    if (message.refresh !== "") {
+      obj.refresh = message.refresh;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RevokeTokensRequest>, I>>(base?: I): RevokeTokensRequest {
+    return RevokeTokensRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RevokeTokensRequest>, I>>(object: I): RevokeTokensRequest {
+    const message = createBaseRevokeTokensRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.access = object.access ?? "";
+    message.refresh = object.refresh ?? "";
+    return message;
+  },
+};
+
+function createBaseRevokeTokensResponse(): RevokeTokensResponse {
+  return {};
+}
+
+export const RevokeTokensResponse: MessageFns<RevokeTokensResponse> = {
+  encode(_: RevokeTokensResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RevokeTokensResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRevokeTokensResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): RevokeTokensResponse {
+    return {};
+  },
+
+  toJSON(_: RevokeTokensResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RevokeTokensResponse>, I>>(base?: I): RevokeTokensResponse {
+    return RevokeTokensResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RevokeTokensResponse>, I>>(_: I): RevokeTokensResponse {
+    const message = createBaseRevokeTokensResponse();
     return message;
   },
 };
 
 function createBaseInvalidateRequest(): InvalidateRequest {
-  return {};
+  return { context: undefined };
 }
 
 export const InvalidateRequest: MessageFns<InvalidateRequest> = {
-  encode(_: InvalidateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: InvalidateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
     return writer;
   },
 
@@ -1775,6 +4278,14 @@ export const InvalidateRequest: MessageFns<InvalidateRequest> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1784,20 +4295,26 @@ export const InvalidateRequest: MessageFns<InvalidateRequest> = {
     return message;
   },
 
-  fromJSON(_: any): InvalidateRequest {
-    return {};
+  fromJSON(object: any): InvalidateRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
   },
 
-  toJSON(_: InvalidateRequest): unknown {
+  toJSON(message: InvalidateRequest): unknown {
     const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<InvalidateRequest>, I>>(base?: I): InvalidateRequest {
     return InvalidateRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<InvalidateRequest>, I>>(_: I): InvalidateRequest {
+  fromPartial<I extends Exact<DeepPartial<InvalidateRequest>, I>>(object: I): InvalidateRequest {
     const message = createBaseInvalidateRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     return message;
   },
 };
@@ -1845,22 +4362,33 @@ export const InvalidateResponse: MessageFns<InvalidateResponse> = {
   },
 };
 
-function createBaseResetRequest(): ResetRequest {
-  return {};
+function createBaseBeginTransactionRequest(): BeginTransactionRequest {
+  return { context: undefined };
 }
 
-export const ResetRequest: MessageFns<ResetRequest> = {
-  encode(_: ResetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BeginTransactionRequest: MessageFns<BeginTransactionRequest> = {
+  encode(message: BeginTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ResetRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): BeginTransactionRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseResetRequest();
+    const message = createBaseBeginTransactionRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1870,37 +4398,163 @@ export const ResetRequest: MessageFns<ResetRequest> = {
     return message;
   },
 
-  fromJSON(_: any): ResetRequest {
-    return {};
+  fromJSON(object: any): BeginTransactionRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
   },
 
-  toJSON(_: ResetRequest): unknown {
+  toJSON(message: BeginTransactionRequest): unknown {
     const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ResetRequest>, I>>(base?: I): ResetRequest {
-    return ResetRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<BeginTransactionRequest>, I>>(base?: I): BeginTransactionRequest {
+    return BeginTransactionRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ResetRequest>, I>>(_: I): ResetRequest {
-    const message = createBaseResetRequest();
+  fromPartial<I extends Exact<DeepPartial<BeginTransactionRequest>, I>>(object: I): BeginTransactionRequest {
+    const message = createBaseBeginTransactionRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     return message;
   },
 };
 
-function createBaseResetResponse(): ResetResponse {
-  return {};
+function createBaseBeginTransactionResponse(): BeginTransactionResponse {
+  return { transaction: undefined };
 }
 
-export const ResetResponse: MessageFns<ResetResponse> = {
-  encode(_: ResetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BeginTransactionResponse: MessageFns<BeginTransactionResponse> = {
+  encode(message: BeginTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.transaction !== undefined) {
+      Uuid.encode(message.transaction, writer.uint32(10).fork()).join();
+    }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ResetResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): BeginTransactionResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseResetResponse();
+    const message = createBaseBeginTransactionResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.transaction = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BeginTransactionResponse {
+    return { transaction: isSet(object.transaction) ? Uuid.fromJSON(object.transaction) : undefined };
+  },
+
+  toJSON(message: BeginTransactionResponse): unknown {
+    const obj: any = {};
+    if (message.transaction !== undefined) {
+      obj.transaction = Uuid.toJSON(message.transaction);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BeginTransactionResponse>, I>>(base?: I): BeginTransactionResponse {
+    return BeginTransactionResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BeginTransactionResponse>, I>>(object: I): BeginTransactionResponse {
+    const message = createBaseBeginTransactionResponse();
+    message.transaction = (object.transaction !== undefined && object.transaction !== null)
+      ? Uuid.fromPartial(object.transaction)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCommitTransactionRequest(): CommitTransactionRequest {
+  return { context: undefined };
+}
+
+export const CommitTransactionRequest: MessageFns<CommitTransactionRequest> = {
+  encode(message: CommitTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CommitTransactionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCommitTransactionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CommitTransactionRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
+  },
+
+  toJSON(message: CommitTransactionRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CommitTransactionRequest>, I>>(base?: I): CommitTransactionRequest {
+    return CommitTransactionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CommitTransactionRequest>, I>>(object: I): CommitTransactionRequest {
+    const message = createBaseCommitTransactionRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCommitTransactionResponse(): CommitTransactionResponse {
+  return {};
+}
+
+export const CommitTransactionResponse: MessageFns<CommitTransactionResponse> = {
+  encode(_: CommitTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CommitTransactionResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCommitTransactionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1913,32 +4567,1852 @@ export const ResetResponse: MessageFns<ResetResponse> = {
     return message;
   },
 
-  fromJSON(_: any): ResetResponse {
+  fromJSON(_: any): CommitTransactionResponse {
     return {};
   },
 
-  toJSON(_: ResetResponse): unknown {
+  toJSON(_: CommitTransactionResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ResetResponse>, I>>(base?: I): ResetResponse {
-    return ResetResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CommitTransactionResponse>, I>>(base?: I): CommitTransactionResponse {
+    return CommitTransactionResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ResetResponse>, I>>(_: I): ResetResponse {
-    const message = createBaseResetResponse();
+  fromPartial<I extends Exact<DeepPartial<CommitTransactionResponse>, I>>(_: I): CommitTransactionResponse {
+    const message = createBaseCommitTransactionResponse();
+    return message;
+  },
+};
+
+function createBaseCancelTransactionRequest(): CancelTransactionRequest {
+  return { context: undefined };
+}
+
+export const CancelTransactionRequest: MessageFns<CancelTransactionRequest> = {
+  encode(message: CancelTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelTransactionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelTransactionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelTransactionRequest {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
+  },
+
+  toJSON(message: CancelTransactionRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CancelTransactionRequest>, I>>(base?: I): CancelTransactionRequest {
+    return CancelTransactionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CancelTransactionRequest>, I>>(object: I): CancelTransactionRequest {
+    const message = createBaseCancelTransactionRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCancelTransactionResponse(): CancelTransactionResponse {
+  return {};
+}
+
+export const CancelTransactionResponse: MessageFns<CancelTransactionResponse> = {
+  encode(_: CancelTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelTransactionResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelTransactionResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): CancelTransactionResponse {
+    return {};
+  },
+
+  toJSON(_: CancelTransactionResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CancelTransactionResponse>, I>>(base?: I): CancelTransactionResponse {
+    return CancelTransactionResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CancelTransactionResponse>, I>>(_: I): CancelTransactionResponse {
+    const message = createBaseCancelTransactionResponse();
+    return message;
+  },
+};
+
+function createBaseQueryRequest(): QueryRequest {
+  return { context: undefined, query: "", variables: undefined, acceptedEncodings: [] };
+}
+
+export const QueryRequest: MessageFns<QueryRequest> = {
+  encode(message: QueryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.query !== "") {
+      writer.uint32(18).string(message.query);
+    }
+    if (message.variables !== undefined) {
+      Variables.encode(message.variables, writer.uint32(26).fork()).join();
+    }
+    writer.uint32(34).fork();
+    for (const v of message.acceptedEncodings) {
+      writer.int32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.variables = Variables.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag === 32) {
+            message.acceptedEncodings.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 34) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.acceptedEncodings.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+      variables: isSet(object.variables) ? Variables.fromJSON(object.variables) : undefined,
+      acceptedEncodings: globalThis.Array.isArray(object?.acceptedEncodings)
+        ? object.acceptedEncodings.map((e: any) => resultEncodingFromJSON(e))
+        : globalThis.Array.isArray(object?.accepted_encodings)
+        ? object.accepted_encodings.map((e: any) => resultEncodingFromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: QueryRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.query !== "") {
+      obj.query = message.query;
+    }
+    if (message.variables !== undefined) {
+      obj.variables = Variables.toJSON(message.variables);
+    }
+    if (message.acceptedEncodings?.length) {
+      obj.acceptedEncodings = message.acceptedEncodings.map((e) => resultEncodingToJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QueryRequest>, I>>(base?: I): QueryRequest {
+    return QueryRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QueryRequest>, I>>(object: I): QueryRequest {
+    const message = createBaseQueryRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.query = object.query ?? "";
+    message.variables = (object.variables !== undefined && object.variables !== null)
+      ? Variables.fromPartial(object.variables)
+      : undefined;
+    message.acceptedEncodings = object.acceptedEncodings?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseValueBatch(): ValueBatch {
+  return { values: [] };
+}
+
+export const ValueBatch: MessageFns<ValueBatch> = {
+  encode(message: ValueBatch, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.values) {
+      Value.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValueBatch {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValueBatch();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.values.push(Value.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValueBatch {
+    return { values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => Value.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: ValueBatch): unknown {
+    const obj: any = {};
+    if (message.values?.length) {
+      obj.values = message.values.map((e) => Value.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ValueBatch>, I>>(base?: I): ValueBatch {
+    return ValueBatch.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ValueBatch>, I>>(object: I): ValueBatch {
+    const message = createBaseValueBatch();
+    message.values = object.values?.map((e) => Value.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseArrowBatch(): ArrowBatch {
+  return { payload: new Uint8Array(0), streamSequence: 0 };
+}
+
+export const ArrowBatch: MessageFns<ArrowBatch> = {
+  encode(message: ArrowBatch, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.payload.length !== 0) {
+      writer.uint32(10).bytes(message.payload);
+    }
+    if (message.streamSequence !== 0) {
+      writer.uint32(16).uint32(message.streamSequence);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ArrowBatch {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseArrowBatch();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.payload = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.streamSequence = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ArrowBatch {
+    return {
+      payload: isSet(object.payload) ? bytesFromBase64(object.payload) : new Uint8Array(0),
+      streamSequence: isSet(object.streamSequence)
+        ? globalThis.Number(object.streamSequence)
+        : isSet(object.stream_sequence)
+        ? globalThis.Number(object.stream_sequence)
+        : 0,
+    };
+  },
+
+  toJSON(message: ArrowBatch): unknown {
+    const obj: any = {};
+    if (message.payload.length !== 0) {
+      obj.payload = base64FromBytes(message.payload);
+    }
+    if (message.streamSequence !== 0) {
+      obj.streamSequence = Math.round(message.streamSequence);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ArrowBatch>, I>>(base?: I): ArrowBatch {
+    return ArrowBatch.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ArrowBatch>, I>>(object: I): ArrowBatch {
+    const message = createBaseArrowBatch();
+    message.payload = object.payload ?? new Uint8Array(0);
+    message.streamSequence = object.streamSequence ?? 0;
+    return message;
+  },
+};
+
+function createBaseQueryStats(): QueryStats {
+  return { recordsReturned: 0n, bytesReturned: 0n, recordsScanned: 0n, bytesScanned: 0n, executionDuration: undefined };
+}
+
+export const QueryStats: MessageFns<QueryStats> = {
+  encode(message: QueryStats, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.recordsReturned !== 0n) {
+      if (BigInt.asIntN(64, message.recordsReturned) !== message.recordsReturned) {
+        throw new globalThis.Error("value provided for field message.recordsReturned of type int64 too large");
+      }
+      writer.uint32(8).int64(message.recordsReturned);
+    }
+    if (message.bytesReturned !== 0n) {
+      if (BigInt.asIntN(64, message.bytesReturned) !== message.bytesReturned) {
+        throw new globalThis.Error("value provided for field message.bytesReturned of type int64 too large");
+      }
+      writer.uint32(16).int64(message.bytesReturned);
+    }
+    if (message.recordsScanned !== 0n) {
+      if (BigInt.asIntN(64, message.recordsScanned) !== message.recordsScanned) {
+        throw new globalThis.Error("value provided for field message.recordsScanned of type int64 too large");
+      }
+      writer.uint32(24).int64(message.recordsScanned);
+    }
+    if (message.bytesScanned !== 0n) {
+      if (BigInt.asIntN(64, message.bytesScanned) !== message.bytesScanned) {
+        throw new globalThis.Error("value provided for field message.bytesScanned of type int64 too large");
+      }
+      writer.uint32(32).int64(message.bytesScanned);
+    }
+    if (message.executionDuration !== undefined) {
+      Duration.encode(message.executionDuration, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryStats {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryStats();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.recordsReturned = reader.int64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bytesReturned = reader.int64() as bigint;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.recordsScanned = reader.int64() as bigint;
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.bytesScanned = reader.int64() as bigint;
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.executionDuration = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryStats {
+    return {
+      recordsReturned: isSet(object.recordsReturned)
+        ? BigInt(object.recordsReturned)
+        : isSet(object.records_returned)
+        ? BigInt(object.records_returned)
+        : 0n,
+      bytesReturned: isSet(object.bytesReturned)
+        ? BigInt(object.bytesReturned)
+        : isSet(object.bytes_returned)
+        ? BigInt(object.bytes_returned)
+        : 0n,
+      recordsScanned: isSet(object.recordsScanned)
+        ? BigInt(object.recordsScanned)
+        : isSet(object.records_scanned)
+        ? BigInt(object.records_scanned)
+        : 0n,
+      bytesScanned: isSet(object.bytesScanned)
+        ? BigInt(object.bytesScanned)
+        : isSet(object.bytes_scanned)
+        ? BigInt(object.bytes_scanned)
+        : 0n,
+      executionDuration: isSet(object.executionDuration)
+        ? Duration.fromJSON(object.executionDuration)
+        : isSet(object.execution_duration)
+        ? Duration.fromJSON(object.execution_duration)
+        : undefined,
+    };
+  },
+
+  toJSON(message: QueryStats): unknown {
+    const obj: any = {};
+    if (message.recordsReturned !== 0n) {
+      obj.recordsReturned = message.recordsReturned.toString();
+    }
+    if (message.bytesReturned !== 0n) {
+      obj.bytesReturned = message.bytesReturned.toString();
+    }
+    if (message.recordsScanned !== 0n) {
+      obj.recordsScanned = message.recordsScanned.toString();
+    }
+    if (message.bytesScanned !== 0n) {
+      obj.bytesScanned = message.bytesScanned.toString();
+    }
+    if (message.executionDuration !== undefined) {
+      obj.executionDuration = Duration.toJSON(message.executionDuration);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QueryStats>, I>>(base?: I): QueryStats {
+    return QueryStats.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QueryStats>, I>>(object: I): QueryStats {
+    const message = createBaseQueryStats();
+    message.recordsReturned = object.recordsReturned ?? 0n;
+    message.bytesReturned = object.bytesReturned ?? 0n;
+    message.recordsScanned = object.recordsScanned ?? 0n;
+    message.bytesScanned = object.bytesScanned ?? 0n;
+    message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
+      ? Duration.fromPartial(object.executionDuration)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseQueryBegin(): QueryBegin {
+  return { queryId: undefined, resultCount: 0 };
+}
+
+export const QueryBegin: MessageFns<QueryBegin> = {
+  encode(message: QueryBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.queryId !== undefined) {
+      Uuid.encode(message.queryId, writer.uint32(10).fork()).join();
+    }
+    if (message.resultCount !== 0) {
+      writer.uint32(16).uint32(message.resultCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryBegin {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryBegin();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.queryId = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.resultCount = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryBegin {
+    return {
+      queryId: isSet(object.queryId)
+        ? Uuid.fromJSON(object.queryId)
+        : isSet(object.query_id)
+        ? Uuid.fromJSON(object.query_id)
+        : undefined,
+      resultCount: isSet(object.resultCount)
+        ? globalThis.Number(object.resultCount)
+        : isSet(object.result_count)
+        ? globalThis.Number(object.result_count)
+        : 0,
+    };
+  },
+
+  toJSON(message: QueryBegin): unknown {
+    const obj: any = {};
+    if (message.queryId !== undefined) {
+      obj.queryId = Uuid.toJSON(message.queryId);
+    }
+    if (message.resultCount !== 0) {
+      obj.resultCount = Math.round(message.resultCount);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QueryBegin>, I>>(base?: I): QueryBegin {
+    return QueryBegin.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QueryBegin>, I>>(object: I): QueryBegin {
+    const message = createBaseQueryBegin();
+    message.queryId = (object.queryId !== undefined && object.queryId !== null)
+      ? Uuid.fromPartial(object.queryId)
+      : undefined;
+    message.resultCount = object.resultCount ?? 0;
+    return message;
+  },
+};
+
+function createBaseQueryBatchFrame(): QueryBatchFrame {
+  return {
+    queryIndex: 0,
+    batchIndex: 0n,
+    kind: 0,
+    statementKind: 0,
+    stats: undefined,
+    error: undefined,
+    payload: undefined,
+  };
+}
+
+export const QueryBatchFrame: MessageFns<QueryBatchFrame> = {
+  encode(message: QueryBatchFrame, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.queryIndex !== 0) {
+      writer.uint32(8).uint32(message.queryIndex);
+    }
+    if (message.batchIndex !== 0n) {
+      if (BigInt.asUintN(64, message.batchIndex) !== message.batchIndex) {
+        throw new globalThis.Error("value provided for field message.batchIndex of type uint64 too large");
+      }
+      writer.uint32(16).uint64(message.batchIndex);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(24).int32(message.kind);
+    }
+    if (message.statementKind !== 0) {
+      writer.uint32(32).int32(message.statementKind);
+    }
+    if (message.stats !== undefined) {
+      QueryStats.encode(message.stats, writer.uint32(42).fork()).join();
+    }
+    if (message.error !== undefined) {
+      SurrealError.encode(message.error, writer.uint32(50).fork()).join();
+    }
+    switch (message.payload?.$case) {
+      case "values":
+        ValueBatch.encode(message.payload.values, writer.uint32(58).fork()).join();
+        break;
+      case "arrow":
+        ArrowBatch.encode(message.payload.arrow, writer.uint32(66).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryBatchFrame {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryBatchFrame();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.queryIndex = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.batchIndex = reader.uint64() as bigint;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.statementKind = reader.int32() as any;
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.stats = QueryStats.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.error = SurrealError.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.payload = { $case: "values", values: ValueBatch.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.payload = { $case: "arrow", arrow: ArrowBatch.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryBatchFrame {
+    return {
+      queryIndex: isSet(object.queryIndex)
+        ? globalThis.Number(object.queryIndex)
+        : isSet(object.query_index)
+        ? globalThis.Number(object.query_index)
+        : 0,
+      batchIndex: isSet(object.batchIndex)
+        ? BigInt(object.batchIndex)
+        : isSet(object.batch_index)
+        ? BigInt(object.batch_index)
+        : 0n,
+      kind: isSet(object.kind) ? queryResponseKindFromJSON(object.kind) : 0,
+      statementKind: isSet(object.statementKind)
+        ? queryStatementKindFromJSON(object.statementKind)
+        : isSet(object.statement_kind)
+        ? queryStatementKindFromJSON(object.statement_kind)
+        : 0,
+      stats: isSet(object.stats) ? QueryStats.fromJSON(object.stats) : undefined,
+      error: isSet(object.error) ? SurrealError.fromJSON(object.error) : undefined,
+      payload: isSet(object.values)
+        ? { $case: "values", values: ValueBatch.fromJSON(object.values) }
+        : isSet(object.arrow)
+        ? { $case: "arrow", arrow: ArrowBatch.fromJSON(object.arrow) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: QueryBatchFrame): unknown {
+    const obj: any = {};
+    if (message.queryIndex !== 0) {
+      obj.queryIndex = Math.round(message.queryIndex);
+    }
+    if (message.batchIndex !== 0n) {
+      obj.batchIndex = message.batchIndex.toString();
+    }
+    if (message.kind !== 0) {
+      obj.kind = queryResponseKindToJSON(message.kind);
+    }
+    if (message.statementKind !== 0) {
+      obj.statementKind = queryStatementKindToJSON(message.statementKind);
+    }
+    if (message.stats !== undefined) {
+      obj.stats = QueryStats.toJSON(message.stats);
+    }
+    if (message.error !== undefined) {
+      obj.error = SurrealError.toJSON(message.error);
+    }
+    if (message.payload?.$case === "values") {
+      obj.values = ValueBatch.toJSON(message.payload.values);
+    } else if (message.payload?.$case === "arrow") {
+      obj.arrow = ArrowBatch.toJSON(message.payload.arrow);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QueryBatchFrame>, I>>(base?: I): QueryBatchFrame {
+    return QueryBatchFrame.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QueryBatchFrame>, I>>(object: I): QueryBatchFrame {
+    const message = createBaseQueryBatchFrame();
+    message.queryIndex = object.queryIndex ?? 0;
+    message.batchIndex = object.batchIndex ?? 0n;
+    message.kind = object.kind ?? 0;
+    message.statementKind = object.statementKind ?? 0;
+    message.stats = (object.stats !== undefined && object.stats !== null)
+      ? QueryStats.fromPartial(object.stats)
+      : undefined;
+    message.error = (object.error !== undefined && object.error !== null)
+      ? SurrealError.fromPartial(object.error)
+      : undefined;
+    switch (object.payload?.$case) {
+      case "values": {
+        if (object.payload?.values !== undefined && object.payload?.values !== null) {
+          message.payload = { $case: "values", values: ValueBatch.fromPartial(object.payload.values) };
+        }
+        break;
+      }
+      case "arrow": {
+        if (object.payload?.arrow !== undefined && object.payload?.arrow !== null) {
+          message.payload = { $case: "arrow", arrow: ArrowBatch.fromPartial(object.payload.arrow) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseQueryEnd(): QueryEnd {
+  return {};
+}
+
+export const QueryEnd: MessageFns<QueryEnd> = {
+  encode(_: QueryEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryEnd {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryEnd();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): QueryEnd {
+    return {};
+  },
+
+  toJSON(_: QueryEnd): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QueryEnd>, I>>(base?: I): QueryEnd {
+    return QueryEnd.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QueryEnd>, I>>(_: I): QueryEnd {
+    const message = createBaseQueryEnd();
+    return message;
+  },
+};
+
+function createBaseQueryResponse(): QueryResponse {
+  return { frame: undefined };
+}
+
+export const QueryResponse: MessageFns<QueryResponse> = {
+  encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.frame?.$case) {
+      case "begin":
+        QueryBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
+        break;
+      case "batch":
+        QueryBatchFrame.encode(message.frame.batch, writer.uint32(18).fork()).join();
+        break;
+      case "end":
+        QueryEnd.encode(message.frame.end, writer.uint32(26).fork()).join();
+        break;
+      case "error":
+        SurrealError.encode(message.frame.error, writer.uint32(34).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.frame = { $case: "begin", begin: QueryBegin.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "batch", batch: QueryBatchFrame.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "end", end: QueryEnd.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.frame = { $case: "error", error: SurrealError.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryResponse {
+    return {
+      frame: isSet(object.begin)
+        ? { $case: "begin", begin: QueryBegin.fromJSON(object.begin) }
+        : isSet(object.batch)
+        ? { $case: "batch", batch: QueryBatchFrame.fromJSON(object.batch) }
+        : isSet(object.end)
+        ? { $case: "end", end: QueryEnd.fromJSON(object.end) }
+        : isSet(object.error)
+        ? { $case: "error", error: SurrealError.fromJSON(object.error) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: QueryResponse): unknown {
+    const obj: any = {};
+    if (message.frame?.$case === "begin") {
+      obj.begin = QueryBegin.toJSON(message.frame.begin);
+    } else if (message.frame?.$case === "batch") {
+      obj.batch = QueryBatchFrame.toJSON(message.frame.batch);
+    } else if (message.frame?.$case === "end") {
+      obj.end = QueryEnd.toJSON(message.frame.end);
+    } else if (message.frame?.$case === "error") {
+      obj.error = SurrealError.toJSON(message.frame.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QueryResponse>, I>>(base?: I): QueryResponse {
+    return QueryResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QueryResponse>, I>>(object: I): QueryResponse {
+    const message = createBaseQueryResponse();
+    switch (object.frame?.$case) {
+      case "begin": {
+        if (object.frame?.begin !== undefined && object.frame?.begin !== null) {
+          message.frame = { $case: "begin", begin: QueryBegin.fromPartial(object.frame.begin) };
+        }
+        break;
+      }
+      case "batch": {
+        if (object.frame?.batch !== undefined && object.frame?.batch !== null) {
+          message.frame = { $case: "batch", batch: QueryBatchFrame.fromPartial(object.frame.batch) };
+        }
+        break;
+      }
+      case "end": {
+        if (object.frame?.end !== undefined && object.frame?.end !== null) {
+          message.frame = { $case: "end", end: QueryEnd.fromPartial(object.frame.end) };
+        }
+        break;
+      }
+      case "error": {
+        if (object.frame?.error !== undefined && object.frame?.error !== null) {
+          message.frame = { $case: "error", error: SurrealError.fromPartial(object.frame.error) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseLiveQueryCursor(): LiveQueryCursor {
+  return { versionstamp: 0n, sequence: 0 };
+}
+
+export const LiveQueryCursor: MessageFns<LiveQueryCursor> = {
+  encode(message: LiveQueryCursor, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.versionstamp !== 0n) {
+      if (BigInt.asUintN(64, message.versionstamp) !== message.versionstamp) {
+        throw new globalThis.Error("value provided for field message.versionstamp of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.versionstamp);
+    }
+    if (message.sequence !== 0) {
+      writer.uint32(16).uint32(message.sequence);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiveQueryCursor {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiveQueryCursor();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.versionstamp = reader.uint64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sequence = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiveQueryCursor {
+    return {
+      versionstamp: isSet(object.versionstamp) ? BigInt(object.versionstamp) : 0n,
+      sequence: isSet(object.sequence) ? globalThis.Number(object.sequence) : 0,
+    };
+  },
+
+  toJSON(message: LiveQueryCursor): unknown {
+    const obj: any = {};
+    if (message.versionstamp !== 0n) {
+      obj.versionstamp = message.versionstamp.toString();
+    }
+    if (message.sequence !== 0) {
+      obj.sequence = Math.round(message.sequence);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiveQueryCursor>, I>>(base?: I): LiveQueryCursor {
+    return LiveQueryCursor.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiveQueryCursor>, I>>(object: I): LiveQueryCursor {
+    const message = createBaseLiveQueryCursor();
+    message.versionstamp = object.versionstamp ?? 0n;
+    message.sequence = object.sequence ?? 0;
+    return message;
+  },
+};
+
+function createBaseLiveQueryRegistration(): LiveQueryRegistration {
+  return { query: "", variables: undefined };
+}
+
+export const LiveQueryRegistration: MessageFns<LiveQueryRegistration> = {
+  encode(message: LiveQueryRegistration, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.query !== "") {
+      writer.uint32(10).string(message.query);
+    }
+    if (message.variables !== undefined) {
+      Variables.encode(message.variables, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LiveQueryRegistration {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLiveQueryRegistration();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.variables = Variables.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LiveQueryRegistration {
+    return {
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+      variables: isSet(object.variables) ? Variables.fromJSON(object.variables) : undefined,
+    };
+  },
+
+  toJSON(message: LiveQueryRegistration): unknown {
+    const obj: any = {};
+    if (message.query !== "") {
+      obj.query = message.query;
+    }
+    if (message.variables !== undefined) {
+      obj.variables = Variables.toJSON(message.variables);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LiveQueryRegistration>, I>>(base?: I): LiveQueryRegistration {
+    return LiveQueryRegistration.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LiveQueryRegistration>, I>>(object: I): LiveQueryRegistration {
+    const message = createBaseLiveQueryRegistration();
+    message.query = object.query ?? "";
+    message.variables = (object.variables !== undefined && object.variables !== null)
+      ? Variables.fromPartial(object.variables)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSubscribeRequest(): SubscribeRequest {
+  return { context: undefined, subscribeTo: undefined, resumeFrom: undefined };
+}
+
+export const SubscribeRequest: MessageFns<SubscribeRequest> = {
+  encode(message: SubscribeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    switch (message.subscribeTo?.$case) {
+      case "liveQueryId":
+        Uuid.encode(message.subscribeTo.liveQueryId, writer.uint32(18).fork()).join();
+        break;
+      case "query":
+        LiveQueryRegistration.encode(message.subscribeTo.query, writer.uint32(26).fork()).join();
+        break;
+    }
+    if (message.resumeFrom !== undefined) {
+      LiveQueryCursor.encode(message.resumeFrom, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SubscribeRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSubscribeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.subscribeTo = { $case: "liveQueryId", liveQueryId: Uuid.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.subscribeTo = { $case: "query", query: LiveQueryRegistration.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.resumeFrom = LiveQueryCursor.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SubscribeRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      subscribeTo: isSet(object.liveQueryId)
+        ? { $case: "liveQueryId", liveQueryId: Uuid.fromJSON(object.liveQueryId) }
+        : isSet(object.live_query_id)
+        ? { $case: "liveQueryId", liveQueryId: Uuid.fromJSON(object.live_query_id) }
+        : isSet(object.query)
+        ? { $case: "query", query: LiveQueryRegistration.fromJSON(object.query) }
+        : undefined,
+      resumeFrom: isSet(object.resumeFrom)
+        ? LiveQueryCursor.fromJSON(object.resumeFrom)
+        : isSet(object.resume_from)
+        ? LiveQueryCursor.fromJSON(object.resume_from)
+        : undefined,
+    };
+  },
+
+  toJSON(message: SubscribeRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.subscribeTo?.$case === "liveQueryId") {
+      obj.liveQueryId = Uuid.toJSON(message.subscribeTo.liveQueryId);
+    } else if (message.subscribeTo?.$case === "query") {
+      obj.query = LiveQueryRegistration.toJSON(message.subscribeTo.query);
+    }
+    if (message.resumeFrom !== undefined) {
+      obj.resumeFrom = LiveQueryCursor.toJSON(message.resumeFrom);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SubscribeRequest>, I>>(base?: I): SubscribeRequest {
+    return SubscribeRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SubscribeRequest>, I>>(object: I): SubscribeRequest {
+    const message = createBaseSubscribeRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    switch (object.subscribeTo?.$case) {
+      case "liveQueryId": {
+        if (object.subscribeTo?.liveQueryId !== undefined && object.subscribeTo?.liveQueryId !== null) {
+          message.subscribeTo = { $case: "liveQueryId", liveQueryId: Uuid.fromPartial(object.subscribeTo.liveQueryId) };
+        }
+        break;
+      }
+      case "query": {
+        if (object.subscribeTo?.query !== undefined && object.subscribeTo?.query !== null) {
+          message.subscribeTo = { $case: "query", query: LiveQueryRegistration.fromPartial(object.subscribeTo.query) };
+        }
+        break;
+      }
+    }
+    message.resumeFrom = (object.resumeFrom !== undefined && object.resumeFrom !== null)
+      ? LiveQueryCursor.fromPartial(object.resumeFrom)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseNotification(): Notification {
+  return { liveQueryId: undefined, action: 0, recordId: undefined, value: undefined, cursor: undefined };
+}
+
+export const Notification: MessageFns<Notification> = {
+  encode(message: Notification, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.liveQueryId !== undefined) {
+      Uuid.encode(message.liveQueryId, writer.uint32(10).fork()).join();
+    }
+    if (message.action !== 0) {
+      writer.uint32(16).int32(message.action);
+    }
+    if (message.recordId !== undefined) {
+      RecordId.encode(message.recordId, writer.uint32(26).fork()).join();
+    }
+    if (message.value !== undefined) {
+      Value.encode(message.value, writer.uint32(34).fork()).join();
+    }
+    if (message.cursor !== undefined) {
+      LiveQueryCursor.encode(message.cursor, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Notification {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNotification();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.liveQueryId = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.recordId = RecordId.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.value = Value.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.cursor = LiveQueryCursor.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Notification {
+    return {
+      liveQueryId: isSet(object.liveQueryId)
+        ? Uuid.fromJSON(object.liveQueryId)
+        : isSet(object.live_query_id)
+        ? Uuid.fromJSON(object.live_query_id)
+        : undefined,
+      action: isSet(object.action) ? actionFromJSON(object.action) : 0,
+      recordId: isSet(object.recordId)
+        ? RecordId.fromJSON(object.recordId)
+        : isSet(object.record_id)
+        ? RecordId.fromJSON(object.record_id)
+        : undefined,
+      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
+      cursor: isSet(object.cursor) ? LiveQueryCursor.fromJSON(object.cursor) : undefined,
+    };
+  },
+
+  toJSON(message: Notification): unknown {
+    const obj: any = {};
+    if (message.liveQueryId !== undefined) {
+      obj.liveQueryId = Uuid.toJSON(message.liveQueryId);
+    }
+    if (message.action !== 0) {
+      obj.action = actionToJSON(message.action);
+    }
+    if (message.recordId !== undefined) {
+      obj.recordId = RecordId.toJSON(message.recordId);
+    }
+    if (message.value !== undefined) {
+      obj.value = Value.toJSON(message.value);
+    }
+    if (message.cursor !== undefined) {
+      obj.cursor = LiveQueryCursor.toJSON(message.cursor);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Notification>, I>>(base?: I): Notification {
+    return Notification.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Notification>, I>>(object: I): Notification {
+    const message = createBaseNotification();
+    message.liveQueryId = (object.liveQueryId !== undefined && object.liveQueryId !== null)
+      ? Uuid.fromPartial(object.liveQueryId)
+      : undefined;
+    message.action = object.action ?? 0;
+    message.recordId = (object.recordId !== undefined && object.recordId !== null)
+      ? RecordId.fromPartial(object.recordId)
+      : undefined;
+    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
+    message.cursor = (object.cursor !== undefined && object.cursor !== null)
+      ? LiveQueryCursor.fromPartial(object.cursor)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSubscribeBegin(): SubscribeBegin {
+  return { subscriptionId: undefined, liveQueryId: undefined, cursor: undefined };
+}
+
+export const SubscribeBegin: MessageFns<SubscribeBegin> = {
+  encode(message: SubscribeBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.subscriptionId !== undefined) {
+      Uuid.encode(message.subscriptionId, writer.uint32(10).fork()).join();
+    }
+    if (message.liveQueryId !== undefined) {
+      Uuid.encode(message.liveQueryId, writer.uint32(18).fork()).join();
+    }
+    if (message.cursor !== undefined) {
+      LiveQueryCursor.encode(message.cursor, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SubscribeBegin {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSubscribeBegin();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.subscriptionId = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.liveQueryId = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.cursor = LiveQueryCursor.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SubscribeBegin {
+    return {
+      subscriptionId: isSet(object.subscriptionId)
+        ? Uuid.fromJSON(object.subscriptionId)
+        : isSet(object.subscription_id)
+        ? Uuid.fromJSON(object.subscription_id)
+        : undefined,
+      liveQueryId: isSet(object.liveQueryId)
+        ? Uuid.fromJSON(object.liveQueryId)
+        : isSet(object.live_query_id)
+        ? Uuid.fromJSON(object.live_query_id)
+        : undefined,
+      cursor: isSet(object.cursor) ? LiveQueryCursor.fromJSON(object.cursor) : undefined,
+    };
+  },
+
+  toJSON(message: SubscribeBegin): unknown {
+    const obj: any = {};
+    if (message.subscriptionId !== undefined) {
+      obj.subscriptionId = Uuid.toJSON(message.subscriptionId);
+    }
+    if (message.liveQueryId !== undefined) {
+      obj.liveQueryId = Uuid.toJSON(message.liveQueryId);
+    }
+    if (message.cursor !== undefined) {
+      obj.cursor = LiveQueryCursor.toJSON(message.cursor);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SubscribeBegin>, I>>(base?: I): SubscribeBegin {
+    return SubscribeBegin.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SubscribeBegin>, I>>(object: I): SubscribeBegin {
+    const message = createBaseSubscribeBegin();
+    message.subscriptionId = (object.subscriptionId !== undefined && object.subscriptionId !== null)
+      ? Uuid.fromPartial(object.subscriptionId)
+      : undefined;
+    message.liveQueryId = (object.liveQueryId !== undefined && object.liveQueryId !== null)
+      ? Uuid.fromPartial(object.liveQueryId)
+      : undefined;
+    message.cursor = (object.cursor !== undefined && object.cursor !== null)
+      ? LiveQueryCursor.fromPartial(object.cursor)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSubscribeEnd(): SubscribeEnd {
+  return { reason: 0, cursor: undefined };
+}
+
+export const SubscribeEnd: MessageFns<SubscribeEnd> = {
+  encode(message: SubscribeEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.reason !== 0) {
+      writer.uint32(8).int32(message.reason);
+    }
+    if (message.cursor !== undefined) {
+      LiveQueryCursor.encode(message.cursor, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SubscribeEnd {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSubscribeEnd();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.reason = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.cursor = LiveQueryCursor.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SubscribeEnd {
+    return {
+      reason: isSet(object.reason) ? subscribeEndReasonFromJSON(object.reason) : 0,
+      cursor: isSet(object.cursor) ? LiveQueryCursor.fromJSON(object.cursor) : undefined,
+    };
+  },
+
+  toJSON(message: SubscribeEnd): unknown {
+    const obj: any = {};
+    if (message.reason !== 0) {
+      obj.reason = subscribeEndReasonToJSON(message.reason);
+    }
+    if (message.cursor !== undefined) {
+      obj.cursor = LiveQueryCursor.toJSON(message.cursor);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SubscribeEnd>, I>>(base?: I): SubscribeEnd {
+    return SubscribeEnd.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SubscribeEnd>, I>>(object: I): SubscribeEnd {
+    const message = createBaseSubscribeEnd();
+    message.reason = object.reason ?? 0;
+    message.cursor = (object.cursor !== undefined && object.cursor !== null)
+      ? LiveQueryCursor.fromPartial(object.cursor)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSubscribeResponse(): SubscribeResponse {
+  return { frame: undefined };
+}
+
+export const SubscribeResponse: MessageFns<SubscribeResponse> = {
+  encode(message: SubscribeResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.frame?.$case) {
+      case "begin":
+        SubscribeBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
+        break;
+      case "notification":
+        Notification.encode(message.frame.notification, writer.uint32(18).fork()).join();
+        break;
+      case "end":
+        SubscribeEnd.encode(message.frame.end, writer.uint32(26).fork()).join();
+        break;
+      case "error":
+        SurrealError.encode(message.frame.error, writer.uint32(34).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SubscribeResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSubscribeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.frame = { $case: "begin", begin: SubscribeBegin.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "notification", notification: Notification.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "end", end: SubscribeEnd.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.frame = { $case: "error", error: SurrealError.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SubscribeResponse {
+    return {
+      frame: isSet(object.begin)
+        ? { $case: "begin", begin: SubscribeBegin.fromJSON(object.begin) }
+        : isSet(object.notification)
+        ? { $case: "notification", notification: Notification.fromJSON(object.notification) }
+        : isSet(object.end)
+        ? { $case: "end", end: SubscribeEnd.fromJSON(object.end) }
+        : isSet(object.error)
+        ? { $case: "error", error: SurrealError.fromJSON(object.error) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: SubscribeResponse): unknown {
+    const obj: any = {};
+    if (message.frame?.$case === "begin") {
+      obj.begin = SubscribeBegin.toJSON(message.frame.begin);
+    } else if (message.frame?.$case === "notification") {
+      obj.notification = Notification.toJSON(message.frame.notification);
+    } else if (message.frame?.$case === "end") {
+      obj.end = SubscribeEnd.toJSON(message.frame.end);
+    } else if (message.frame?.$case === "error") {
+      obj.error = SurrealError.toJSON(message.frame.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SubscribeResponse>, I>>(base?: I): SubscribeResponse {
+    return SubscribeResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SubscribeResponse>, I>>(object: I): SubscribeResponse {
+    const message = createBaseSubscribeResponse();
+    switch (object.frame?.$case) {
+      case "begin": {
+        if (object.frame?.begin !== undefined && object.frame?.begin !== null) {
+          message.frame = { $case: "begin", begin: SubscribeBegin.fromPartial(object.frame.begin) };
+        }
+        break;
+      }
+      case "notification": {
+        if (object.frame?.notification !== undefined && object.frame?.notification !== null) {
+          message.frame = { $case: "notification", notification: Notification.fromPartial(object.frame.notification) };
+        }
+        break;
+      }
+      case "end": {
+        if (object.frame?.end !== undefined && object.frame?.end !== null) {
+          message.frame = { $case: "end", end: SubscribeEnd.fromPartial(object.frame.end) };
+        }
+        break;
+      }
+      case "error": {
+        if (object.frame?.error !== undefined && object.frame?.error !== null) {
+          message.frame = { $case: "error", error: SurrealError.fromPartial(object.frame.error) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseImportSqlBegin(): ImportSqlBegin {
+  return { context: undefined };
+}
+
+export const ImportSqlBegin: MessageFns<ImportSqlBegin> = {
+  encode(message: ImportSqlBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportSqlBegin {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportSqlBegin();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportSqlBegin {
+    return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
+  },
+
+  toJSON(message: ImportSqlBegin): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ImportSqlBegin>, I>>(base?: I): ImportSqlBegin {
+    return ImportSqlBegin.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ImportSqlBegin>, I>>(object: I): ImportSqlBegin {
+    const message = createBaseImportSqlBegin();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     return message;
   },
 };
 
 function createBaseImportSqlRequest(): ImportSqlRequest {
-  return { statement: "" };
+  return { frame: undefined };
 }
 
 export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
   encode(message: ImportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.statement !== "") {
-      writer.uint32(10).string(message.statement);
+    switch (message.frame?.$case) {
+      case "begin":
+        ImportSqlBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
+        break;
+      case "chunk":
+        DataChunk.encode(message.frame.chunk, writer.uint32(18).fork()).join();
+        break;
+      case "trailer":
+        DataTrailer.encode(message.frame.trailer, writer.uint32(26).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1955,7 +6429,23 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
             break;
           }
 
-          message.statement = reader.string();
+          message.frame = { $case: "begin", begin: ImportSqlBegin.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "chunk", chunk: DataChunk.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "trailer", trailer: DataTrailer.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -1968,13 +6458,25 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
   },
 
   fromJSON(object: any): ImportSqlRequest {
-    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
+    return {
+      frame: isSet(object.begin)
+        ? { $case: "begin", begin: ImportSqlBegin.fromJSON(object.begin) }
+        : isSet(object.chunk)
+        ? { $case: "chunk", chunk: DataChunk.fromJSON(object.chunk) }
+        : isSet(object.trailer)
+        ? { $case: "trailer", trailer: DataTrailer.fromJSON(object.trailer) }
+        : undefined,
+    };
   },
 
   toJSON(message: ImportSqlRequest): unknown {
     const obj: any = {};
-    if (message.statement !== "") {
-      obj.statement = message.statement;
+    if (message.frame?.$case === "begin") {
+      obj.begin = ImportSqlBegin.toJSON(message.frame.begin);
+    } else if (message.frame?.$case === "chunk") {
+      obj.chunk = DataChunk.toJSON(message.frame.chunk);
+    } else if (message.frame?.$case === "trailer") {
+      obj.trailer = DataTrailer.toJSON(message.frame.trailer);
     }
     return obj;
   },
@@ -1984,7 +6486,26 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<ImportSqlRequest>, I>>(object: I): ImportSqlRequest {
     const message = createBaseImportSqlRequest();
-    message.statement = object.statement ?? "";
+    switch (object.frame?.$case) {
+      case "begin": {
+        if (object.frame?.begin !== undefined && object.frame?.begin !== null) {
+          message.frame = { $case: "begin", begin: ImportSqlBegin.fromPartial(object.frame.begin) };
+        }
+        break;
+      }
+      case "chunk": {
+        if (object.frame?.chunk !== undefined && object.frame?.chunk !== null) {
+          message.frame = { $case: "chunk", chunk: DataChunk.fromPartial(object.frame.chunk) };
+        }
+        break;
+      }
+      case "trailer": {
+        if (object.frame?.trailer !== undefined && object.frame?.trailer !== null) {
+          message.frame = { $case: "trailer", trailer: DataTrailer.fromPartial(object.frame.trailer) };
+        }
+        break;
+      }
+    }
     return message;
   },
 };
@@ -2032,579 +6553,6 @@ export const ImportSqlResponse: MessageFns<ImportSqlResponse> = {
   },
 };
 
-function createBaseExportSqlRequest(): ExportSqlRequest {
-  return {
-    users: false,
-    accesses: false,
-    params: false,
-    functions: false,
-    analyzers: false,
-    tables: undefined,
-    versions: false,
-    records: false,
-    sequences: false,
-  };
-}
-
-export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
-  encode(message: ExportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.users !== false) {
-      writer.uint32(8).bool(message.users);
-    }
-    if (message.accesses !== false) {
-      writer.uint32(16).bool(message.accesses);
-    }
-    if (message.params !== false) {
-      writer.uint32(24).bool(message.params);
-    }
-    if (message.functions !== false) {
-      writer.uint32(32).bool(message.functions);
-    }
-    if (message.analyzers !== false) {
-      writer.uint32(40).bool(message.analyzers);
-    }
-    if (message.tables !== undefined) {
-      ExportSqlRequest_Tables.encode(message.tables, writer.uint32(50).fork()).join();
-    }
-    if (message.versions !== false) {
-      writer.uint32(56).bool(message.versions);
-    }
-    if (message.records !== false) {
-      writer.uint32(64).bool(message.records);
-    }
-    if (message.sequences !== false) {
-      writer.uint32(72).bool(message.sequences);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportSqlRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.users = reader.bool();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.accesses = reader.bool();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.params = reader.bool();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.functions = reader.bool();
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.analyzers = reader.bool();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.tables = ExportSqlRequest_Tables.decode(reader, reader.uint32());
-          continue;
-        }
-        case 7: {
-          if (tag !== 56) {
-            break;
-          }
-
-          message.versions = reader.bool();
-          continue;
-        }
-        case 8: {
-          if (tag !== 64) {
-            break;
-          }
-
-          message.records = reader.bool();
-          continue;
-        }
-        case 9: {
-          if (tag !== 72) {
-            break;
-          }
-
-          message.sequences = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportSqlRequest {
-    return {
-      users: isSet(object.users) ? globalThis.Boolean(object.users) : false,
-      accesses: isSet(object.accesses) ? globalThis.Boolean(object.accesses) : false,
-      params: isSet(object.params) ? globalThis.Boolean(object.params) : false,
-      functions: isSet(object.functions) ? globalThis.Boolean(object.functions) : false,
-      analyzers: isSet(object.analyzers) ? globalThis.Boolean(object.analyzers) : false,
-      tables: isSet(object.tables) ? ExportSqlRequest_Tables.fromJSON(object.tables) : undefined,
-      versions: isSet(object.versions) ? globalThis.Boolean(object.versions) : false,
-      records: isSet(object.records) ? globalThis.Boolean(object.records) : false,
-      sequences: isSet(object.sequences) ? globalThis.Boolean(object.sequences) : false,
-    };
-  },
-
-  toJSON(message: ExportSqlRequest): unknown {
-    const obj: any = {};
-    if (message.users !== false) {
-      obj.users = message.users;
-    }
-    if (message.accesses !== false) {
-      obj.accesses = message.accesses;
-    }
-    if (message.params !== false) {
-      obj.params = message.params;
-    }
-    if (message.functions !== false) {
-      obj.functions = message.functions;
-    }
-    if (message.analyzers !== false) {
-      obj.analyzers = message.analyzers;
-    }
-    if (message.tables !== undefined) {
-      obj.tables = ExportSqlRequest_Tables.toJSON(message.tables);
-    }
-    if (message.versions !== false) {
-      obj.versions = message.versions;
-    }
-    if (message.records !== false) {
-      obj.records = message.records;
-    }
-    if (message.sequences !== false) {
-      obj.sequences = message.sequences;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(base?: I): ExportSqlRequest {
-    return ExportSqlRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(object: I): ExportSqlRequest {
-    const message = createBaseExportSqlRequest();
-    message.users = object.users ?? false;
-    message.accesses = object.accesses ?? false;
-    message.params = object.params ?? false;
-    message.functions = object.functions ?? false;
-    message.analyzers = object.analyzers ?? false;
-    message.tables = (object.tables !== undefined && object.tables !== null)
-      ? ExportSqlRequest_Tables.fromPartial(object.tables)
-      : undefined;
-    message.versions = object.versions ?? false;
-    message.records = object.records ?? false;
-    message.sequences = object.sequences ?? false;
-    return message;
-  },
-};
-
-function createBaseExportSqlRequest_SelectedTables(): ExportSqlRequest_SelectedTables {
-  return { tables: [] };
-}
-
-export const ExportSqlRequest_SelectedTables: MessageFns<ExportSqlRequest_SelectedTables> = {
-  encode(message: ExportSqlRequest_SelectedTables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.tables) {
-      writer.uint32(10).string(v!);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest_SelectedTables {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportSqlRequest_SelectedTables();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.tables.push(reader.string());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportSqlRequest_SelectedTables {
-    return {
-      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => globalThis.String(e)) : [],
-    };
-  },
-
-  toJSON(message: ExportSqlRequest_SelectedTables): unknown {
-    const obj: any = {};
-    if (message.tables?.length) {
-      obj.tables = message.tables;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportSqlRequest_SelectedTables>, I>>(base?: I): ExportSqlRequest_SelectedTables {
-    return ExportSqlRequest_SelectedTables.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest_SelectedTables>, I>>(
-    object: I,
-  ): ExportSqlRequest_SelectedTables {
-    const message = createBaseExportSqlRequest_SelectedTables();
-    message.tables = object.tables?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBaseExportSqlRequest_Tables(): ExportSqlRequest_Tables {
-  return { selection: undefined };
-}
-
-export const ExportSqlRequest_Tables: MessageFns<ExportSqlRequest_Tables> = {
-  encode(message: ExportSqlRequest_Tables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    switch (message.selection?.$case) {
-      case "all":
-        NullValue.encode(message.selection.all, writer.uint32(10).fork()).join();
-        break;
-      case "none":
-        NullValue.encode(message.selection.none, writer.uint32(18).fork()).join();
-        break;
-      case "selected":
-        ExportSqlRequest_SelectedTables.encode(message.selection.selected, writer.uint32(26).fork()).join();
-        break;
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest_Tables {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportSqlRequest_Tables();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.selection = { $case: "all", all: NullValue.decode(reader, reader.uint32()) };
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.selection = { $case: "none", none: NullValue.decode(reader, reader.uint32()) };
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.selection = {
-            $case: "selected",
-            selected: ExportSqlRequest_SelectedTables.decode(reader, reader.uint32()),
-          };
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportSqlRequest_Tables {
-    return {
-      selection: isSet(object.all)
-        ? { $case: "all", all: NullValue.fromJSON(object.all) }
-        : isSet(object.none)
-        ? { $case: "none", none: NullValue.fromJSON(object.none) }
-        : isSet(object.selected)
-        ? { $case: "selected", selected: ExportSqlRequest_SelectedTables.fromJSON(object.selected) }
-        : undefined,
-    };
-  },
-
-  toJSON(message: ExportSqlRequest_Tables): unknown {
-    const obj: any = {};
-    if (message.selection?.$case === "all") {
-      obj.all = NullValue.toJSON(message.selection.all);
-    } else if (message.selection?.$case === "none") {
-      obj.none = NullValue.toJSON(message.selection.none);
-    } else if (message.selection?.$case === "selected") {
-      obj.selected = ExportSqlRequest_SelectedTables.toJSON(message.selection.selected);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportSqlRequest_Tables>, I>>(base?: I): ExportSqlRequest_Tables {
-    return ExportSqlRequest_Tables.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest_Tables>, I>>(object: I): ExportSqlRequest_Tables {
-    const message = createBaseExportSqlRequest_Tables();
-    switch (object.selection?.$case) {
-      case "all": {
-        if (object.selection?.all !== undefined && object.selection?.all !== null) {
-          message.selection = { $case: "all", all: NullValue.fromPartial(object.selection.all) };
-        }
-        break;
-      }
-      case "none": {
-        if (object.selection?.none !== undefined && object.selection?.none !== null) {
-          message.selection = { $case: "none", none: NullValue.fromPartial(object.selection.none) };
-        }
-        break;
-      }
-      case "selected": {
-        if (object.selection?.selected !== undefined && object.selection?.selected !== null) {
-          message.selection = {
-            $case: "selected",
-            selected: ExportSqlRequest_SelectedTables.fromPartial(object.selection.selected),
-          };
-        }
-        break;
-      }
-    }
-    return message;
-  },
-};
-
-function createBaseExportSqlResponse(): ExportSqlResponse {
-  return { statement: "" };
-}
-
-export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
-  encode(message: ExportSqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.statement !== "") {
-      writer.uint32(10).string(message.statement);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportSqlResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.statement = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportSqlResponse {
-    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
-  },
-
-  toJSON(message: ExportSqlResponse): unknown {
-    const obj: any = {};
-    if (message.statement !== "") {
-      obj.statement = message.statement;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(base?: I): ExportSqlResponse {
-    return ExportSqlResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(object: I): ExportSqlResponse {
-    const message = createBaseExportSqlResponse();
-    message.statement = object.statement ?? "";
-    return message;
-  },
-};
-
-function createBaseExportMlModelRequest(): ExportMlModelRequest {
-  return { name: "", version: "" };
-}
-
-export const ExportMlModelRequest: MessageFns<ExportMlModelRequest> = {
-  encode(message: ExportMlModelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.version !== "") {
-      writer.uint32(18).string(message.version);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportMlModelRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportMlModelRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.version = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportMlModelRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-    };
-  },
-
-  toJSON(message: ExportMlModelRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.version !== "") {
-      obj.version = message.version;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportMlModelRequest>, I>>(base?: I): ExportMlModelRequest {
-    return ExportMlModelRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportMlModelRequest>, I>>(object: I): ExportMlModelRequest {
-    const message = createBaseExportMlModelRequest();
-    message.name = object.name ?? "";
-    message.version = object.version ?? "";
-    return message;
-  },
-};
-
-function createBaseExportMlModelResponse(): ExportMlModelResponse {
-  return { model: new Uint8Array(0) };
-}
-
-export const ExportMlModelResponse: MessageFns<ExportMlModelResponse> = {
-  encode(message: ExportMlModelResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.model.length !== 0) {
-      writer.uint32(10).bytes(message.model);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportMlModelResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportMlModelResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.model = reader.bytes();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportMlModelResponse {
-    return { model: isSet(object.model) ? bytesFromBase64(object.model) : new Uint8Array(0) };
-  },
-
-  toJSON(message: ExportMlModelResponse): unknown {
-    const obj: any = {};
-    if (message.model.length !== 0) {
-      obj.model = base64FromBytes(message.model);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportMlModelResponse>, I>>(base?: I): ExportMlModelResponse {
-    return ExportMlModelResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportMlModelResponse>, I>>(object: I): ExportMlModelResponse {
-    const message = createBaseExportMlModelResponse();
-    message.model = object.model ?? new Uint8Array(0);
-    return message;
-  },
-};
-
 function createBaseExportConfig(): ExportConfig {
   return {
     users: false,
@@ -2616,6 +6564,10 @@ function createBaseExportConfig(): ExportConfig {
     versions: false,
     records: false,
     sequences: false,
+    apis: false,
+    buckets: false,
+    modules: false,
+    configs: false,
   };
 }
 
@@ -2647,6 +6599,18 @@ export const ExportConfig: MessageFns<ExportConfig> = {
     }
     if (message.sequences !== false) {
       writer.uint32(72).bool(message.sequences);
+    }
+    if (message.apis !== false) {
+      writer.uint32(80).bool(message.apis);
+    }
+    if (message.buckets !== false) {
+      writer.uint32(88).bool(message.buckets);
+    }
+    if (message.modules !== false) {
+      writer.uint32(96).bool(message.modules);
+    }
+    if (message.configs !== false) {
+      writer.uint32(104).bool(message.configs);
     }
     return writer;
   },
@@ -2730,6 +6694,38 @@ export const ExportConfig: MessageFns<ExportConfig> = {
           message.sequences = reader.bool();
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.apis = reader.bool();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.buckets = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.modules = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.configs = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2750,6 +6746,10 @@ export const ExportConfig: MessageFns<ExportConfig> = {
       versions: isSet(object.versions) ? globalThis.Boolean(object.versions) : false,
       records: isSet(object.records) ? globalThis.Boolean(object.records) : false,
       sequences: isSet(object.sequences) ? globalThis.Boolean(object.sequences) : false,
+      apis: isSet(object.apis) ? globalThis.Boolean(object.apis) : false,
+      buckets: isSet(object.buckets) ? globalThis.Boolean(object.buckets) : false,
+      modules: isSet(object.modules) ? globalThis.Boolean(object.modules) : false,
+      configs: isSet(object.configs) ? globalThis.Boolean(object.configs) : false,
     };
   },
 
@@ -2782,6 +6782,18 @@ export const ExportConfig: MessageFns<ExportConfig> = {
     if (message.sequences !== false) {
       obj.sequences = message.sequences;
     }
+    if (message.apis !== false) {
+      obj.apis = message.apis;
+    }
+    if (message.buckets !== false) {
+      obj.buckets = message.buckets;
+    }
+    if (message.modules !== false) {
+      obj.modules = message.modules;
+    }
+    if (message.configs !== false) {
+      obj.configs = message.configs;
+    }
     return obj;
   },
 
@@ -2801,6 +6813,10 @@ export const ExportConfig: MessageFns<ExportConfig> = {
     message.versions = object.versions ?? false;
     message.records = object.records ?? false;
     message.sequences = object.sequences ?? false;
+    message.apis = object.apis ?? false;
+    message.buckets = object.buckets ?? false;
+    message.modules = object.modules ?? false;
+    message.configs = object.configs ?? false;
     return message;
   },
 };
@@ -2976,6 +6992,406 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
             $case: "selected",
             selected: ExportConfig_SelectedTables.fromPartial(object.selection.selected),
           };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseExportSqlRequest(): ExportSqlRequest {
+  return { context: undefined, config: undefined };
+}
+
+export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
+  encode(message: ExportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.config !== undefined) {
+      ExportConfig.encode(message.config, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportSqlRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.config = ExportConfig.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportSqlRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      config: isSet(object.config) ? ExportConfig.fromJSON(object.config) : undefined,
+    };
+  },
+
+  toJSON(message: ExportSqlRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.config !== undefined) {
+      obj.config = ExportConfig.toJSON(message.config);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(base?: I): ExportSqlRequest {
+    return ExportSqlRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(object: I): ExportSqlRequest {
+    const message = createBaseExportSqlRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.config = (object.config !== undefined && object.config !== null)
+      ? ExportConfig.fromPartial(object.config)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseExportSqlResponse(): ExportSqlResponse {
+  return { frame: undefined };
+}
+
+export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
+  encode(message: ExportSqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.frame?.$case) {
+      case "chunk":
+        DataChunk.encode(message.frame.chunk, writer.uint32(10).fork()).join();
+        break;
+      case "trailer":
+        DataTrailer.encode(message.frame.trailer, writer.uint32(18).fork()).join();
+        break;
+      case "error":
+        SurrealError.encode(message.frame.error, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportSqlResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.frame = { $case: "chunk", chunk: DataChunk.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "trailer", trailer: DataTrailer.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "error", error: SurrealError.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportSqlResponse {
+    return {
+      frame: isSet(object.chunk)
+        ? { $case: "chunk", chunk: DataChunk.fromJSON(object.chunk) }
+        : isSet(object.trailer)
+        ? { $case: "trailer", trailer: DataTrailer.fromJSON(object.trailer) }
+        : isSet(object.error)
+        ? { $case: "error", error: SurrealError.fromJSON(object.error) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ExportSqlResponse): unknown {
+    const obj: any = {};
+    if (message.frame?.$case === "chunk") {
+      obj.chunk = DataChunk.toJSON(message.frame.chunk);
+    } else if (message.frame?.$case === "trailer") {
+      obj.trailer = DataTrailer.toJSON(message.frame.trailer);
+    } else if (message.frame?.$case === "error") {
+      obj.error = SurrealError.toJSON(message.frame.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(base?: I): ExportSqlResponse {
+    return ExportSqlResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(object: I): ExportSqlResponse {
+    const message = createBaseExportSqlResponse();
+    switch (object.frame?.$case) {
+      case "chunk": {
+        if (object.frame?.chunk !== undefined && object.frame?.chunk !== null) {
+          message.frame = { $case: "chunk", chunk: DataChunk.fromPartial(object.frame.chunk) };
+        }
+        break;
+      }
+      case "trailer": {
+        if (object.frame?.trailer !== undefined && object.frame?.trailer !== null) {
+          message.frame = { $case: "trailer", trailer: DataTrailer.fromPartial(object.frame.trailer) };
+        }
+        break;
+      }
+      case "error": {
+        if (object.frame?.error !== undefined && object.frame?.error !== null) {
+          message.frame = { $case: "error", error: SurrealError.fromPartial(object.frame.error) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseExportMlModelRequest(): ExportMlModelRequest {
+  return { context: undefined, name: "", version: "" };
+}
+
+export const ExportMlModelRequest: MessageFns<ExportMlModelRequest> = {
+  encode(message: ExportMlModelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.version !== "") {
+      writer.uint32(26).string(message.version);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportMlModelRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportMlModelRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportMlModelRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+    };
+  },
+
+  toJSON(message: ExportMlModelRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportMlModelRequest>, I>>(base?: I): ExportMlModelRequest {
+    return ExportMlModelRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportMlModelRequest>, I>>(object: I): ExportMlModelRequest {
+    const message = createBaseExportMlModelRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.name = object.name ?? "";
+    message.version = object.version ?? "";
+    return message;
+  },
+};
+
+function createBaseExportMlModelResponse(): ExportMlModelResponse {
+  return { frame: undefined };
+}
+
+export const ExportMlModelResponse: MessageFns<ExportMlModelResponse> = {
+  encode(message: ExportMlModelResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.frame?.$case) {
+      case "chunk":
+        DataChunk.encode(message.frame.chunk, writer.uint32(10).fork()).join();
+        break;
+      case "trailer":
+        DataTrailer.encode(message.frame.trailer, writer.uint32(18).fork()).join();
+        break;
+      case "error":
+        SurrealError.encode(message.frame.error, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportMlModelResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportMlModelResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.frame = { $case: "chunk", chunk: DataChunk.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "trailer", trailer: DataTrailer.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "error", error: SurrealError.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportMlModelResponse {
+    return {
+      frame: isSet(object.chunk)
+        ? { $case: "chunk", chunk: DataChunk.fromJSON(object.chunk) }
+        : isSet(object.trailer)
+        ? { $case: "trailer", trailer: DataTrailer.fromJSON(object.trailer) }
+        : isSet(object.error)
+        ? { $case: "error", error: SurrealError.fromJSON(object.error) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ExportMlModelResponse): unknown {
+    const obj: any = {};
+    if (message.frame?.$case === "chunk") {
+      obj.chunk = DataChunk.toJSON(message.frame.chunk);
+    } else if (message.frame?.$case === "trailer") {
+      obj.trailer = DataTrailer.toJSON(message.frame.trailer);
+    } else if (message.frame?.$case === "error") {
+      obj.error = SurrealError.toJSON(message.frame.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportMlModelResponse>, I>>(base?: I): ExportMlModelResponse {
+    return ExportMlModelResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportMlModelResponse>, I>>(object: I): ExportMlModelResponse {
+    const message = createBaseExportMlModelResponse();
+    switch (object.frame?.$case) {
+      case "chunk": {
+        if (object.frame?.chunk !== undefined && object.frame?.chunk !== null) {
+          message.frame = { $case: "chunk", chunk: DataChunk.fromPartial(object.frame.chunk) };
+        }
+        break;
+      }
+      case "trailer": {
+        if (object.frame?.trailer !== undefined && object.frame?.trailer !== null) {
+          message.frame = { $case: "trailer", trailer: DataTrailer.fromPartial(object.frame.trailer) };
+        }
+        break;
+      }
+      case "error": {
+        if (object.frame?.error !== undefined && object.frame?.error !== null) {
+          message.frame = { $case: "error", error: SurrealError.fromPartial(object.frame.error) };
         }
         break;
       }
@@ -3204,25 +7620,35 @@ export const ExportDestination: MessageFns<ExportDestination> = {
 };
 
 function createBaseExportDirectoryRequest(): ExportDirectoryRequest {
-  return { config: undefined, compression: 0, parallelism: 0, formatVersion: "", destination: undefined };
+  return {
+    context: undefined,
+    config: undefined,
+    compression: 0,
+    parallelism: 0,
+    formatVersion: "",
+    destination: undefined,
+  };
 }
 
 export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
   encode(message: ExportDirectoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
     if (message.config !== undefined) {
-      ExportConfig.encode(message.config, writer.uint32(10).fork()).join();
+      ExportConfig.encode(message.config, writer.uint32(18).fork()).join();
     }
     if (message.compression !== 0) {
-      writer.uint32(16).int32(message.compression);
+      writer.uint32(24).int32(message.compression);
     }
     if (message.parallelism !== 0) {
-      writer.uint32(24).uint32(message.parallelism);
+      writer.uint32(32).uint32(message.parallelism);
     }
     if (message.formatVersion !== "") {
-      writer.uint32(34).string(message.formatVersion);
+      writer.uint32(42).string(message.formatVersion);
     }
     if (message.destination !== undefined) {
-      ExportDestination.encode(message.destination, writer.uint32(42).fork()).join();
+      ExportDestination.encode(message.destination, writer.uint32(50).fork()).join();
     }
     return writer;
   },
@@ -3239,15 +7665,15 @@ export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
             break;
           }
 
-          message.config = ExportConfig.decode(reader, reader.uint32());
+          message.context = RequestContext.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
-          if (tag !== 16) {
+          if (tag !== 18) {
             break;
           }
 
-          message.compression = reader.int32() as any;
+          message.config = ExportConfig.decode(reader, reader.uint32());
           continue;
         }
         case 3: {
@@ -3255,19 +7681,27 @@ export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
             break;
           }
 
-          message.parallelism = reader.uint32();
+          message.compression = reader.int32() as any;
           continue;
         }
         case 4: {
-          if (tag !== 34) {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.parallelism = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
             break;
           }
 
           message.formatVersion = reader.string();
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
+        case 6: {
+          if (tag !== 50) {
             break;
           }
 
@@ -3285,6 +7719,7 @@ export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
 
   fromJSON(object: any): ExportDirectoryRequest {
     return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
       config: isSet(object.config) ? ExportConfig.fromJSON(object.config) : undefined,
       compression: isSet(object.compression) ? exportCompressionFromJSON(object.compression) : 0,
       parallelism: isSet(object.parallelism) ? globalThis.Number(object.parallelism) : 0,
@@ -3299,6 +7734,9 @@ export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
 
   toJSON(message: ExportDirectoryRequest): unknown {
     const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
     if (message.config !== undefined) {
       obj.config = ExportConfig.toJSON(message.config);
     }
@@ -3322,6 +7760,9 @@ export const ExportDirectoryRequest: MessageFns<ExportDirectoryRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<ExportDirectoryRequest>, I>>(object: I): ExportDirectoryRequest {
     const message = createBaseExportDirectoryRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
     message.config = (object.config !== undefined && object.config !== null)
       ? ExportConfig.fromPartial(object.config)
       : undefined;
@@ -3662,7 +8103,7 @@ export const FileChunk: MessageFns<FileChunk> = {
 };
 
 function createBaseFileEnd(): FileEnd {
-  return { fileId: 0n, bytes: 0n, sha256: "" };
+  return { fileId: 0n, bytes: 0n, blake3: "" };
 }
 
 export const FileEnd: MessageFns<FileEnd> = {
@@ -3679,8 +8120,8 @@ export const FileEnd: MessageFns<FileEnd> = {
       }
       writer.uint32(16).uint64(message.bytes);
     }
-    if (message.sha256 !== "") {
-      writer.uint32(26).string(message.sha256);
+    if (message.blake3 !== "") {
+      writer.uint32(26).string(message.blake3);
     }
     return writer;
   },
@@ -3713,7 +8154,7 @@ export const FileEnd: MessageFns<FileEnd> = {
             break;
           }
 
-          message.sha256 = reader.string();
+          message.blake3 = reader.string();
           continue;
         }
       }
@@ -3729,7 +8170,7 @@ export const FileEnd: MessageFns<FileEnd> = {
     return {
       fileId: isSet(object.fileId) ? BigInt(object.fileId) : isSet(object.file_id) ? BigInt(object.file_id) : 0n,
       bytes: isSet(object.bytes) ? BigInt(object.bytes) : 0n,
-      sha256: isSet(object.sha256) ? globalThis.String(object.sha256) : "",
+      blake3: isSet(object.blake3) ? globalThis.String(object.blake3) : "",
     };
   },
 
@@ -3741,8 +8182,8 @@ export const FileEnd: MessageFns<FileEnd> = {
     if (message.bytes !== 0n) {
       obj.bytes = message.bytes.toString();
     }
-    if (message.sha256 !== "") {
-      obj.sha256 = message.sha256;
+    if (message.blake3 !== "") {
+      obj.blake3 = message.blake3;
     }
     return obj;
   },
@@ -3754,7 +8195,7 @@ export const FileEnd: MessageFns<FileEnd> = {
     const message = createBaseFileEnd();
     message.fileId = object.fileId ?? 0n;
     message.bytes = object.bytes ?? 0n;
-    message.sha256 = object.sha256 ?? "";
+    message.blake3 = object.blake3 ?? "";
     return message;
   },
 };
@@ -3849,85 +8290,6 @@ export const ExportDirectoryEnd: MessageFns<ExportDirectoryEnd> = {
   },
 };
 
-function createBaseExportError(): ExportError {
-  return { code: 0n, message: "" };
-}
-
-export const ExportError: MessageFns<ExportError> = {
-  encode(message: ExportError, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.code !== 0n) {
-      if (BigInt.asIntN(64, message.code) !== message.code) {
-        throw new globalThis.Error("value provided for field message.code of type int64 too large");
-      }
-      writer.uint32(8).int64(message.code);
-    }
-    if (message.message !== "") {
-      writer.uint32(18).string(message.message);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportError {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportError();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.code = reader.int64() as bigint;
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.message = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExportError {
-    return {
-      code: isSet(object.code) ? BigInt(object.code) : 0n,
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-    };
-  },
-
-  toJSON(message: ExportError): unknown {
-    const obj: any = {};
-    if (message.code !== 0n) {
-      obj.code = message.code.toString();
-    }
-    if (message.message !== "") {
-      obj.message = message.message;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ExportError>, I>>(base?: I): ExportError {
-    return ExportError.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ExportError>, I>>(object: I): ExportError {
-    const message = createBaseExportError();
-    message.code = object.code ?? 0n;
-    message.message = object.message ?? "";
-    return message;
-  },
-};
-
 function createBaseExportDirectoryResponse(): ExportDirectoryResponse {
   return { frame: undefined };
 }
@@ -3951,7 +8313,7 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
         ExportDirectoryEnd.encode(message.frame.end, writer.uint32(42).fork()).join();
         break;
       case "error":
-        ExportError.encode(message.frame.error, writer.uint32(50).fork()).join();
+        SurrealError.encode(message.frame.error, writer.uint32(50).fork()).join();
         break;
     }
     return writer;
@@ -4009,7 +8371,7 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
             break;
           }
 
-          message.frame = { $case: "error", error: ExportError.decode(reader, reader.uint32()) };
+          message.frame = { $case: "error", error: SurrealError.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -4040,7 +8402,7 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
         : isSet(object.end)
         ? { $case: "end", end: ExportDirectoryEnd.fromJSON(object.end) }
         : isSet(object.error)
-        ? { $case: "error", error: ExportError.fromJSON(object.error) }
+        ? { $case: "error", error: SurrealError.fromJSON(object.error) }
         : undefined,
     };
   },
@@ -4058,7 +8420,7 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
     } else if (message.frame?.$case === "end") {
       obj.end = ExportDirectoryEnd.toJSON(message.frame.end);
     } else if (message.frame?.$case === "error") {
-      obj.error = ExportError.toJSON(message.frame.error);
+      obj.error = SurrealError.toJSON(message.frame.error);
     }
     return obj;
   },
@@ -4101,7 +8463,7 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
       }
       case "error": {
         if (object.frame?.error !== undefined && object.frame?.error !== null) {
-          message.frame = { $case: "error", error: ExportError.fromPartial(object.frame.error) };
+          message.frame = { $case: "error", error: SurrealError.fromPartial(object.frame.error) };
         }
         break;
       }
@@ -4110,1597 +8472,130 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
   },
 };
 
-function createBaseSubscribeRequest(): SubscribeRequest {
-  return { subscribeTo: undefined };
-}
-
-export const SubscribeRequest: MessageFns<SubscribeRequest> = {
-  encode(message: SubscribeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    switch (message.subscribeTo?.$case) {
-      case "liveQueryId":
-        Uuid.encode(message.subscribeTo.liveQueryId, writer.uint32(10).fork()).join();
-        break;
-      case "query":
-        QueryRequest.encode(message.subscribeTo.query, writer.uint32(18).fork()).join();
-        break;
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SubscribeRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSubscribeRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.subscribeTo = { $case: "liveQueryId", liveQueryId: Uuid.decode(reader, reader.uint32()) };
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.subscribeTo = { $case: "query", query: QueryRequest.decode(reader, reader.uint32()) };
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SubscribeRequest {
-    return {
-      subscribeTo: isSet(object.liveQueryId)
-        ? { $case: "liveQueryId", liveQueryId: Uuid.fromJSON(object.liveQueryId) }
-        : isSet(object.live_query_id)
-        ? { $case: "liveQueryId", liveQueryId: Uuid.fromJSON(object.live_query_id) }
-        : isSet(object.query)
-        ? { $case: "query", query: QueryRequest.fromJSON(object.query) }
-        : undefined,
-    };
-  },
-
-  toJSON(message: SubscribeRequest): unknown {
-    const obj: any = {};
-    if (message.subscribeTo?.$case === "liveQueryId") {
-      obj.liveQueryId = Uuid.toJSON(message.subscribeTo.liveQueryId);
-    } else if (message.subscribeTo?.$case === "query") {
-      obj.query = QueryRequest.toJSON(message.subscribeTo.query);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<SubscribeRequest>, I>>(base?: I): SubscribeRequest {
-    return SubscribeRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<SubscribeRequest>, I>>(object: I): SubscribeRequest {
-    const message = createBaseSubscribeRequest();
-    switch (object.subscribeTo?.$case) {
-      case "liveQueryId": {
-        if (object.subscribeTo?.liveQueryId !== undefined && object.subscribeTo?.liveQueryId !== null) {
-          message.subscribeTo = { $case: "liveQueryId", liveQueryId: Uuid.fromPartial(object.subscribeTo.liveQueryId) };
-        }
-        break;
-      }
-      case "query": {
-        if (object.subscribeTo?.query !== undefined && object.subscribeTo?.query !== null) {
-          message.subscribeTo = { $case: "query", query: QueryRequest.fromPartial(object.subscribeTo.query) };
-        }
-        break;
-      }
-    }
-    return message;
-  },
-};
-
-function createBaseSubscribeResponse(): SubscribeResponse {
-  return { notification: undefined };
-}
-
-export const SubscribeResponse: MessageFns<SubscribeResponse> = {
-  encode(message: SubscribeResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.notification !== undefined) {
-      Notification.encode(message.notification, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SubscribeResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSubscribeResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.notification = Notification.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SubscribeResponse {
-    return { notification: isSet(object.notification) ? Notification.fromJSON(object.notification) : undefined };
-  },
-
-  toJSON(message: SubscribeResponse): unknown {
-    const obj: any = {};
-    if (message.notification !== undefined) {
-      obj.notification = Notification.toJSON(message.notification);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<SubscribeResponse>, I>>(base?: I): SubscribeResponse {
-    return SubscribeResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<SubscribeResponse>, I>>(object: I): SubscribeResponse {
-    const message = createBaseSubscribeResponse();
-    message.notification = (object.notification !== undefined && object.notification !== null)
-      ? Notification.fromPartial(object.notification)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseNotification(): Notification {
-  return { liveQueryId: undefined, action: 0, recordId: undefined, value: undefined };
-}
-
-export const Notification: MessageFns<Notification> = {
-  encode(message: Notification, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.liveQueryId !== undefined) {
-      Uuid.encode(message.liveQueryId, writer.uint32(10).fork()).join();
-    }
-    if (message.action !== 0) {
-      writer.uint32(16).int32(message.action);
-    }
-    if (message.recordId !== undefined) {
-      RecordId.encode(message.recordId, writer.uint32(26).fork()).join();
-    }
-    if (message.value !== undefined) {
-      Value.encode(message.value, writer.uint32(34).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Notification {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseNotification();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.liveQueryId = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.action = reader.int32() as any;
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.recordId = RecordId.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.value = Value.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Notification {
-    return {
-      liveQueryId: isSet(object.liveQueryId)
-        ? Uuid.fromJSON(object.liveQueryId)
-        : isSet(object.live_query_id)
-        ? Uuid.fromJSON(object.live_query_id)
-        : undefined,
-      action: isSet(object.action) ? actionFromJSON(object.action) : 0,
-      recordId: isSet(object.recordId)
-        ? RecordId.fromJSON(object.recordId)
-        : isSet(object.record_id)
-        ? RecordId.fromJSON(object.record_id)
-        : undefined,
-      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
-    };
-  },
-
-  toJSON(message: Notification): unknown {
-    const obj: any = {};
-    if (message.liveQueryId !== undefined) {
-      obj.liveQueryId = Uuid.toJSON(message.liveQueryId);
-    }
-    if (message.action !== 0) {
-      obj.action = actionToJSON(message.action);
-    }
-    if (message.recordId !== undefined) {
-      obj.recordId = RecordId.toJSON(message.recordId);
-    }
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Notification>, I>>(base?: I): Notification {
-    return Notification.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<Notification>, I>>(object: I): Notification {
-    const message = createBaseNotification();
-    message.liveQueryId = (object.liveQueryId !== undefined && object.liveQueryId !== null)
-      ? Uuid.fromPartial(object.liveQueryId)
-      : undefined;
-    message.action = object.action ?? 0;
-    message.recordId = (object.recordId !== undefined && object.recordId !== null)
-      ? RecordId.fromPartial(object.recordId)
-      : undefined;
-    message.value = (object.value !== undefined && object.value !== null) ? Value.fromPartial(object.value) : undefined;
-    return message;
-  },
-};
-
-function createBaseQueryRequest(): QueryRequest {
-  return { query: "", variables: undefined, txnId: undefined };
-}
-
-export const QueryRequest: MessageFns<QueryRequest> = {
-  encode(message: QueryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.query !== "") {
-      writer.uint32(10).string(message.query);
-    }
-    if (message.variables !== undefined) {
-      Variables.encode(message.variables, writer.uint32(18).fork()).join();
-    }
-    if (message.txnId !== undefined) {
-      Uuid.encode(message.txnId, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.query = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.variables = Variables.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.txnId = Uuid.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): QueryRequest {
-    return {
-      query: isSet(object.query) ? globalThis.String(object.query) : "",
-      variables: isSet(object.variables) ? Variables.fromJSON(object.variables) : undefined,
-      txnId: isSet(object.txnId)
-        ? Uuid.fromJSON(object.txnId)
-        : isSet(object.txn_id)
-        ? Uuid.fromJSON(object.txn_id)
-        : undefined,
-    };
-  },
-
-  toJSON(message: QueryRequest): unknown {
-    const obj: any = {};
-    if (message.query !== "") {
-      obj.query = message.query;
-    }
-    if (message.variables !== undefined) {
-      obj.variables = Variables.toJSON(message.variables);
-    }
-    if (message.txnId !== undefined) {
-      obj.txnId = Uuid.toJSON(message.txnId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<QueryRequest>, I>>(base?: I): QueryRequest {
-    return QueryRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<QueryRequest>, I>>(object: I): QueryRequest {
-    const message = createBaseQueryRequest();
-    message.query = object.query ?? "";
-    message.variables = (object.variables !== undefined && object.variables !== null)
-      ? Variables.fromPartial(object.variables)
-      : undefined;
-    message.txnId = (object.txnId !== undefined && object.txnId !== null) ? Uuid.fromPartial(object.txnId) : undefined;
-    return message;
-  },
-};
-
-function createBaseQueryResponse(): QueryResponse {
-  return { queryIndex: 0, batchIndex: 0n, resultCount: 0, kind: 0, stats: undefined, error: undefined, values: [] };
-}
-
-export const QueryResponse: MessageFns<QueryResponse> = {
-  encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.queryIndex !== 0) {
-      writer.uint32(8).uint32(message.queryIndex);
-    }
-    if (message.batchIndex !== 0n) {
-      if (BigInt.asUintN(64, message.batchIndex) !== message.batchIndex) {
-        throw new globalThis.Error("value provided for field message.batchIndex of type uint64 too large");
-      }
-      writer.uint32(16).uint64(message.batchIndex);
-    }
-    if (message.resultCount !== 0) {
-      writer.uint32(24).uint32(message.resultCount);
-    }
-    if (message.kind !== 0) {
-      writer.uint32(32).int32(message.kind);
-    }
-    if (message.stats !== undefined) {
-      QueryStats.encode(message.stats, writer.uint32(42).fork()).join();
-    }
-    if (message.error !== undefined) {
-      QueryError.encode(message.error, writer.uint32(50).fork()).join();
-    }
-    for (const v of message.values) {
-      Value.encode(v!, writer.uint32(58).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.queryIndex = reader.uint32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.batchIndex = reader.uint64() as bigint;
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.resultCount = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.kind = reader.int32() as any;
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.stats = QueryStats.decode(reader, reader.uint32());
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.error = QueryError.decode(reader, reader.uint32());
-          continue;
-        }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.values.push(Value.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): QueryResponse {
-    return {
-      queryIndex: isSet(object.queryIndex)
-        ? globalThis.Number(object.queryIndex)
-        : isSet(object.query_index)
-        ? globalThis.Number(object.query_index)
-        : 0,
-      batchIndex: isSet(object.batchIndex)
-        ? BigInt(object.batchIndex)
-        : isSet(object.batch_index)
-        ? BigInt(object.batch_index)
-        : 0n,
-      resultCount: isSet(object.resultCount)
-        ? globalThis.Number(object.resultCount)
-        : isSet(object.result_count)
-        ? globalThis.Number(object.result_count)
-        : 0,
-      kind: isSet(object.kind) ? queryResponseKindFromJSON(object.kind) : 0,
-      stats: isSet(object.stats) ? QueryStats.fromJSON(object.stats) : undefined,
-      error: isSet(object.error) ? QueryError.fromJSON(object.error) : undefined,
-      values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => Value.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: QueryResponse): unknown {
-    const obj: any = {};
-    if (message.queryIndex !== 0) {
-      obj.queryIndex = Math.round(message.queryIndex);
-    }
-    if (message.batchIndex !== 0n) {
-      obj.batchIndex = message.batchIndex.toString();
-    }
-    if (message.resultCount !== 0) {
-      obj.resultCount = Math.round(message.resultCount);
-    }
-    if (message.kind !== 0) {
-      obj.kind = queryResponseKindToJSON(message.kind);
-    }
-    if (message.stats !== undefined) {
-      obj.stats = QueryStats.toJSON(message.stats);
-    }
-    if (message.error !== undefined) {
-      obj.error = QueryError.toJSON(message.error);
-    }
-    if (message.values?.length) {
-      obj.values = message.values.map((e) => Value.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<QueryResponse>, I>>(base?: I): QueryResponse {
-    return QueryResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<QueryResponse>, I>>(object: I): QueryResponse {
-    const message = createBaseQueryResponse();
-    message.queryIndex = object.queryIndex ?? 0;
-    message.batchIndex = object.batchIndex ?? 0n;
-    message.resultCount = object.resultCount ?? 0;
-    message.kind = object.kind ?? 0;
-    message.stats = (object.stats !== undefined && object.stats !== null)
-      ? QueryStats.fromPartial(object.stats)
-      : undefined;
-    message.error = (object.error !== undefined && object.error !== null)
-      ? QueryError.fromPartial(object.error)
-      : undefined;
-    message.values = object.values?.map((e) => Value.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseQueryStats(): QueryStats {
-  return { recordsReturned: 0n, bytesReturned: 0n, recordsScanned: 0n, bytesScanned: 0n, executionDuration: undefined };
-}
-
-export const QueryStats: MessageFns<QueryStats> = {
-  encode(message: QueryStats, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.recordsReturned !== 0n) {
-      if (BigInt.asIntN(64, message.recordsReturned) !== message.recordsReturned) {
-        throw new globalThis.Error("value provided for field message.recordsReturned of type int64 too large");
-      }
-      writer.uint32(8).int64(message.recordsReturned);
-    }
-    if (message.bytesReturned !== 0n) {
-      if (BigInt.asIntN(64, message.bytesReturned) !== message.bytesReturned) {
-        throw new globalThis.Error("value provided for field message.bytesReturned of type int64 too large");
-      }
-      writer.uint32(16).int64(message.bytesReturned);
-    }
-    if (message.recordsScanned !== 0n) {
-      if (BigInt.asIntN(64, message.recordsScanned) !== message.recordsScanned) {
-        throw new globalThis.Error("value provided for field message.recordsScanned of type int64 too large");
-      }
-      writer.uint32(24).int64(message.recordsScanned);
-    }
-    if (message.bytesScanned !== 0n) {
-      if (BigInt.asIntN(64, message.bytesScanned) !== message.bytesScanned) {
-        throw new globalThis.Error("value provided for field message.bytesScanned of type int64 too large");
-      }
-      writer.uint32(32).int64(message.bytesScanned);
-    }
-    if (message.executionDuration !== undefined) {
-      Duration.encode(message.executionDuration, writer.uint32(42).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryStats {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryStats();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.recordsReturned = reader.int64() as bigint;
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.bytesReturned = reader.int64() as bigint;
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.recordsScanned = reader.int64() as bigint;
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.bytesScanned = reader.int64() as bigint;
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.executionDuration = Duration.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): QueryStats {
-    return {
-      recordsReturned: isSet(object.recordsReturned)
-        ? BigInt(object.recordsReturned)
-        : isSet(object.records_returned)
-        ? BigInt(object.records_returned)
-        : 0n,
-      bytesReturned: isSet(object.bytesReturned)
-        ? BigInt(object.bytesReturned)
-        : isSet(object.bytes_returned)
-        ? BigInt(object.bytes_returned)
-        : 0n,
-      recordsScanned: isSet(object.recordsScanned)
-        ? BigInt(object.recordsScanned)
-        : isSet(object.records_scanned)
-        ? BigInt(object.records_scanned)
-        : 0n,
-      bytesScanned: isSet(object.bytesScanned)
-        ? BigInt(object.bytesScanned)
-        : isSet(object.bytes_scanned)
-        ? BigInt(object.bytes_scanned)
-        : 0n,
-      executionDuration: isSet(object.executionDuration)
-        ? Duration.fromJSON(object.executionDuration)
-        : isSet(object.execution_duration)
-        ? Duration.fromJSON(object.execution_duration)
-        : undefined,
-    };
-  },
-
-  toJSON(message: QueryStats): unknown {
-    const obj: any = {};
-    if (message.recordsReturned !== 0n) {
-      obj.recordsReturned = message.recordsReturned.toString();
-    }
-    if (message.bytesReturned !== 0n) {
-      obj.bytesReturned = message.bytesReturned.toString();
-    }
-    if (message.recordsScanned !== 0n) {
-      obj.recordsScanned = message.recordsScanned.toString();
-    }
-    if (message.bytesScanned !== 0n) {
-      obj.bytesScanned = message.bytesScanned.toString();
-    }
-    if (message.executionDuration !== undefined) {
-      obj.executionDuration = Duration.toJSON(message.executionDuration);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<QueryStats>, I>>(base?: I): QueryStats {
-    return QueryStats.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<QueryStats>, I>>(object: I): QueryStats {
-    const message = createBaseQueryStats();
-    message.recordsReturned = object.recordsReturned ?? 0n;
-    message.bytesReturned = object.bytesReturned ?? 0n;
-    message.recordsScanned = object.recordsScanned ?? 0n;
-    message.bytesScanned = object.bytesScanned ?? 0n;
-    message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
-      ? Duration.fromPartial(object.executionDuration)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseQueryError(): QueryError {
-  return { code: 0n, message: "" };
-}
-
-export const QueryError: MessageFns<QueryError> = {
-  encode(message: QueryError, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.code !== 0n) {
-      if (BigInt.asIntN(64, message.code) !== message.code) {
-        throw new globalThis.Error("value provided for field message.code of type int64 too large");
-      }
-      writer.uint32(8).int64(message.code);
-    }
-    if (message.message !== "") {
-      writer.uint32(18).string(message.message);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryError {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryError();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.code = reader.int64() as bigint;
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.message = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): QueryError {
-    return {
-      code: isSet(object.code) ? BigInt(object.code) : 0n,
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-    };
-  },
-
-  toJSON(message: QueryError): unknown {
-    const obj: any = {};
-    if (message.code !== 0n) {
-      obj.code = message.code.toString();
-    }
-    if (message.message !== "") {
-      obj.message = message.message;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<QueryError>, I>>(base?: I): QueryError {
-    return QueryError.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<QueryError>, I>>(object: I): QueryError {
-    const message = createBaseQueryError();
-    message.code = object.code ?? 0n;
-    message.message = object.message ?? "";
-    return message;
-  },
-};
-
-function createBaseRootUserCredentials(): RootUserCredentials {
-  return { username: "", password: "" };
-}
-
-export const RootUserCredentials: MessageFns<RootUserCredentials> = {
-  encode(message: RootUserCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.username !== "") {
-      writer.uint32(10).string(message.username);
-    }
-    if (message.password !== "") {
-      writer.uint32(18).string(message.password);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): RootUserCredentials {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRootUserCredentials();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.username = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RootUserCredentials {
-    return {
-      username: isSet(object.username) ? globalThis.String(object.username) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-    };
-  },
-
-  toJSON(message: RootUserCredentials): unknown {
-    const obj: any = {};
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<RootUserCredentials>, I>>(base?: I): RootUserCredentials {
-    return RootUserCredentials.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<RootUserCredentials>, I>>(object: I): RootUserCredentials {
-    const message = createBaseRootUserCredentials();
-    message.username = object.username ?? "";
-    message.password = object.password ?? "";
-    return message;
-  },
-};
-
-function createBaseNamespaceAccessCredentials(): NamespaceAccessCredentials {
-  return { namespace: "", access: "", key: "" };
-}
-
-export const NamespaceAccessCredentials: MessageFns<NamespaceAccessCredentials> = {
-  encode(message: NamespaceAccessCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.namespace !== "") {
-      writer.uint32(10).string(message.namespace);
-    }
-    if (message.access !== "") {
-      writer.uint32(18).string(message.access);
-    }
-    if (message.key !== "") {
-      writer.uint32(26).string(message.key);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): NamespaceAccessCredentials {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseNamespaceAccessCredentials();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.namespace = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.access = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): NamespaceAccessCredentials {
-    return {
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      access: isSet(object.access) ? globalThis.String(object.access) : "",
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-    };
-  },
-
-  toJSON(message: NamespaceAccessCredentials): unknown {
-    const obj: any = {};
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
-    }
-    if (message.access !== "") {
-      obj.access = message.access;
-    }
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<NamespaceAccessCredentials>, I>>(base?: I): NamespaceAccessCredentials {
-    return NamespaceAccessCredentials.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<NamespaceAccessCredentials>, I>>(object: I): NamespaceAccessCredentials {
-    const message = createBaseNamespaceAccessCredentials();
-    message.namespace = object.namespace ?? "";
-    message.access = object.access ?? "";
-    message.key = object.key ?? "";
-    return message;
-  },
-};
-
-function createBaseDatabaseAccessCredentials(): DatabaseAccessCredentials {
-  return { namespace: "", database: "", access: "", key: "", refresh: "" };
-}
-
-export const DatabaseAccessCredentials: MessageFns<DatabaseAccessCredentials> = {
-  encode(message: DatabaseAccessCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.namespace !== "") {
-      writer.uint32(10).string(message.namespace);
-    }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
-    }
-    if (message.access !== "") {
-      writer.uint32(26).string(message.access);
-    }
-    if (message.key !== "") {
-      writer.uint32(34).string(message.key);
-    }
-    if (message.refresh !== "") {
-      writer.uint32(42).string(message.refresh);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DatabaseAccessCredentials {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseAccessCredentials();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.namespace = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.access = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.refresh = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DatabaseAccessCredentials {
-    return {
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      access: isSet(object.access) ? globalThis.String(object.access) : "",
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      refresh: isSet(object.refresh) ? globalThis.String(object.refresh) : "",
-    };
-  },
-
-  toJSON(message: DatabaseAccessCredentials): unknown {
-    const obj: any = {};
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.access !== "") {
-      obj.access = message.access;
-    }
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.refresh !== "") {
-      obj.refresh = message.refresh;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<DatabaseAccessCredentials>, I>>(base?: I): DatabaseAccessCredentials {
-    return DatabaseAccessCredentials.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<DatabaseAccessCredentials>, I>>(object: I): DatabaseAccessCredentials {
-    const message = createBaseDatabaseAccessCredentials();
-    message.namespace = object.namespace ?? "";
-    message.database = object.database ?? "";
-    message.access = object.access ?? "";
-    message.key = object.key ?? "";
-    message.refresh = object.refresh ?? "";
-    return message;
-  },
-};
-
-function createBaseNamespaceUserCredentials(): NamespaceUserCredentials {
-  return { namespace: "", username: "", password: "" };
-}
-
-export const NamespaceUserCredentials: MessageFns<NamespaceUserCredentials> = {
-  encode(message: NamespaceUserCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.namespace !== "") {
-      writer.uint32(10).string(message.namespace);
-    }
-    if (message.username !== "") {
-      writer.uint32(18).string(message.username);
-    }
-    if (message.password !== "") {
-      writer.uint32(26).string(message.password);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): NamespaceUserCredentials {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseNamespaceUserCredentials();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.namespace = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.username = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): NamespaceUserCredentials {
-    return {
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      username: isSet(object.username) ? globalThis.String(object.username) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-    };
-  },
-
-  toJSON(message: NamespaceUserCredentials): unknown {
-    const obj: any = {};
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
-    }
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<NamespaceUserCredentials>, I>>(base?: I): NamespaceUserCredentials {
-    return NamespaceUserCredentials.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<NamespaceUserCredentials>, I>>(object: I): NamespaceUserCredentials {
-    const message = createBaseNamespaceUserCredentials();
-    message.namespace = object.namespace ?? "";
-    message.username = object.username ?? "";
-    message.password = object.password ?? "";
-    return message;
-  },
-};
-
-function createBaseDatabaseUserCredentials(): DatabaseUserCredentials {
-  return { namespace: "", database: "", username: "", password: "" };
-}
-
-export const DatabaseUserCredentials: MessageFns<DatabaseUserCredentials> = {
-  encode(message: DatabaseUserCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.namespace !== "") {
-      writer.uint32(10).string(message.namespace);
-    }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
-    }
-    if (message.username !== "") {
-      writer.uint32(26).string(message.username);
-    }
-    if (message.password !== "") {
-      writer.uint32(34).string(message.password);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DatabaseUserCredentials {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseUserCredentials();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.namespace = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.username = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DatabaseUserCredentials {
-    return {
-      namespace: isSet(object.namespace) ? globalThis.String(object.namespace) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      username: isSet(object.username) ? globalThis.String(object.username) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-    };
-  },
-
-  toJSON(message: DatabaseUserCredentials): unknown {
-    const obj: any = {};
-    if (message.namespace !== "") {
-      obj.namespace = message.namespace;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<DatabaseUserCredentials>, I>>(base?: I): DatabaseUserCredentials {
-    return DatabaseUserCredentials.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<DatabaseUserCredentials>, I>>(object: I): DatabaseUserCredentials {
-    const message = createBaseDatabaseUserCredentials();
-    message.namespace = object.namespace ?? "";
-    message.database = object.database ?? "";
-    message.username = object.username ?? "";
-    message.password = object.password ?? "";
-    return message;
-  },
-};
-
-function createBaseAccessToken(): AccessToken {
-  return { token: "" };
-}
-
-export const AccessToken: MessageFns<AccessToken> = {
-  encode(message: AccessToken, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.token !== "") {
-      writer.uint32(10).string(message.token);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AccessToken {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAccessToken();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.token = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AccessToken {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
-  },
-
-  toJSON(message: AccessToken): unknown {
-    const obj: any = {};
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<AccessToken>, I>>(base?: I): AccessToken {
-    return AccessToken.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<AccessToken>, I>>(object: I): AccessToken {
-    const message = createBaseAccessToken();
-    message.token = object.token ?? "";
-    return message;
-  },
-};
-
-function createBaseAccessMethod(): AccessMethod {
-  return { method: undefined };
-}
-
-export const AccessMethod: MessageFns<AccessMethod> = {
-  encode(message: AccessMethod, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    switch (message.method?.$case) {
-      case "root":
-        RootUserCredentials.encode(message.method.root, writer.uint32(10).fork()).join();
-        break;
-      case "namespace":
-        NamespaceAccessCredentials.encode(message.method.namespace, writer.uint32(18).fork()).join();
-        break;
-      case "database":
-        DatabaseAccessCredentials.encode(message.method.database, writer.uint32(26).fork()).join();
-        break;
-      case "namespaceUser":
-        NamespaceUserCredentials.encode(message.method.namespaceUser, writer.uint32(34).fork()).join();
-        break;
-      case "databaseUser":
-        DatabaseUserCredentials.encode(message.method.databaseUser, writer.uint32(42).fork()).join();
-        break;
-      case "accessToken":
-        AccessToken.encode(message.method.accessToken, writer.uint32(50).fork()).join();
-        break;
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AccessMethod {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAccessMethod();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.method = { $case: "root", root: RootUserCredentials.decode(reader, reader.uint32()) };
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.method = {
-            $case: "namespace",
-            namespace: NamespaceAccessCredentials.decode(reader, reader.uint32()),
-          };
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.method = { $case: "database", database: DatabaseAccessCredentials.decode(reader, reader.uint32()) };
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.method = {
-            $case: "namespaceUser",
-            namespaceUser: NamespaceUserCredentials.decode(reader, reader.uint32()),
-          };
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.method = {
-            $case: "databaseUser",
-            databaseUser: DatabaseUserCredentials.decode(reader, reader.uint32()),
-          };
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.method = { $case: "accessToken", accessToken: AccessToken.decode(reader, reader.uint32()) };
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AccessMethod {
-    return {
-      method: isSet(object.root)
-        ? { $case: "root", root: RootUserCredentials.fromJSON(object.root) }
-        : isSet(object.namespace)
-        ? { $case: "namespace", namespace: NamespaceAccessCredentials.fromJSON(object.namespace) }
-        : isSet(object.database)
-        ? { $case: "database", database: DatabaseAccessCredentials.fromJSON(object.database) }
-        : isSet(object.namespaceUser)
-        ? { $case: "namespaceUser", namespaceUser: NamespaceUserCredentials.fromJSON(object.namespaceUser) }
-        : isSet(object.namespace_user)
-        ? { $case: "namespaceUser", namespaceUser: NamespaceUserCredentials.fromJSON(object.namespace_user) }
-        : isSet(object.databaseUser)
-        ? { $case: "databaseUser", databaseUser: DatabaseUserCredentials.fromJSON(object.databaseUser) }
-        : isSet(object.database_user)
-        ? { $case: "databaseUser", databaseUser: DatabaseUserCredentials.fromJSON(object.database_user) }
-        : isSet(object.accessToken)
-        ? { $case: "accessToken", accessToken: AccessToken.fromJSON(object.accessToken) }
-        : isSet(object.access_token)
-        ? { $case: "accessToken", accessToken: AccessToken.fromJSON(object.access_token) }
-        : undefined,
-    };
-  },
-
-  toJSON(message: AccessMethod): unknown {
-    const obj: any = {};
-    if (message.method?.$case === "root") {
-      obj.root = RootUserCredentials.toJSON(message.method.root);
-    } else if (message.method?.$case === "namespace") {
-      obj.namespace = NamespaceAccessCredentials.toJSON(message.method.namespace);
-    } else if (message.method?.$case === "database") {
-      obj.database = DatabaseAccessCredentials.toJSON(message.method.database);
-    } else if (message.method?.$case === "namespaceUser") {
-      obj.namespaceUser = NamespaceUserCredentials.toJSON(message.method.namespaceUser);
-    } else if (message.method?.$case === "databaseUser") {
-      obj.databaseUser = DatabaseUserCredentials.toJSON(message.method.databaseUser);
-    } else if (message.method?.$case === "accessToken") {
-      obj.accessToken = AccessToken.toJSON(message.method.accessToken);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<AccessMethod>, I>>(base?: I): AccessMethod {
-    return AccessMethod.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<AccessMethod>, I>>(object: I): AccessMethod {
-    const message = createBaseAccessMethod();
-    switch (object.method?.$case) {
-      case "root": {
-        if (object.method?.root !== undefined && object.method?.root !== null) {
-          message.method = { $case: "root", root: RootUserCredentials.fromPartial(object.method.root) };
-        }
-        break;
-      }
-      case "namespace": {
-        if (object.method?.namespace !== undefined && object.method?.namespace !== null) {
-          message.method = {
-            $case: "namespace",
-            namespace: NamespaceAccessCredentials.fromPartial(object.method.namespace),
-          };
-        }
-        break;
-      }
-      case "database": {
-        if (object.method?.database !== undefined && object.method?.database !== null) {
-          message.method = {
-            $case: "database",
-            database: DatabaseAccessCredentials.fromPartial(object.method.database),
-          };
-        }
-        break;
-      }
-      case "namespaceUser": {
-        if (object.method?.namespaceUser !== undefined && object.method?.namespaceUser !== null) {
-          message.method = {
-            $case: "namespaceUser",
-            namespaceUser: NamespaceUserCredentials.fromPartial(object.method.namespaceUser),
-          };
-        }
-        break;
-      }
-      case "databaseUser": {
-        if (object.method?.databaseUser !== undefined && object.method?.databaseUser !== null) {
-          message.method = {
-            $case: "databaseUser",
-            databaseUser: DatabaseUserCredentials.fromPartial(object.method.databaseUser),
-          };
-        }
-        break;
-      }
-      case "accessToken": {
-        if (object.method?.accessToken !== undefined && object.method?.accessToken !== null) {
-          message.method = { $case: "accessToken", accessToken: AccessToken.fromPartial(object.method.accessToken) };
-        }
-        break;
-      }
-    }
-    return message;
-  },
-};
-
-/** SurrealDB service. */
+/**
+ * The SurrealDB data plane.
+ *
+ * This service is the canonical definition of SurrealDB's RPC surface. The
+ * Rust `SurrealBridge` trait and the TypeScript `SurrealProtocol` interface
+ * are mirrors of it; where they disagree with it, they are wrong.
+ *
+ * Every request message carries a `RequestContext` in field 1, naming the
+ * session it applies to and, where the RPC supports one, the transaction it
+ * runs in. Context is in the body, never in transport metadata, so a gRPC,
+ * HTTP-chunked or WebSocket binding of this service is the same contract byte
+ * for byte.
+ *
+ * There are deliberately no CRUD methods. `select`, `create`, `update` and
+ * friends are client-side sugar that compiles to SurrealQL and executes
+ * through `Query` -- the design both current SDKs already independently chose.
+ * One execution path means one thing to stream, optimise and secure.
+ */
 export interface SurrealDBService {
-  /** Check the health of the database. */
-  Health(request: HealthRequest): Promise<HealthResponse>;
-  /** Get the version of the database. */
-  Version(request: VersionRequest): Promise<VersionResponse>;
-  /** Sign up a new user. */
-  Signup(request: SignupRequest): Promise<SignupResponse>;
-  /** Sign in a user. */
-  Signin(request: SigninRequest): Promise<SigninResponse>;
-  /** Authenticate a user with a token. */
-  Authenticate(request: AuthenticateRequest): Promise<AuthenticateResponse>;
-  /** Use a namespace and database. */
-  Use(request: UseRequest): Promise<UseResponse>;
-  /** Set a global variable for the current session. */
-  Set(request: SetRequest): Promise<SetResponse>;
-  /** Unset a global variable for the current session. */
-  Unset(request: UnsetRequest): Promise<UnsetResponse>;
-  /** Clear the current IAM session info. */
-  Invalidate(request: InvalidateRequest): Promise<InvalidateResponse>;
-  /** Clear the current IAM session info and reset all global variables for the current session (ns, db, vars). */
-  Reset(request: ResetRequest): Promise<ResetResponse>;
   /**
-   * Import data into the database.
-   * All statements are executed in the same transaction.
+   * Report what this server supports.
+   *
+   * Callable before authenticating and before anything else. Clients SHOULD
+   * call it first and branch on the result rather than inferring behaviour
+   * from a version string: capabilities depend on operator configuration as
+   * well as build version, and a version table cannot model that.
    */
+  GetCapabilities(request: GetCapabilitiesRequest): Promise<GetCapabilitiesResponse>;
+  /**
+   * Check that the server is reachable and able to serve requests.
+   *
+   * The server's version is reported by `GetCapabilities`, not here: a
+   * version string is the wrong thing to branch on, which is that method's
+   * whole premise.
+   */
+  Health(request: HealthRequest): Promise<HealthResponse>;
+  /**
+   * Create a session, or adopt an existing one onto this connection.
+   *
+   * The session id is `context.session`; absent asks the server to allocate
+   * one. Attaching an id that is already attached is a no-op, which is what
+   * makes this safe to replay after a reconnect.
+   */
+  AttachSession(request: AttachSessionRequest): Promise<AttachSessionResponse>;
+  /**
+   * Release a session and everything it owns.
+   *
+   * Open transactions are cancelled and open subscriptions end with
+   * SUBSCRIBE_END_REASON_SESSION_CLOSED.
+   */
+  DetachSession(request: DetachSessionRequest): Promise<DetachSessionResponse>;
+  /**
+   * Return a session to its initial state without releasing it.
+   *
+   * Clears namespace, database, variables and authentication. The session id
+   * stays valid and stays attached.
+   */
+  ResetSession(request: ResetSessionRequest): Promise<ResetSessionResponse>;
+  /** Select the namespace and/or database a session operates in. */
+  Use(request: UseRequest): Promise<UseResponse>;
+  /** Bind a session-scoped variable, referenced in queries as `$name`. */
+  SetVariable(request: SetVariableRequest): Promise<SetVariableResponse>;
+  /** Remove a session-scoped variable. */
+  UnsetVariable(request: UnsetVariableRequest): Promise<UnsetVariableResponse>;
+  /** Register a new record user and authenticate the session as them. */
+  Signup(request: SignupRequest): Promise<SignupResponse>;
+  /** Authenticate the session with credentials. */
+  Signin(request: SigninRequest): Promise<SigninResponse>;
+  /** Authenticate the session with an existing access token. */
+  Authenticate(request: AuthenticateRequest): Promise<AuthenticateResponse>;
+  /** Exchange a refresh token for a new token pair. */
+  RefreshTokens(request: RefreshTokensRequest): Promise<RefreshTokensResponse>;
+  /** Invalidate tokens for all future use, on every session and connection. */
+  RevokeTokens(request: RevokeTokensRequest): Promise<RevokeTokensResponse>;
+  /** Clear the session's authentication without touching anything else. */
+  Invalidate(request: InvalidateRequest): Promise<InvalidateResponse>;
+  /**
+   * Open an explicit transaction owned by the session.
+   *
+   * The transaction outlives this RPC and every `Query` that runs in it;
+   * only `CommitTransaction`, `CancelTransaction`, `DetachSession` or the
+   * server's transaction timeout end it.
+   */
+  BeginTransaction(request: BeginTransactionRequest): Promise<BeginTransactionResponse>;
+  /** Commit `context.transaction`, persisting everything done in it. */
+  CommitTransaction(request: CommitTransactionRequest): Promise<CommitTransactionResponse>;
+  /** Cancel `context.transaction`, discarding everything done in it. */
+  CancelTransaction(request: CancelTransactionRequest): Promise<CancelTransactionResponse>;
+  /**
+   * Execute SurrealQL and stream the results.
+   *
+   * Cancelling the RPC aborts execution: without `context.transaction` the
+   * implicit transaction is rolled back -- streamed results do not imply a
+   * commit, only a completed stream does. With `context.transaction` the
+   * transaction is session-owned and survives a cancelled RPC.
+   */
+  Query(request: QueryRequest): Observable<QueryResponse>;
+  /**
+   * Stream one live query's notifications.
+   *
+   * One stream per subscription; there is no multiplexed notification
+   * channel. A live query may have many concurrent subscribers, each with
+   * its own stream and its own `subscription_id`. See `SubscribeRequest` for
+   * the two ways to name the live query and what each implies for lifetime.
+   */
+  Subscribe(request: SubscribeRequest): Observable<SubscribeResponse>;
+  /** Import a SurrealQL byte stream. All statements run in one transaction. */
   ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse>;
-  /** Export data from the database. */
+  /** Export the database as a flat SurrealQL byte stream. */
   ExportSql(request: ExportSqlRequest): Observable<ExportSqlResponse>;
   /**
-   * Export data from the database as a stream of directory files.
+   * Export the database as a streamed directory of files.
    *
-   * Unlike ExportSql, which emits a flat SurrealQL statement stream, this
+   * Unlike `ExportSql`, which emits a flat SurrealQL byte stream, this
    * reproduces a directory-format export (manifest + schema + per-table data
    * files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
    * FileEnd, so neither peer ever buffers a whole file; the file's byte count
-   * and SHA-256 are carried in the FileEnd trailer, computed incrementally as
+   * and BLAKE3 hash are carried in the FileEnd trailer, computed incrementally as
    * chunks are produced. The manifest is streamed as the final file, and the
    * End frame is the completion token.
    */
   ExportDirectory(request: ExportDirectoryRequest): Observable<ExportDirectoryResponse>;
-  /** Export the ML model. */
+  /** Export a SurrealML model as a byte stream. */
   ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse>;
-  /**
-   * Query the database and get a stream of values.
-   *
-   * Cancelling the RPC aborts execution: without a txn_id, the implicit
-   * transaction is rolled back (streamed results do not imply a commit;
-   * only a completed stream does). With a txn_id, the transaction is
-   * session-owned and remains open across a cancelled RPC.
-   */
-  Query(request: QueryRequest): Observable<QueryResponse>;
-  /** Issue a live query and get a stream of notifications. */
-  Subscribe(request: SubscribeRequest): Observable<SubscribeResponse>;
 }
 
 export const SurrealDBServiceServiceName = "surrealdb.protocol.rpc.v1.SurrealDBService";
@@ -5710,33 +8605,76 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || SurrealDBServiceServiceName;
     this.rpc = rpc;
+    this.GetCapabilities = this.GetCapabilities.bind(this);
     this.Health = this.Health.bind(this);
-    this.Version = this.Version.bind(this);
+    this.AttachSession = this.AttachSession.bind(this);
+    this.DetachSession = this.DetachSession.bind(this);
+    this.ResetSession = this.ResetSession.bind(this);
+    this.Use = this.Use.bind(this);
+    this.SetVariable = this.SetVariable.bind(this);
+    this.UnsetVariable = this.UnsetVariable.bind(this);
     this.Signup = this.Signup.bind(this);
     this.Signin = this.Signin.bind(this);
     this.Authenticate = this.Authenticate.bind(this);
-    this.Use = this.Use.bind(this);
-    this.Set = this.Set.bind(this);
-    this.Unset = this.Unset.bind(this);
+    this.RefreshTokens = this.RefreshTokens.bind(this);
+    this.RevokeTokens = this.RevokeTokens.bind(this);
     this.Invalidate = this.Invalidate.bind(this);
-    this.Reset = this.Reset.bind(this);
+    this.BeginTransaction = this.BeginTransaction.bind(this);
+    this.CommitTransaction = this.CommitTransaction.bind(this);
+    this.CancelTransaction = this.CancelTransaction.bind(this);
+    this.Query = this.Query.bind(this);
+    this.Subscribe = this.Subscribe.bind(this);
     this.ImportSql = this.ImportSql.bind(this);
     this.ExportSql = this.ExportSql.bind(this);
     this.ExportDirectory = this.ExportDirectory.bind(this);
     this.ExportMlModel = this.ExportMlModel.bind(this);
-    this.Query = this.Query.bind(this);
-    this.Subscribe = this.Subscribe.bind(this);
   }
+  GetCapabilities(request: GetCapabilitiesRequest): Promise<GetCapabilitiesResponse> {
+    const data = GetCapabilitiesRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetCapabilities", data);
+    return promise.then((data) => GetCapabilitiesResponse.decode(new BinaryReader(data)));
+  }
+
   Health(request: HealthRequest): Promise<HealthResponse> {
     const data = HealthRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Health", data);
     return promise.then((data) => HealthResponse.decode(new BinaryReader(data)));
   }
 
-  Version(request: VersionRequest): Promise<VersionResponse> {
-    const data = VersionRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Version", data);
-    return promise.then((data) => VersionResponse.decode(new BinaryReader(data)));
+  AttachSession(request: AttachSessionRequest): Promise<AttachSessionResponse> {
+    const data = AttachSessionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "AttachSession", data);
+    return promise.then((data) => AttachSessionResponse.decode(new BinaryReader(data)));
+  }
+
+  DetachSession(request: DetachSessionRequest): Promise<DetachSessionResponse> {
+    const data = DetachSessionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "DetachSession", data);
+    return promise.then((data) => DetachSessionResponse.decode(new BinaryReader(data)));
+  }
+
+  ResetSession(request: ResetSessionRequest): Promise<ResetSessionResponse> {
+    const data = ResetSessionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "ResetSession", data);
+    return promise.then((data) => ResetSessionResponse.decode(new BinaryReader(data)));
+  }
+
+  Use(request: UseRequest): Promise<UseResponse> {
+    const data = UseRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Use", data);
+    return promise.then((data) => UseResponse.decode(new BinaryReader(data)));
+  }
+
+  SetVariable(request: SetVariableRequest): Promise<SetVariableResponse> {
+    const data = SetVariableRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "SetVariable", data);
+    return promise.then((data) => SetVariableResponse.decode(new BinaryReader(data)));
+  }
+
+  UnsetVariable(request: UnsetVariableRequest): Promise<UnsetVariableResponse> {
+    const data = UnsetVariableRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UnsetVariable", data);
+    return promise.then((data) => UnsetVariableResponse.decode(new BinaryReader(data)));
   }
 
   Signup(request: SignupRequest): Promise<SignupResponse> {
@@ -5757,22 +8695,16 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return promise.then((data) => AuthenticateResponse.decode(new BinaryReader(data)));
   }
 
-  Use(request: UseRequest): Promise<UseResponse> {
-    const data = UseRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Use", data);
-    return promise.then((data) => UseResponse.decode(new BinaryReader(data)));
+  RefreshTokens(request: RefreshTokensRequest): Promise<RefreshTokensResponse> {
+    const data = RefreshTokensRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "RefreshTokens", data);
+    return promise.then((data) => RefreshTokensResponse.decode(new BinaryReader(data)));
   }
 
-  Set(request: SetRequest): Promise<SetResponse> {
-    const data = SetRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Set", data);
-    return promise.then((data) => SetResponse.decode(new BinaryReader(data)));
-  }
-
-  Unset(request: UnsetRequest): Promise<UnsetResponse> {
-    const data = UnsetRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Unset", data);
-    return promise.then((data) => UnsetResponse.decode(new BinaryReader(data)));
+  RevokeTokens(request: RevokeTokensRequest): Promise<RevokeTokensResponse> {
+    const data = RevokeTokensRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "RevokeTokens", data);
+    return promise.then((data) => RevokeTokensResponse.decode(new BinaryReader(data)));
   }
 
   Invalidate(request: InvalidateRequest): Promise<InvalidateResponse> {
@@ -5781,10 +8713,34 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return promise.then((data) => InvalidateResponse.decode(new BinaryReader(data)));
   }
 
-  Reset(request: ResetRequest): Promise<ResetResponse> {
-    const data = ResetRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Reset", data);
-    return promise.then((data) => ResetResponse.decode(new BinaryReader(data)));
+  BeginTransaction(request: BeginTransactionRequest): Promise<BeginTransactionResponse> {
+    const data = BeginTransactionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "BeginTransaction", data);
+    return promise.then((data) => BeginTransactionResponse.decode(new BinaryReader(data)));
+  }
+
+  CommitTransaction(request: CommitTransactionRequest): Promise<CommitTransactionResponse> {
+    const data = CommitTransactionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CommitTransaction", data);
+    return promise.then((data) => CommitTransactionResponse.decode(new BinaryReader(data)));
+  }
+
+  CancelTransaction(request: CancelTransactionRequest): Promise<CancelTransactionResponse> {
+    const data = CancelTransactionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CancelTransaction", data);
+    return promise.then((data) => CancelTransactionResponse.decode(new BinaryReader(data)));
+  }
+
+  Query(request: QueryRequest): Observable<QueryResponse> {
+    const data = QueryRequest.encode(request).finish();
+    const result = this.rpc.serverStreamingRequest(this.service, "Query", data);
+    return result.pipe(map((data) => QueryResponse.decode(new BinaryReader(data))));
+  }
+
+  Subscribe(request: SubscribeRequest): Observable<SubscribeResponse> {
+    const data = SubscribeRequest.encode(request).finish();
+    const result = this.rpc.serverStreamingRequest(this.service, "Subscribe", data);
+    return result.pipe(map((data) => SubscribeResponse.decode(new BinaryReader(data))));
   }
 
   ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse> {
@@ -5809,18 +8765,6 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     const data = ExportMlModelRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "ExportMlModel", data);
     return result.pipe(map((data) => ExportMlModelResponse.decode(new BinaryReader(data))));
-  }
-
-  Query(request: QueryRequest): Observable<QueryResponse> {
-    const data = QueryRequest.encode(request).finish();
-    const result = this.rpc.serverStreamingRequest(this.service, "Query", data);
-    return result.pipe(map((data) => QueryResponse.decode(new BinaryReader(data))));
-  }
-
-  Subscribe(request: SubscribeRequest): Observable<SubscribeResponse> {
-    const data = SubscribeRequest.encode(request).finish();
-    const result = this.rpc.serverStreamingRequest(this.service, "Subscribe", data);
-    return result.pipe(map((data) => SubscribeResponse.decode(new BinaryReader(data))));
   }
 }
 
