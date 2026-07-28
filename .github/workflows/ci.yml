@@ -6,6 +6,94 @@ on:
   pull_request:
 
 jobs:
+  proto-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+      - uses: bufbuild/buf-action@c231a1aa9281e5db706c970f468f0744a37561fd # v1
+        with:
+          setup_only: true
+      - run: buf lint
+
+  proto-breaking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-action@c231a1aa9281e5db706c970f468f0744a37561fd # v1
+        with:
+          setup_only: true
+      # v1 is unstable until a server serves SurrealDBService, so a breaking
+      # change is reported but does not fail the build. Flip `continue-on-error`
+      # to false at the freeze -- that one line IS the freeze.
+      - name: Check for breaking schema changes
+        id: breaking
+        continue-on-error: true
+        run: buf breaking --against '.git#branch=main'
+      - name: Require the protocol-breaking label
+        if: steps.breaking.outcome == 'failure'
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          echo "::warning::This PR changes the wire format."
+          case ",$LABELS," in
+            *,protocol-breaking,*)
+              echo "Labelled protocol-breaking; allowed while v1 is unstable." ;;
+            *)
+              echo "::error::Breaking schema change without the 'protocol-breaking' label."
+              exit 1 ;;
+          esac
+
+  # Generated code is checked in. This asserts it still matches the schemas, so
+  # a schema change cannot land without its generated counterpart.
+  #
+  # gen/c is deliberately out of scope: protoc-gen-c has no pinnable release
+  # channel that matches the macOS (brew) build maintainers use locally, so
+  # diffing it would fail on formatting noise rather than real drift. Pin it and
+  # add `gen/c` to the diff paths below when that changes.
+  proto-gen-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+      - uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
+        with:
+          bun-version: "1.1.17"
+      - uses: bufbuild/buf-action@c231a1aa9281e5db706c970f468f0744a37561fd # v1
+        with:
+          setup_only: true
+
+      - name: Install pinned generators
+        run: |
+          set -euo pipefail
+          eval "$(make --no-print-directory print-versions)"
+          cargo install --locked --version "$PROTOC_GEN_PROST_VERSION" protoc-gen-prost
+          cargo install --locked --version "$PROTOC_GEN_TONIC_VERSION" protoc-gen-tonic
+          bun install
+          mkdir -p plugins
+          cp "$(command -v protoc-gen-prost)" plugins/protoc-gen-prost
+          cp "$(command -v protoc-gen-tonic)" plugins/protoc-gen-tonic
+          ln -sf "$PWD/node_modules/.bin/protoc-gen-ts_proto" plugins/protoc-gen-ts_proto
+          chmod +x plugins/protoc-gen-prost plugins/protoc-gen-tonic
+          # protoc-gen-c is required for `buf generate` to run at all, but its
+          # output is not diffed (see the note above).
+          sudo apt-get update && sudo apt-get install -y protobuf-c-compiler
+          cp "$(command -v protoc-gen-c)" plugins/protoc-gen-c
+
+      - name: Regenerate
+        run: make proto-gen
+
+      - name: Assert generated code matches the schemas
+        run: |
+          if ! git diff --exit-code -- gen/rust gen/ts; then
+            echo "::error::Generated code is stale. Run 'make gen' and commit the result."
+            exit 1
+          fi
+
   rust-fmt:
     runs-on: ubuntu-latest
     steps:
