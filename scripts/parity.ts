@@ -32,6 +32,21 @@ interface Member {
 	number: number;
 }
 
+/** The slice of google.protobuf.FileDescriptorSet this check reads. */
+interface FieldDescriptor {
+	name: string;
+	number: number;
+	oneofIndex?: number;
+}
+interface MessageDescriptor {
+	name: string;
+	field?: FieldDescriptor[];
+	oneofDecl?: Array<{ name: string }>;
+}
+interface DescriptorSet {
+	file?: Array<{ messageType?: MessageDescriptor[] }>;
+}
+
 /** Pairs of (proto oneof, flatbuffers union) that must agree. */
 const PAIRS: Array<{ proto: string; oneof: string; fb: string }> = [
 	{ proto: "Value", oneof: "value", fb: "ValueType" },
@@ -55,17 +70,19 @@ function readAllowlist(): Map<string, string> {
 }
 
 /** Extracts a proto oneof's members from the descriptor set. */
-function protoOneof(descriptor: any, message: string, oneof: string): Member[] {
+function protoOneof(
+	descriptor: DescriptorSet,
+	message: string,
+	oneof: string,
+): Member[] {
 	for (const file of descriptor.file ?? []) {
 		for (const type of file.messageType ?? []) {
 			if (type.name !== message) continue;
-			const index = (type.oneofDecl ?? []).findIndex(
-				(d: any) => d.name === oneof,
-			);
+			const index = (type.oneofDecl ?? []).findIndex((d) => d.name === oneof);
 			if (index < 0) continue;
 			return (type.field ?? [])
-				.filter((f: any) => f.oneofIndex === index)
-				.map((f: any) => ({ name: pascal(f.name), number: f.number }));
+				.filter((f) => f.oneofIndex === index)
+				.map((f) => ({ name: pascal(f.name), number: f.number }));
 		}
 	}
 	throw new Error(`proto ${message}.${oneof} not found in ${DESCRIPTOR}`);
@@ -109,7 +126,9 @@ function pascal(name: string): string {
 function main(): void {
 	execFileSync("buf", ["build", "-o", DESCRIPTOR], { stdio: "inherit" });
 
-	const descriptor = JSON.parse(readFileSync(DESCRIPTOR, "utf8"));
+	const descriptor: DescriptorSet = JSON.parse(
+		readFileSync(DESCRIPTOR, "utf8"),
+	);
 	const fbs = readFileSync(FBS, "utf8");
 	const allowed = readAllowlist();
 	const problems: string[] = [];
@@ -164,7 +183,8 @@ function main(): void {
 
 	if (problems.length > 0) {
 		console.error("proto <-> flatbuffers parity failed:\n");
-		for (const problem of [...new Set(problems)]) console.error(`  - ${problem}`);
+		for (const problem of [...new Set(problems)])
+			console.error(`  - ${problem}`);
 		console.error(
 			`\nFix the schemas, or record the difference in ${ALLOW} with a reason.`,
 		);
