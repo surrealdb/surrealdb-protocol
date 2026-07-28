@@ -95,9 +95,19 @@ jobs:
 
       # The generators are pinned, so a hit here skips compiling
       # protoc-gen-prost and protoc-gen-tonic from source on every run.
+      #
+      # Only the self-contained ones are cached. protoc-gen-c is deliberately
+      # excluded: it is a system package that links libprotobuf at runtime, so
+      # caching the binary without its shared libraries produces a file that
+      # exists -- which makes `make` skip the recipe that would have installed
+      # those libraries -- and then fails to load. Leaving it out of the cache
+      # means its recipe runs every time and installs what it needs.
       - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
         with:
-          path: plugins
+          path: |
+            plugins/protoc-gen-prost
+            plugins/protoc-gen-tonic
+            plugins/flatc
           key: plugins-${{ runner.os }}-${{ hashFiles('Makefile') }}
 
       # The Makefile installs the generators it needs, including protoc-gen-c
