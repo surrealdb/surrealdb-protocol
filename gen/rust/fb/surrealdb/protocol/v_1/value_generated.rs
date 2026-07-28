@@ -352,6 +352,21 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_none(&self) -> Option<NoneValue<'a>> {
+    if self.value_type() == ValueType::None {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { NoneValue::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for Value<'_> {
@@ -382,6 +397,7 @@ impl ::flatbuffers::Verifiable for Value<'_> {
           ValueType::Object => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Object>>("ValueType::Object", pos),
           ValueType::Array => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
           ValueType::Set => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Set>>("ValueType::Set", pos),
+          ValueType::None => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<NoneValue>>("ValueType::None", pos),
           _ => Ok(()),
         }
      })?
@@ -571,6 +587,13 @@ impl ::core::fmt::Debug for Value<'_> {
         },
         ValueType::Set => {
           if let Some(x) = self.value_as_set() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::None => {
+          if let Some(x) = self.value_as_none() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

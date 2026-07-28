@@ -106,6 +106,11 @@ proto-check: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
 gen-check: gen
 	git diff --exit-code -- gen/
 
+# Fails when value.proto and value.fbs have drifted apart.
+.PHONY: parity-check
+parity-check: build/descriptor.json
+	bun run scripts/parity.ts
+
 # flatc --rust-module-root-file overwrites mod.rs per input file. root.fbs
 # includes all other schemas, so its mod.rs has every type. We pass all
 # schemas for individual file generation, with root.fbs last so its

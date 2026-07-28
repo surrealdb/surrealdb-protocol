@@ -5,10 +5,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 20;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 21;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -30,6 +30,7 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
   ValueType::Object,
   ValueType::Array,
   ValueType::Set,
+  ValueType::None,
 ];
 
 /// A union of all possible value types in SurrealDB.
@@ -61,9 +62,17 @@ impl ValueType {
   pub const Object: Self = Self(18);
   pub const Array: Self = Self(19);
   pub const Set: Self = Self(20);
+  /// SurrealDB `NONE`.
+  ///
+  /// Explicit rather than relying on the union's implicit NONE sentinel.
+  /// An unset union is indistinguishable from a member this build does not
+  /// know about, so using it for a real value means a newer peer's variant
+  /// silently decodes as `NONE` -- and a client could then write that back.
+  /// Matches `none = 21` in value.proto.
+  pub const None: Self = Self(21);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 20;
+  pub const ENUM_MAX: u8 = 21;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -86,6 +95,7 @@ impl ValueType {
     Self::Object,
     Self::Array,
     Self::Set,
+    Self::None,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -111,6 +121,7 @@ impl ValueType {
       Self::Object => Some("Object"),
       Self::Array => Some("Array"),
       Self::Set => Some("Set"),
+      Self::None => Some("None"),
       _ => None,
     }
   }

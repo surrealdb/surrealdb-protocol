@@ -36,6 +36,8 @@ pub mod surrealdb {
       pub use self::uuid_generated::*;
       mod null_value_generated;
       pub use self::null_value_generated::*;
+      mod none_value_generated;
+      pub use self::none_value_generated::*;
       mod bool_value_generated;
       pub use self::bool_value_generated::*;
       mod int_64_value_generated;

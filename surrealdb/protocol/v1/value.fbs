@@ -27,6 +27,11 @@ table Uuid {
 /// Null value.
 table NullValue {}
 
+/// SurrealDB `NONE` -- the absence of a value.
+///
+/// Distinct from `NullValue`, and distinct from an absent object key.
+table NoneValue {}
+
 /// Boolean value.
 table BoolValue { value: bool (id: 0); }
 
@@ -169,6 +174,14 @@ union ValueType {
     Object (id: 18),
     Array (id: 19),
     Set (id: 20),
+    /// SurrealDB `NONE`.
+    ///
+    /// Explicit rather than relying on the union's implicit NONE sentinel.
+    /// An unset union is indistinguishable from a member this build does not
+    /// know about, so using it for a real value means a newer peer's variant
+    /// silently decodes as `NONE` -- and a client could then write that back.
+    /// Matches `none = 21` in value.proto.
+    None: NoneValue (id: 21),
 }
 
 /// A value container that can hold any SurrealDB value type.
