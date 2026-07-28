@@ -16,7 +16,7 @@ keywords = [
     "flatbuffers",
 ]
 categories = ["database-implementations", "data-structures", "embedded"]
-include = ["gen/rust/**/*.rs", "rust/**/*"]
+include = ["gen/rust/**/*.rs", "rust/**/*", "bridge/contract.yaml"]
 
 [package.metadata.release]
 allow-branch = ["main", "HEAD"]

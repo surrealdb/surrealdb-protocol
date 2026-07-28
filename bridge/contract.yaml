@@ -1,0 +1,197 @@
+# What every SurrealDB SDK must expose.
+#
+# GENERATED -- do not edit. Run `bun run scripts/contract.ts --write`.
+# The schema half comes from the service definition; the capability and
+# binding names come from the ANNOTATIONS table in that script, which is
+# where those decisions are reviewed.
+#
+# Adding an RPC: change rpc.proto, add an ANNOTATIONS entry, regenerate.
+# Downstream SDKs then fail their own parity check on the PR that bumps
+# this dependency, naming the method they are missing.
+
+version: 1
+proto_package: surrealdb.protocol.rpc.v1
+service: SurrealDBService
+methods:
+  - rpc: GetCapabilities
+    request: surrealdb.protocol.rpc.v1.GetCapabilitiesRequest
+    response: surrealdb.protocol.rpc.v1.GetCapabilitiesResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: get_capabilities, typescript: getCapabilities }
+  - rpc: Health
+    request: surrealdb.protocol.rpc.v1.HealthRequest
+    response: surrealdb.protocol.rpc.v1.HealthResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: health, typescript: health }
+  - rpc: Version
+    request: surrealdb.protocol.rpc.v1.VersionRequest
+    response: surrealdb.protocol.rpc.v1.VersionResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: version, typescript: version }
+  - rpc: AttachSession
+    request: surrealdb.protocol.rpc.v1.AttachSessionRequest
+    response: surrealdb.protocol.rpc.v1.AttachSessionResponse
+    streaming: unary
+    capability: SESSIONS
+    bindings: { rust: attach_session, typescript: attach }
+  - rpc: DetachSession
+    request: surrealdb.protocol.rpc.v1.DetachSessionRequest
+    response: surrealdb.protocol.rpc.v1.DetachSessionResponse
+    streaming: unary
+    capability: SESSIONS
+    bindings: { rust: detach_session, typescript: detach }
+  - rpc: ListSessions
+    request: surrealdb.protocol.rpc.v1.ListSessionsRequest
+    response: surrealdb.protocol.rpc.v1.ListSessionsResponse
+    streaming: unary
+    capability: SESSIONS
+    bindings: { rust: list_sessions, typescript: sessions }
+  - rpc: ResetSession
+    request: surrealdb.protocol.rpc.v1.ResetSessionRequest
+    response: surrealdb.protocol.rpc.v1.ResetSessionResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: reset, typescript: reset }
+  - rpc: Use
+    request: surrealdb.protocol.rpc.v1.UseRequest
+    response: surrealdb.protocol.rpc.v1.UseResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: use, typescript: use }
+  - rpc: SetVariable
+    request: surrealdb.protocol.rpc.v1.SetVariableRequest
+    response: surrealdb.protocol.rpc.v1.SetVariableResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: set_variable, typescript: set }
+  - rpc: UnsetVariable
+    request: surrealdb.protocol.rpc.v1.UnsetVariableRequest
+    response: surrealdb.protocol.rpc.v1.UnsetVariableResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: unset_variable, typescript: unset }
+  - rpc: Signup
+    request: surrealdb.protocol.rpc.v1.SignupRequest
+    response: surrealdb.protocol.rpc.v1.SignupResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: signup, typescript: signup }
+  - rpc: Signin
+    request: surrealdb.protocol.rpc.v1.SigninRequest
+    response: surrealdb.protocol.rpc.v1.SigninResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: signin, typescript: signin }
+  - rpc: Authenticate
+    request: surrealdb.protocol.rpc.v1.AuthenticateRequest
+    response: surrealdb.protocol.rpc.v1.AuthenticateResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: authenticate, typescript: authenticate }
+  - rpc: RefreshTokens
+    request: surrealdb.protocol.rpc.v1.RefreshTokensRequest
+    response: surrealdb.protocol.rpc.v1.RefreshTokensResponse
+    streaming: unary
+    capability: REFRESH_TOKENS
+    bindings: { rust: refresh, typescript: refresh }
+  - rpc: RevokeTokens
+    request: surrealdb.protocol.rpc.v1.RevokeTokensRequest
+    response: surrealdb.protocol.rpc.v1.RevokeTokensResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: revoke, typescript: revoke }
+  - rpc: Invalidate
+    request: surrealdb.protocol.rpc.v1.InvalidateRequest
+    response: surrealdb.protocol.rpc.v1.InvalidateResponse
+    streaming: unary
+    capability: ~
+    bindings: { rust: invalidate, typescript: invalidate }
+  - rpc: BeginTransaction
+    request: surrealdb.protocol.rpc.v1.BeginTransactionRequest
+    response: surrealdb.protocol.rpc.v1.BeginTransactionResponse
+    streaming: unary
+    capability: TRANSACTIONS
+    bindings: { rust: begin_transaction, typescript: begin }
+  - rpc: CommitTransaction
+    request: surrealdb.protocol.rpc.v1.CommitTransactionRequest
+    response: surrealdb.protocol.rpc.v1.CommitTransactionResponse
+    streaming: unary
+    capability: TRANSACTIONS
+    bindings: { rust: commit_transaction, typescript: commit }
+  - rpc: CancelTransaction
+    request: surrealdb.protocol.rpc.v1.CancelTransactionRequest
+    response: surrealdb.protocol.rpc.v1.CancelTransactionResponse
+    streaming: unary
+    capability: TRANSACTIONS
+    bindings: { rust: cancel_transaction, typescript: cancel }
+  - rpc: ListTransactions
+    request: surrealdb.protocol.rpc.v1.ListTransactionsRequest
+    response: surrealdb.protocol.rpc.v1.ListTransactionsResponse
+    streaming: unary
+    capability: TRANSACTIONS
+    bindings: { rust: list_transactions, typescript: transactions }
+  - rpc: Query
+    request: surrealdb.protocol.rpc.v1.QueryRequest
+    response: surrealdb.protocol.rpc.v1.QueryResponse
+    streaming: server
+    capability: ~
+    bindings: { rust: query, typescript: query }
+  - rpc: CancelQuery
+    request: surrealdb.protocol.rpc.v1.CancelQueryRequest
+    response: surrealdb.protocol.rpc.v1.CancelQueryResponse
+    streaming: unary
+    capability: QUERY_CONTROL
+    bindings: { rust: cancel_query, typescript: cancelQuery }
+  - rpc: ListQueries
+    request: surrealdb.protocol.rpc.v1.ListQueriesRequest
+    response: surrealdb.protocol.rpc.v1.ListQueriesResponse
+    streaming: unary
+    capability: QUERY_CONTROL
+    bindings: { rust: list_queries, typescript: queries }
+  - rpc: Subscribe
+    request: surrealdb.protocol.rpc.v1.SubscribeRequest
+    response: surrealdb.protocol.rpc.v1.SubscribeResponse
+    streaming: server
+    capability: LIVE_QUERIES
+    bindings: { rust: subscribe, typescript: subscribe }
+  - rpc: Kill
+    request: surrealdb.protocol.rpc.v1.KillRequest
+    response: surrealdb.protocol.rpc.v1.KillResponse
+    streaming: unary
+    capability: LIVE_QUERIES
+    bindings: { rust: kill, typescript: kill }
+  - rpc: ImportSql
+    request: surrealdb.protocol.rpc.v1.ImportSqlRequest
+    response: surrealdb.protocol.rpc.v1.ImportSqlResponse
+    streaming: client
+    capability: ~
+    bindings: { rust: import_sql, typescript: importSql }
+  - rpc: ExportSql
+    request: surrealdb.protocol.rpc.v1.ExportSqlRequest
+    response: surrealdb.protocol.rpc.v1.ExportSqlResponse
+    streaming: server
+    capability: ~
+    bindings: { rust: export_sql, typescript: exportSql }
+  - rpc: ExportDirectory
+    request: surrealdb.protocol.rpc.v1.ExportDirectoryRequest
+    response: surrealdb.protocol.rpc.v1.ExportDirectoryResponse
+    streaming: server
+    capability: EXPORT_DIRECTORY
+    bindings: { rust: export_directory, typescript: exportDirectory }
+  - rpc: ExportMlModel
+    request: surrealdb.protocol.rpc.v1.ExportMlModelRequest
+    response: surrealdb.protocol.rpc.v1.ExportMlModelResponse
+    streaming: server
+    capability: ML_MODELS
+    bindings: { rust: export_ml_model, typescript: exportMlModel }
+
+# Methods an SDK exposes that deliberately have no RPC of their own.
+# Anything not listed here and not above fails the downstream check --
+# which is what catches an SDK growing a method the protocol never got.
+client_only:
+  - name: liveQuery
+    typescript: liveQuery
+    rationale: client-side demultiplexing over Subscribe; carries no wire method

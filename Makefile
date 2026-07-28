@@ -111,6 +111,15 @@ gen-check: gen
 parity-check: build/descriptor.json
 	bun run scripts/parity.ts
 
+# The machine-readable list of what every SDK must expose.
+.PHONY: contract
+contract:
+	bun run scripts/contract.ts --write
+
+.PHONY: contract-check
+contract-check:
+	bun run scripts/contract.ts
+
 # flatc --rust-module-root-file overwrites mod.rs per input file. root.fbs
 # includes all other schemas, so its mod.rs has every type. We pass all
 # schemas for individual file generation, with root.fbs last so its
