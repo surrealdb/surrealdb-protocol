@@ -35,14 +35,43 @@ jobs:
         with:
           setup_only: true
       # v1 is unstable until a server serves SurrealDBService, so a breaking
-      # change is reported but does not fail the build. Flip `continue-on-error`
-      # to false at the freeze -- that one line IS the freeze.
+      # change is reported and gated behind a label rather than failing outright.
+      # At the freeze, delete the label escape hatch below -- that IS the freeze.
+      #
+      # `ref=origin/main`, not `branch=main`: the PR checkout lands on a detached
+      # HEAD with refs/remotes/origin/main and no local main, so buf could not
+      # resolve the base and died with "couldn't find remote ref main" on every
+      # run. Under the old `continue-on-error: true` that surfaced as
+      # `outcome == failure`, indistinguishable from a real finding, so the label
+      # was demanded on every PR while buf had in fact never compared anything.
+      #
+      # Hence the explicit exit codes: buf uses 100 for "found violations" and
+      # non-zero-non-100 for "could not run". Conflating those is what hid the
+      # breakage, so a run failure now fails the job loudly instead of being
+      # laundered into a label requirement.
       - name: Check for breaking schema changes
         id: breaking
-        continue-on-error: true
-        run: buf breaking --against '.git#branch=main'
+        run: |
+          set +e
+          buf breaking --against '.git#ref=origin/main'
+          rc=$?
+          set -e
+          case "$rc" in
+            0)
+              echo "found=false" >>"$GITHUB_OUTPUT" ;;
+            100)
+              echo "found=true" >>"$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::buf breaking could not run (exit $rc). This is not a schema finding; the check itself is broken."
+              exit 1 ;;
+          esac
+      # Only reached when buf actually found something.
+      #
+      # Note this sees .proto only. buf does not parse .fbs, so a flatbuffers
+      # wire change cannot reach this gate and still needs the label applied by
+      # hand -- see scripts/parity.ts and parity.toml for what does watch .fbs.
       - name: Require the protocol-breaking label
-        if: steps.breaking.outcome == 'failure'
+        if: steps.breaking.outputs.found == 'true'
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
