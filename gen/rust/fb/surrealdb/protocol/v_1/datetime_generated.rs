@@ -2,36 +2,36 @@
 // @generated
 extern crate alloc;
 use super::*;
-pub enum TimestampOffset {}
+pub enum DatetimeOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-/// Timestamp represented as seconds and nanoseconds since epoch.
-pub struct Timestamp<'a> {
+/// A UTC instant, as seconds and nanoseconds since the epoch.
+pub struct Datetime<'a> {
   pub _tab: ::flatbuffers::Table<'a>,
 }
 
-impl<'a> ::flatbuffers::Follow<'a> for Timestamp<'a> {
-  type Inner = Timestamp<'a>;
+impl<'a> ::flatbuffers::Follow<'a> for Datetime<'a> {
+  type Inner = Datetime<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
     Self { _tab: unsafe { ::flatbuffers::Table::new(buf, loc) } }
   }
 }
 
-impl<'a> Timestamp<'a> {
+impl<'a> Datetime<'a> {
   pub const VT_SECONDS: ::flatbuffers::VOffsetT = 4;
   pub const VT_NANOS: ::flatbuffers::VOffsetT = 6;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
-    Timestamp { _tab: table }
+    Datetime { _tab: table }
   }
   #[allow(unused_mut)]
   pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: ::flatbuffers::Allocator + 'bldr>(
     _fbb: &'mut_bldr mut ::flatbuffers::FlatBufferBuilder<'bldr, A>,
-    args: &'args TimestampArgs
-  ) -> ::flatbuffers::WIPOffset<Timestamp<'bldr>> {
-    let mut builder = TimestampBuilder::new(_fbb);
+    args: &'args DatetimeArgs
+  ) -> ::flatbuffers::WIPOffset<Datetime<'bldr>> {
+    let mut builder = DatetimeBuilder::new(_fbb);
     builder.add_seconds(args.seconds);
     builder.add_nanos(args.nanos);
     builder.finish()
@@ -43,18 +43,18 @@ impl<'a> Timestamp<'a> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<i64>(Timestamp::VT_SECONDS, Some(0)).unwrap()}
+    unsafe { self._tab.get::<i64>(Datetime::VT_SECONDS, Some(0)).unwrap()}
   }
   #[inline]
   pub fn nanos(&self) -> u32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u32>(Timestamp::VT_NANOS, Some(0)).unwrap()}
+    unsafe { self._tab.get::<u32>(Datetime::VT_NANOS, Some(0)).unwrap()}
   }
 }
 
-impl ::flatbuffers::Verifiable for Timestamp<'_> {
+impl ::flatbuffers::Verifiable for Datetime<'_> {
   #[inline]
   fn run_verifier(
     v: &mut ::flatbuffers::Verifier, pos: usize
@@ -66,51 +66,51 @@ impl ::flatbuffers::Verifiable for Timestamp<'_> {
     Ok(())
   }
 }
-pub struct TimestampArgs {
+pub struct DatetimeArgs {
     pub seconds: i64,
     pub nanos: u32,
 }
-impl<'a> Default for TimestampArgs {
+impl<'a> Default for DatetimeArgs {
   #[inline]
   fn default() -> Self {
-    TimestampArgs {
+    DatetimeArgs {
       seconds: 0,
       nanos: 0,
     }
   }
 }
 
-pub struct TimestampBuilder<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> {
+pub struct DatetimeBuilder<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> {
   fbb_: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>,
   start_: ::flatbuffers::WIPOffset<::flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> TimestampBuilder<'a, 'b, A> {
+impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> DatetimeBuilder<'a, 'b, A> {
   #[inline]
   pub fn add_seconds(&mut self, seconds: i64) {
-    self.fbb_.push_slot::<i64>(Timestamp::VT_SECONDS, seconds, 0);
+    self.fbb_.push_slot::<i64>(Datetime::VT_SECONDS, seconds, 0);
   }
   #[inline]
   pub fn add_nanos(&mut self, nanos: u32) {
-    self.fbb_.push_slot::<u32>(Timestamp::VT_NANOS, nanos, 0);
+    self.fbb_.push_slot::<u32>(Datetime::VT_NANOS, nanos, 0);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> TimestampBuilder<'a, 'b, A> {
+  pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> DatetimeBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
-    TimestampBuilder {
+    DatetimeBuilder {
       fbb_: _fbb,
       start_: start,
     }
   }
   #[inline]
-  pub fn finish(self) -> ::flatbuffers::WIPOffset<Timestamp<'a>> {
+  pub fn finish(self) -> ::flatbuffers::WIPOffset<Datetime<'a>> {
     let o = self.fbb_.end_table(self.start_);
     ::flatbuffers::WIPOffset::new(o.value())
   }
 }
 
-impl ::core::fmt::Debug for Timestamp<'_> {
+impl ::core::fmt::Debug for Datetime<'_> {
   fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-    let mut ds = f.debug_struct("Timestamp");
+    let mut ds = f.debug_struct("Datetime");
       ds.field("seconds", &self.seconds());
       ds.field("nanos", &self.nanos());
       ds.finish()

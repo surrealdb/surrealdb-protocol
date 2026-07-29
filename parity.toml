@@ -1,0 +1,40 @@
+# Accepted differences between value.proto and value.fbs.
+#
+# Checked by `bun run scripts/parity.ts`, which discovers every proto oneof in
+# value.proto and every union in value.fbs and pairs them. Anything unpaired or
+# mismatched fails unless it is recorded here with a reason.
+#
+# Keys, narrowest first:
+#   <Union>.<Member>.<id|name>   one member, one kind of check
+#   <Union>.*.<id|name>          every member, one kind of check
+#   <Union>.*                    the whole union
+#
+# Prefer the narrowest key that works, and prefer fixing the schemas over
+# adding an entry. `id` differences mean a value cannot round-trip; `name`
+# differences are cosmetic.
+
+[allow]
+
+# Cosmetic: the flatbuffers members spell the GeoJSON type names in full
+# (LineString, MultiLineString) where the proto uses the shorter SurrealDB
+# names. Same ids, so values round-trip; only the identifiers differ.
+"GeometryType.*.name" = "fbs uses full GeoJSON names (LineString); proto uses SurrealDB's shorter ones. Same ids."
+
+# Cosmetic: every proto arm carries a `_value` suffix that the flatbuffers
+# member omits (string_value vs String). Same ids throughout.
+"LiteralType.*.name" = "proto arms are suffixed _value, fbs members are not. Same ids."
+
+# NOT cosmetic, and NOT introduced by this branch: Kind and KindType have
+# genuinely diverged. value.proto has `PointKind point = 12` with no
+# flatbuffers counterpart, and value.fbs has `Table: TableKind (id: 16)` with
+# no proto counterpart, so every id from 16 up names a different type in each
+# schema -- id 16 is `record` in proto but `Table` in fbs, 17 is `geometry` vs
+# `Record`, and so on up to fbs `File = 26`, which proto lacks entirely.
+#
+# Nothing converts Kind between the two encodings today, which is the only
+# reason this has not bitten: the divergence is loaded, not fired. Reconciling
+# it changes wire semantics for the flatbuffers path that surrealdb/types
+# already consumes, so it needs a coordinated change rather than a drive-by
+# one. Recorded here so the checker stays green on everything else while this
+# stays visible.
+"KindType.*" = "PRE-EXISTING DRIFT, unresolved: proto Point=12 and fbs Table=16 have no counterpart, shifting every id from 16 up. Needs a coordinated fix with surrealdb/types."

@@ -5,11 +5,12 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 20;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 21;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 21] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
   ValueType::NONE,
+  ValueType::None,
   ValueType::Null,
   ValueType::Bool,
   ValueType::Int64,
@@ -39,33 +40,42 @@ pub struct ValueType(pub u8);
 #[allow(non_upper_case_globals)]
 impl ValueType {
   pub const NONE: Self = Self(0);
-  pub const Null: Self = Self(1);
-  pub const Bool: Self = Self(2);
-  pub const Int64: Self = Self(3);
-  pub const Float64: Self = Self(4);
-  pub const Decimal: Self = Self(5);
-  pub const String: Self = Self(6);
-  pub const Bytes: Self = Self(7);
-  pub const Duration: Self = Self(8);
-  pub const Datetime: Self = Self(9);
-  pub const Uuid: Self = Self(10);
-  pub const Geometry: Self = Self(11);
-  pub const Table: Self = Self(12);
+  /// SurrealDB `NONE`.
+  ///
+  /// Explicit rather than relying on the union's implicit NONE sentinel.
+  /// An unset union is indistinguishable from a member this build does not
+  /// know about, so using it for a real value means a newer peer's variant
+  /// silently decodes as `NONE` -- and a client could then write that back.
+  /// Matches `none = 1` in value.proto.
+  pub const None: Self = Self(1);
+  pub const Null: Self = Self(2);
+  pub const Bool: Self = Self(3);
+  pub const Int64: Self = Self(4);
+  pub const Float64: Self = Self(5);
+  pub const Decimal: Self = Self(6);
+  pub const String: Self = Self(7);
+  pub const Bytes: Self = Self(8);
+  pub const Duration: Self = Self(9);
+  pub const Datetime: Self = Self(10);
+  pub const Uuid: Self = Self(11);
+  pub const Geometry: Self = Self(12);
+  pub const Table: Self = Self(13);
   /// A fully-qualified record ID.
-  pub const RecordId: Self = Self(13);
+  pub const RecordId: Self = Self(14);
   /// An unparsed record ID which will be parsed by the server.
-  pub const StringRecordId: Self = Self(14);
-  pub const File: Self = Self(15);
-  pub const Range: Self = Self(16);
-  pub const Regex: Self = Self(17);
-  pub const Object: Self = Self(18);
-  pub const Array: Self = Self(19);
-  pub const Set: Self = Self(20);
+  pub const StringRecordId: Self = Self(15);
+  pub const File: Self = Self(16);
+  pub const Range: Self = Self(17);
+  pub const Regex: Self = Self(18);
+  pub const Object: Self = Self(19);
+  pub const Array: Self = Self(20);
+  pub const Set: Self = Self(21);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 20;
+  pub const ENUM_MAX: u8 = 21;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
+    Self::None,
     Self::Null,
     Self::Bool,
     Self::Int64,
@@ -91,6 +101,7 @@ impl ValueType {
   pub fn variant_name(self) -> Option<&'static str> {
     match self {
       Self::NONE => Some("NONE"),
+      Self::None => Some("None"),
       Self::Null => Some("Null"),
       Self::Bool => Some("Bool"),
       Self::Int64 => Some("Int64"),
