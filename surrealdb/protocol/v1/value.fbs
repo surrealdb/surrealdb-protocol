@@ -158,30 +158,39 @@ union ValueType {
     /// An unset union is indistinguishable from a member this build does not
     /// know about, so using it for a real value means a newer peer's variant
     /// silently decodes as `NONE` -- and a client could then write that back.
-    /// Matches `none = 1` in value.proto.
-    None: NoneValue (id: 1),
-    Null: NullValue (id: 2),
-    Bool: BoolValue (id: 3),
-    Int64: Int64Value (id: 4),
-    Float64: Float64Value (id: 5),
-    Decimal: surrealdb.protocol.v1.Decimal (id: 6),
-    String: StringValue (id: 7),
-    Bytes: surrealdb.protocol.v1.Bytes (id: 8),
-    Duration: surrealdb.protocol.v1.Duration (id: 9),
-    Datetime: surrealdb.protocol.v1.Datetime (id: 10),
-    Uuid: surrealdb.protocol.v1.Uuid (id: 11),
-    Geometry (id: 12),
-    Table: StringValue (id: 13),
+    ///
+    /// Tagged 21, not 1. flatc numbers union members positionally and ignores
+    /// the `(id: N)` attribute, so introducing this member at the front shifted
+    /// every tag after it by one and silently reinterpreted every value on the
+    /// wire -- a v0.11.0 `Int64` decodes as `Float64` on a v0.10.2 peer.
+    /// Appending keeps 1-20 as they shipped. Explicit `= N` because that is the
+    /// syntax flatc actually honours; the tag is otherwise the declaration slot.
+    ///
+    /// Deliberately does NOT match `none = 1` in value.proto, which took tag 1
+    /// and shifted its own oneof the same way. Recorded in parity.toml.
+    None: NoneValue = 21,
+    Null: NullValue = 1,
+    Bool: BoolValue = 2,
+    Int64: Int64Value = 3,
+    Float64: Float64Value = 4,
+    Decimal: surrealdb.protocol.v1.Decimal = 5,
+    String: StringValue = 6,
+    Bytes: surrealdb.protocol.v1.Bytes = 7,
+    Duration: surrealdb.protocol.v1.Duration = 8,
+    Datetime: surrealdb.protocol.v1.Datetime = 9,
+    Uuid: surrealdb.protocol.v1.Uuid = 10,
+    Geometry = 11,
+    Table: StringValue = 12,
     /// A fully-qualified record ID.
-    RecordId (id: 14),
+    RecordId = 13,
     /// An unparsed record ID which will be parsed by the server.
-    StringRecordId: StringValue (id: 15),
-    File (id: 16),
-    Range (id: 17),
-    Regex: StringValue (id: 18),
-    Object (id: 19),
-    Array (id: 20),
-    Set (id: 21),
+    StringRecordId: StringValue = 14,
+    File = 15,
+    Range = 16,
+    Regex: StringValue = 17,
+    Object = 18,
+    Array = 19,
+    Set = 20,
 }
 
 

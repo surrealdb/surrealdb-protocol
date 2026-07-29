@@ -12,6 +12,11 @@
 # Prefer the narrowest key that works, and prefer fixing the schemas over
 # adding an entry. `id` differences mean a value cannot round-trip; `name`
 # differences are cosmetic.
+#
+# For a union whose tags are uniformly shifted, prefer an [offset] entry at the
+# bottom of this file over `<Union>.*.id`: the offset keeps both the id and the
+# name check running against the shifted position, where `*.id` turns them off.
+
 
 [allow]
 
@@ -38,3 +43,26 @@
 # one. Recorded here so the checker stays green on everything else while this
 # stays visible.
 "KindType.*" = "PRE-EXISTING DRIFT, unresolved: proto Point=12 and fbs Table=16 have no counterpart, shifting every id from 16 up. Needs a coordinated fix with surrealdb/types."
+
+
+# Unions whose flatbuffers tags sit at a fixed distance from their proto
+# counterparts. `by` is added to a proto tag to get the flatbuffers tag, and
+# members in `except` are off the offset entirely and checked by name only.
+[offset]
+
+# value.fbs numbers ValueType 1-20 as it shipped through v0.10.2 and appends
+# None at 21. value.proto took tag 1 for `none` instead and pushed its whole
+# oneof up by one, so the two are a fixed one apart: proto `int64 = 4` is
+# flatbuffers `Int64 = 3`.
+#
+# Only the flatbuffers side was reverted. flatc numbers union members
+# positionally and ignores `(id: N)`, so introducing a member at the front
+# reinterpreted every value already on the wire: a v0.11.0 `Int64` decodes as
+# `Float64` on a v0.10.2 peer. protobuf has no equivalent trap, since its tags
+# are written down and `none = 1` was previously unused, so the proto renumber
+# is a compatible-if-untidy change and is left alone rather than broken twice.
+#
+# Recorded as an offset rather than `ValueType.*.id` so the pairing is still
+# checked: every name must still line up one apart, and a further reorder on
+# either side fails here.
+ValueType = { by = -1, except = ["None"], reason = "fbs kept the v0.10.2 tags 1-20 and appended None=21; proto took tag 1 for none and shifted its oneof up by one. Only fbs could be safely reverted, because flatc tags unions positionally." }
