@@ -267,7 +267,7 @@ pub struct ServerCapabilities {
     #[prost(string, repeated, tag = "4")]
     pub capabilities: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// Fully-qualified names of RPCs the operator has disabled, for example
-    /// "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
+    /// "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql". Capabilities are
     /// coarse; deny lists are per-method, and both exist server-side, so both
     /// are reported rather than lossily projecting one onto the other.
     #[prost(string, repeated, tag = "5")]
@@ -1257,14 +1257,14 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Su
 /// The opening frame of an import stream, carrying the request's context.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ImportSqlBegin {
+pub struct ImportSurqlBegin {
     #[prost(message, optional, tag = "1")]
     pub context: ::core::option::Option<RequestContext>,
 }
-impl ::prost::Name for ImportSqlBegin {
-const NAME: &'static str = "ImportSqlBegin";
+impl ::prost::Name for ImportSurqlBegin {
+const NAME: &'static str = "ImportSurqlBegin";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSqlBegin".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSqlBegin".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSurqlBegin".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSurqlBegin".into() }}
 /// A frame of a SurrealQL import stream.
 ///
 /// Framed as `begin` -> `chunk`* -> `trailer`. Bytes rather than parsed
@@ -1273,36 +1273,36 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Im
 /// it can stream.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ImportSqlRequest {
-    #[prost(oneof = "import_sql_request::Frame", tags = "1, 2, 3")]
-    pub frame: ::core::option::Option<import_sql_request::Frame>,
+pub struct ImportSurqlRequest {
+    #[prost(oneof = "import_surql_request::Frame", tags = "1, 2, 3")]
+    pub frame: ::core::option::Option<import_surql_request::Frame>,
 }
-/// Nested message and enum types in `ImportSqlRequest`.
-pub mod import_sql_request {
+/// Nested message and enum types in `ImportSurqlRequest`.
+pub mod import_surql_request {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum Frame {
         #[prost(message, tag = "1")]
-        Begin(super::ImportSqlBegin),
+        Begin(super::ImportSurqlBegin),
         #[prost(message, tag = "2")]
         Chunk(super::DataChunk),
         #[prost(message, tag = "3")]
         Trailer(super::DataTrailer),
     }
 }
-impl ::prost::Name for ImportSqlRequest {
-const NAME: &'static str = "ImportSqlRequest";
+impl ::prost::Name for ImportSurqlRequest {
+const NAME: &'static str = "ImportSurqlRequest";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSqlRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSqlRequest".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSurqlRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSurqlRequest".into() }}
 /// Response to an import request.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ImportSqlResponse {
+pub struct ImportSurqlResponse {
 }
-impl ::prost::Name for ImportSqlResponse {
-const NAME: &'static str = "ImportSqlResponse";
+impl ::prost::Name for ImportSurqlResponse {
+const NAME: &'static str = "ImportSurqlResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSqlResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSqlResponse".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportSurqlResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportSurqlResponse".into() }}
 /// Which parts of the database to export.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
@@ -1395,28 +1395,28 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Ex
 /// Request to export the database as SurrealQL.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ExportSqlRequest {
+pub struct ExportSurqlRequest {
     #[prost(message, optional, tag = "1")]
     pub context: ::core::option::Option<RequestContext>,
     #[prost(message, optional, tag = "2")]
     pub config: ::core::option::Option<ExportConfig>,
 }
-impl ::prost::Name for ExportSqlRequest {
-const NAME: &'static str = "ExportSqlRequest";
+impl ::prost::Name for ExportSurqlRequest {
+const NAME: &'static str = "ExportSurqlRequest";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSqlRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSqlRequest".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSurqlRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSurqlRequest".into() }}
 /// A frame of a SurrealQL export stream.
 ///
 /// Framed as `chunk`* -> `trailer`, or terminated by `error`. A stream that
 /// ends without a trailer MUST be treated as failed.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ExportSqlResponse {
-    #[prost(oneof = "export_sql_response::Frame", tags = "1, 2, 3")]
-    pub frame: ::core::option::Option<export_sql_response::Frame>,
+pub struct ExportSurqlResponse {
+    #[prost(oneof = "export_surql_response::Frame", tags = "1, 2, 3")]
+    pub frame: ::core::option::Option<export_surql_response::Frame>,
 }
-/// Nested message and enum types in `ExportSqlResponse`.
-pub mod export_sql_response {
+/// Nested message and enum types in `ExportSurqlResponse`.
+pub mod export_surql_response {
     #[derive(serde::Deserialize,serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Frame {
@@ -1428,10 +1428,10 @@ pub mod export_sql_response {
         Error(super::super::super::v1::SurrealError),
     }
 }
-impl ::prost::Name for ExportSqlResponse {
-const NAME: &'static str = "ExportSqlResponse";
+impl ::prost::Name for ExportSurqlResponse {
+const NAME: &'static str = "ExportSurqlResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSqlResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSqlResponse".into() }}
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportSurqlResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportSurqlResponse".into() }}
 /// Request to export a SurrealML model.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]

@@ -626,11 +626,13 @@ pub mod surreal_db_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
-        pub async fn import_sql(
+        pub async fn import_surql(
             &mut self,
-            request: impl tonic::IntoStreamingRequest<Message = super::ImportSqlRequest>,
+            request: impl tonic::IntoStreamingRequest<
+                Message = super::ImportSurqlRequest,
+            >,
         ) -> std::result::Result<
-            tonic::Response<super::ImportSqlResponse>,
+            tonic::Response<super::ImportSurqlResponse>,
             tonic::Status,
         > {
             self.inner
@@ -643,23 +645,23 @@ pub mod surreal_db_service_client {
                 })?;
             let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/ImportSql",
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/ImportSurql",
             );
             let mut req = request.into_streaming_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "ImportSql",
+                        "ImportSurql",
                     ),
                 );
             self.inner.client_streaming(req, path, codec).await
         }
-        pub async fn export_sql(
+        pub async fn export_surql(
             &mut self,
-            request: impl tonic::IntoRequest<super::ExportSqlRequest>,
+            request: impl tonic::IntoRequest<super::ExportSurqlRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::ExportSqlResponse>>,
+            tonic::Response<tonic::codec::Streaming<super::ExportSurqlResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -672,14 +674,14 @@ pub mod surreal_db_service_client {
                 })?;
             let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql",
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "surrealdb.protocol.rpc.v1.SurrealDBService",
-                        "ExportSql",
+                        "ExportSurql",
                     ),
                 );
             self.inner.server_streaming(req, path, codec).await
@@ -884,23 +886,26 @@ pub mod surreal_db_service_server {
             &self,
             request: tonic::Request<super::SubscribeRequest>,
         ) -> std::result::Result<tonic::Response<Self::SubscribeStream>, tonic::Status>;
-        async fn import_sql(
+        async fn import_surql(
             &self,
-            request: tonic::Request<tonic::Streaming<super::ImportSqlRequest>>,
+            request: tonic::Request<tonic::Streaming<super::ImportSurqlRequest>>,
         ) -> std::result::Result<
-            tonic::Response<super::ImportSqlResponse>,
+            tonic::Response<super::ImportSurqlResponse>,
             tonic::Status,
         >;
-        /// Server streaming response type for the ExportSql method.
-        type ExportSqlStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::ExportSqlResponse, tonic::Status>,
+        /// Server streaming response type for the ExportSurql method.
+        type ExportSurqlStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::ExportSurqlResponse, tonic::Status>,
             >
             + std::marker::Send
             + 'static;
-        async fn export_sql(
+        async fn export_surql(
             &self,
-            request: tonic::Request<super::ExportSqlRequest>,
-        ) -> std::result::Result<tonic::Response<Self::ExportSqlStream>, tonic::Status>;
+            request: tonic::Request<super::ExportSurqlRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::ExportSurqlStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the ExportDirectory method.
         type ExportDirectoryStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ExportDirectoryResponse, tonic::Status>,
@@ -1870,14 +1875,14 @@ pub mod surreal_db_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/ImportSql" => {
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/ImportSurql" => {
                     #[allow(non_camel_case_types)]
-                    struct ImportSqlSvc<T: SurrealDbService>(pub Arc<T>);
+                    struct ImportSurqlSvc<T: SurrealDbService>(pub Arc<T>);
                     impl<
                         T: SurrealDbService,
-                    > tonic::server::ClientStreamingService<super::ImportSqlRequest>
-                    for ImportSqlSvc<T> {
-                        type Response = super::ImportSqlResponse;
+                    > tonic::server::ClientStreamingService<super::ImportSurqlRequest>
+                    for ImportSurqlSvc<T> {
+                        type Response = super::ImportSurqlResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1885,12 +1890,12 @@ pub mod surreal_db_service_server {
                         fn call(
                             &mut self,
                             request: tonic::Request<
-                                tonic::Streaming<super::ImportSqlRequest>,
+                                tonic::Streaming<super::ImportSurqlRequest>,
                             >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SurrealDbService>::import_sql(&inner, request).await
+                                <T as SurrealDbService>::import_surql(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1901,7 +1906,7 @@ pub mod surreal_db_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = ImportSqlSvc(inner);
+                        let method = ImportSurqlSvc(inner);
                         let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1917,26 +1922,26 @@ pub mod surreal_db_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql" => {
+                "/surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql" => {
                     #[allow(non_camel_case_types)]
-                    struct ExportSqlSvc<T: SurrealDbService>(pub Arc<T>);
+                    struct ExportSurqlSvc<T: SurrealDbService>(pub Arc<T>);
                     impl<
                         T: SurrealDbService,
-                    > tonic::server::ServerStreamingService<super::ExportSqlRequest>
-                    for ExportSqlSvc<T> {
-                        type Response = super::ExportSqlResponse;
-                        type ResponseStream = T::ExportSqlStream;
+                    > tonic::server::ServerStreamingService<super::ExportSurqlRequest>
+                    for ExportSurqlSvc<T> {
+                        type Response = super::ExportSurqlResponse;
+                        type ResponseStream = T::ExportSurqlStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ExportSqlRequest>,
+                            request: tonic::Request<super::ExportSurqlRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SurrealDbService>::export_sql(&inner, request).await
+                                <T as SurrealDbService>::export_surql(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1947,7 +1952,7 @@ pub mod surreal_db_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = ExportSqlSvc(inner);
+                        let method = ExportSurqlSvc(inner);
                         let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

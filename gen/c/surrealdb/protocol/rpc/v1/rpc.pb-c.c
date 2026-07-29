@@ -2617,139 +2617,139 @@ void   surrealdb__protocol__rpc__v1__subscribe_response__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__subscribe_response__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__import_sql_begin__init
-                     (Surrealdb__Protocol__Rpc__V1__ImportSqlBegin         *message)
+void   surrealdb__protocol__rpc__v1__import_surql_begin__init
+                     (Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin         *message)
 {
-  static const Surrealdb__Protocol__Rpc__V1__ImportSqlBegin init_value = SURREALDB__PROTOCOL__RPC__V1__IMPORT_SQL_BEGIN__INIT;
+  static const Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin init_value = SURREALDB__PROTOCOL__RPC__V1__IMPORT_SURQL_BEGIN__INIT;
   *message = init_value;
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_begin__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *message)
+size_t surrealdb__protocol__rpc__v1__import_surql_begin__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin *message)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_begin__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_begin__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_begin__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *message,
+size_t surrealdb__protocol__rpc__v1__import_surql_begin__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_begin__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_begin__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_begin__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *message,
+size_t surrealdb__protocol__rpc__v1__import_surql_begin__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_begin__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_begin__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *
-       surrealdb__protocol__rpc__v1__import_sql_begin__unpack
+Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin *
+       surrealdb__protocol__rpc__v1__import_surql_begin__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__import_sql_begin__descriptor,
+  return (Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin *)
+     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__import_surql_begin__descriptor,
                                 allocator, len, data);
 }
-void   surrealdb__protocol__rpc__v1__import_sql_begin__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ImportSqlBegin *message,
+void   surrealdb__protocol__rpc__v1__import_surql_begin__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_begin__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_begin__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__import_sql_request__init
-                     (Surrealdb__Protocol__Rpc__V1__ImportSqlRequest         *message)
+void   surrealdb__protocol__rpc__v1__import_surql_request__init
+                     (Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest         *message)
 {
-  static const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest init_value = SURREALDB__PROTOCOL__RPC__V1__IMPORT_SQL_REQUEST__INIT;
+  static const Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest init_value = SURREALDB__PROTOCOL__RPC__V1__IMPORT_SURQL_REQUEST__INIT;
   *message = init_value;
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *message)
+size_t surrealdb__protocol__rpc__v1__import_surql_request__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *message)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_request__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *message,
+size_t surrealdb__protocol__rpc__v1__import_surql_request__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_request__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *message,
+size_t surrealdb__protocol__rpc__v1__import_surql_request__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_request__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *
-       surrealdb__protocol__rpc__v1__import_sql_request__unpack
+Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *
+       surrealdb__protocol__rpc__v1__import_surql_request__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__import_sql_request__descriptor,
+  return (Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *)
+     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__import_surql_request__descriptor,
                                 allocator, len, data);
 }
-void   surrealdb__protocol__rpc__v1__import_sql_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *message,
+void   surrealdb__protocol__rpc__v1__import_surql_request__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_request__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__import_sql_response__init
-                     (Surrealdb__Protocol__Rpc__V1__ImportSqlResponse         *message)
+void   surrealdb__protocol__rpc__v1__import_surql_response__init
+                     (Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse         *message)
 {
-  static const Surrealdb__Protocol__Rpc__V1__ImportSqlResponse init_value = SURREALDB__PROTOCOL__RPC__V1__IMPORT_SQL_RESPONSE__INIT;
+  static const Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse init_value = SURREALDB__PROTOCOL__RPC__V1__IMPORT_SURQL_RESPONSE__INIT;
   *message = init_value;
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlResponse *message)
+size_t surrealdb__protocol__rpc__v1__import_surql_response__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse *message)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_response__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlResponse *message,
+size_t surrealdb__protocol__rpc__v1__import_surql_response__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_response__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t surrealdb__protocol__rpc__v1__import_sql_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ImportSqlResponse *message,
+size_t surrealdb__protocol__rpc__v1__import_surql_response__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_response__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Surrealdb__Protocol__Rpc__V1__ImportSqlResponse *
-       surrealdb__protocol__rpc__v1__import_sql_response__unpack
+Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse *
+       surrealdb__protocol__rpc__v1__import_surql_response__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Surrealdb__Protocol__Rpc__V1__ImportSqlResponse *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__import_sql_response__descriptor,
+  return (Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse *)
+     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__import_surql_response__descriptor,
                                 allocator, len, data);
 }
-void   surrealdb__protocol__rpc__v1__import_sql_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ImportSqlResponse *message,
+void   surrealdb__protocol__rpc__v1__import_surql_response__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__import_surql_response__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   surrealdb__protocol__rpc__v1__export_config__selected_tables__init
@@ -2809,94 +2809,94 @@ void   surrealdb__protocol__rpc__v1__export_config__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_config__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__export_sql_request__init
-                     (Surrealdb__Protocol__Rpc__V1__ExportSqlRequest         *message)
+void   surrealdb__protocol__rpc__v1__export_surql_request__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest         *message)
 {
-  static const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest init_value = SURREALDB__PROTOCOL__RPC__V1__EXPORT_SQL_REQUEST__INIT;
+  static const Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest init_value = SURREALDB__PROTOCOL__RPC__V1__EXPORT_SURQL_REQUEST__INIT;
   *message = init_value;
 }
-size_t surrealdb__protocol__rpc__v1__export_sql_request__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *message)
+size_t surrealdb__protocol__rpc__v1__export_surql_request__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *message)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_request__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t surrealdb__protocol__rpc__v1__export_sql_request__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *message,
+size_t surrealdb__protocol__rpc__v1__export_surql_request__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_request__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t surrealdb__protocol__rpc__v1__export_sql_request__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *message,
+size_t surrealdb__protocol__rpc__v1__export_surql_request__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_request__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *
-       surrealdb__protocol__rpc__v1__export_sql_request__unpack
+Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *
+       surrealdb__protocol__rpc__v1__export_surql_request__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__export_sql_request__descriptor,
+  return (Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *)
+     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__export_surql_request__descriptor,
                                 allocator, len, data);
 }
-void   surrealdb__protocol__rpc__v1__export_sql_request__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *message,
+void   surrealdb__protocol__rpc__v1__export_surql_request__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_request__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_request__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   surrealdb__protocol__rpc__v1__export_sql_response__init
-                     (Surrealdb__Protocol__Rpc__V1__ExportSqlResponse         *message)
+void   surrealdb__protocol__rpc__v1__export_surql_response__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse         *message)
 {
-  static const Surrealdb__Protocol__Rpc__V1__ExportSqlResponse init_value = SURREALDB__PROTOCOL__RPC__V1__EXPORT_SQL_RESPONSE__INIT;
+  static const Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse init_value = SURREALDB__PROTOCOL__RPC__V1__EXPORT_SURQL_RESPONSE__INIT;
   *message = init_value;
 }
-size_t surrealdb__protocol__rpc__v1__export_sql_response__get_packed_size
-                     (const Surrealdb__Protocol__Rpc__V1__ExportSqlResponse *message)
+size_t surrealdb__protocol__rpc__v1__export_surql_response__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse *message)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_response__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t surrealdb__protocol__rpc__v1__export_sql_response__pack
-                     (const Surrealdb__Protocol__Rpc__V1__ExportSqlResponse *message,
+size_t surrealdb__protocol__rpc__v1__export_surql_response__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_response__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t surrealdb__protocol__rpc__v1__export_sql_response__pack_to_buffer
-                     (const Surrealdb__Protocol__Rpc__V1__ExportSqlResponse *message,
+size_t surrealdb__protocol__rpc__v1__export_surql_response__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_response__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Surrealdb__Protocol__Rpc__V1__ExportSqlResponse *
-       surrealdb__protocol__rpc__v1__export_sql_response__unpack
+Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse *
+       surrealdb__protocol__rpc__v1__export_surql_response__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Surrealdb__Protocol__Rpc__V1__ExportSqlResponse *)
-     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__export_sql_response__descriptor,
+  return (Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse *)
+     protobuf_c_message_unpack (&surrealdb__protocol__rpc__v1__export_surql_response__descriptor,
                                 allocator, len, data);
 }
-void   surrealdb__protocol__rpc__v1__export_sql_response__free_unpacked
-                     (Surrealdb__Protocol__Rpc__V1__ExportSqlResponse *message,
+void   surrealdb__protocol__rpc__v1__export_surql_response__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_sql_response__descriptor);
+  assert(message->base.descriptor == &surrealdb__protocol__rpc__v1__export_surql_response__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   surrealdb__protocol__rpc__v1__export_ml_model_request__init
@@ -6444,7 +6444,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_respons
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__subscribe_response__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_sql_begin__field_descriptors[1] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_surql_begin__field_descriptors[1] =
 {
   {
     "context",
@@ -6452,46 +6452,46 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_sql_b
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlBegin, context),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin, context),
     &surrealdb__protocol__rpc__v1__request_context__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned surrealdb__protocol__rpc__v1__import_sql_begin__field_indices_by_name[] = {
+static const unsigned surrealdb__protocol__rpc__v1__import_surql_begin__field_indices_by_name[] = {
   0,   /* field[0] = context */
 };
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__import_sql_begin__number_ranges[1 + 1] =
+static const ProtobufCIntRange surrealdb__protocol__rpc__v1__import_surql_begin__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sql_begin__descriptor =
+const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_surql_begin__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.ImportSqlBegin",
-  "ImportSqlBegin",
-  "Surrealdb__Protocol__Rpc__V1__ImportSqlBegin",
+  "surrealdb.protocol.rpc.v1.ImportSurqlBegin",
+  "ImportSurqlBegin",
+  "Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin",
   "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__ImportSqlBegin),
+  sizeof(Surrealdb__Protocol__Rpc__V1__ImportSurqlBegin),
   1,
-  surrealdb__protocol__rpc__v1__import_sql_begin__field_descriptors,
-  surrealdb__protocol__rpc__v1__import_sql_begin__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__import_sql_begin__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__import_sql_begin__init,
+  surrealdb__protocol__rpc__v1__import_surql_begin__field_descriptors,
+  surrealdb__protocol__rpc__v1__import_surql_begin__field_indices_by_name,
+  1,  surrealdb__protocol__rpc__v1__import_surql_begin__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__import_surql_begin__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_sql_request__field_descriptors[3] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_surql_request__field_descriptors[3] =
 {
   {
     "begin",
     1,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest, frame_case),
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest, begin),
-    &surrealdb__protocol__rpc__v1__import_sql_begin__descriptor,
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest, frame_case),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest, begin),
+    &surrealdb__protocol__rpc__v1__import_surql_begin__descriptor,
     NULL,
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -6501,8 +6501,8 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_sql_r
     2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest, frame_case),
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest, chunk),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest, frame_case),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest, chunk),
     &surrealdb__protocol__rpc__v1__data_chunk__descriptor,
     NULL,
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
@@ -6513,55 +6513,55 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__import_sql_r
     3,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest, frame_case),
-    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest, trailer),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest, frame_case),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest, trailer),
     &surrealdb__protocol__rpc__v1__data_trailer__descriptor,
     NULL,
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned surrealdb__protocol__rpc__v1__import_sql_request__field_indices_by_name[] = {
+static const unsigned surrealdb__protocol__rpc__v1__import_surql_request__field_indices_by_name[] = {
   0,   /* field[0] = begin */
   1,   /* field[1] = chunk */
   2,   /* field[2] = trailer */
 };
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__import_sql_request__number_ranges[1 + 1] =
+static const ProtobufCIntRange surrealdb__protocol__rpc__v1__import_surql_request__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 3 }
 };
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sql_request__descriptor =
+const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_surql_request__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.ImportSqlRequest",
-  "ImportSqlRequest",
-  "Surrealdb__Protocol__Rpc__V1__ImportSqlRequest",
+  "surrealdb.protocol.rpc.v1.ImportSurqlRequest",
+  "ImportSurqlRequest",
+  "Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest",
   "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__ImportSqlRequest),
+  sizeof(Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest),
   3,
-  surrealdb__protocol__rpc__v1__import_sql_request__field_descriptors,
-  surrealdb__protocol__rpc__v1__import_sql_request__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__import_sql_request__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__import_sql_request__init,
+  surrealdb__protocol__rpc__v1__import_surql_request__field_descriptors,
+  surrealdb__protocol__rpc__v1__import_surql_request__field_indices_by_name,
+  1,  surrealdb__protocol__rpc__v1__import_surql_request__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__import_surql_request__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-#define surrealdb__protocol__rpc__v1__import_sql_response__field_descriptors NULL
-#define surrealdb__protocol__rpc__v1__import_sql_response__field_indices_by_name NULL
-#define surrealdb__protocol__rpc__v1__import_sql_response__number_ranges NULL
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sql_response__descriptor =
+#define surrealdb__protocol__rpc__v1__import_surql_response__field_descriptors NULL
+#define surrealdb__protocol__rpc__v1__import_surql_response__field_indices_by_name NULL
+#define surrealdb__protocol__rpc__v1__import_surql_response__number_ranges NULL
+const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_surql_response__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.ImportSqlResponse",
-  "ImportSqlResponse",
-  "Surrealdb__Protocol__Rpc__V1__ImportSqlResponse",
+  "surrealdb.protocol.rpc.v1.ImportSurqlResponse",
+  "ImportSurqlResponse",
+  "Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse",
   "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__ImportSqlResponse),
+  sizeof(Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse),
   0,
-  surrealdb__protocol__rpc__v1__import_sql_response__field_descriptors,
-  surrealdb__protocol__rpc__v1__import_sql_response__field_indices_by_name,
-  0,  surrealdb__protocol__rpc__v1__import_sql_response__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__import_sql_response__init,
+  surrealdb__protocol__rpc__v1__import_surql_response__field_descriptors,
+  surrealdb__protocol__rpc__v1__import_surql_response__field_indices_by_name,
+  0,  surrealdb__protocol__rpc__v1__import_surql_response__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__import_surql_response__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_config__selected_tables__field_descriptors[1] =
@@ -6860,7 +6860,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__de
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_config__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_sql_request__field_descriptors[2] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_surql_request__field_descriptors[2] =
 {
   {
     "context",
@@ -6868,7 +6868,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_sql_r
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlRequest, context),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest, context),
     &surrealdb__protocol__rpc__v1__request_context__descriptor,
     NULL,
     0,             /* flags */
@@ -6880,46 +6880,46 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_sql_r
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlRequest, config),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest, config),
     &surrealdb__protocol__rpc__v1__export_config__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned surrealdb__protocol__rpc__v1__export_sql_request__field_indices_by_name[] = {
+static const unsigned surrealdb__protocol__rpc__v1__export_surql_request__field_indices_by_name[] = {
   1,   /* field[1] = config */
   0,   /* field[0] = context */
 };
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__export_sql_request__number_ranges[1 + 1] =
+static const ProtobufCIntRange surrealdb__protocol__rpc__v1__export_surql_request__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 2 }
 };
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_sql_request__descriptor =
+const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_surql_request__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.ExportSqlRequest",
-  "ExportSqlRequest",
-  "Surrealdb__Protocol__Rpc__V1__ExportSqlRequest",
+  "surrealdb.protocol.rpc.v1.ExportSurqlRequest",
+  "ExportSurqlRequest",
+  "Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest",
   "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__ExportSqlRequest),
+  sizeof(Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest),
   2,
-  surrealdb__protocol__rpc__v1__export_sql_request__field_descriptors,
-  surrealdb__protocol__rpc__v1__export_sql_request__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__export_sql_request__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_sql_request__init,
+  surrealdb__protocol__rpc__v1__export_surql_request__field_descriptors,
+  surrealdb__protocol__rpc__v1__export_surql_request__field_indices_by_name,
+  1,  surrealdb__protocol__rpc__v1__export_surql_request__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_surql_request__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_sql_response__field_descriptors[3] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_surql_response__field_descriptors[3] =
 {
   {
     "chunk",
     1,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse, frame_case),
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse, chunk),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse, frame_case),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse, chunk),
     &surrealdb__protocol__rpc__v1__data_chunk__descriptor,
     NULL,
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
@@ -6930,8 +6930,8 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_sql_r
     2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse, frame_case),
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse, trailer),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse, frame_case),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse, trailer),
     &surrealdb__protocol__rpc__v1__data_trailer__descriptor,
     NULL,
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
@@ -6942,37 +6942,37 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_sql_r
     3,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse, frame_case),
-    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse, error),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse, frame_case),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse, error),
     &surrealdb__protocol__v1__surreal_error__descriptor,
     NULL,
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned surrealdb__protocol__rpc__v1__export_sql_response__field_indices_by_name[] = {
+static const unsigned surrealdb__protocol__rpc__v1__export_surql_response__field_indices_by_name[] = {
   0,   /* field[0] = chunk */
   2,   /* field[2] = error */
   1,   /* field[1] = trailer */
 };
-static const ProtobufCIntRange surrealdb__protocol__rpc__v1__export_sql_response__number_ranges[1 + 1] =
+static const ProtobufCIntRange surrealdb__protocol__rpc__v1__export_surql_response__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 3 }
 };
-const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_sql_response__descriptor =
+const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_surql_response__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "surrealdb.protocol.rpc.v1.ExportSqlResponse",
-  "ExportSqlResponse",
-  "Surrealdb__Protocol__Rpc__V1__ExportSqlResponse",
+  "surrealdb.protocol.rpc.v1.ExportSurqlResponse",
+  "ExportSurqlResponse",
+  "Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse",
   "surrealdb.protocol.rpc.v1",
-  sizeof(Surrealdb__Protocol__Rpc__V1__ExportSqlResponse),
+  sizeof(Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse),
   3,
-  surrealdb__protocol__rpc__v1__export_sql_response__field_descriptors,
-  surrealdb__protocol__rpc__v1__export_sql_response__field_indices_by_name,
-  1,  surrealdb__protocol__rpc__v1__export_sql_response__number_ranges,
-  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_sql_response__init,
+  surrealdb__protocol__rpc__v1__export_surql_response__field_descriptors,
+  surrealdb__protocol__rpc__v1__export_surql_response__field_indices_by_name,
+  1,  surrealdb__protocol__rpc__v1__export_surql_response__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__export_surql_response__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__export_ml_model_request__field_descriptors[3] =
@@ -8005,8 +8005,8 @@ static const ProtobufCMethodDescriptor surrealdb__protocol__rpc__v1__surreal_dbs
   { "CancelTransaction", &surrealdb__protocol__rpc__v1__cancel_transaction_request__descriptor, &surrealdb__protocol__rpc__v1__cancel_transaction_response__descriptor },
   { "Query", &surrealdb__protocol__rpc__v1__query_request__descriptor, &surrealdb__protocol__rpc__v1__query_response__descriptor },
   { "Subscribe", &surrealdb__protocol__rpc__v1__subscribe_request__descriptor, &surrealdb__protocol__rpc__v1__subscribe_response__descriptor },
-  { "ImportSql", &surrealdb__protocol__rpc__v1__import_sql_request__descriptor, &surrealdb__protocol__rpc__v1__import_sql_response__descriptor },
-  { "ExportSql", &surrealdb__protocol__rpc__v1__export_sql_request__descriptor, &surrealdb__protocol__rpc__v1__export_sql_response__descriptor },
+  { "ImportSurql", &surrealdb__protocol__rpc__v1__import_surql_request__descriptor, &surrealdb__protocol__rpc__v1__import_surql_response__descriptor },
+  { "ExportSurql", &surrealdb__protocol__rpc__v1__export_surql_request__descriptor, &surrealdb__protocol__rpc__v1__export_surql_response__descriptor },
   { "ExportDirectory", &surrealdb__protocol__rpc__v1__export_directory_request__descriptor, &surrealdb__protocol__rpc__v1__export_directory_response__descriptor },
   { "ExportMlModel", &surrealdb__protocol__rpc__v1__export_ml_model_request__descriptor, &surrealdb__protocol__rpc__v1__export_ml_model_response__descriptor },
 };
@@ -8019,10 +8019,10 @@ const unsigned surrealdb__protocol__rpc__v1__surreal_dbservice__method_indices_b
   3,        /* DetachSession */
   21,        /* ExportDirectory */
   22,        /* ExportMlModel */
-  20,        /* ExportSql */
+  20,        /* ExportSurql */
   0,        /* GetCapabilities */
   1,        /* Health */
-  19,        /* ImportSql */
+  19,        /* ImportSurql */
   13,        /* Invalidate */
   17,        /* Query */
   11,        /* RefreshTokens */
@@ -8198,18 +8198,18 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__subscribe(ProtobufCService
   assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
   service->invoke(service, 18, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
 }
-void surrealdb__protocol__rpc__v1__surreal_dbservice__import_sql(ProtobufCService *service,
-                                                                 const Surrealdb__Protocol__Rpc__V1__ImportSqlRequest *input,
-                                                                 Surrealdb__Protocol__Rpc__V1__ImportSqlResponse_Closure closure,
-                                                                 void *closure_data)
+void surrealdb__protocol__rpc__v1__surreal_dbservice__import_surql(ProtobufCService *service,
+                                                                   const Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest *input,
+                                                                   Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse_Closure closure,
+                                                                   void *closure_data)
 {
   assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
   service->invoke(service, 19, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);
 }
-void surrealdb__protocol__rpc__v1__surreal_dbservice__export_sql(ProtobufCService *service,
-                                                                 const Surrealdb__Protocol__Rpc__V1__ExportSqlRequest *input,
-                                                                 Surrealdb__Protocol__Rpc__V1__ExportSqlResponse_Closure closure,
-                                                                 void *closure_data)
+void surrealdb__protocol__rpc__v1__surreal_dbservice__export_surql(ProtobufCService *service,
+                                                                   const Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest *input,
+                                                                   Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse_Closure closure,
+                                                                   void *closure_data)
 {
   assert(service->descriptor == &surrealdb__protocol__rpc__v1__surreal_dbservice__descriptor);
   service->invoke(service, 20, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);

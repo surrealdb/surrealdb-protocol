@@ -484,7 +484,7 @@ export interface ServerCapabilities {
   capabilities: string[];
   /**
    * Fully-qualified names of RPCs the operator has disabled, for example
-   * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
+   * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql". Capabilities are
    * coarse; deny lists are per-method, and both exist server-side, so both
    * are reported rather than lossily projecting one onto the other.
    */
@@ -1121,7 +1121,7 @@ export interface SubscribeResponse {
 }
 
 /** The opening frame of an import stream, carrying the request's context. */
-export interface ImportSqlBegin {
+export interface ImportSurqlBegin {
   context: RequestContext | undefined;
 }
 
@@ -1133,15 +1133,15 @@ export interface ImportSqlBegin {
  * framing puts no bound on message size and forces the sender to parse before
  * it can stream.
  */
-export interface ImportSqlRequest {
-  frame: { $case: "begin"; begin: ImportSqlBegin } | { $case: "chunk"; chunk: DataChunk } | {
+export interface ImportSurqlRequest {
+  frame: { $case: "begin"; begin: ImportSurqlBegin } | { $case: "chunk"; chunk: DataChunk } | {
     $case: "trailer";
     trailer: DataTrailer;
   } | undefined;
 }
 
 /** Response to an import request. */
-export interface ImportSqlResponse {
+export interface ImportSurqlResponse {
 }
 
 /** Which parts of the database to export. */
@@ -1197,7 +1197,7 @@ export interface ExportConfig_Tables {
 }
 
 /** Request to export the database as SurrealQL. */
-export interface ExportSqlRequest {
+export interface ExportSurqlRequest {
   context: RequestContext | undefined;
   config: ExportConfig | undefined;
 }
@@ -1208,7 +1208,7 @@ export interface ExportSqlRequest {
  * Framed as `chunk`* -> `trailer`, or terminated by `error`. A stream that
  * ends without a trailer MUST be treated as failed.
  */
-export interface ExportSqlResponse {
+export interface ExportSurqlResponse {
   frame: { $case: "chunk"; chunk: DataChunk } | { $case: "trailer"; trailer: DataTrailer } | {
     $case: "error";
     error: SurrealError;
@@ -6337,22 +6337,22 @@ export const SubscribeResponse: MessageFns<SubscribeResponse> = {
   },
 };
 
-function createBaseImportSqlBegin(): ImportSqlBegin {
+function createBaseImportSurqlBegin(): ImportSurqlBegin {
   return { context: undefined };
 }
 
-export const ImportSqlBegin: MessageFns<ImportSqlBegin> = {
-  encode(message: ImportSqlBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ImportSurqlBegin: MessageFns<ImportSurqlBegin> = {
+  encode(message: ImportSurqlBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.context !== undefined) {
       RequestContext.encode(message.context, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ImportSqlBegin {
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportSurqlBegin {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseImportSqlBegin();
+    const message = createBaseImportSurqlBegin();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6373,11 +6373,11 @@ export const ImportSqlBegin: MessageFns<ImportSqlBegin> = {
     return message;
   },
 
-  fromJSON(object: any): ImportSqlBegin {
+  fromJSON(object: any): ImportSurqlBegin {
     return { context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined };
   },
 
-  toJSON(message: ImportSqlBegin): unknown {
+  toJSON(message: ImportSurqlBegin): unknown {
     const obj: any = {};
     if (message.context !== undefined) {
       obj.context = RequestContext.toJSON(message.context);
@@ -6385,11 +6385,11 @@ export const ImportSqlBegin: MessageFns<ImportSqlBegin> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ImportSqlBegin>, I>>(base?: I): ImportSqlBegin {
-    return ImportSqlBegin.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ImportSurqlBegin>, I>>(base?: I): ImportSurqlBegin {
+    return ImportSurqlBegin.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ImportSqlBegin>, I>>(object: I): ImportSqlBegin {
-    const message = createBaseImportSqlBegin();
+  fromPartial<I extends Exact<DeepPartial<ImportSurqlBegin>, I>>(object: I): ImportSurqlBegin {
+    const message = createBaseImportSurqlBegin();
     message.context = (object.context !== undefined && object.context !== null)
       ? RequestContext.fromPartial(object.context)
       : undefined;
@@ -6397,15 +6397,15 @@ export const ImportSqlBegin: MessageFns<ImportSqlBegin> = {
   },
 };
 
-function createBaseImportSqlRequest(): ImportSqlRequest {
+function createBaseImportSurqlRequest(): ImportSurqlRequest {
   return { frame: undefined };
 }
 
-export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
-  encode(message: ImportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ImportSurqlRequest: MessageFns<ImportSurqlRequest> = {
+  encode(message: ImportSurqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     switch (message.frame?.$case) {
       case "begin":
-        ImportSqlBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
+        ImportSurqlBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
         break;
       case "chunk":
         DataChunk.encode(message.frame.chunk, writer.uint32(18).fork()).join();
@@ -6417,10 +6417,10 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ImportSqlRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportSurqlRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseImportSqlRequest();
+    const message = createBaseImportSurqlRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6429,7 +6429,7 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
             break;
           }
 
-          message.frame = { $case: "begin", begin: ImportSqlBegin.decode(reader, reader.uint32()) };
+          message.frame = { $case: "begin", begin: ImportSurqlBegin.decode(reader, reader.uint32()) };
           continue;
         }
         case 2: {
@@ -6457,10 +6457,10 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ImportSqlRequest {
+  fromJSON(object: any): ImportSurqlRequest {
     return {
       frame: isSet(object.begin)
-        ? { $case: "begin", begin: ImportSqlBegin.fromJSON(object.begin) }
+        ? { $case: "begin", begin: ImportSurqlBegin.fromJSON(object.begin) }
         : isSet(object.chunk)
         ? { $case: "chunk", chunk: DataChunk.fromJSON(object.chunk) }
         : isSet(object.trailer)
@@ -6469,10 +6469,10 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
     };
   },
 
-  toJSON(message: ImportSqlRequest): unknown {
+  toJSON(message: ImportSurqlRequest): unknown {
     const obj: any = {};
     if (message.frame?.$case === "begin") {
-      obj.begin = ImportSqlBegin.toJSON(message.frame.begin);
+      obj.begin = ImportSurqlBegin.toJSON(message.frame.begin);
     } else if (message.frame?.$case === "chunk") {
       obj.chunk = DataChunk.toJSON(message.frame.chunk);
     } else if (message.frame?.$case === "trailer") {
@@ -6481,15 +6481,15 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ImportSqlRequest>, I>>(base?: I): ImportSqlRequest {
-    return ImportSqlRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ImportSurqlRequest>, I>>(base?: I): ImportSurqlRequest {
+    return ImportSurqlRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ImportSqlRequest>, I>>(object: I): ImportSqlRequest {
-    const message = createBaseImportSqlRequest();
+  fromPartial<I extends Exact<DeepPartial<ImportSurqlRequest>, I>>(object: I): ImportSurqlRequest {
+    const message = createBaseImportSurqlRequest();
     switch (object.frame?.$case) {
       case "begin": {
         if (object.frame?.begin !== undefined && object.frame?.begin !== null) {
-          message.frame = { $case: "begin", begin: ImportSqlBegin.fromPartial(object.frame.begin) };
+          message.frame = { $case: "begin", begin: ImportSurqlBegin.fromPartial(object.frame.begin) };
         }
         break;
       }
@@ -6510,19 +6510,19 @@ export const ImportSqlRequest: MessageFns<ImportSqlRequest> = {
   },
 };
 
-function createBaseImportSqlResponse(): ImportSqlResponse {
+function createBaseImportSurqlResponse(): ImportSurqlResponse {
   return {};
 }
 
-export const ImportSqlResponse: MessageFns<ImportSqlResponse> = {
-  encode(_: ImportSqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ImportSurqlResponse: MessageFns<ImportSurqlResponse> = {
+  encode(_: ImportSurqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ImportSqlResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportSurqlResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseImportSqlResponse();
+    const message = createBaseImportSurqlResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6535,20 +6535,20 @@ export const ImportSqlResponse: MessageFns<ImportSqlResponse> = {
     return message;
   },
 
-  fromJSON(_: any): ImportSqlResponse {
+  fromJSON(_: any): ImportSurqlResponse {
     return {};
   },
 
-  toJSON(_: ImportSqlResponse): unknown {
+  toJSON(_: ImportSurqlResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ImportSqlResponse>, I>>(base?: I): ImportSqlResponse {
-    return ImportSqlResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ImportSurqlResponse>, I>>(base?: I): ImportSurqlResponse {
+    return ImportSurqlResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ImportSqlResponse>, I>>(_: I): ImportSqlResponse {
-    const message = createBaseImportSqlResponse();
+  fromPartial<I extends Exact<DeepPartial<ImportSurqlResponse>, I>>(_: I): ImportSurqlResponse {
+    const message = createBaseImportSurqlResponse();
     return message;
   },
 };
@@ -7000,12 +7000,12 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
   },
 };
 
-function createBaseExportSqlRequest(): ExportSqlRequest {
+function createBaseExportSurqlRequest(): ExportSurqlRequest {
   return { context: undefined, config: undefined };
 }
 
-export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
-  encode(message: ExportSqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ExportSurqlRequest: MessageFns<ExportSurqlRequest> = {
+  encode(message: ExportSurqlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.context !== undefined) {
       RequestContext.encode(message.context, writer.uint32(10).fork()).join();
     }
@@ -7015,10 +7015,10 @@ export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSurqlRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportSqlRequest();
+    const message = createBaseExportSurqlRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7047,14 +7047,14 @@ export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ExportSqlRequest {
+  fromJSON(object: any): ExportSurqlRequest {
     return {
       context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
       config: isSet(object.config) ? ExportConfig.fromJSON(object.config) : undefined,
     };
   },
 
-  toJSON(message: ExportSqlRequest): unknown {
+  toJSON(message: ExportSurqlRequest): unknown {
     const obj: any = {};
     if (message.context !== undefined) {
       obj.context = RequestContext.toJSON(message.context);
@@ -7065,11 +7065,11 @@ export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(base?: I): ExportSqlRequest {
-    return ExportSqlRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ExportSurqlRequest>, I>>(base?: I): ExportSurqlRequest {
+    return ExportSurqlRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ExportSqlRequest>, I>>(object: I): ExportSqlRequest {
-    const message = createBaseExportSqlRequest();
+  fromPartial<I extends Exact<DeepPartial<ExportSurqlRequest>, I>>(object: I): ExportSurqlRequest {
+    const message = createBaseExportSurqlRequest();
     message.context = (object.context !== undefined && object.context !== null)
       ? RequestContext.fromPartial(object.context)
       : undefined;
@@ -7080,12 +7080,12 @@ export const ExportSqlRequest: MessageFns<ExportSqlRequest> = {
   },
 };
 
-function createBaseExportSqlResponse(): ExportSqlResponse {
+function createBaseExportSurqlResponse(): ExportSurqlResponse {
   return { frame: undefined };
 }
 
-export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
-  encode(message: ExportSqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ExportSurqlResponse: MessageFns<ExportSurqlResponse> = {
+  encode(message: ExportSurqlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     switch (message.frame?.$case) {
       case "chunk":
         DataChunk.encode(message.frame.chunk, writer.uint32(10).fork()).join();
@@ -7100,10 +7100,10 @@ export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ExportSqlResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportSurqlResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExportSqlResponse();
+    const message = createBaseExportSurqlResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7140,7 +7140,7 @@ export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ExportSqlResponse {
+  fromJSON(object: any): ExportSurqlResponse {
     return {
       frame: isSet(object.chunk)
         ? { $case: "chunk", chunk: DataChunk.fromJSON(object.chunk) }
@@ -7152,7 +7152,7 @@ export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
     };
   },
 
-  toJSON(message: ExportSqlResponse): unknown {
+  toJSON(message: ExportSurqlResponse): unknown {
     const obj: any = {};
     if (message.frame?.$case === "chunk") {
       obj.chunk = DataChunk.toJSON(message.frame.chunk);
@@ -7164,11 +7164,11 @@ export const ExportSqlResponse: MessageFns<ExportSqlResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(base?: I): ExportSqlResponse {
-    return ExportSqlResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ExportSurqlResponse>, I>>(base?: I): ExportSurqlResponse {
+    return ExportSurqlResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ExportSqlResponse>, I>>(object: I): ExportSqlResponse {
-    const message = createBaseExportSqlResponse();
+  fromPartial<I extends Exact<DeepPartial<ExportSurqlResponse>, I>>(object: I): ExportSurqlResponse {
+    const message = createBaseExportSurqlResponse();
     switch (object.frame?.$case) {
       case "chunk": {
         if (object.frame?.chunk !== undefined && object.frame?.chunk !== null) {
@@ -8579,13 +8579,13 @@ export interface SurrealDBService {
    */
   Subscribe(request: SubscribeRequest): Observable<SubscribeResponse>;
   /** Import a SurrealQL byte stream. All statements run in one transaction. */
-  ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse>;
+  ImportSurql(request: Observable<ImportSurqlRequest>): Promise<ImportSurqlResponse>;
   /** Export the database as a flat SurrealQL byte stream. */
-  ExportSql(request: ExportSqlRequest): Observable<ExportSqlResponse>;
+  ExportSurql(request: ExportSurqlRequest): Observable<ExportSurqlResponse>;
   /**
    * Export the database as a streamed directory of files.
    *
-   * Unlike `ExportSql`, which emits a flat SurrealQL byte stream, this
+   * Unlike `ExportSurql`, which emits a flat SurrealQL byte stream, this
    * reproduces a directory-format export (manifest + schema + per-table data
    * files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
    * FileEnd, so neither peer ever buffers a whole file; the file's byte count
@@ -8624,8 +8624,8 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.CancelTransaction = this.CancelTransaction.bind(this);
     this.Query = this.Query.bind(this);
     this.Subscribe = this.Subscribe.bind(this);
-    this.ImportSql = this.ImportSql.bind(this);
-    this.ExportSql = this.ExportSql.bind(this);
+    this.ImportSurql = this.ImportSurql.bind(this);
+    this.ExportSurql = this.ExportSurql.bind(this);
     this.ExportDirectory = this.ExportDirectory.bind(this);
     this.ExportMlModel = this.ExportMlModel.bind(this);
   }
@@ -8743,16 +8743,16 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return result.pipe(map((data) => SubscribeResponse.decode(new BinaryReader(data))));
   }
 
-  ImportSql(request: Observable<ImportSqlRequest>): Promise<ImportSqlResponse> {
-    const data = request.pipe(map((request) => ImportSqlRequest.encode(request).finish()));
-    const promise = this.rpc.clientStreamingRequest(this.service, "ImportSql", data);
-    return promise.then((data) => ImportSqlResponse.decode(new BinaryReader(data)));
+  ImportSurql(request: Observable<ImportSurqlRequest>): Promise<ImportSurqlResponse> {
+    const data = request.pipe(map((request) => ImportSurqlRequest.encode(request).finish()));
+    const promise = this.rpc.clientStreamingRequest(this.service, "ImportSurql", data);
+    return promise.then((data) => ImportSurqlResponse.decode(new BinaryReader(data)));
   }
 
-  ExportSql(request: ExportSqlRequest): Observable<ExportSqlResponse> {
-    const data = ExportSqlRequest.encode(request).finish();
-    const result = this.rpc.serverStreamingRequest(this.service, "ExportSql", data);
-    return result.pipe(map((data) => ExportSqlResponse.decode(new BinaryReader(data))));
+  ExportSurql(request: ExportSurqlRequest): Observable<ExportSurqlResponse> {
+    const data = ExportSurqlRequest.encode(request).finish();
+    const result = this.rpc.serverStreamingRequest(this.service, "ExportSurql", data);
+    return result.pipe(map((data) => ExportSurqlResponse.decode(new BinaryReader(data))));
   }
 
   ExportDirectory(request: ExportDirectoryRequest): Observable<ExportDirectoryResponse> {

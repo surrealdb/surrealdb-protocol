@@ -150,14 +150,14 @@ service SurrealDBService {
     // ---------------------------------------------------------------- //
 
     // Import a SurrealQL byte stream. All statements run in one transaction.
-    rpc ImportSql(stream ImportSqlRequest) returns (ImportSqlResponse);
+    rpc ImportSurql(stream ImportSurqlRequest) returns (ImportSurqlResponse);
 
     // Export the database as a flat SurrealQL byte stream.
-    rpc ExportSql(ExportSqlRequest) returns (stream ExportSqlResponse);
+    rpc ExportSurql(ExportSurqlRequest) returns (stream ExportSurqlResponse);
 
     // Export the database as a streamed directory of files.
     //
-    // Unlike `ExportSql`, which emits a flat SurrealQL byte stream, this
+    // Unlike `ExportSurql`, which emits a flat SurrealQL byte stream, this
     // reproduces a directory-format export (manifest + schema + per-table data
     // files) over the wire. Each file is framed as FileBegin -> FileChunk* ->
     // FileEnd, so neither peer ever buffers a whole file; the file's byte count
@@ -270,7 +270,7 @@ message ServerCapabilities {
     // that are not on it.
     repeated string capabilities = 4;
     // Fully-qualified names of RPCs the operator has disabled, for example
-    // "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSql". Capabilities are
+    // "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql". Capabilities are
     // coarse; deny lists are per-method, and both exist server-side, so both
     // are reported rather than lossily projecting one onto the other.
     repeated string denied_methods = 5;
@@ -902,7 +902,7 @@ message SubscribeResponse {
 // ==================================================================== //
 
 // The opening frame of an import stream, carrying the request's context.
-message ImportSqlBegin {
+message ImportSurqlBegin {
     RequestContext context = 1;
 }
 
@@ -912,16 +912,16 @@ message ImportSqlBegin {
 // statements: a single INSERT can be hundreds of megabytes, so statement
 // framing puts no bound on message size and forces the sender to parse before
 // it can stream.
-message ImportSqlRequest {
+message ImportSurqlRequest {
     oneof frame {
-        ImportSqlBegin begin = 1;
+        ImportSurqlBegin begin = 1;
         DataChunk chunk = 2;
         DataTrailer trailer = 3;
     }
 }
 
 // Response to an import request.
-message ImportSqlResponse {}
+message ImportSurqlResponse {}
 
 // Which parts of the database to export.
 message ExportConfig {
@@ -971,7 +971,7 @@ message ExportConfig {
 }
 
 // Request to export the database as SurrealQL.
-message ExportSqlRequest {
+message ExportSurqlRequest {
     RequestContext context = 1;
     ExportConfig config = 2;
 }
@@ -980,7 +980,7 @@ message ExportSqlRequest {
 //
 // Framed as `chunk`* -> `trailer`, or terminated by `error`. A stream that
 // ends without a trailer MUST be treated as failed.
-message ExportSqlResponse {
+message ExportSurqlResponse {
     oneof frame {
         DataChunk chunk = 1;
         DataTrailer trailer = 2;
