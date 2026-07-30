@@ -10,7 +10,6 @@ pub const ENUM_MAX_VALUE_TYPE: u8 = 21;
 #[allow(non_camel_case_types)]
 pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
   ValueType::NONE,
-  ValueType::None,
   ValueType::Null,
   ValueType::Bool,
   ValueType::Int64,
@@ -31,6 +30,7 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
   ValueType::Object,
   ValueType::Array,
   ValueType::Set,
+  ValueType::None,
 ];
 
 /// A union of all possible value types in SurrealDB.
@@ -40,42 +40,50 @@ pub struct ValueType(pub u8);
 #[allow(non_upper_case_globals)]
 impl ValueType {
   pub const NONE: Self = Self(0);
+  pub const Null: Self = Self(1);
+  pub const Bool: Self = Self(2);
+  pub const Int64: Self = Self(3);
+  pub const Float64: Self = Self(4);
+  pub const Decimal: Self = Self(5);
+  pub const String: Self = Self(6);
+  pub const Bytes: Self = Self(7);
+  pub const Duration: Self = Self(8);
+  pub const Datetime: Self = Self(9);
+  pub const Uuid: Self = Self(10);
+  pub const Geometry: Self = Self(11);
+  pub const Table: Self = Self(12);
+  /// A fully-qualified record ID.
+  pub const RecordId: Self = Self(13);
+  /// An unparsed record ID which will be parsed by the server.
+  pub const StringRecordId: Self = Self(14);
+  pub const File: Self = Self(15);
+  pub const Range: Self = Self(16);
+  pub const Regex: Self = Self(17);
+  pub const Object: Self = Self(18);
+  pub const Array: Self = Self(19);
+  pub const Set: Self = Self(20);
   /// SurrealDB `NONE`.
   ///
   /// Explicit rather than relying on the union's implicit NONE sentinel.
   /// An unset union is indistinguishable from a member this build does not
   /// know about, so using it for a real value means a newer peer's variant
   /// silently decodes as `NONE` -- and a client could then write that back.
-  /// Matches `none = 1` in value.proto.
-  pub const None: Self = Self(1);
-  pub const Null: Self = Self(2);
-  pub const Bool: Self = Self(3);
-  pub const Int64: Self = Self(4);
-  pub const Float64: Self = Self(5);
-  pub const Decimal: Self = Self(6);
-  pub const String: Self = Self(7);
-  pub const Bytes: Self = Self(8);
-  pub const Duration: Self = Self(9);
-  pub const Datetime: Self = Self(10);
-  pub const Uuid: Self = Self(11);
-  pub const Geometry: Self = Self(12);
-  pub const Table: Self = Self(13);
-  /// A fully-qualified record ID.
-  pub const RecordId: Self = Self(14);
-  /// An unparsed record ID which will be parsed by the server.
-  pub const StringRecordId: Self = Self(15);
-  pub const File: Self = Self(16);
-  pub const Range: Self = Self(17);
-  pub const Regex: Self = Self(18);
-  pub const Object: Self = Self(19);
-  pub const Array: Self = Self(20);
-  pub const Set: Self = Self(21);
+  ///
+  /// Tagged 21, not 1. flatc numbers union members positionally and ignores
+  /// the `(id: N)` attribute, so introducing this member at the front shifted
+  /// every tag after it by one and silently reinterpreted every value on the
+  /// wire -- a v0.11.0 `Int64` decodes as `Float64` on a v0.10.2 peer.
+  /// Appending keeps 1-20 as they shipped. Explicit `= N` because that is the
+  /// syntax flatc actually honours; the tag is otherwise the declaration slot.
+  ///
+  /// Deliberately does NOT match `none = 1` in value.proto, which took tag 1
+  /// and shifted its own oneof the same way. Recorded in parity.toml.
+  pub const None: Self = Self(21);
 
   pub const ENUM_MIN: u8 = 0;
   pub const ENUM_MAX: u8 = 21;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
-    Self::None,
     Self::Null,
     Self::Bool,
     Self::Int64,
@@ -96,12 +104,12 @@ impl ValueType {
     Self::Object,
     Self::Array,
     Self::Set,
+    Self::None,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
     match self {
       Self::NONE => Some("NONE"),
-      Self::None => Some("None"),
       Self::Null => Some("Null"),
       Self::Bool => Some("Bool"),
       Self::Int64 => Some("Int64"),
@@ -122,6 +130,7 @@ impl ValueType {
       Self::Object => Some("Object"),
       Self::Array => Some("Array"),
       Self::Set => Some("Set"),
+      Self::None => Some("None"),
       _ => None,
     }
   }

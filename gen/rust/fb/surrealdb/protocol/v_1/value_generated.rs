@@ -54,21 +54,6 @@ impl<'a> Value<'a> {
   }
   #[inline]
   #[allow(non_snake_case)]
-  pub fn value_as_none(&self) -> Option<NoneValue<'a>> {
-    if self.value_type() == ValueType::None {
-      self.value().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { NoneValue::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
-  #[inline]
-  #[allow(non_snake_case)]
   pub fn value_as_null(&self) -> Option<NullValue<'a>> {
     if self.value_type() == ValueType::Null {
       self.value().map(|t| {
@@ -367,6 +352,21 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_none(&self) -> Option<NoneValue<'a>> {
+    if self.value_type() == ValueType::None {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { NoneValue::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for Value<'_> {
@@ -377,7 +377,6 @@ impl ::flatbuffers::Verifiable for Value<'_> {
     v.visit_table(pos)?
      .visit_union::<ValueType, _>("value_type", Self::VT_VALUE_TYPE, "value", Self::VT_VALUE, false, |key, v, pos| {
         match key {
-          ValueType::None => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<NoneValue>>("ValueType::None", pos),
           ValueType::Null => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<NullValue>>("ValueType::Null", pos),
           ValueType::Bool => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<BoolValue>>("ValueType::Bool", pos),
           ValueType::Int64 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Int64Value>>("ValueType::Int64", pos),
@@ -398,6 +397,7 @@ impl ::flatbuffers::Verifiable for Value<'_> {
           ValueType::Object => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Object>>("ValueType::Object", pos),
           ValueType::Array => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
           ValueType::Set => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Set>>("ValueType::Set", pos),
+          ValueType::None => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<NoneValue>>("ValueType::None", pos),
           _ => Ok(()),
         }
      })?
@@ -452,13 +452,6 @@ impl ::core::fmt::Debug for Value<'_> {
     let mut ds = f.debug_struct("Value");
       ds.field("value_type", &self.value_type());
       match self.value_type() {
-        ValueType::None => {
-          if let Some(x) = self.value_as_none() {
-            ds.field("value", &x)
-          } else {
-            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
         ValueType::Null => {
           if let Some(x) = self.value_as_null() {
             ds.field("value", &x)
@@ -594,6 +587,13 @@ impl ::core::fmt::Debug for Value<'_> {
         },
         ValueType::Set => {
           if let Some(x) = self.value_as_set() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::None => {
+          if let Some(x) = self.value_as_none() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
