@@ -230,6 +230,16 @@ pub struct Limits {
     /// Longest a single query may run before the server aborts it.
     #[prost(message, optional, tag = "3")]
     pub max_query_duration: ::core::option::Option<super::super::v1::Duration>,
+    /// Largest number of records the server will put in one query batch,
+    /// whatever `QueryRequest.max_batch_records` asks for.
+    ///
+    /// Distinct from `max_chunk_bytes`, which bounds a `DataChunk` or
+    /// `FileChunk` and has never applied to query batches. Zero means the server
+    /// is not reporting one, which is what a server predating this field looks
+    /// like; a client MUST treat that as "unknown" and not as "no records
+    /// allowed".
+    #[prost(uint32, tag = "4")]
+    pub max_batch_records: u32,
 }
 impl ::prost::Name for Limits {
 const NAME: &'static str = "Limits";
@@ -959,6 +969,17 @@ pub struct QueryRequest {
     /// empty result set, which would look like success.
     #[prost(enumeration = "ResultEncoding", repeated, tag = "4")]
     pub accepted_encodings: ::prost::alloc::vec::Vec<i32>,
+    /// The largest number of records the client wants in one batch.
+    ///
+    /// The server MAY send fewer -- it sends fewer while ramping up, and to stay
+    /// inside `Limits.max_message_bytes` -- and MUST NOT send more. Zero means
+    /// the server chooses. A client optimising for time-to-first-row asks for a
+    /// small number; one optimising for throughput asks for a large one.
+    ///
+    /// Clamped to `Limits.max_batch_records` rather than rejected, so a client
+    /// that asks for more than the server allows still gets results.
+    #[prost(uint32, tag = "5")]
+    pub max_batch_records: u32,
 }
 impl ::prost::Name for QueryRequest {
 const NAME: &'static str = "QueryRequest";
@@ -1049,17 +1070,33 @@ pub struct QueryBegin {
     /// this is the handle it would take, and adding it is additive.
     #[prost(message, optional, tag = "1")]
     pub query_id: ::core::option::Option<super::super::v1::Uuid>,
-    /// How many statements the query parsed into, and therefore how many query
-    /// indexes to expect. Every index in `[0, result_count)` emits at least one
-    /// batch.
+    /// How many statements the query parsed into.
+    ///
+    /// An UPPER BOUND on the query indexes that will appear, suitable for
+    /// pre-allocation. It is not a count of results: a statement skipped by
+    /// control flow -- a `RETURN` inside a `BEGIN` block short-circuits the rest
+    /// -- produces no frames at all. Clients MUST NOT treat an index that
+    /// received no frame as an empty result.
+    ///
+    /// A server sends `begin` before it starts executing, so at that point the
+    /// number of statements that will produce results is not yet known. The
+    /// authoritative count arrives in `QueryEnd.result_count`.
     #[prost(uint32, tag = "2")]
-    pub result_count: u32,
+    pub statement_count: u32,
 }
 impl ::prost::Name for QueryBegin {
 const NAME: &'static str = "QueryBegin";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.QueryBegin".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.QueryBegin".into() }}
 /// One statement's results, or part of them.
+///
+/// Rows in a non-terminal batch are PROVISIONAL. A statement's results are valid
+/// only once its terminal batch arrives without an `error`: a server streams rows
+/// as it produces them, so rows for a statement inside a `BEGIN ... COMMIT` block
+/// are delivered before the block commits, and a rollback is reported as an
+/// `error` on that statement's terminal batch. A client that buffers until the
+/// terminal batch is unaffected; one that forwards rows as they arrive must be
+/// able to retract them.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryBatchFrame {
@@ -1108,6 +1145,18 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct QueryEnd {
+    /// How many query indexes produced results.
+    ///
+    /// Authoritative: every frame the query will produce has arrived by the time
+    /// this does. Never greater than `QueryBegin.statement_count`, and less than
+    /// it when control flow skipped the tail of the query.
+    #[prost(uint32, tag = "1")]
+    pub result_count: u32,
+    /// How long the whole query took, including parse and planning.
+    ///
+    /// The per-statement durations in `QueryStats` do not sum to this.
+    #[prost(message, optional, tag = "2")]
+    pub execution_duration: ::core::option::Option<super::super::v1::Duration>,
 }
 impl ::prost::Name for QueryEnd {
 const NAME: &'static str = "QueryEnd";
@@ -1128,10 +1177,13 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.Qu
 /// lets a server stream each statement's results as soon as it produces them
 /// instead of holding them until the whole query finishes.
 ///
-/// Lifecycle: every query index in `[0, result_count)` emits at least one
-/// batch. The final batch for an index is the one carrying `stats`, an `error`,
-/// or kind SINGLE or BATCHED_FINAL; treat that as the authoritative
-/// end-of-results signal for that statement.
+/// Lifecycle: the query indexes that emit a batch are a subset of
+/// `[0, begin.statement_count)`, and `end.result_count` says how many of them
+/// did. A statement skipped by control flow emits nothing, so an index with no
+/// frame is not an empty result. The final batch for an index is the one
+/// carrying `stats`, an `error`, or kind SINGLE or BATCHED_FINAL; treat that as
+/// the authoritative end-of-results signal for that statement, and everything
+/// before it as provisional -- see `QueryBatchFrame`.
 ///
 /// Failures before execution begins -- a parse error, authentication, an
 /// unknown transaction id -- terminate the RPC with a transport-level error and
