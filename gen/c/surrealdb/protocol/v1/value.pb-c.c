@@ -2659,7 +2659,7 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__duration__field_d
     "seconds",
     1,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_UINT64,
+    PROTOBUF_C_TYPE_INT64,
     0,   /* quantifier_offset */
     offsetof(Surrealdb__Protocol__V1__Duration, seconds),
     NULL,

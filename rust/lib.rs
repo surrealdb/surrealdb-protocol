@@ -13,6 +13,8 @@ pub use convert::{TryFromValue, TryIntoValue};
 #[cfg(feature = "rpc")]
 mod export;
 #[cfg(feature = "rpc")]
+pub mod method_names;
+#[cfg(feature = "rpc")]
 mod rpc_methods;
 
 #[cfg(feature = "rpc")]
@@ -342,9 +344,13 @@ mod tests {
     fn temporal_types_survive_the_full_surrealdb_range() {
         use prost::Message;
 
-        let duration = Value::duration(Duration::new(u64::MAX, 999_999_999));
-        let decoded = Value::decode(duration.encode_to_vec().as_slice()).unwrap();
-        assert_eq!(decoded, duration);
+        // Both extremes of the signed second count, and both signs. `seconds`
+        // was `uint64`; it is `int64` so a negative duration is representable.
+        for seconds in [i64::MIN, -1, 0, 1, i64::MAX] {
+            let duration = Value::duration(Duration::new(seconds, 999_999_999));
+            let decoded = Value::decode(duration.encode_to_vec().as_slice()).unwrap();
+            assert_eq!(decoded, duration, "duration of {seconds}s must round-trip");
+        }
 
         // Comfortably past year 9999 in both directions.
         for seconds in [-8_000_000_000_000_i64, 8_000_000_000_000_i64] {
@@ -352,6 +358,52 @@ mod tests {
             let decoded = Value::decode(datetime.encode_to_vec().as_slice()).unwrap();
             assert_eq!(decoded, datetime);
         }
+    }
+
+    /// A negative duration is the point of the signed `seconds`, so the sign must
+    /// survive both encodings and the `std`/`chrono` conversions must each behave
+    /// correctly at their own limits.
+    #[test]
+    fn negative_durations_round_trip_and_convert_safely() {
+        use prost::Message;
+
+        let negative = Duration::new(-90, 500_000_000);
+        assert!(negative.is_negative());
+        assert_eq!(
+            Duration::decode(negative.encode_to_vec().as_slice()).unwrap(),
+            negative
+        );
+
+        // `std::time::Duration` is unsigned, so it must refuse a negative value
+        // rather than wrap it into an enormous positive one.
+        assert!(
+            std::time::Duration::try_from(negative).is_err(),
+            "a negative duration must not convert into an unsigned std Duration"
+        );
+
+        // `chrono::Duration` is signed and is the lossless counterpart.
+        let chrono = negative.to_chrono().expect("chrono can hold it");
+        assert!(chrono < chrono::Duration::zero());
+        assert_eq!(Duration::from_chrono(chrono), negative);
+
+        // A positive value still converts both ways unchanged.
+        let positive = Duration::new(90, 500_000_000);
+        assert!(!positive.is_negative());
+        assert_eq!(
+            std::time::Duration::try_from(positive).unwrap(),
+            std::time::Duration::new(90, 500_000_000)
+        );
+
+        // The forward conversion is fallible only for what the signed range
+        // cannot hold: about 292 billion years, which nothing real reaches.
+        assert!(
+            Duration::try_from(std::time::Duration::new(u64::MAX, 0)).is_err(),
+            "a std duration above i64::MAX seconds must be refused, not wrapped"
+        );
+        assert_eq!(
+            Duration::try_from(std::time::Duration::new(7, 8)).unwrap(),
+            Duration::new(7, 8)
+        );
     }
 
     /// UUIDs are 16 raw bytes on the wire and must round-trip exactly.

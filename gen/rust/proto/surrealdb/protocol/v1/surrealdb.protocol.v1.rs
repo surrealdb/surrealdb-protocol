@@ -27,17 +27,26 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.NoneVa
 /// A duration.
 ///
 /// Replaces `google.protobuf.Duration`, whose specification caps `seconds` at
-/// +/-315,576,000,000 — roughly +/-10,000 years. SurrealDB durations are
-/// `std::time::Duration`: unsigned, up to `u64::MAX` seconds. The well-known
-/// type silently truncated anything larger. Byte-identical to `Duration` in
-/// value.fbs.
+/// +/-315,576,000,000 — roughly +/-10,000 years. The well-known type silently
+/// truncated anything larger. Byte-identical to `Duration` in value.fbs.
+///
+/// `seconds` is signed so that a negative duration is representable, which
+/// SurrealDB needs in order to express the difference between two instants in
+/// either direction (see surrealdb/surrealdb#3428). It was `uint64`, and the
+/// change is wire-compatible for every value that has ever been sent: proto
+/// encodes both as a varint, flatbuffers gives both the same 8-byte slot, and the
+/// two interpretations diverge only above 2^63 seconds — about 292 billion years,
+/// or twenty times the age of the universe. Nothing real sat in that range.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Duration {
-    /// Whole seconds. Always non-negative; SurrealDB durations are unsigned.
-    #[prost(uint64, tag = "1")]
-    pub seconds: u64,
-    /// Sub-second remainder. MUST be in \[0, 999999999\]; decoders MUST reject
+    /// Whole seconds. May be negative.
+    #[prost(int64, tag = "1")]
+    pub seconds: i64,
+    /// Sub-second remainder, and always ADDED to `seconds`, never subtracted --
+    /// so a negative duration is `seconds` negative with `nanos` counting forward
+    /// from it, matching `chrono::Duration` and `google.protobuf.Duration`'s
+    /// sign rule in reverse. MUST be in \[0, 999999999\]; decoders MUST reject
     /// larger values rather than normalising them.
     #[prost(uint32, tag = "2")]
     pub nanos: u32,

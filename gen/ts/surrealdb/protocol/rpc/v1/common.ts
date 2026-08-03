@@ -13,11 +13,23 @@ export const protobufPackage = "surrealdb.protocol.rpc.v1";
 /**
  * The session and transaction a request applies to.
  *
- * Carried as field 1 of EVERY request message in `SurrealDBService`, with no
- * exceptions, so context always sits at the same wire position. That
- * uniformity is the point: a connection pool, sharding proxy, tracing layer or
- * audit log can answer "which session is this about?" without a per-RPC table
- * of field numbers, and without being rebuilt when an RPC is added.
+ * Carried as field 1 of every UNARY request message in `SurrealDBService`, so
+ * context always sits at the same wire position. That uniformity is the point:
+ * a connection pool, sharding proxy, tracing layer or audit log can answer
+ * "which session is this about?" without a per-RPC table of field numbers, and
+ * without being rebuilt when an RPC is added.
+ *
+ * The exceptions are the client-streaming RPCs, and they are structural rather
+ * than an oversight: `ImportSurql` and `ImportMlModel` have no unary request
+ * message to carry a context, so their request message is a frame envelope whose
+ * field 1 is the `begin` frame -- `ImportSurqlBegin` or `ImportMlModelBegin` --
+ * which carries the context. Repeating the context on every chunk of a
+ * multi-gigabyte import is the alternative, and it is worse. A reader that walks
+ * field 1 must special-case these messages -- and must, because a begin frame is
+ * also length-delimited at tag 1, so decoding one as a `RequestContext` yields a
+ * plausible garbage session id rather than a parse error. The rule generalises:
+ * field 1 of a client-streaming request is the begin frame, and the context is
+ * field 1 of that.
  *
  * Context lives in the message body, never in transport metadata. The
  * WebSocket and HTTP-chunked bindings of this service have no metadata

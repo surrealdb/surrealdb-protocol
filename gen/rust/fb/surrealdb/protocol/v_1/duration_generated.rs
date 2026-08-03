@@ -6,6 +6,11 @@ pub enum DurationOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
 /// Duration value.
+///
+/// `seconds` is signed so a negative duration is representable; see the note on
+/// `Duration` in value.proto. Changing it from `uint64` occupies the same 8-byte
+/// slot and so does not move any other field, which is what keeps this schema's
+/// additive-only rule satisfied: the encodings differ only above 2^63 seconds.
 pub struct Duration<'a> {
   pub _tab: ::flatbuffers::Table<'a>,
 }
@@ -39,11 +44,11 @@ impl<'a> Duration<'a> {
 
 
   #[inline]
-  pub fn seconds(&self) -> u64 {
+  pub fn seconds(&self) -> i64 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u64>(Duration::VT_SECONDS, Some(0)).unwrap()}
+    unsafe { self._tab.get::<i64>(Duration::VT_SECONDS, Some(0)).unwrap()}
   }
   #[inline]
   pub fn nanos(&self) -> u32 {
@@ -60,14 +65,14 @@ impl ::flatbuffers::Verifiable for Duration<'_> {
     v: &mut ::flatbuffers::Verifier, pos: usize
   ) -> Result<(), ::flatbuffers::InvalidFlatbuffer> {
     v.visit_table(pos)?
-     .visit_field::<u64>("seconds", Self::VT_SECONDS, false)?
+     .visit_field::<i64>("seconds", Self::VT_SECONDS, false)?
      .visit_field::<u32>("nanos", Self::VT_NANOS, false)?
      .finish();
     Ok(())
   }
 }
 pub struct DurationArgs {
-    pub seconds: u64,
+    pub seconds: i64,
     pub nanos: u32,
 }
 impl<'a> Default for DurationArgs {
@@ -86,8 +91,8 @@ pub struct DurationBuilder<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> {
 }
 impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> DurationBuilder<'a, 'b, A> {
   #[inline]
-  pub fn add_seconds(&mut self, seconds: u64) {
-    self.fbb_.push_slot::<u64>(Duration::VT_SECONDS, seconds, 0);
+  pub fn add_seconds(&mut self, seconds: i64) {
+    self.fbb_.push_slot::<i64>(Duration::VT_SECONDS, seconds, 0);
   }
   #[inline]
   pub fn add_nanos(&mut self, nanos: u32) {
