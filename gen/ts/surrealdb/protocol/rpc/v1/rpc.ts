@@ -434,7 +434,20 @@ export interface Limits {
   /** Largest `DataChunk` or `FileChunk` payload, in bytes. */
   maxChunkBytes: bigint;
   /** Longest a single query may run before the server aborts it. */
-  maxQueryDuration: Duration | undefined;
+  maxQueryDuration:
+    | Duration
+    | undefined;
+  /**
+   * Largest number of records the server will put in one query batch,
+   * whatever `QueryRequest.max_batch_records` asks for.
+   *
+   * Distinct from `max_chunk_bytes`, which bounds a `DataChunk` or
+   * `FileChunk` and has never applied to query batches. Zero means the server
+   * is not reporting one, which is what a server predating this field looks
+   * like; a client MUST treat that as "unknown" and not as "no records
+   * allowed".
+   */
+  maxBatchRecords: number;
 }
 
 /** What this server supports. */
@@ -911,6 +924,18 @@ export interface QueryRequest {
    * empty result set, which would look like success.
    */
   acceptedEncodings: ResultEncoding[];
+  /**
+   * The largest number of records the client wants in one batch.
+   *
+   * The server MAY send fewer -- it sends fewer while ramping up, and to stay
+   * inside `Limits.max_message_bytes` -- and MUST NOT send more. Zero means
+   * the server chooses. A client optimising for time-to-first-row asks for a
+   * small number; one optimising for throughput asks for a large one.
+   *
+   * Clamped to `Limits.max_batch_records` rather than rejected, so a client
+   * that asks for more than the server allows still gets results.
+   */
+  maxBatchRecords: number;
 }
 
 /**
@@ -987,14 +1012,32 @@ export interface QueryBegin {
     | Uuid
     | undefined;
   /**
-   * How many statements the query parsed into, and therefore how many query
-   * indexes to expect. Every index in `[0, result_count)` emits at least one
-   * batch.
+   * How many statements the query parsed into.
+   *
+   * An UPPER BOUND on the query indexes that will appear, suitable for
+   * pre-allocation. It is not a count of results: a statement skipped by
+   * control flow -- a `RETURN` inside a `BEGIN` block short-circuits the rest
+   * -- produces no frames at all. Clients MUST NOT treat an index that
+   * received no frame as an empty result.
+   *
+   * A server sends `begin` before it starts executing, so at that point the
+   * number of statements that will produce results is not yet known. The
+   * authoritative count arrives in `QueryEnd.result_count`.
    */
-  resultCount: number;
+  statementCount: number;
 }
 
-/** One statement's results, or part of them. */
+/**
+ * One statement's results, or part of them.
+ *
+ * Rows in a non-terminal batch are PROVISIONAL. A statement's results are valid
+ * only once its terminal batch arrives without an `error`: a server streams rows
+ * as it produces them, so rows for a statement inside a `BEGIN ... COMMIT` block
+ * are delivered before the block commits, and a rollback is reported as an
+ * `error` on that statement's terminal batch. A client that buffers until the
+ * terminal batch is unaffected; one that forwards rows as they arrive must be
+ * able to retract them.
+ */
 export interface QueryBatchFrame {
   /** Which statement this belongs to, counting from zero. */
   queryIndex: number;
@@ -1024,6 +1067,20 @@ export interface QueryBatchFrame {
 
 /** The frame that completes a query stream successfully. */
 export interface QueryEnd {
+  /**
+   * How many query indexes produced results.
+   *
+   * Authoritative: every frame the query will produce has arrived by the time
+   * this does. Never greater than `QueryBegin.statement_count`, and less than
+   * it when control flow skipped the tail of the query.
+   */
+  resultCount: number;
+  /**
+   * How long the whole query took, including parse and planning.
+   *
+   * The per-statement durations in `QueryStats` do not sum to this.
+   */
+  executionDuration: Duration | undefined;
 }
 
 /**
@@ -1042,10 +1099,13 @@ export interface QueryEnd {
  * lets a server stream each statement's results as soon as it produces them
  * instead of holding them until the whole query finishes.
  *
- * Lifecycle: every query index in `[0, result_count)` emits at least one
- * batch. The final batch for an index is the one carrying `stats`, an `error`,
- * or kind SINGLE or BATCHED_FINAL; treat that as the authoritative
- * end-of-results signal for that statement.
+ * Lifecycle: the query indexes that emit a batch are a subset of
+ * `[0, begin.statement_count)`, and `end.result_count` says how many of them
+ * did. A statement skipped by control flow emits nothing, so an index with no
+ * frame is not an empty result. The final batch for an index is the one
+ * carrying `stats`, an `error`, or kind SINGLE or BATCHED_FINAL; treat that as
+ * the authoritative end-of-results signal for that statement, and everything
+ * before it as provisional -- see `QueryBatchFrame`.
  *
  * Failures before execution begins -- a parse error, authentication, an
  * unknown transaction id -- terminate the RPC with a transport-level error and
@@ -1879,7 +1939,7 @@ export const LiveQueryCapabilities: MessageFns<LiveQueryCapabilities> = {
 };
 
 function createBaseLimits(): Limits {
-  return { maxMessageBytes: 0n, maxChunkBytes: 0n, maxQueryDuration: undefined };
+  return { maxMessageBytes: 0n, maxChunkBytes: 0n, maxQueryDuration: undefined, maxBatchRecords: 0 };
 }
 
 export const Limits: MessageFns<Limits> = {
@@ -1898,6 +1958,9 @@ export const Limits: MessageFns<Limits> = {
     }
     if (message.maxQueryDuration !== undefined) {
       Duration.encode(message.maxQueryDuration, writer.uint32(26).fork()).join();
+    }
+    if (message.maxBatchRecords !== 0) {
+      writer.uint32(32).uint32(message.maxBatchRecords);
     }
     return writer;
   },
@@ -1933,6 +1996,14 @@ export const Limits: MessageFns<Limits> = {
           message.maxQueryDuration = Duration.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maxBatchRecords = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1959,6 +2030,11 @@ export const Limits: MessageFns<Limits> = {
         : isSet(object.max_query_duration)
         ? Duration.fromJSON(object.max_query_duration)
         : undefined,
+      maxBatchRecords: isSet(object.maxBatchRecords)
+        ? globalThis.Number(object.maxBatchRecords)
+        : isSet(object.max_batch_records)
+        ? globalThis.Number(object.max_batch_records)
+        : 0,
     };
   },
 
@@ -1973,6 +2049,9 @@ export const Limits: MessageFns<Limits> = {
     if (message.maxQueryDuration !== undefined) {
       obj.maxQueryDuration = Duration.toJSON(message.maxQueryDuration);
     }
+    if (message.maxBatchRecords !== 0) {
+      obj.maxBatchRecords = Math.round(message.maxBatchRecords);
+    }
     return obj;
   },
 
@@ -1986,6 +2065,7 @@ export const Limits: MessageFns<Limits> = {
     message.maxQueryDuration = (object.maxQueryDuration !== undefined && object.maxQueryDuration !== null)
       ? Duration.fromPartial(object.maxQueryDuration)
       : undefined;
+    message.maxBatchRecords = object.maxBatchRecords ?? 0;
     return message;
   },
 };
@@ -4945,7 +5025,7 @@ export const CancelTransactionResponse: MessageFns<CancelTransactionResponse> = 
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { context: undefined, query: "", variables: undefined, acceptedEncodings: [] };
+  return { context: undefined, query: "", variables: undefined, acceptedEncodings: [], maxBatchRecords: 0 };
 }
 
 export const QueryRequest: MessageFns<QueryRequest> = {
@@ -4964,6 +5044,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
       writer.int32(v);
     }
     writer.join();
+    if (message.maxBatchRecords !== 0) {
+      writer.uint32(40).uint32(message.maxBatchRecords);
+    }
     return writer;
   },
 
@@ -5016,6 +5099,14 @@ export const QueryRequest: MessageFns<QueryRequest> = {
 
           break;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maxBatchRecords = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5035,6 +5126,11 @@ export const QueryRequest: MessageFns<QueryRequest> = {
         : globalThis.Array.isArray(object?.accepted_encodings)
         ? object.accepted_encodings.map((e: any) => resultEncodingFromJSON(e))
         : [],
+      maxBatchRecords: isSet(object.maxBatchRecords)
+        ? globalThis.Number(object.maxBatchRecords)
+        : isSet(object.max_batch_records)
+        ? globalThis.Number(object.max_batch_records)
+        : 0,
     };
   },
 
@@ -5052,6 +5148,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     if (message.acceptedEncodings?.length) {
       obj.acceptedEncodings = message.acceptedEncodings.map((e) => resultEncodingToJSON(e));
     }
+    if (message.maxBatchRecords !== 0) {
+      obj.maxBatchRecords = Math.round(message.maxBatchRecords);
+    }
     return obj;
   },
 
@@ -5068,6 +5167,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
       ? Variables.fromPartial(object.variables)
       : undefined;
     message.acceptedEncodings = object.acceptedEncodings?.map((e) => e) || [];
+    message.maxBatchRecords = object.maxBatchRecords ?? 0;
     return message;
   },
 };
@@ -5369,7 +5469,7 @@ export const QueryStats: MessageFns<QueryStats> = {
 };
 
 function createBaseQueryBegin(): QueryBegin {
-  return { queryId: undefined, resultCount: 0 };
+  return { queryId: undefined, statementCount: 0 };
 }
 
 export const QueryBegin: MessageFns<QueryBegin> = {
@@ -5377,8 +5477,8 @@ export const QueryBegin: MessageFns<QueryBegin> = {
     if (message.queryId !== undefined) {
       Uuid.encode(message.queryId, writer.uint32(10).fork()).join();
     }
-    if (message.resultCount !== 0) {
-      writer.uint32(16).uint32(message.resultCount);
+    if (message.statementCount !== 0) {
+      writer.uint32(16).uint32(message.statementCount);
     }
     return writer;
   },
@@ -5403,7 +5503,7 @@ export const QueryBegin: MessageFns<QueryBegin> = {
             break;
           }
 
-          message.resultCount = reader.uint32();
+          message.statementCount = reader.uint32();
           continue;
         }
       }
@@ -5422,10 +5522,10 @@ export const QueryBegin: MessageFns<QueryBegin> = {
         : isSet(object.query_id)
         ? Uuid.fromJSON(object.query_id)
         : undefined,
-      resultCount: isSet(object.resultCount)
-        ? globalThis.Number(object.resultCount)
-        : isSet(object.result_count)
-        ? globalThis.Number(object.result_count)
+      statementCount: isSet(object.statementCount)
+        ? globalThis.Number(object.statementCount)
+        : isSet(object.statement_count)
+        ? globalThis.Number(object.statement_count)
         : 0,
     };
   },
@@ -5435,8 +5535,8 @@ export const QueryBegin: MessageFns<QueryBegin> = {
     if (message.queryId !== undefined) {
       obj.queryId = Uuid.toJSON(message.queryId);
     }
-    if (message.resultCount !== 0) {
-      obj.resultCount = Math.round(message.resultCount);
+    if (message.statementCount !== 0) {
+      obj.statementCount = Math.round(message.statementCount);
     }
     return obj;
   },
@@ -5449,7 +5549,7 @@ export const QueryBegin: MessageFns<QueryBegin> = {
     message.queryId = (object.queryId !== undefined && object.queryId !== null)
       ? Uuid.fromPartial(object.queryId)
       : undefined;
-    message.resultCount = object.resultCount ?? 0;
+    message.statementCount = object.statementCount ?? 0;
     return message;
   },
 };
@@ -5670,11 +5770,17 @@ export const QueryBatchFrame: MessageFns<QueryBatchFrame> = {
 };
 
 function createBaseQueryEnd(): QueryEnd {
-  return {};
+  return { resultCount: 0, executionDuration: undefined };
 }
 
 export const QueryEnd: MessageFns<QueryEnd> = {
-  encode(_: QueryEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: QueryEnd, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.resultCount !== 0) {
+      writer.uint32(8).uint32(message.resultCount);
+    }
+    if (message.executionDuration !== undefined) {
+      Duration.encode(message.executionDuration, writer.uint32(18).fork()).join();
+    }
     return writer;
   },
 
@@ -5685,6 +5791,22 @@ export const QueryEnd: MessageFns<QueryEnd> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.resultCount = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.executionDuration = Duration.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5694,20 +5816,41 @@ export const QueryEnd: MessageFns<QueryEnd> = {
     return message;
   },
 
-  fromJSON(_: any): QueryEnd {
-    return {};
+  fromJSON(object: any): QueryEnd {
+    return {
+      resultCount: isSet(object.resultCount)
+        ? globalThis.Number(object.resultCount)
+        : isSet(object.result_count)
+        ? globalThis.Number(object.result_count)
+        : 0,
+      executionDuration: isSet(object.executionDuration)
+        ? Duration.fromJSON(object.executionDuration)
+        : isSet(object.execution_duration)
+        ? Duration.fromJSON(object.execution_duration)
+        : undefined,
+    };
   },
 
-  toJSON(_: QueryEnd): unknown {
+  toJSON(message: QueryEnd): unknown {
     const obj: any = {};
+    if (message.resultCount !== 0) {
+      obj.resultCount = Math.round(message.resultCount);
+    }
+    if (message.executionDuration !== undefined) {
+      obj.executionDuration = Duration.toJSON(message.executionDuration);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<QueryEnd>, I>>(base?: I): QueryEnd {
     return QueryEnd.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QueryEnd>, I>>(_: I): QueryEnd {
+  fromPartial<I extends Exact<DeepPartial<QueryEnd>, I>>(object: I): QueryEnd {
     const message = createBaseQueryEnd();
+    message.resultCount = object.resultCount ?? 0;
+    message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
+      ? Duration.fromPartial(object.executionDuration)
+      : undefined;
     return message;
   },
 };

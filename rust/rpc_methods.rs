@@ -30,10 +30,16 @@ impl QueryResponse {
         }
     }
 
-    /// Builds the frame that completes a query stream successfully.
-    pub fn end() -> Self {
+    /// Wraps the frame that completes a query stream successfully.
+    ///
+    /// Takes the whole [`QueryEnd`](crate::proto::rpc::v1::QueryEnd) rather than
+    /// building an empty one, because its `result_count` is the authoritative
+    /// count of query indexes that produced results and only the caller knows
+    /// it. A convenience that defaulted the field would report zero results for
+    /// every query.
+    pub fn end(end: crate::proto::rpc::v1::QueryEnd) -> Self {
         Self {
-            frame: Some(Frame::End(crate::proto::rpc::v1::QueryEnd {})),
+            frame: Some(Frame::End(end)),
         }
     }
 
