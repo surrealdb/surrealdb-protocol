@@ -69,6 +69,10 @@ typedef struct Surrealdb__Protocol__Rpc__V1__QueryBegin Surrealdb__Protocol__Rpc
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryBatchFrame Surrealdb__Protocol__Rpc__V1__QueryBatchFrame;
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryEnd Surrealdb__Protocol__Rpc__V1__QueryEnd;
 typedef struct Surrealdb__Protocol__Rpc__V1__QueryResponse Surrealdb__Protocol__Rpc__V1__QueryResponse;
+typedef struct Surrealdb__Protocol__Rpc__V1__RunRequest Surrealdb__Protocol__Rpc__V1__RunRequest;
+typedef struct Surrealdb__Protocol__Rpc__V1__RunResponse Surrealdb__Protocol__Rpc__V1__RunResponse;
+typedef struct Surrealdb__Protocol__Rpc__V1__KillRequest Surrealdb__Protocol__Rpc__V1__KillRequest;
+typedef struct Surrealdb__Protocol__Rpc__V1__KillResponse Surrealdb__Protocol__Rpc__V1__KillResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__LiveQueryCursor Surrealdb__Protocol__Rpc__V1__LiveQueryCursor;
 typedef struct Surrealdb__Protocol__Rpc__V1__LiveQueryRegistration Surrealdb__Protocol__Rpc__V1__LiveQueryRegistration;
 typedef struct Surrealdb__Protocol__Rpc__V1__SubscribeRequest Surrealdb__Protocol__Rpc__V1__SubscribeRequest;
@@ -81,11 +85,15 @@ typedef struct Surrealdb__Protocol__Rpc__V1__ImportSurqlRequest Surrealdb__Proto
 typedef struct Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig Surrealdb__Protocol__Rpc__V1__ExportConfig;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables;
+typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest Surrealdb__Protocol__Rpc__V1__ExportSurqlRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse Surrealdb__Protocol__Rpc__V1__ExportSurqlResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse;
+typedef struct Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin;
+typedef struct Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest;
+typedef struct Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse;
 typedef struct Surrealdb__Protocol__Rpc__V1__ClientStreamDestination Surrealdb__Protocol__Rpc__V1__ClientStreamDestination;
 typedef struct Surrealdb__Protocol__Rpc__V1__BucketDestination Surrealdb__Protocol__Rpc__V1__BucketDestination;
 typedef struct Surrealdb__Protocol__Rpc__V1__ExportDestination Surrealdb__Protocol__Rpc__V1__ExportDestination;
@@ -344,6 +352,21 @@ struct  Surrealdb__Protocol__Rpc__V1__ServerCapabilities
    * Not a gate -- that is what `capabilities` is for. Useful for telemetry,
    * for error messages, and as the last resort for working around a bug in a
    * specific version range, which capabilities cannot express.
+   * Empty means the server is withholding it, which is how an operator who has
+   * denied the `version` method is honoured: this field is the only place the
+   * build version is reported (there is deliberately no `Version` RPC, since
+   * that would duplicate it and `Health` already answers liveness), so a
+   * deny-list entry for `version` has to suppress it here or it does nothing at
+   * all. A server that withholds it MUST also list `Version` in
+   * `denied_methods`, so a client can tell "withheld by policy" from "an older
+   * server that did not populate the field".
+   * A version string is never legitimately empty, so no explicit presence
+   * marker is needed -- and none is available: `optional` on a proto3 scalar is
+   * rejected outright by the C generator this schema also targets.
+   * Clients MUST NOT treat empty as a fatal error. Nothing in the protocol
+   * requires the build version; a client that refuses to proceed without it
+   * makes the deny-list entry unusable, which is what this paragraph exists to
+   * prevent.
    */
   char *server_version;
   /*
@@ -365,13 +388,19 @@ struct  Surrealdb__Protocol__Rpc__V1__ServerCapabilities
    * recognise rather than treating them as an error.
    * The names this protocol version defines, and which a server SHOULD use
    * where they apply, are:
-   *   SESSIONS           several sessions multiplexed over one connection
-   *   TRANSACTIONS       explicit client-driven transactions
-   *   LIVE_QUERIES       live queries and subscriptions
-   *   REFRESH_TOKENS     refresh-token exchange
-   *   EXPORT_DIRECTORY   directory-format export
-   *   ML_MODELS          SurrealML model export
-   *   COLUMNAR_RESULTS   columnar (Arrow) query results
+   *   SESSIONS               several sessions multiplexed over one connection
+   *   TRANSACTIONS           explicit client-driven transactions
+   *   LIVE_QUERIES           live queries and subscriptions
+   *   REFRESH_TOKENS         refresh-token exchange
+   *   EXPORT_DIRECTORY       directory-format export
+   *   ML_MODELS              SurrealML model export and import
+   *   COLUMNAR_RESULTS       columnar (Arrow) query results
+   *   EXPORT_EXCLUDE_TABLES  `ExportConfig.Tables.excluded`
+   * EXPORT_EXCLUDE_TABLES is load-bearing rather than advisory, and is the one
+   * name here a client is expected to check before sending: an `excluded`
+   * selection reaching a server without it cannot be decoded, and the export
+   * fails by design instead of exporting the tables the caller asked to
+   * withhold. See `ExportConfig.Tables`.
    * This list is documentation, not a constraint. A server may report names
    * that are not on it.
    */
@@ -382,6 +411,21 @@ struct  Surrealdb__Protocol__Rpc__V1__ServerCapabilities
    * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql". Capabilities are
    * coarse; deny lists are per-method, and both exist server-side, so both
    * are reported rather than lossily projecting one onto the other.
+   * These strings are the generated gRPC method paths, so they move whenever an
+   * RPC or the service is renamed -- which `v1` still permits, so this is a
+   * live hazard and not a hypothetical one. A client comparing against its own
+   * hardcoded literal then silently matches nothing and stops honouring the
+   * denial, with no compile error anywhere. Clients MUST compare against names
+   * derived from the service descriptor rather than hand-written strings. The
+   * Rust bindings export them as constants for exactly that purpose (the
+   * `method_names` module, whose contents are checked against the generated
+   * service so the constants cannot themselves go stale).
+   * Note the form: these entries have NO leading slash, while the gRPC path on
+   * the wire does. Comparing one against the other fails on every method.
+   * A denied method may also be reported for something with no RPC of its own:
+   * `Version` appears here when the build version is withheld from
+   * `server_version`. Clients MUST tolerate a name that does not correspond to
+   * a method they know.
    */
   size_t n_denied_methods;
   char **denied_methods;
@@ -862,12 +906,29 @@ struct  Surrealdb__Protocol__Rpc__V1__AuthenticateResponse
   /*
    * The token's expiry, so a client that authenticated with a token it did
    * not mint can still schedule renewal.
+   * Always populated, including when `tokens` is set, so a client built
+   * against an earlier version of this schema keeps working. When `tokens` is
+   * set this MUST equal `tokens.expires_at`; the two can only disagree
+   * through a server bug, and clients SHOULD prefer `tokens.expires_at`.
    */
   Surrealdb__Protocol__V1__Datetime *expires_at;
+  /*
+   * The tokens now in effect, when the server issued new ones.
+   * Authenticating is allowed to rotate: what ends up in effect is not
+   * necessarily the token that was presented. Unset means the presented token
+   * remains in effect unchanged -- the common case -- and clients MUST then
+   * keep using it rather than reading an empty `access` back over it.
+   * A client that records the token it authenticated with (to replay onto a
+   * reconnected or cloned session) MUST record the rotated one when this is
+   * set. Without this field a rotating server is indistinguishable from a
+   * non-rotating one, and the client replays a token the server has already
+   * superseded.
+   */
+  Surrealdb__Protocol__Rpc__V1__Tokens *tokens;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__AUTHENTICATE_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__authenticate_response__descriptor) \
-, NULL }
+, NULL, NULL }
 
 
 /*
@@ -878,10 +939,25 @@ struct  Surrealdb__Protocol__Rpc__V1__RefreshTokensRequest
   ProtobufCMessage base;
   Surrealdb__Protocol__Rpc__V1__RequestContext *context;
   char *refresh;
+  /*
+   * The expired access token the refresh token was issued alongside.
+   * Required, despite being the token that just stopped working. Refresh is
+   * scoped: the server recovers the namespace, database and access method the
+   * new pair is to be minted for by decoding this token's claims, because the
+   * refresh token itself names none of them. With only `refresh` there is
+   * nothing to decode and the exchange cannot be performed at all -- so this
+   * is not a convenience, it is what makes the RPC implementable.
+   * Tag 3 rather than folding both into a `Tokens` at tag 2: retagging
+   * `refresh` would make an old client's refresh token decode as a different
+   * field on a new server. `RevokeTokens` already takes `{access, refresh}`,
+   * so this makes the two token RPCs agree rather than introducing a new
+   * requirement.
+   */
+  char *access;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__REFRESH_TOKENS_REQUEST__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__refresh_tokens_request__descriptor) \
-, NULL, (char *)protobuf_c_empty_string }
+, NULL, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string }
 
 
 /*
@@ -1289,6 +1365,87 @@ struct  Surrealdb__Protocol__Rpc__V1__QueryResponse
 
 
 /*
+ * Request to call a function or an ML model.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__RunRequest
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
+  /*
+   * What to call.
+   * Resolved by the SERVER, not the client. A bare name is a built-in, `fn::`
+   * a custom function, and `ml::` an ML model; which namespace a name falls in
+   * decides what is invoked and what error an absent one raises. Clients MUST
+   * pass the name through unaltered and MUST NOT attempt that split
+   * themselves: doing so puts a copy of the server's resolution rules -- and
+   * of the errors it raises for a model that needs an experimental capability
+   * enabled -- into every SDK, where they drift.
+   */
+  char *name;
+  /*
+   * The model version, for an ML model. Empty for functions, and for a model
+   * whose version the server should choose.
+   */
+  char *version;
+  /*
+   * The positional arguments.
+   * Passed as values, so they arrive exactly as any other parameter binding
+   * does. This is the difference from synthesising `RETURN fn::foo(...)`
+   * client-side, where each argument is lowered to SurrealQL text and back,
+   * and a value whose text form does not round-trip identically to its bound
+   * form behaves differently depending on which engine ran it.
+   */
+  size_t n_args;
+  Surrealdb__Protocol__V1__Value **args;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__RUN_REQUEST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__run_request__descriptor) \
+, NULL, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string, 0,NULL }
+
+
+/*
+ * Response carrying a call's result.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__RunResponse
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__V1__Value *result;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__RUN_RESPONSE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__run_response__descriptor) \
+, NULL }
+
+
+/*
+ * Request to kill a live query.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__KillRequest
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
+  /*
+   * The live query to kill, as returned by a LIVE SELECT.
+   */
+  Surrealdb__Protocol__V1__Uuid *live_query_id;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__KILL_REQUEST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__kill_request__descriptor) \
+, NULL, NULL }
+
+
+/*
+ * Response to a kill request.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__KillResponse
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__KILL_RESPONSE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__kill_response__descriptor) \
+ }
+
+
+/*
  * A position in a live query's notification history.
  * Doubles as the dedupe key and the resume point. Under at-least-once
  * delivery, a consumer that has already processed a cursor MUST ignore a
@@ -1560,16 +1717,54 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables
 , 0,NULL }
 
 
+/*
+ * An explicit list of tables to withhold; every other table is exported.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables
+{
+  ProtobufCMessage base;
+  size_t n_tables;
+  char **tables;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__EXCLUDED_TABLES__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_config__excluded_tables__descriptor) \
+, 0,NULL }
+
+
 typedef enum {
   SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION__NOT_SET = 0,
   SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_ALL = 1,
   SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_NONE = 2,
-  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_SELECTED = 3
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_SELECTED = 3,
+  SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION_EXCLUDED = 4
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__EXPORT_CONFIG__TABLES__SELECTION__CASE)
 } Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables__SelectionCase;
 
 /*
  * Table selection for the export.
+ * FAIL CLOSED. A `Tables` that is PRESENT but whose `selection` is unset
+ * MUST be rejected before any data is streamed. It MUST NOT be treated as
+ * "no selection given", and therefore MUST NOT fall back to exporting
+ * everything.
+ * That rule is the whole reason this note exists, and it is a safety
+ * property rather than pedantry. `excluded` is newer than `all`, `none` and
+ * `selected`, so a client that asks a server predating it to withhold two
+ * tables sends an arm the server cannot decode; it lands in unknown fields
+ * and `selection` reads as unset. A server that then defaults to "export
+ * everything" has inverted the request precisely -- the caller named the
+ * tables it did NOT want exported, and every one of them is in the output.
+ * Refusing an unset `selection` turns that data leak into a loud failure,
+ * and it is the only handling that stays correct when a further arm is added
+ * later.
+ * Note this is distinct from `ExportConfig.tables` being ABSENT, which
+ * remains "the client did not express a preference" and selects the server
+ * default. Presence is what carries the distinction, which is why `Tables`
+ * is a message and not an inlined oneof.
+ * Clients SHOULD avoid provoking that failure rather than relying on it:
+ * send `excluded` only against a server advertising the
+ * EXPORT_EXCLUDE_TABLES capability (see `ServerCapabilities.capabilities`).
+ * The capability is the handshake; the MUST above is what holds when a
+ * client skips it, or when a proxy synthesised the answer.
  */
 struct  Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables
 {
@@ -1580,6 +1775,13 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables
      * Export all tables.
      */
     Surrealdb__Protocol__V1__NullValue *all;
+    /*
+     * Export every table except the named ones.
+     * Requires the EXPORT_EXCLUDE_TABLES capability. Unlike the arms
+     * above, a server that does not understand this one must fail the
+     * export -- see the note on this message.
+     */
+    Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables *excluded;
     /*
      * Export no tables.
      */
@@ -1740,6 +1942,79 @@ struct  Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse
 #define SURREALDB__PROTOCOL__RPC__V1__EXPORT_ML_MODEL_RESPONSE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__export_ml_model_response__descriptor) \
 , SURREALDB__PROTOCOL__RPC__V1__EXPORT_ML_MODEL_RESPONSE__FRAME__NOT_SET, {0} }
+
+
+/*
+ * The opening frame of an ML-model import stream.
+ * Carries the request's context, as `ImportSurqlBegin` does, for the same
+ * reason: the RPC is client-streaming, so there is no unary request message to
+ * put a `RequestContext` in field 1 of. Note that both this and
+ * `ImportSurqlBegin` are length-delimited at tag 1 of their envelope, so a
+ * generic reader that walks field 1 expecting a `RequestContext` decodes one into
+ * a plausible garbage session id rather than failing -- see the note on
+ * `RequestContext`.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__RequestContext *context;
+  /*
+   * The model's name. Required.
+   */
+  char *name;
+  /*
+   * The model's version. Required: a model is identified by name AND version,
+   * and `ExportMlModel` takes both, so an import that omitted the version
+   * could not name the artefact it just produced.
+   */
+  char *version;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_BEGIN__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__import_ml_model_begin__descriptor) \
+, NULL, (char *)protobuf_c_empty_string, (char *)protobuf_c_empty_string }
+
+
+typedef enum {
+  SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__FRAME__NOT_SET = 0,
+  SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__FRAME_BEGIN = 1,
+  SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__FRAME_CHUNK = 2,
+  SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__FRAME_TRAILER = 3
+    PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__FRAME__CASE)
+} Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest__FrameCase;
+
+/*
+ * A frame of an ML-model import stream.
+ * Framed as `begin` -> `chunk`* -> `trailer`, identical to `ImportSurqlRequest`,
+ * so one framing implementation serves both imports. The trailer's byte count
+ * and BLAKE3 are what mark the upload complete: a stream that ends without it
+ * MUST be treated as failed and the partial model discarded rather than
+ * registered.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest
+{
+  ProtobufCMessage base;
+  Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest__FrameCase frame_case;
+  union {
+    Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin *begin;
+    Surrealdb__Protocol__Rpc__V1__DataChunk *chunk;
+    Surrealdb__Protocol__Rpc__V1__DataTrailer *trailer;
+  };
+};
+#define SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__import_ml_model_request__descriptor) \
+, SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_REQUEST__FRAME__NOT_SET, {0} }
+
+
+/*
+ * Response to an ML-model import.
+ */
+struct  Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__RPC__V1__IMPORT_ML_MODEL_RESPONSE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__import_ml_model_response__descriptor) \
+ }
 
 
 /*
@@ -3030,6 +3305,82 @@ Surrealdb__Protocol__Rpc__V1__QueryResponse *
 void   surrealdb__protocol__rpc__v1__query_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__QueryResponse *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__RunRequest methods */
+void   surrealdb__protocol__rpc__v1__run_request__init
+                     (Surrealdb__Protocol__Rpc__V1__RunRequest         *message);
+size_t surrealdb__protocol__rpc__v1__run_request__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__RunRequest   *message);
+size_t surrealdb__protocol__rpc__v1__run_request__pack
+                     (const Surrealdb__Protocol__Rpc__V1__RunRequest   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__run_request__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__RunRequest   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__RunRequest *
+       surrealdb__protocol__rpc__v1__run_request__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__run_request__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__RunRequest *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__RunResponse methods */
+void   surrealdb__protocol__rpc__v1__run_response__init
+                     (Surrealdb__Protocol__Rpc__V1__RunResponse         *message);
+size_t surrealdb__protocol__rpc__v1__run_response__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__RunResponse   *message);
+size_t surrealdb__protocol__rpc__v1__run_response__pack
+                     (const Surrealdb__Protocol__Rpc__V1__RunResponse   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__run_response__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__RunResponse   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__RunResponse *
+       surrealdb__protocol__rpc__v1__run_response__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__run_response__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__RunResponse *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__KillRequest methods */
+void   surrealdb__protocol__rpc__v1__kill_request__init
+                     (Surrealdb__Protocol__Rpc__V1__KillRequest         *message);
+size_t surrealdb__protocol__rpc__v1__kill_request__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__KillRequest   *message);
+size_t surrealdb__protocol__rpc__v1__kill_request__pack
+                     (const Surrealdb__Protocol__Rpc__V1__KillRequest   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__kill_request__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__KillRequest   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__KillRequest *
+       surrealdb__protocol__rpc__v1__kill_request__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__kill_request__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__KillRequest *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__KillResponse methods */
+void   surrealdb__protocol__rpc__v1__kill_response__init
+                     (Surrealdb__Protocol__Rpc__V1__KillResponse         *message);
+size_t surrealdb__protocol__rpc__v1__kill_response__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__KillResponse   *message);
+size_t surrealdb__protocol__rpc__v1__kill_response__pack
+                     (const Surrealdb__Protocol__Rpc__V1__KillResponse   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__kill_response__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__KillResponse   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__KillResponse *
+       surrealdb__protocol__rpc__v1__kill_response__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__kill_response__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__KillResponse *message,
+                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__LiveQueryCursor methods */
 void   surrealdb__protocol__rpc__v1__live_query_cursor__init
                      (Surrealdb__Protocol__Rpc__V1__LiveQueryCursor         *message);
@@ -3223,6 +3574,9 @@ void   surrealdb__protocol__rpc__v1__import_surql_response__free_unpacked
 /* Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables methods */
 void   surrealdb__protocol__rpc__v1__export_config__selected_tables__init
                      (Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables         *message);
+/* Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables methods */
+void   surrealdb__protocol__rpc__v1__export_config__excluded_tables__init
+                     (Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables         *message);
 /* Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables methods */
 void   surrealdb__protocol__rpc__v1__export_config__tables__init
                      (Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables         *message);
@@ -3320,6 +3674,63 @@ Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse *
                       const uint8_t       *data);
 void   surrealdb__protocol__rpc__v1__export_ml_model_response__free_unpacked
                      (Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin methods */
+void   surrealdb__protocol__rpc__v1__import_ml_model_begin__init
+                     (Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin         *message);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_begin__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin   *message);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_begin__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_begin__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin *
+       surrealdb__protocol__rpc__v1__import_ml_model_begin__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__import_ml_model_begin__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest methods */
+void   surrealdb__protocol__rpc__v1__import_ml_model_request__init
+                     (Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest         *message);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_request__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest   *message);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_request__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_request__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest *
+       surrealdb__protocol__rpc__v1__import_ml_model_request__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__import_ml_model_request__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse methods */
+void   surrealdb__protocol__rpc__v1__import_ml_model_response__init
+                     (Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse         *message);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_response__get_packed_size
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse   *message);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_response__pack
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__rpc__v1__import_ml_model_response__pack_to_buffer
+                     (const Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse *
+       surrealdb__protocol__rpc__v1__import_ml_model_response__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__rpc__v1__import_ml_model_response__free_unpacked
+                     (Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse *message,
                       ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__Rpc__V1__ClientStreamDestination methods */
 void   surrealdb__protocol__rpc__v1__client_stream_destination__init
@@ -3666,6 +4077,18 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__QueryEnd_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__QueryResponse *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__RunRequest_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__RunRequest *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__RunResponse_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__RunResponse *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__KillRequest_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__KillRequest *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__KillResponse_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__KillResponse *message,
+                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__LiveQueryCursor_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__LiveQueryCursor *message,
                   void *closure_data);
@@ -3699,6 +4122,9 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__ImportSurqlResponse_Closure)
 typedef void (*Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ExportConfig__SelectedTables *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ExportConfig__ExcludedTables *message,
+                  void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ExportConfig__Tables *message,
                   void *closure_data);
@@ -3716,6 +4142,15 @@ typedef void (*Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest_Closure)
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ImportMlModelBegin *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse_Closure)
+                 (const Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse *message,
                   void *closure_data);
 typedef void (*Surrealdb__Protocol__Rpc__V1__ClientStreamDestination_Closure)
                  (const Surrealdb__Protocol__Rpc__V1__ClientStreamDestination *message,
@@ -3826,6 +4261,14 @@ struct Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service
                 const Surrealdb__Protocol__Rpc__V1__QueryRequest *input,
                 Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure closure,
                 void *closure_data);
+  void (*run)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
+              const Surrealdb__Protocol__Rpc__V1__RunRequest *input,
+              Surrealdb__Protocol__Rpc__V1__RunResponse_Closure closure,
+              void *closure_data);
+  void (*kill)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
+               const Surrealdb__Protocol__Rpc__V1__KillRequest *input,
+               Surrealdb__Protocol__Rpc__V1__KillResponse_Closure closure,
+               void *closure_data);
   void (*subscribe)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                     const Surrealdb__Protocol__Rpc__V1__SubscribeRequest *input,
                     Surrealdb__Protocol__Rpc__V1__SubscribeResponse_Closure closure,
@@ -3845,6 +4288,10 @@ struct Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service
   void (*export_ml_model)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
                           const Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest *input,
                           Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse_Closure closure,
+                          void *closure_data);
+  void (*import_ml_model)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *service,
+                          const Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest *input,
+                          Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse_Closure closure,
                           void *closure_data);
 };
 typedef void (*Surrealdb__Protocol__Rpc__V1__SurrealDBService_ServiceDestroy)(Surrealdb__Protocol__Rpc__V1__SurrealDBService_Service *);
@@ -3872,11 +4319,14 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__init (Surrealdb__Protocol_
       function_prefix__ ## commit_transaction,\
       function_prefix__ ## cancel_transaction,\
       function_prefix__ ## query,\
+      function_prefix__ ## run,\
+      function_prefix__ ## kill,\
       function_prefix__ ## subscribe,\
       function_prefix__ ## import_surql,\
       function_prefix__ ## export_surql,\
       function_prefix__ ## export_directory,\
-      function_prefix__ ## export_ml_model  }
+      function_prefix__ ## export_ml_model,\
+      function_prefix__ ## import_ml_model  }
 void surrealdb__protocol__rpc__v1__surreal_dbservice__get_capabilities(ProtobufCService *service,
                                                                        const Surrealdb__Protocol__Rpc__V1__GetCapabilitiesRequest *input,
                                                                        Surrealdb__Protocol__Rpc__V1__GetCapabilitiesResponse_Closure closure,
@@ -3949,6 +4399,14 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__query(ProtobufCService *se
                                                             const Surrealdb__Protocol__Rpc__V1__QueryRequest *input,
                                                             Surrealdb__Protocol__Rpc__V1__QueryResponse_Closure closure,
                                                             void *closure_data);
+void surrealdb__protocol__rpc__v1__surreal_dbservice__run(ProtobufCService *service,
+                                                          const Surrealdb__Protocol__Rpc__V1__RunRequest *input,
+                                                          Surrealdb__Protocol__Rpc__V1__RunResponse_Closure closure,
+                                                          void *closure_data);
+void surrealdb__protocol__rpc__v1__surreal_dbservice__kill(ProtobufCService *service,
+                                                           const Surrealdb__Protocol__Rpc__V1__KillRequest *input,
+                                                           Surrealdb__Protocol__Rpc__V1__KillResponse_Closure closure,
+                                                           void *closure_data);
 void surrealdb__protocol__rpc__v1__surreal_dbservice__subscribe(ProtobufCService *service,
                                                                 const Surrealdb__Protocol__Rpc__V1__SubscribeRequest *input,
                                                                 Surrealdb__Protocol__Rpc__V1__SubscribeResponse_Closure closure,
@@ -3968,6 +4426,10 @@ void surrealdb__protocol__rpc__v1__surreal_dbservice__export_directory(ProtobufC
 void surrealdb__protocol__rpc__v1__surreal_dbservice__export_ml_model(ProtobufCService *service,
                                                                       const Surrealdb__Protocol__Rpc__V1__ExportMlModelRequest *input,
                                                                       Surrealdb__Protocol__Rpc__V1__ExportMlModelResponse_Closure closure,
+                                                                      void *closure_data);
+void surrealdb__protocol__rpc__v1__surreal_dbservice__import_ml_model(ProtobufCService *service,
+                                                                      const Surrealdb__Protocol__Rpc__V1__ImportMlModelRequest *input,
+                                                                      Surrealdb__Protocol__Rpc__V1__ImportMlModelResponse_Closure closure,
                                                                       void *closure_data);
 
 /* --- descriptors --- */
@@ -4030,6 +4492,10 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_begi
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_batch_frame__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_end__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__query_response__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__run_request__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__run_response__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__kill_request__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__kill_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__live_query_cursor__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__live_query_registration__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__subscribe_request__descriptor;
@@ -4042,11 +4508,15 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_sur
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_surql_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__selected_tables__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__excluded_tables__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_config__tables__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_surql_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_surql_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_ml_model_request__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_ml_model_response__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_ml_model_begin__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_ml_model_request__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__import_ml_model_response__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__client_stream_destination__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__bucket_destination__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__export_destination__descriptor;

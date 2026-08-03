@@ -445,6 +445,24 @@ export interface ServerCapabilities {
    * Not a gate -- that is what `capabilities` is for. Useful for telemetry,
    * for error messages, and as the last resort for working around a bug in a
    * specific version range, which capabilities cannot express.
+   *
+   * Empty means the server is withholding it, which is how an operator who has
+   * denied the `version` method is honoured: this field is the only place the
+   * build version is reported (there is deliberately no `Version` RPC, since
+   * that would duplicate it and `Health` already answers liveness), so a
+   * deny-list entry for `version` has to suppress it here or it does nothing at
+   * all. A server that withholds it MUST also list `Version` in
+   * `denied_methods`, so a client can tell "withheld by policy" from "an older
+   * server that did not populate the field".
+   *
+   * A version string is never legitimately empty, so no explicit presence
+   * marker is needed -- and none is available: `optional` on a proto3 scalar is
+   * rejected outright by the C generator this schema also targets.
+   *
+   * Clients MUST NOT treat empty as a fatal error. Nothing in the protocol
+   * requires the build version; a client that refuses to proceed without it
+   * makes the deny-list entry unusable, which is what this paragraph exists to
+   * prevent.
    */
   serverVersion: string;
   /** Oldest protocol version this server speaks. */
@@ -470,13 +488,20 @@ export interface ServerCapabilities {
    * The names this protocol version defines, and which a server SHOULD use
    * where they apply, are:
    *
-   *   SESSIONS           several sessions multiplexed over one connection
-   *   TRANSACTIONS       explicit client-driven transactions
-   *   LIVE_QUERIES       live queries and subscriptions
-   *   REFRESH_TOKENS     refresh-token exchange
-   *   EXPORT_DIRECTORY   directory-format export
-   *   ML_MODELS          SurrealML model export
-   *   COLUMNAR_RESULTS   columnar (Arrow) query results
+   *   SESSIONS               several sessions multiplexed over one connection
+   *   TRANSACTIONS           explicit client-driven transactions
+   *   LIVE_QUERIES           live queries and subscriptions
+   *   REFRESH_TOKENS         refresh-token exchange
+   *   EXPORT_DIRECTORY       directory-format export
+   *   ML_MODELS              SurrealML model export and import
+   *   COLUMNAR_RESULTS       columnar (Arrow) query results
+   *   EXPORT_EXCLUDE_TABLES  `ExportConfig.Tables.excluded`
+   *
+   * EXPORT_EXCLUDE_TABLES is load-bearing rather than advisory, and is the one
+   * name here a client is expected to check before sending: an `excluded`
+   * selection reaching a server without it cannot be decoded, and the export
+   * fails by design instead of exporting the tables the caller asked to
+   * withhold. See `ExportConfig.Tables`.
    *
    * This list is documentation, not a constraint. A server may report names
    * that are not on it.
@@ -487,6 +512,24 @@ export interface ServerCapabilities {
    * "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql". Capabilities are
    * coarse; deny lists are per-method, and both exist server-side, so both
    * are reported rather than lossily projecting one onto the other.
+   *
+   * These strings are the generated gRPC method paths, so they move whenever an
+   * RPC or the service is renamed -- which `v1` still permits, so this is a
+   * live hazard and not a hypothetical one. A client comparing against its own
+   * hardcoded literal then silently matches nothing and stops honouring the
+   * denial, with no compile error anywhere. Clients MUST compare against names
+   * derived from the service descriptor rather than hand-written strings. The
+   * Rust bindings export them as constants for exactly that purpose (the
+   * `method_names` module, whose contents are checked against the generated
+   * service so the constants cannot themselves go stale).
+   *
+   * Note the form: these entries have NO leading slash, while the gRPC path on
+   * the wire does. Comparing one against the other fails on every method.
+   *
+   * A denied method may also be reported for something with no RPC of its own:
+   * `Version` appears here when the build version is withheld from
+   * `server_version`. Clients MUST tolerate a name that does not correspond to
+   * a method they know.
    */
   deniedMethods: string[];
   /** Numeric bounds. */
@@ -739,14 +782,53 @@ export interface AuthenticateResponse {
   /**
    * The token's expiry, so a client that authenticated with a token it did
    * not mint can still schedule renewal.
+   *
+   * Always populated, including when `tokens` is set, so a client built
+   * against an earlier version of this schema keeps working. When `tokens` is
+   * set this MUST equal `tokens.expires_at`; the two can only disagree
+   * through a server bug, and clients SHOULD prefer `tokens.expires_at`.
    */
-  expiresAt: Datetime | undefined;
+  expiresAt:
+    | Datetime
+    | undefined;
+  /**
+   * The tokens now in effect, when the server issued new ones.
+   *
+   * Authenticating is allowed to rotate: what ends up in effect is not
+   * necessarily the token that was presented. Unset means the presented token
+   * remains in effect unchanged -- the common case -- and clients MUST then
+   * keep using it rather than reading an empty `access` back over it.
+   *
+   * A client that records the token it authenticated with (to replay onto a
+   * reconnected or cloned session) MUST record the rotated one when this is
+   * set. Without this field a rotating server is indistinguishable from a
+   * non-rotating one, and the client replays a token the server has already
+   * superseded.
+   */
+  tokens: Tokens | undefined;
 }
 
 /** Request to exchange a refresh token for a new pair. */
 export interface RefreshTokensRequest {
   context: RequestContext | undefined;
   refresh: string;
+  /**
+   * The expired access token the refresh token was issued alongside.
+   *
+   * Required, despite being the token that just stopped working. Refresh is
+   * scoped: the server recovers the namespace, database and access method the
+   * new pair is to be minted for by decoding this token's claims, because the
+   * refresh token itself names none of them. With only `refresh` there is
+   * nothing to decode and the exchange cannot be performed at all -- so this
+   * is not a convenience, it is what makes the RPC implementable.
+   *
+   * Tag 3 rather than folding both into a `Tokens` at tag 2: retagging
+   * `refresh` would make an old client's refresh token decode as a different
+   * field on a new server. `RevokeTokens` already takes `{access, refresh}`,
+   * so this makes the two token RPCs agree rather than introducing a new
+   * requirement.
+   */
+  access: string;
 }
 
 /** Response carrying the new token pair. */
@@ -978,6 +1060,58 @@ export interface QueryResponse {
     | undefined;
 }
 
+/** Request to call a function or an ML model. */
+export interface RunRequest {
+  context:
+    | RequestContext
+    | undefined;
+  /**
+   * What to call.
+   *
+   * Resolved by the SERVER, not the client. A bare name is a built-in, `fn::`
+   * a custom function, and `ml::` an ML model; which namespace a name falls in
+   * decides what is invoked and what error an absent one raises. Clients MUST
+   * pass the name through unaltered and MUST NOT attempt that split
+   * themselves: doing so puts a copy of the server's resolution rules -- and
+   * of the errors it raises for a model that needs an experimental capability
+   * enabled -- into every SDK, where they drift.
+   */
+  name: string;
+  /**
+   * The model version, for an ML model. Empty for functions, and for a model
+   * whose version the server should choose.
+   */
+  version: string;
+  /**
+   * The positional arguments.
+   *
+   * Passed as values, so they arrive exactly as any other parameter binding
+   * does. This is the difference from synthesising `RETURN fn::foo(...)`
+   * client-side, where each argument is lowered to SurrealQL text and back,
+   * and a value whose text form does not round-trip identically to its bound
+   * form behaves differently depending on which engine ran it.
+   */
+  args: Value[];
+}
+
+/** Response carrying a call's result. */
+export interface RunResponse {
+  result: Value | undefined;
+}
+
+/** Request to kill a live query. */
+export interface KillRequest {
+  context:
+    | RequestContext
+    | undefined;
+  /** The live query to kill, as returned by a LIVE SELECT. */
+  liveQueryId: Uuid | undefined;
+}
+
+/** Response to a kill request. */
+export interface KillResponse {
+}
+
 /**
  * A position in a live query's notification history.
  *
@@ -1181,7 +1315,41 @@ export interface ExportConfig_SelectedTables {
   tables: string[];
 }
 
-/** Table selection for the export. */
+/** An explicit list of tables to withhold; every other table is exported. */
+export interface ExportConfig_ExcludedTables {
+  tables: string[];
+}
+
+/**
+ * Table selection for the export.
+ *
+ * FAIL CLOSED. A `Tables` that is PRESENT but whose `selection` is unset
+ * MUST be rejected before any data is streamed. It MUST NOT be treated as
+ * "no selection given", and therefore MUST NOT fall back to exporting
+ * everything.
+ *
+ * That rule is the whole reason this note exists, and it is a safety
+ * property rather than pedantry. `excluded` is newer than `all`, `none` and
+ * `selected`, so a client that asks a server predating it to withhold two
+ * tables sends an arm the server cannot decode; it lands in unknown fields
+ * and `selection` reads as unset. A server that then defaults to "export
+ * everything" has inverted the request precisely -- the caller named the
+ * tables it did NOT want exported, and every one of them is in the output.
+ * Refusing an unset `selection` turns that data leak into a loud failure,
+ * and it is the only handling that stays correct when a further arm is added
+ * later.
+ *
+ * Note this is distinct from `ExportConfig.tables` being ABSENT, which
+ * remains "the client did not express a preference" and selects the server
+ * default. Presence is what carries the distinction, which is why `Tables`
+ * is a message and not an inlined oneof.
+ *
+ * Clients SHOULD avoid provoking that failure rather than relying on it:
+ * send `excluded` only against a server advertising the
+ * EXPORT_EXCLUDE_TABLES capability (see `ServerCapabilities.capabilities`).
+ * The capability is the handshake; the MUST above is what holds when a
+ * client skips it, or when a proxy synthesised the answer.
+ */
 export interface ExportConfig_Tables {
   selection:
     | //
@@ -1193,6 +1361,15 @@ export interface ExportConfig_Tables {
     | //
     /** Export only the named tables. */
     { $case: "selected"; selected: ExportConfig_SelectedTables }
+    | //
+    /**
+     * Export every table except the named ones.
+     *
+     * Requires the EXPORT_EXCLUDE_TABLES capability. Unlike the arms
+     * above, a server that does not understand this one must fail the
+     * export -- see the note on this message.
+     */
+    { $case: "excluded"; excluded: ExportConfig_ExcludedTables }
     | undefined;
 }
 
@@ -1228,6 +1405,51 @@ export interface ExportMlModelResponse {
     $case: "error";
     error: SurrealError;
   } | undefined;
+}
+
+/**
+ * The opening frame of an ML-model import stream.
+ *
+ * Carries the request's context, as `ImportSurqlBegin` does, for the same
+ * reason: the RPC is client-streaming, so there is no unary request message to
+ * put a `RequestContext` in field 1 of. Note that both this and
+ * `ImportSurqlBegin` are length-delimited at tag 1 of their envelope, so a
+ * generic reader that walks field 1 expecting a `RequestContext` decodes one into
+ * a plausible garbage session id rather than failing -- see the note on
+ * `RequestContext`.
+ */
+export interface ImportMlModelBegin {
+  context:
+    | RequestContext
+    | undefined;
+  /** The model's name. Required. */
+  name: string;
+  /**
+   * The model's version. Required: a model is identified by name AND version,
+   * and `ExportMlModel` takes both, so an import that omitted the version
+   * could not name the artefact it just produced.
+   */
+  version: string;
+}
+
+/**
+ * A frame of an ML-model import stream.
+ *
+ * Framed as `begin` -> `chunk`* -> `trailer`, identical to `ImportSurqlRequest`,
+ * so one framing implementation serves both imports. The trailer's byte count
+ * and BLAKE3 are what mark the upload complete: a stream that ends without it
+ * MUST be treated as failed and the partial model discarded rather than
+ * registered.
+ */
+export interface ImportMlModelRequest {
+  frame: { $case: "begin"; begin: ImportMlModelBegin } | { $case: "chunk"; chunk: DataChunk } | {
+    $case: "trailer";
+    trailer: DataTrailer;
+  } | undefined;
+}
+
+/** Response to an ML-model import. */
+export interface ImportMlModelResponse {
 }
 
 /**
@@ -3919,13 +4141,16 @@ export const AuthenticateRequest: MessageFns<AuthenticateRequest> = {
 };
 
 function createBaseAuthenticateResponse(): AuthenticateResponse {
-  return { expiresAt: undefined };
+  return { expiresAt: undefined, tokens: undefined };
 }
 
 export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
   encode(message: AuthenticateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.expiresAt !== undefined) {
       Datetime.encode(message.expiresAt, writer.uint32(10).fork()).join();
+    }
+    if (message.tokens !== undefined) {
+      Tokens.encode(message.tokens, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -3945,6 +4170,14 @@ export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
           message.expiresAt = Datetime.decode(reader, reader.uint32());
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tokens = Tokens.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3961,6 +4194,7 @@ export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
         : isSet(object.expires_at)
         ? Datetime.fromJSON(object.expires_at)
         : undefined,
+      tokens: isSet(object.tokens) ? Tokens.fromJSON(object.tokens) : undefined,
     };
   },
 
@@ -3968,6 +4202,9 @@ export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
     const obj: any = {};
     if (message.expiresAt !== undefined) {
       obj.expiresAt = Datetime.toJSON(message.expiresAt);
+    }
+    if (message.tokens !== undefined) {
+      obj.tokens = Tokens.toJSON(message.tokens);
     }
     return obj;
   },
@@ -3980,12 +4217,15 @@ export const AuthenticateResponse: MessageFns<AuthenticateResponse> = {
     message.expiresAt = (object.expiresAt !== undefined && object.expiresAt !== null)
       ? Datetime.fromPartial(object.expiresAt)
       : undefined;
+    message.tokens = (object.tokens !== undefined && object.tokens !== null)
+      ? Tokens.fromPartial(object.tokens)
+      : undefined;
     return message;
   },
 };
 
 function createBaseRefreshTokensRequest(): RefreshTokensRequest {
-  return { context: undefined, refresh: "" };
+  return { context: undefined, refresh: "", access: "" };
 }
 
 export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
@@ -3995,6 +4235,9 @@ export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
     }
     if (message.refresh !== "") {
       writer.uint32(18).string(message.refresh);
+    }
+    if (message.access !== "") {
+      writer.uint32(26).string(message.access);
     }
     return writer;
   },
@@ -4022,6 +4265,14 @@ export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
           message.refresh = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.access = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4035,6 +4286,7 @@ export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
     return {
       context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
       refresh: isSet(object.refresh) ? globalThis.String(object.refresh) : "",
+      access: isSet(object.access) ? globalThis.String(object.access) : "",
     };
   },
 
@@ -4045,6 +4297,9 @@ export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
     }
     if (message.refresh !== "") {
       obj.refresh = message.refresh;
+    }
+    if (message.access !== "") {
+      obj.access = message.access;
     }
     return obj;
   },
@@ -4058,6 +4313,7 @@ export const RefreshTokensRequest: MessageFns<RefreshTokensRequest> = {
       ? RequestContext.fromPartial(object.context)
       : undefined;
     message.refresh = object.refresh ?? "";
+    message.access = object.access ?? "";
     return message;
   },
 };
@@ -5590,6 +5846,303 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   },
 };
 
+function createBaseRunRequest(): RunRequest {
+  return { context: undefined, name: "", version: "", args: [] };
+}
+
+export const RunRequest: MessageFns<RunRequest> = {
+  encode(message: RunRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.version !== "") {
+      writer.uint32(26).string(message.version);
+    }
+    for (const v of message.args) {
+      Value.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.args.push(Value.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+      args: globalThis.Array.isArray(object?.args) ? object.args.map((e: any) => Value.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: RunRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.args?.length) {
+      obj.args = message.args.map((e) => Value.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RunRequest>, I>>(base?: I): RunRequest {
+    return RunRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RunRequest>, I>>(object: I): RunRequest {
+    const message = createBaseRunRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.name = object.name ?? "";
+    message.version = object.version ?? "";
+    message.args = object.args?.map((e) => Value.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseRunResponse(): RunResponse {
+  return { result: undefined };
+}
+
+export const RunResponse: MessageFns<RunResponse> = {
+  encode(message: RunResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== undefined) {
+      Value.encode(message.result, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = Value.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunResponse {
+    return { result: isSet(object.result) ? Value.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: RunResponse): unknown {
+    const obj: any = {};
+    if (message.result !== undefined) {
+      obj.result = Value.toJSON(message.result);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RunResponse>, I>>(base?: I): RunResponse {
+    return RunResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RunResponse>, I>>(object: I): RunResponse {
+    const message = createBaseRunResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? Value.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseKillRequest(): KillRequest {
+  return { context: undefined, liveQueryId: undefined };
+}
+
+export const KillRequest: MessageFns<KillRequest> = {
+  encode(message: KillRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.liveQueryId !== undefined) {
+      Uuid.encode(message.liveQueryId, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): KillRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseKillRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.liveQueryId = Uuid.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): KillRequest {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      liveQueryId: isSet(object.liveQueryId)
+        ? Uuid.fromJSON(object.liveQueryId)
+        : isSet(object.live_query_id)
+        ? Uuid.fromJSON(object.live_query_id)
+        : undefined,
+    };
+  },
+
+  toJSON(message: KillRequest): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.liveQueryId !== undefined) {
+      obj.liveQueryId = Uuid.toJSON(message.liveQueryId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<KillRequest>, I>>(base?: I): KillRequest {
+    return KillRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<KillRequest>, I>>(object: I): KillRequest {
+    const message = createBaseKillRequest();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.liveQueryId = (object.liveQueryId !== undefined && object.liveQueryId !== null)
+      ? Uuid.fromPartial(object.liveQueryId)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseKillResponse(): KillResponse {
+  return {};
+}
+
+export const KillResponse: MessageFns<KillResponse> = {
+  encode(_: KillResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): KillResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseKillResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): KillResponse {
+    return {};
+  },
+
+  toJSON(_: KillResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<KillResponse>, I>>(base?: I): KillResponse {
+    return KillResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<KillResponse>, I>>(_: I): KillResponse {
+    const message = createBaseKillResponse();
+    return message;
+  },
+};
+
 function createBaseLiveQueryCursor(): LiveQueryCursor {
   return { versionstamp: 0n, sequence: 0 };
 }
@@ -6881,6 +7434,66 @@ export const ExportConfig_SelectedTables: MessageFns<ExportConfig_SelectedTables
   },
 };
 
+function createBaseExportConfig_ExcludedTables(): ExportConfig_ExcludedTables {
+  return { tables: [] };
+}
+
+export const ExportConfig_ExcludedTables: MessageFns<ExportConfig_ExcludedTables> = {
+  encode(message: ExportConfig_ExcludedTables, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.tables) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportConfig_ExcludedTables {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportConfig_ExcludedTables();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tables.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportConfig_ExcludedTables {
+    return {
+      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: ExportConfig_ExcludedTables): unknown {
+    const obj: any = {};
+    if (message.tables?.length) {
+      obj.tables = message.tables;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExportConfig_ExcludedTables>, I>>(base?: I): ExportConfig_ExcludedTables {
+    return ExportConfig_ExcludedTables.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExportConfig_ExcludedTables>, I>>(object: I): ExportConfig_ExcludedTables {
+    const message = createBaseExportConfig_ExcludedTables();
+    message.tables = object.tables?.map((e) => e) || [];
+    return message;
+  },
+};
+
 function createBaseExportConfig_Tables(): ExportConfig_Tables {
   return { selection: undefined };
 }
@@ -6896,6 +7509,9 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
         break;
       case "selected":
         ExportConfig_SelectedTables.encode(message.selection.selected, writer.uint32(26).fork()).join();
+        break;
+      case "excluded":
+        ExportConfig_ExcludedTables.encode(message.selection.excluded, writer.uint32(34).fork()).join();
         break;
     }
     return writer;
@@ -6935,6 +7551,17 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
           };
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.selection = {
+            $case: "excluded",
+            excluded: ExportConfig_ExcludedTables.decode(reader, reader.uint32()),
+          };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6952,6 +7579,8 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
         ? { $case: "none", none: NullValue.fromJSON(object.none) }
         : isSet(object.selected)
         ? { $case: "selected", selected: ExportConfig_SelectedTables.fromJSON(object.selected) }
+        : isSet(object.excluded)
+        ? { $case: "excluded", excluded: ExportConfig_ExcludedTables.fromJSON(object.excluded) }
         : undefined,
     };
   },
@@ -6964,6 +7593,8 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
       obj.none = NullValue.toJSON(message.selection.none);
     } else if (message.selection?.$case === "selected") {
       obj.selected = ExportConfig_SelectedTables.toJSON(message.selection.selected);
+    } else if (message.selection?.$case === "excluded") {
+      obj.excluded = ExportConfig_ExcludedTables.toJSON(message.selection.excluded);
     }
     return obj;
   },
@@ -6991,6 +7622,15 @@ export const ExportConfig_Tables: MessageFns<ExportConfig_Tables> = {
           message.selection = {
             $case: "selected",
             selected: ExportConfig_SelectedTables.fromPartial(object.selection.selected),
+          };
+        }
+        break;
+      }
+      case "excluded": {
+        if (object.selection?.excluded !== undefined && object.selection?.excluded !== null) {
+          message.selection = {
+            $case: "excluded",
+            excluded: ExportConfig_ExcludedTables.fromPartial(object.selection.excluded),
           };
         }
         break;
@@ -7396,6 +8036,256 @@ export const ExportMlModelResponse: MessageFns<ExportMlModelResponse> = {
         break;
       }
     }
+    return message;
+  },
+};
+
+function createBaseImportMlModelBegin(): ImportMlModelBegin {
+  return { context: undefined, name: "", version: "" };
+}
+
+export const ImportMlModelBegin: MessageFns<ImportMlModelBegin> = {
+  encode(message: ImportMlModelBegin, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.context !== undefined) {
+      RequestContext.encode(message.context, writer.uint32(10).fork()).join();
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.version !== "") {
+      writer.uint32(26).string(message.version);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportMlModelBegin {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportMlModelBegin();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.context = RequestContext.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportMlModelBegin {
+    return {
+      context: isSet(object.context) ? RequestContext.fromJSON(object.context) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+    };
+  },
+
+  toJSON(message: ImportMlModelBegin): unknown {
+    const obj: any = {};
+    if (message.context !== undefined) {
+      obj.context = RequestContext.toJSON(message.context);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ImportMlModelBegin>, I>>(base?: I): ImportMlModelBegin {
+    return ImportMlModelBegin.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ImportMlModelBegin>, I>>(object: I): ImportMlModelBegin {
+    const message = createBaseImportMlModelBegin();
+    message.context = (object.context !== undefined && object.context !== null)
+      ? RequestContext.fromPartial(object.context)
+      : undefined;
+    message.name = object.name ?? "";
+    message.version = object.version ?? "";
+    return message;
+  },
+};
+
+function createBaseImportMlModelRequest(): ImportMlModelRequest {
+  return { frame: undefined };
+}
+
+export const ImportMlModelRequest: MessageFns<ImportMlModelRequest> = {
+  encode(message: ImportMlModelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    switch (message.frame?.$case) {
+      case "begin":
+        ImportMlModelBegin.encode(message.frame.begin, writer.uint32(10).fork()).join();
+        break;
+      case "chunk":
+        DataChunk.encode(message.frame.chunk, writer.uint32(18).fork()).join();
+        break;
+      case "trailer":
+        DataTrailer.encode(message.frame.trailer, writer.uint32(26).fork()).join();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportMlModelRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportMlModelRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.frame = { $case: "begin", begin: ImportMlModelBegin.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.frame = { $case: "chunk", chunk: DataChunk.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.frame = { $case: "trailer", trailer: DataTrailer.decode(reader, reader.uint32()) };
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportMlModelRequest {
+    return {
+      frame: isSet(object.begin)
+        ? { $case: "begin", begin: ImportMlModelBegin.fromJSON(object.begin) }
+        : isSet(object.chunk)
+        ? { $case: "chunk", chunk: DataChunk.fromJSON(object.chunk) }
+        : isSet(object.trailer)
+        ? { $case: "trailer", trailer: DataTrailer.fromJSON(object.trailer) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: ImportMlModelRequest): unknown {
+    const obj: any = {};
+    if (message.frame?.$case === "begin") {
+      obj.begin = ImportMlModelBegin.toJSON(message.frame.begin);
+    } else if (message.frame?.$case === "chunk") {
+      obj.chunk = DataChunk.toJSON(message.frame.chunk);
+    } else if (message.frame?.$case === "trailer") {
+      obj.trailer = DataTrailer.toJSON(message.frame.trailer);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ImportMlModelRequest>, I>>(base?: I): ImportMlModelRequest {
+    return ImportMlModelRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ImportMlModelRequest>, I>>(object: I): ImportMlModelRequest {
+    const message = createBaseImportMlModelRequest();
+    switch (object.frame?.$case) {
+      case "begin": {
+        if (object.frame?.begin !== undefined && object.frame?.begin !== null) {
+          message.frame = { $case: "begin", begin: ImportMlModelBegin.fromPartial(object.frame.begin) };
+        }
+        break;
+      }
+      case "chunk": {
+        if (object.frame?.chunk !== undefined && object.frame?.chunk !== null) {
+          message.frame = { $case: "chunk", chunk: DataChunk.fromPartial(object.frame.chunk) };
+        }
+        break;
+      }
+      case "trailer": {
+        if (object.frame?.trailer !== undefined && object.frame?.trailer !== null) {
+          message.frame = { $case: "trailer", trailer: DataTrailer.fromPartial(object.frame.trailer) };
+        }
+        break;
+      }
+    }
+    return message;
+  },
+};
+
+function createBaseImportMlModelResponse(): ImportMlModelResponse {
+  return {};
+}
+
+export const ImportMlModelResponse: MessageFns<ImportMlModelResponse> = {
+  encode(_: ImportMlModelResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportMlModelResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportMlModelResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ImportMlModelResponse {
+    return {};
+  },
+
+  toJSON(_: ImportMlModelResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ImportMlModelResponse>, I>>(base?: I): ImportMlModelResponse {
+    return ImportMlModelResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ImportMlModelResponse>, I>>(_: I): ImportMlModelResponse {
+    const message = createBaseImportMlModelResponse();
     return message;
   },
 };
@@ -8479,11 +9369,12 @@ export const ExportDirectoryResponse: MessageFns<ExportDirectoryResponse> = {
  * Rust `SurrealBridge` trait and the TypeScript `SurrealProtocol` interface
  * are mirrors of it; where they disagree with it, they are wrong.
  *
- * Every request message carries a `RequestContext` in field 1, naming the
+ * Every unary request message carries a `RequestContext` in field 1, naming the
  * session it applies to and, where the RPC supports one, the transaction it
- * runs in. Context is in the body, never in transport metadata, so a gRPC,
- * HTTP-chunked or WebSocket binding of this service is the same contract byte
- * for byte.
+ * runs in. The client-streaming RPCs, `ImportSurql` and `ImportMlModel`, carry it
+ * in their `begin` frame instead; see the note on `RequestContext`. Context is in
+ * the body, never in transport metadata, so a gRPC, HTTP-chunked or WebSocket
+ * binding of this service is the same contract byte for byte.
  *
  * There are deliberately no CRUD methods. `select`, `create`, `update` and
  * friends are client-side sugar that compiles to SurrealQL and executes
@@ -8570,6 +9461,26 @@ export interface SurrealDBService {
    */
   Query(request: QueryRequest): Observable<QueryResponse>;
   /**
+   * Call a built-in function, a custom function, or an ML model.
+   *
+   * Not sugar for `Query`, which is why it is its own method rather than
+   * client-side SurrealQL. Synthesising `RETURN fn::foo(...)` costs three
+   * things: the operator's per-method deny list cannot see it (it arrives as
+   * Query, so denying `run` is silently unenforced), the arguments are
+   * lowered by a text round-trip that need not agree with how the same value
+   * binds as a parameter, and `name` resolution -- which decides between a
+   * built-in, `fn::`, `ml::` and the errors each raises -- moves out of the
+   * server and into every SDK.
+   */
+  Run(request: RunRequest): Promise<RunResponse>;
+  /**
+   * Kill a live query by id.
+   *
+   * Its own method for the same reason as `Run`: sent as `KILL $id` it
+   * arrives as Query and the deny list cannot gate it.
+   */
+  Kill(request: KillRequest): Promise<KillResponse>;
+  /**
    * Stream one live query's notifications.
    *
    * One stream per subscription; there is no multiplexed notification
@@ -8596,6 +9507,15 @@ export interface SurrealDBService {
   ExportDirectory(request: ExportDirectoryRequest): Observable<ExportDirectoryResponse>;
   /** Export a SurrealML model as a byte stream. */
   ExportMlModel(request: ExportMlModelRequest): Observable<ExportMlModelResponse>;
+  /**
+   * Import a SurrealML model from a byte stream.
+   *
+   * The client-streaming mirror of `ExportMlModel`, framed exactly as
+   * `ImportSurql` (`begin` -> `chunk`* -> `trailer`) so both imports share one
+   * framing implementation on each side. Without it a model could be exported
+   * over this protocol but never put back.
+   */
+  ImportMlModel(request: Observable<ImportMlModelRequest>): Promise<ImportMlModelResponse>;
 }
 
 export const SurrealDBServiceServiceName = "surrealdb.protocol.rpc.v1.SurrealDBService";
@@ -8623,11 +9543,14 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     this.CommitTransaction = this.CommitTransaction.bind(this);
     this.CancelTransaction = this.CancelTransaction.bind(this);
     this.Query = this.Query.bind(this);
+    this.Run = this.Run.bind(this);
+    this.Kill = this.Kill.bind(this);
     this.Subscribe = this.Subscribe.bind(this);
     this.ImportSurql = this.ImportSurql.bind(this);
     this.ExportSurql = this.ExportSurql.bind(this);
     this.ExportDirectory = this.ExportDirectory.bind(this);
     this.ExportMlModel = this.ExportMlModel.bind(this);
+    this.ImportMlModel = this.ImportMlModel.bind(this);
   }
   GetCapabilities(request: GetCapabilitiesRequest): Promise<GetCapabilitiesResponse> {
     const data = GetCapabilitiesRequest.encode(request).finish();
@@ -8737,6 +9660,18 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     return result.pipe(map((data) => QueryResponse.decode(new BinaryReader(data))));
   }
 
+  Run(request: RunRequest): Promise<RunResponse> {
+    const data = RunRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Run", data);
+    return promise.then((data) => RunResponse.decode(new BinaryReader(data)));
+  }
+
+  Kill(request: KillRequest): Promise<KillResponse> {
+    const data = KillRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Kill", data);
+    return promise.then((data) => KillResponse.decode(new BinaryReader(data)));
+  }
+
   Subscribe(request: SubscribeRequest): Observable<SubscribeResponse> {
     const data = SubscribeRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "Subscribe", data);
@@ -8765,6 +9700,12 @@ export class SurrealDBServiceClientImpl implements SurrealDBService {
     const data = ExportMlModelRequest.encode(request).finish();
     const result = this.rpc.serverStreamingRequest(this.service, "ExportMlModel", data);
     return result.pipe(map((data) => ExportMlModelResponse.decode(new BinaryReader(data))));
+  }
+
+  ImportMlModel(request: Observable<ImportMlModelRequest>): Promise<ImportMlModelResponse> {
+    const data = request.pipe(map((request) => ImportMlModelRequest.encode(request).finish()));
+    const promise = this.rpc.clientStreamingRequest(this.service, "ImportMlModel", data);
+    return promise.then((data) => ImportMlModelResponse.decode(new BinaryReader(data)));
   }
 }
 

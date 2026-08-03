@@ -12,11 +12,12 @@ import "surrealdb/protocol/v1/value.proto";
 // Rust `SurrealBridge` trait and the TypeScript `SurrealProtocol` interface
 // are mirrors of it; where they disagree with it, they are wrong.
 //
-// Every request message carries a `RequestContext` in field 1, naming the
+// Every unary request message carries a `RequestContext` in field 1, naming the
 // session it applies to and, where the RPC supports one, the transaction it
-// runs in. Context is in the body, never in transport metadata, so a gRPC,
-// HTTP-chunked or WebSocket binding of this service is the same contract byte
-// for byte.
+// runs in. The client-streaming RPCs, `ImportSurql` and `ImportMlModel`, carry it
+// in their `begin` frame instead; see the note on `RequestContext`. Context is in
+// the body, never in transport metadata, so a gRPC, HTTP-chunked or WebSocket
+// binding of this service is the same contract byte for byte.
 //
 // There are deliberately no CRUD methods. `select`, `create`, `update` and
 // friends are client-side sugar that compiles to SurrealQL and executes
@@ -133,6 +134,24 @@ service SurrealDBService {
     // transaction is session-owned and survives a cancelled RPC.
     rpc Query(QueryRequest) returns (stream QueryResponse);
 
+    // Call a built-in function, a custom function, or an ML model.
+    //
+    // Not sugar for `Query`, which is why it is its own method rather than
+    // client-side SurrealQL. Synthesising `RETURN fn::foo(...)` costs three
+    // things: the operator's per-method deny list cannot see it (it arrives as
+    // Query, so denying `run` is silently unenforced), the arguments are
+    // lowered by a text round-trip that need not agree with how the same value
+    // binds as a parameter, and `name` resolution -- which decides between a
+    // built-in, `fn::`, `ml::` and the errors each raises -- moves out of the
+    // server and into every SDK.
+    rpc Run(RunRequest) returns (RunResponse);
+
+    // Kill a live query by id.
+    //
+    // Its own method for the same reason as `Run`: sent as `KILL $id` it
+    // arrives as Query and the deny list cannot gate it.
+    rpc Kill(KillRequest) returns (KillResponse);
+
     // ---------------------------------------------------------------- //
     //                         Live queries                             //
     // ---------------------------------------------------------------- //
@@ -168,6 +187,14 @@ service SurrealDBService {
 
     // Export a SurrealML model as a byte stream.
     rpc ExportMlModel(ExportMlModelRequest) returns (stream ExportMlModelResponse);
+
+    // Import a SurrealML model from a byte stream.
+    //
+    // The client-streaming mirror of `ExportMlModel`, framed exactly as
+    // `ImportSurql` (`begin` -> `chunk`* -> `trailer`) so both imports share one
+    // framing implementation on each side. Without it a model could be exported
+    // over this protocol but never put back.
+    rpc ImportMlModel(stream ImportMlModelRequest) returns (ImportMlModelResponse);
 }
 
 // ==================================================================== //
@@ -239,6 +266,24 @@ message ServerCapabilities {
     // Not a gate -- that is what `capabilities` is for. Useful for telemetry,
     // for error messages, and as the last resort for working around a bug in a
     // specific version range, which capabilities cannot express.
+    //
+    // Empty means the server is withholding it, which is how an operator who has
+    // denied the `version` method is honoured: this field is the only place the
+    // build version is reported (there is deliberately no `Version` RPC, since
+    // that would duplicate it and `Health` already answers liveness), so a
+    // deny-list entry for `version` has to suppress it here or it does nothing at
+    // all. A server that withholds it MUST also list `Version` in
+    // `denied_methods`, so a client can tell "withheld by policy" from "an older
+    // server that did not populate the field".
+    //
+    // A version string is never legitimately empty, so no explicit presence
+    // marker is needed -- and none is available: `optional` on a proto3 scalar is
+    // rejected outright by the C generator this schema also targets.
+    //
+    // Clients MUST NOT treat empty as a fatal error. Nothing in the protocol
+    // requires the build version; a client that refuses to proceed without it
+    // makes the deny-list entry unusable, which is what this paragraph exists to
+    // prevent.
     string server_version = 1;
     // Oldest protocol version this server speaks.
     SemVer low_api_version = 2;
@@ -258,13 +303,20 @@ message ServerCapabilities {
     // The names this protocol version defines, and which a server SHOULD use
     // where they apply, are:
     //
-    //   SESSIONS           several sessions multiplexed over one connection
-    //   TRANSACTIONS       explicit client-driven transactions
-    //   LIVE_QUERIES       live queries and subscriptions
-    //   REFRESH_TOKENS     refresh-token exchange
-    //   EXPORT_DIRECTORY   directory-format export
-    //   ML_MODELS          SurrealML model export
-    //   COLUMNAR_RESULTS   columnar (Arrow) query results
+    //   SESSIONS               several sessions multiplexed over one connection
+    //   TRANSACTIONS           explicit client-driven transactions
+    //   LIVE_QUERIES           live queries and subscriptions
+    //   REFRESH_TOKENS         refresh-token exchange
+    //   EXPORT_DIRECTORY       directory-format export
+    //   ML_MODELS              SurrealML model export and import
+    //   COLUMNAR_RESULTS       columnar (Arrow) query results
+    //   EXPORT_EXCLUDE_TABLES  `ExportConfig.Tables.excluded`
+    //
+    // EXPORT_EXCLUDE_TABLES is load-bearing rather than advisory, and is the one
+    // name here a client is expected to check before sending: an `excluded`
+    // selection reaching a server without it cannot be decoded, and the export
+    // fails by design instead of exporting the tables the caller asked to
+    // withhold. See `ExportConfig.Tables`.
     //
     // This list is documentation, not a constraint. A server may report names
     // that are not on it.
@@ -273,6 +325,24 @@ message ServerCapabilities {
     // "surrealdb.protocol.rpc.v1.SurrealDBService/ExportSurql". Capabilities are
     // coarse; deny lists are per-method, and both exist server-side, so both
     // are reported rather than lossily projecting one onto the other.
+    //
+    // These strings are the generated gRPC method paths, so they move whenever an
+    // RPC or the service is renamed -- which `v1` still permits, so this is a
+    // live hazard and not a hypothetical one. A client comparing against its own
+    // hardcoded literal then silently matches nothing and stops honouring the
+    // denial, with no compile error anywhere. Clients MUST compare against names
+    // derived from the service descriptor rather than hand-written strings. The
+    // Rust bindings export them as constants for exactly that purpose (the
+    // `method_names` module, whose contents are checked against the generated
+    // service so the constants cannot themselves go stale).
+    //
+    // Note the form: these entries have NO leading slash, while the gRPC path on
+    // the wire does. Comparing one against the other fails on every method.
+    //
+    // A denied method may also be reported for something with no RPC of its own:
+    // `Version` appears here when the build version is withheld from
+    // `server_version`. Clients MUST tolerate a name that does not correspond to
+    // a method they know.
     repeated string denied_methods = 5;
     // Numeric bounds.
     Limits limits = 6;
@@ -505,13 +575,46 @@ message AuthenticateRequest {
 message AuthenticateResponse {
     // The token's expiry, so a client that authenticated with a token it did
     // not mint can still schedule renewal.
+    //
+    // Always populated, including when `tokens` is set, so a client built
+    // against an earlier version of this schema keeps working. When `tokens` is
+    // set this MUST equal `tokens.expires_at`; the two can only disagree
+    // through a server bug, and clients SHOULD prefer `tokens.expires_at`.
     surrealdb.protocol.v1.Datetime expires_at = 1;
+    // The tokens now in effect, when the server issued new ones.
+    //
+    // Authenticating is allowed to rotate: what ends up in effect is not
+    // necessarily the token that was presented. Unset means the presented token
+    // remains in effect unchanged -- the common case -- and clients MUST then
+    // keep using it rather than reading an empty `access` back over it.
+    //
+    // A client that records the token it authenticated with (to replay onto a
+    // reconnected or cloned session) MUST record the rotated one when this is
+    // set. Without this field a rotating server is indistinguishable from a
+    // non-rotating one, and the client replays a token the server has already
+    // superseded.
+    Tokens tokens = 2;
 }
 
 // Request to exchange a refresh token for a new pair.
 message RefreshTokensRequest {
     RequestContext context = 1;
     string refresh = 2;
+    // The expired access token the refresh token was issued alongside.
+    //
+    // Required, despite being the token that just stopped working. Refresh is
+    // scoped: the server recovers the namespace, database and access method the
+    // new pair is to be minted for by decoding this token's claims, because the
+    // refresh token itself names none of them. With only `refresh` there is
+    // nothing to decode and the exchange cannot be performed at all -- so this
+    // is not a convenience, it is what makes the RPC implementable.
+    //
+    // Tag 3 rather than folding both into a `Tokens` at tag 2: retagging
+    // `refresh` would make an old client's refresh token decode as a different
+    // field on a new server. `RevokeTokens` already takes `{access, refresh}`,
+    // so this makes the two token RPCs agree rather than introducing a new
+    // requirement.
+    string access = 3;
 }
 
 // Response carrying the new token pair.
@@ -756,6 +859,51 @@ message QueryResponse {
 }
 
 // ==================================================================== //
+//                         Functions and models                         //
+// ==================================================================== //
+
+// Request to call a function or an ML model.
+message RunRequest {
+    RequestContext context = 1;
+    // What to call.
+    //
+    // Resolved by the SERVER, not the client. A bare name is a built-in, `fn::`
+    // a custom function, and `ml::` an ML model; which namespace a name falls in
+    // decides what is invoked and what error an absent one raises. Clients MUST
+    // pass the name through unaltered and MUST NOT attempt that split
+    // themselves: doing so puts a copy of the server's resolution rules -- and
+    // of the errors it raises for a model that needs an experimental capability
+    // enabled -- into every SDK, where they drift.
+    string name = 2;
+    // The model version, for an ML model. Empty for functions, and for a model
+    // whose version the server should choose.
+    string version = 3;
+    // The positional arguments.
+    //
+    // Passed as values, so they arrive exactly as any other parameter binding
+    // does. This is the difference from synthesising `RETURN fn::foo(...)`
+    // client-side, where each argument is lowered to SurrealQL text and back,
+    // and a value whose text form does not round-trip identically to its bound
+    // form behaves differently depending on which engine ran it.
+    repeated surrealdb.protocol.v1.Value args = 4;
+}
+
+// Response carrying a call's result.
+message RunResponse {
+    surrealdb.protocol.v1.Value result = 1;
+}
+
+// Request to kill a live query.
+message KillRequest {
+    RequestContext context = 1;
+    // The live query to kill, as returned by a LIVE SELECT.
+    surrealdb.protocol.v1.Uuid live_query_id = 2;
+}
+
+// Response to a kill request.
+message KillResponse {}
+
+// ==================================================================== //
 //                            Live queries                              //
 // ==================================================================== //
 
@@ -930,7 +1078,39 @@ message ExportConfig {
         repeated string tables = 1;
     }
 
+    // An explicit list of tables to withhold; every other table is exported.
+    message ExcludedTables {
+        repeated string tables = 1;
+    }
+
     // Table selection for the export.
+    //
+    // FAIL CLOSED. A `Tables` that is PRESENT but whose `selection` is unset
+    // MUST be rejected before any data is streamed. It MUST NOT be treated as
+    // "no selection given", and therefore MUST NOT fall back to exporting
+    // everything.
+    //
+    // That rule is the whole reason this note exists, and it is a safety
+    // property rather than pedantry. `excluded` is newer than `all`, `none` and
+    // `selected`, so a client that asks a server predating it to withhold two
+    // tables sends an arm the server cannot decode; it lands in unknown fields
+    // and `selection` reads as unset. A server that then defaults to "export
+    // everything" has inverted the request precisely -- the caller named the
+    // tables it did NOT want exported, and every one of them is in the output.
+    // Refusing an unset `selection` turns that data leak into a loud failure,
+    // and it is the only handling that stays correct when a further arm is added
+    // later.
+    //
+    // Note this is distinct from `ExportConfig.tables` being ABSENT, which
+    // remains "the client did not express a preference" and selects the server
+    // default. Presence is what carries the distinction, which is why `Tables`
+    // is a message and not an inlined oneof.
+    //
+    // Clients SHOULD avoid provoking that failure rather than relying on it:
+    // send `excluded` only against a server advertising the
+    // EXPORT_EXCLUDE_TABLES capability (see `ServerCapabilities.capabilities`).
+    // The capability is the handshake; the MUST above is what holds when a
+    // client skips it, or when a proxy synthesised the answer.
     message Tables {
         oneof selection {
             // Export all tables.
@@ -939,6 +1119,12 @@ message ExportConfig {
             surrealdb.protocol.v1.NullValue none = 2;
             // Export only the named tables.
             SelectedTables selected = 3;
+            // Export every table except the named ones.
+            //
+            // Requires the EXPORT_EXCLUDE_TABLES capability. Unlike the arms
+            // above, a server that does not understand this one must fail the
+            // export -- see the note on this message.
+            ExcludedTables excluded = 4;
         }
     }
 
@@ -1003,6 +1189,43 @@ message ExportMlModelResponse {
         surrealdb.protocol.v1.SurrealError error = 3;
     }
 }
+
+// The opening frame of an ML-model import stream.
+//
+// Carries the request's context, as `ImportSurqlBegin` does, for the same
+// reason: the RPC is client-streaming, so there is no unary request message to
+// put a `RequestContext` in field 1 of. Note that both this and
+// `ImportSurqlBegin` are length-delimited at tag 1 of their envelope, so a
+// generic reader that walks field 1 expecting a `RequestContext` decodes one into
+// a plausible garbage session id rather than failing -- see the note on
+// `RequestContext`.
+message ImportMlModelBegin {
+    RequestContext context = 1;
+    // The model's name. Required.
+    string name = 2;
+    // The model's version. Required: a model is identified by name AND version,
+    // and `ExportMlModel` takes both, so an import that omitted the version
+    // could not name the artefact it just produced.
+    string version = 3;
+}
+
+// A frame of an ML-model import stream.
+//
+// Framed as `begin` -> `chunk`* -> `trailer`, identical to `ImportSurqlRequest`,
+// so one framing implementation serves both imports. The trailer's byte count
+// and BLAKE3 are what mark the upload complete: a stream that ends without it
+// MUST be treated as failed and the partial model discarded rather than
+// registered.
+message ImportMlModelRequest {
+    oneof frame {
+        ImportMlModelBegin begin = 1;
+        DataChunk chunk = 2;
+        DataTrailer trailer = 3;
+    }
+}
+
+// Response to an ML-model import.
+message ImportMlModelResponse {}
 
 // Compression applied to exported data files.
 enum ExportCompression {

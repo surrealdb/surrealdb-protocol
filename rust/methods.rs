@@ -253,27 +253,83 @@ impl Display for Uuid {
 }
 
 impl Duration {
-    /// Creates a new `Duration`.
-    pub fn new(seconds: u64, nanos: u32) -> Self {
+    /// Creates a new `Duration`. `seconds` may be negative.
+    pub fn new(seconds: i64, nanos: u32) -> Self {
         Self { seconds, nanos }
+    }
+
+    /// Whether this duration is negative.
+    ///
+    /// `nanos` is always added, so the sign is carried entirely by `seconds`.
+    pub fn is_negative(&self) -> bool {
+        self.seconds < 0
+    }
+
+    /// Converts to a [`chrono::Duration`], which is signed and so can represent
+    /// the whole range of this type.
+    ///
+    /// Returns `None` when `nanos` is out of bounds or the value overflows
+    /// chrono's internal millisecond representation. `chrono::Duration` is the
+    /// natural counterpart to this message: both are a signed second count plus
+    /// an always-added sub-second remainder.
+    pub fn to_chrono(&self) -> Option<chrono::Duration> {
+        if self.nanos > 999_999_999 {
+            return None;
+        }
+        chrono::Duration::new(self.seconds, self.nanos)
+    }
+
+    /// Creates a `Duration` from a [`chrono::Duration`].
+    ///
+    /// Normalises chrono's representation, which may report a negative duration
+    /// as a negative second count with a negative sub-second part, into this
+    /// type's always-added `nanos`.
+    pub fn from_chrono(value: chrono::Duration) -> Self {
+        let seconds = value.num_seconds();
+        let nanos = (value - chrono::Duration::seconds(seconds))
+            .subsec_nanos()
+            .rem_euclid(1_000_000_000);
+        // `num_seconds` truncates toward zero, so a negative duration with a
+        // sub-second part needs the extra second borrowing back out of it.
+        if value < chrono::Duration::zero() && nanos != 0 {
+            Self::new(seconds - 1, nanos as u32)
+        } else {
+            Self::new(seconds, nanos as u32)
+        }
     }
 }
 
-impl From<std::time::Duration> for Duration {
-    fn from(value: std::time::Duration) -> Self {
-        Self::new(value.as_secs(), value.subsec_nanos())
+impl TryFrom<std::time::Duration> for Duration {
+    type Error = anyhow::Error;
+
+    /// Fallible since `seconds` became signed: `std::time::Duration` counts
+    /// seconds in a `u64`, so it can hold values above `i64::MAX` that this type
+    /// cannot. Silently wrapping such a value would turn the largest possible
+    /// duration into a negative one, which is worse than refusing it.
+    ///
+    /// The bound is about 292 billion years, so this only rejects values that
+    /// were never physically meaningful.
+    fn try_from(value: std::time::Duration) -> Result<Self, Self::Error> {
+        let seconds = i64::try_from(value.as_secs()).map_err(|_| {
+            anyhow::anyhow!(
+                "duration of {} seconds exceeds the signed range this protocol carries",
+                value.as_secs()
+            )
+        })?;
+        Ok(Self::new(seconds, value.subsec_nanos()))
     }
 }
 
 impl TryFrom<Duration> for std::time::Duration {
     type Error = anyhow::Error;
 
-    /// Fallible because the wire type is wider than what it is allowed to
-    /// carry: `nanos` is a `uint32`, so a peer can send a value that both
-    /// violates the documented `[0, 999999999]` bound and, once carried into
-    /// `seconds`, overflows `u64`. `std::time::Duration::new` panics on that,
-    /// and `timeout` rides on every request -- so an infallible conversion
-    /// here is a remotely triggerable abort.
+    /// Fallible because the wire type carries more than `std::time::Duration`
+    /// can. `nanos` is a `uint32`, so a peer can send a value violating the
+    /// documented `[0, 999999999]` bound, and `seconds` is now signed, so a peer
+    /// can send a negative duration that an unsigned type cannot express at all.
+    /// `std::time::Duration::new` panics on the former, and `timeout` rides on
+    /// every request -- so an infallible conversion here is a remotely
+    /// triggerable abort.
     fn try_from(value: Duration) -> Result<Self, Self::Error> {
         if value.nanos > 999_999_999 {
             return Err(anyhow::anyhow!(
@@ -281,7 +337,14 @@ impl TryFrom<Duration> for std::time::Duration {
                 value.nanos
             ));
         }
-        Ok(std::time::Duration::new(value.seconds, value.nanos))
+        let seconds = u64::try_from(value.seconds).map_err(|_| {
+            anyhow::anyhow!(
+                "cannot convert a negative duration of {} seconds into std::time::Duration, \
+                 which is unsigned; use `to_chrono` instead",
+                value.seconds
+            )
+        })?;
+        Ok(std::time::Duration::new(seconds, value.nanos))
     }
 }
 
