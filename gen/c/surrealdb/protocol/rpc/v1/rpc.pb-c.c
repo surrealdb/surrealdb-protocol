@@ -3991,7 +3991,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__limits__descripto
   (ProtobufCMessageInit) surrealdb__protocol__rpc__v1__limits__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__server_capabilities__field_descriptors[7] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__server_capabilities__field_descriptors[8] =
 {
   {
     "server_version",
@@ -4077,8 +4077,21 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__rpc__v1__server_capab
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "accepted_message_encodings",
+    8,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(Surrealdb__Protocol__Rpc__V1__ServerCapabilities, n_accepted_message_encodings),
+    offsetof(Surrealdb__Protocol__Rpc__V1__ServerCapabilities, accepted_message_encodings),
+    NULL,
+    &protobuf_c_empty_string,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned surrealdb__protocol__rpc__v1__server_capabilities__field_indices_by_name[] = {
+  7,   /* field[7] = accepted_message_encodings */
   3,   /* field[3] = capabilities */
   4,   /* field[4] = denied_methods */
   2,   /* field[2] = high_api_version */
@@ -4090,7 +4103,7 @@ static const unsigned surrealdb__protocol__rpc__v1__server_capabilities__field_i
 static const ProtobufCIntRange surrealdb__protocol__rpc__v1__server_capabilities__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 7 }
+  { 0, 8 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__server_capabilities__descriptor =
 {
@@ -4100,7 +4113,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__rpc__v1__server_capabiliti
   "Surrealdb__Protocol__Rpc__V1__ServerCapabilities",
   "surrealdb.protocol.rpc.v1",
   sizeof(Surrealdb__Protocol__Rpc__V1__ServerCapabilities),
-  7,
+  8,
   surrealdb__protocol__rpc__v1__server_capabilities__field_descriptors,
   surrealdb__protocol__rpc__v1__server_capabilities__field_indices_by_name,
   1,  surrealdb__protocol__rpc__v1__server_capabilities__number_ranges,

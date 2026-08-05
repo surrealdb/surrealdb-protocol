@@ -447,10 +447,48 @@ struct  Surrealdb__Protocol__Rpc__V1__ServerCapabilities
    * Live-query guarantees.
    */
   Surrealdb__Protocol__Rpc__V1__LiveQueryCapabilities *live_queries;
+  /*
+   * Per-message compression codecs this server can decode, as the literal
+   * `grpc-accept-encoding` tokens -- "identity", "gzip", "zstd". Most
+   * preferred first; a client MAY treat the order as a hint and MUST NOT
+   * treat it as a requirement.
+   * This is gRPC message compression, and has nothing to do with
+   * `QueryRequest.accepted_encodings`, which selects the shape of a result
+   * (row-oriented values or columnar Arrow) and is unrelated to how the
+   * message carrying it is framed. The two names are close enough to be
+   * confused, so: this field is transport, that field is payload. Neither is
+   * `ExportCompression`, which compresses the contents of an export file and
+   * is applied before the message is built.
+   * Tokens rather than an enum because the values are the gRPC codec
+   * registry's, not SurrealDB's. An enum would need a protocol release for
+   * every codec gRPC registers, and would need an enum-to-token mapping in
+   * each binding -- a mapping that turns a codec the binding does not know
+   * into UNSPECIFIED, which is indistinguishable from "the server said
+   * nothing". Passing the token through keeps an unknown codec merely
+   * unusable instead of misreported.
+   * Empty means unknown, which is what a server predating this field looks
+   * like -- NOT "no compression supported". A client MUST read empty as
+   * "send `identity` and do not probe", never as an error. A server with no
+   * compression available SHOULD list exactly "identity", which says so
+   * positively and is what the embedded binding reports, since it has no
+   * gRPC framing to compress.
+   * `identity` is always accepted whether or not it appears here. Listing it
+   * is only how a server distinguishes "uncompressed only" from silence.
+   * Advisory, like every other capability. A codec listed here may still be
+   * refused -- a proxy may have synthesised this response, or terminated TLS
+   * and re-framed without the codec the backend has. gRPC already defines
+   * that failure: the call fails UNIMPLEMENTED with the server's real
+   * `grpc-accept-encoding` in the trailers. A client MUST handle it by
+   * falling back to `identity` and retrying, and MUST NOT require this field
+   * to be populated before it will compress at all. Reading it correctly
+   * saves the probe; it does not remove the fallback.
+   */
+  size_t n_accepted_message_encodings;
+  char **accepted_message_encodings;
 };
 #define SURREALDB__PROTOCOL__RPC__V1__SERVER_CAPABILITIES__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__rpc__v1__server_capabilities__descriptor) \
-, (char *)protobuf_c_empty_string, NULL, NULL, 0,NULL, 0,NULL, NULL, NULL }
+, (char *)protobuf_c_empty_string, NULL, NULL, 0,NULL, 0,NULL, NULL, NULL, 0,NULL }
 
 
 /*
