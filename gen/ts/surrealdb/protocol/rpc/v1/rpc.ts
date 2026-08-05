@@ -550,7 +550,51 @@ export interface ServerCapabilities {
     | Limits
     | undefined;
   /** Live-query guarantees. */
-  liveQueries: LiveQueryCapabilities | undefined;
+  liveQueries:
+    | LiveQueryCapabilities
+    | undefined;
+  /**
+   * Per-message compression codecs this server can decode, as the literal
+   * `grpc-accept-encoding` tokens -- "identity", "gzip", "zstd". Most
+   * preferred first; a client MAY treat the order as a hint and MUST NOT
+   * treat it as a requirement.
+   *
+   * This is gRPC message compression, and has nothing to do with
+   * `QueryRequest.accepted_encodings`, which selects the shape of a result
+   * (row-oriented values or columnar Arrow) and is unrelated to how the
+   * message carrying it is framed. The two names are close enough to be
+   * confused, so: this field is transport, that field is payload. Neither is
+   * `ExportCompression`, which compresses the contents of an export file and
+   * is applied before the message is built.
+   *
+   * Tokens rather than an enum because the values are the gRPC codec
+   * registry's, not SurrealDB's. An enum would need a protocol release for
+   * every codec gRPC registers, and would need an enum-to-token mapping in
+   * each binding -- a mapping that turns a codec the binding does not know
+   * into UNSPECIFIED, which is indistinguishable from "the server said
+   * nothing". Passing the token through keeps an unknown codec merely
+   * unusable instead of misreported.
+   *
+   * Empty means unknown, which is what a server predating this field looks
+   * like -- NOT "no compression supported". A client MUST read empty as
+   * "send `identity` and do not probe", never as an error. A server with no
+   * compression available SHOULD list exactly "identity", which says so
+   * positively and is what the embedded binding reports, since it has no
+   * gRPC framing to compress.
+   *
+   * `identity` is always accepted whether or not it appears here. Listing it
+   * is only how a server distinguishes "uncompressed only" from silence.
+   *
+   * Advisory, like every other capability. A codec listed here may still be
+   * refused -- a proxy may have synthesised this response, or terminated TLS
+   * and re-framed without the codec the backend has. gRPC already defines
+   * that failure: the call fails UNIMPLEMENTED with the server's real
+   * `grpc-accept-encoding` in the trailers. A client MUST handle it by
+   * falling back to `identity` and retrying, and MUST NOT require this field
+   * to be populated before it will compress at all. Reading it correctly
+   * saves the probe; it does not remove the fallback.
+   */
+  acceptedMessageEncodings: string[];
 }
 
 /** Request to report server capabilities. */
@@ -2079,6 +2123,7 @@ function createBaseServerCapabilities(): ServerCapabilities {
     deniedMethods: [],
     limits: undefined,
     liveQueries: undefined,
+    acceptedMessageEncodings: [],
   };
 }
 
@@ -2104,6 +2149,9 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
     }
     if (message.liveQueries !== undefined) {
       LiveQueryCapabilities.encode(message.liveQueries, writer.uint32(58).fork()).join();
+    }
+    for (const v of message.acceptedMessageEncodings) {
+      writer.uint32(66).string(v!);
     }
     return writer;
   },
@@ -2171,6 +2219,14 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
           message.liveQueries = LiveQueryCapabilities.decode(reader, reader.uint32());
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.acceptedMessageEncodings.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2211,6 +2267,11 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
         : isSet(object.live_queries)
         ? LiveQueryCapabilities.fromJSON(object.live_queries)
         : undefined,
+      acceptedMessageEncodings: globalThis.Array.isArray(object?.acceptedMessageEncodings)
+        ? object.acceptedMessageEncodings.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.accepted_message_encodings)
+        ? object.accepted_message_encodings.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -2237,6 +2298,9 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
     if (message.liveQueries !== undefined) {
       obj.liveQueries = LiveQueryCapabilities.toJSON(message.liveQueries);
     }
+    if (message.acceptedMessageEncodings?.length) {
+      obj.acceptedMessageEncodings = message.acceptedMessageEncodings;
+    }
     return obj;
   },
 
@@ -2260,6 +2324,7 @@ export const ServerCapabilities: MessageFns<ServerCapabilities> = {
     message.liveQueries = (object.liveQueries !== undefined && object.liveQueries !== null)
       ? LiveQueryCapabilities.fromPartial(object.liveQueries)
       : undefined;
+    message.acceptedMessageEncodings = object.acceptedMessageEncodings?.map((e) => e) || [];
     return message;
   },
 };
