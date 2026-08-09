@@ -18,13 +18,13 @@ All four moved with `git subtree`, so their commits came with them.
 
 ## Resolve before publishing
 
-Three things are wrong today and would be baked in by a release.
+Two things are wrong today and would be baked in by a release.
 
 **`@surrealdb/cbor`'s `latest` tag points at the oldest version.** `dist-tags` are `latest: 2.0.0-alpha.1`, `alpha: 2.0.0-alpha.4`. Anyone running `bun add @surrealdb/cbor` gets alpha.1. This predates the move.
 
 **`@surrealdb/cbor`'s manifest says `2.0.0`, which has never been published.** The highest on npm is `2.0.0-alpha.4`. Decide whether the first release from here is `2.0.0` or another alpha, because `@surrealdb/sqon` declares `workspace:*` and bun rewrites that to whatever this version says at publish time. Publish cbor first either way.
 
-**`@surrealdb/protocol` has no type declarations.** Its manifest names `build/ts/index.d.ts` and `build/ts/index.bundled.mjs`; the build emits neither, so consumers resolve `any`. It has never been published to npm (`404`), so nothing is broken in the field yet, but it is broken in the manifest. Generating them needs the `TS2308` ambiguity in `packages/protocol/index.ts` resolved first: `exportCommonSymbols=true` makes every generated module export `protobufPackage`, `DeepPartial`, `Exact` and `MessageFns`, and `export *` cannot disambiguate them. Either regenerate with `exportCommonSymbols=false` or re-export the four explicitly, which means choosing which module's `protobufPackage` wins.
+`@surrealdb/protocol` shipping without type declarations is fixed. It now emits `build/ts/index.d.ts` and `build/ts/index.bundled.mjs`, and `scripts/check-entry-points.ts` runs in CI so a manifest cannot name a file the build does not produce again.
 
 ## Publishing order
 

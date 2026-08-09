@@ -38,7 +38,18 @@ plugins:
       - removeEnumPrefix=true
       - forceLong=bigint
       - env=both
-      - exportCommonSymbols=true
+      # ts-proto emits DeepPartial, Exact, MessageFns and protobufPackage into
+      # every file. Exporting them made the four modules collide in
+      # packages/protocol/index.ts, which re-exports all of them: `export *`
+      # cannot disambiguate a name that arrives from two sources, so TypeScript
+      # dropped all four and reported TS2308. esbuild dropped them too, which
+      # is why the built bundle never carried them.
+      #
+      # Keeping them module-local costs nothing. The three utility types are
+      # byte-identical in all four files, and protobufPackage is per-file
+      # ("surrealdb.protocol.v1" against "surrealdb.protocol.rpc.v1"), so a
+      # single barrel could never have exported a meaningful one anyway.
+      - exportCommonSymbols=false
       - outputEncodeMethods=true
       - outputJsonMethods=true
       - useDate=true

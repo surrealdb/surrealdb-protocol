@@ -96,7 +96,7 @@ CBOR is the one entry that fails the test and lives here anyway. `@surrealdb/cbo
 
 ### Layout
 
-```
+```text
 surrealdb/protocol/**   .proto and .fbs        the contract
 spec/                   SQON_SPECIFICATION.md  language-neutral format spec
 gen/{c,rust,ts}         generated bindings     checked in, CI diffs them
