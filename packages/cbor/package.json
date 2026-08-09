@@ -1,0 +1,46 @@
+{
+    "name": "@surrealdb/cbor",
+    "version": "2.0.0",
+    "type": "module",
+    "license": "Apache-2.0",
+    "description": "CBOR encoder and decoder by SurrealDB.",
+    "homepage": "https://github.com/surrealdb/cbor.js",
+    "keywords": [
+        "surrealdb",
+        "cbor",
+        "binary"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/surrealdb/cbor.js.git"
+    },
+    "scripts": {
+        "build": "bun run build.ts",
+        "qc": "biome check .",
+        "qa": "biome check . --write",
+        "qau": "biome check . --write --unsafe"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "exports": {
+        ".": {
+            "require": "./dist/surrealdb-cbor.cjs",
+            "import": "./dist/surrealdb-cbor.mjs",
+            "types": "./dist/surrealdb-cbor.d.ts"
+        }
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.1.2",
+        "@types/bun": "^1.2.21",
+        "dts-bundle-generator": "^9.5.1",
+        "rolldown": "^1.0.0-beta.31"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENCE",
+        "SECURITY.md"
+    ],
+    "packageManager": "^bun@1.1.17"
+}
