@@ -69,6 +69,51 @@ This repository contains the SurrealDB Network Protocol, which is used to commun
 
 **THIS IS A WORK IN PROGRESS**
 
+## What belongs here
+
+Every SDK needs the same wire contract, and for a long time each one carried its own copy of the parts that were not generated. This repository is where those parts live instead, so that a change to the contract is one change rather than one per language.
+
+One test decides whether something belongs here:
+
+> **Would a second language need a semantically identical version of this?**
+
+If yes, it is protocol. If it only makes sense for one language's users, it is SDK.
+
+| | second language needs it? | where it lives |
+|---|---|---|
+| `.proto` / `.fbs` schemas | yes, they *are* the contract | here |
+| generated message and service types | yes, one per language | here, in `gen/` |
+| the SQON value model | yes, identical semantics | here |
+| codecs: text, CBOR, JSON, flatbuffers | yes, these are the wire encodings | here |
+| method-name constants | yes | here |
+| the CBOR primitives underneath | no, but the value model depends on them | here, as a dependency |
+| connection, retry, reconnect | no | SDK |
+| authentication flows | no | SDK |
+| query builders, ORMs, typed helpers | no | SDK |
+| engines (WASM, NAPI, embedded) | no | the engine repository |
+
+CBOR is the one entry that fails the test and lives here anyway. `@surrealdb/cbor` carries no SurrealDB semantics: it is RFC 8949 and nothing else, and most languages have their own. It sits here because the SQON binary codec is built directly on it and the two are released together, not because every language needs a port of it.
+
+### Layout
+
+```
+surrealdb/protocol/**   .proto and .fbs        the contract
+spec/                   SQON_SPECIFICATION.md  language-neutral format spec
+gen/{c,rust,ts}         generated bindings     checked in, CI diffs them
+rust/                   hand-written Rust      the surrealdb-protocol crate
+packages/protocol       @surrealdb/protocol    generated TS + method names
+packages/sqon           @surrealdb/sqon        value model and codecs
+packages/cbor           @surrealdb/cbor        CBOR primitives
+```
+
+### Adding a language
+
+The TypeScript packages are the worked example. A new language follows the same split rather than the same file names:
+
+1. Add a generator to `buf.gen.yaml` and a `gen/<lang>` output. Check the output in, and add it to `GEN_CHECK_PATHS` in the `Makefile` so CI fails when it goes stale.
+2. Port the value model and codecs against [`spec/SQON_SPECIFICATION.md`](spec/SQON_SPECIFICATION.md), not against another language's implementation. The spec is what they are all checked against.
+3. Leave connection, authentication and query building in that language's SDK repository.
+
 ## Language Support
 
 - [x] Rust
@@ -82,11 +127,26 @@ This repository contains the SurrealDB Network Protocol, which is used to commun
 
 ## Development
 
-Generate the protobuf files:
+Generate the protobuf and flatbuffers code:
 
 ```bash
 make gen
 ```
 
-Note: These are not currently generated in CI or automatically checked in CI. This is a manual step for the time
-being but in the future we will have a CI step that ensures that the protobuf files are up to date.
+Generated code is checked in, and `make gen-check` asserts it still matches the schemas. CI runs it, so a schema change cannot land without its generated counterpart.
+
+The TypeScript packages are a [bun](https://bun.sh) workspace:
+
+```bash
+bun install
+bun run build
+```
+
+`build` is ordered rather than parallel: sqon's declaration bundling resolves `@surrealdb/cbor` through cbor's built output, so cbor has to be built first.
+
+```bash
+bun test
+bun run qc
+```
+
+`qc` runs biome from the root. The packages disagree on formatting, and each settles it with its own nested `biome.json`, so running biome from inside a package or with a different version will not agree with CI.
