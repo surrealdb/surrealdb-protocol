@@ -32,7 +32,7 @@ import {
  * directory the tests happen to be run from.
  */
 const generatedSource = await Bun.file(
-	`${import.meta.dir}/../gen/ts/surrealdb/protocol/rpc/v1/rpc.ts`,
+	`${import.meta.dir}/../../gen/ts/surrealdb/protocol/rpc/v1/rpc.ts`,
 ).text();
 
 /**

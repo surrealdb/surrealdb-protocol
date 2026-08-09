@@ -19,7 +19,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { Object as ProtoObject } from "../gen/ts/surrealdb/protocol/v1/value";
+import { Object as ProtoObject } from "../../gen/ts/surrealdb/protocol/v1/value";
 
 /** Bytes produced by Rust. See the matching assertions in rust/lib.rs. */
 const RUST_ENCODED = {

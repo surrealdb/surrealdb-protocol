@@ -1,11 +1,8 @@
-
-
-import { join } from "node:path";
 import * as esbuild from "esbuild";
 import tscPlugin from "esbuild-plugin-tsc";
 
 export async function compileDist(): Promise<void> {
-	const entryPoint = "typescript/index.ts";
+	const entryPoint = "index.ts";
 	const mjsOutput = "build/ts/index.mjs";
 	const cjsOutput = "build/ts/index.cjs";
 

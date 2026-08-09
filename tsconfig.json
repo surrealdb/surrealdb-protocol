@@ -25,5 +25,5 @@
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false
 	},
-	"include": ["typescript/**/*.ts"]
+	"include": ["packages/*/*.ts", "packages/*/src/**/*.ts", "gen/ts/**/*.ts"]
 }

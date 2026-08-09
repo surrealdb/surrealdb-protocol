@@ -3,13 +3,22 @@
   "workspaces": {
     "": {
       "name": "@surrealdb/protocol",
+      "devDependencies": {
+        "@biomejs/biome": "2.0.6",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/protocol": {
+      "name": "@surrealdb/protocol",
+      "version": "0.13.1",
       "dependencies": {
         "rxjs": "^7.8.2",
         "ts-proto": "2.11.5",
       },
       "devDependencies": {
-        "@biomejs/biome": "2.0.6",
-        "@types/bun": "latest",
         "esbuild": "^0.25.5",
         "esbuild-plugin-tsc": "^0.5.0",
       },
@@ -88,6 +97,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.5", "", { "os": "win32", "cpu": "ia32" }, "sha512-onOJ02pqs9h1iMJ1PQphR+VZv8qBMQ77Klcsqv9CNW2w6yLqoURLcgERAIurY6QE63bbLuqgP9ATqajFLK5AMQ=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.5", "", { "os": "win32", "cpu": "x64" }, "sha512-TXv6YnJ8ZMVdX+SXWVBo/0p8LTcrUYngpWjvm91TMjjBQii7Oz11Lw5lbDV5Y0TzuhSJHwiH4hEtC1I42mMS0g=="],
+
+    "@surrealdb/protocol": ["@surrealdb/protocol@workspace:packages/protocol"],
 
     "@types/bun": ["@types/bun@1.2.17", "", { "dependencies": { "bun-types": "1.2.17" } }, "sha512-l/BYs/JYt+cXA/0+wUhulYJB6a6p//GTPiJ7nV+QHa8iiId4HZmnu/3J/SowP5g0rTiERY2kfGKXEK5Ehltx4Q=="],
 

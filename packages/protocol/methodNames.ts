@@ -25,7 +25,7 @@
  * are checked against the same generated service rather than against each other.
  */
 
-import { SurrealDBServiceServiceName } from "../gen/ts/surrealdb/protocol/rpc/v1/rpc";
+import { SurrealDBServiceServiceName } from "../../gen/ts/surrealdb/protocol/rpc/v1/rpc";
 
 /** The fully-qualified service name, re-exported so callers need one import. */
 export const SERVICE_NAME = SurrealDBServiceServiceName;
