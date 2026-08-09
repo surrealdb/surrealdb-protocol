@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { InvalidRecordIdError, RecordId, StringRecordId } from "surrealdb";
+import { InvalidRecordIdError, RecordId, StringRecordId } from "../../src/index.ts";
 
 describe("StringRecordId", () => {
     test("construct from string", () => {

@@ -8,7 +8,7 @@ import {
     GeometryMultiPolygon,
     GeometryPoint,
     GeometryPolygon,
-} from "surrealdb";
+} from "../../src/index.ts";
 
 describe("GeometryPoint", () => {
     test("construct from coordinates", () => {

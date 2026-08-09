@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { FileRef } from "surrealdb";
+import { FileRef } from "../../src/index.ts";
 
 describe("File", () => {
     test("formatting", () => {

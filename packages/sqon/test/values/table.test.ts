@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Table } from "surrealdb";
+import { Table } from "../../src/index.ts";
 
 describe("Table", () => {
     test("construct from string", () => {

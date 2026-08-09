@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Decimal, RecordId, Uuid } from "surrealdb";
+import { Decimal, RecordId, Uuid } from "../../src/index.ts";
 
 describe("record ids", () => {
     test("valid id part", () => {

@@ -9,7 +9,7 @@ import {
     type RecordIdValue,
     StringRecordId,
     Uuid,
-} from "surrealdb";
+} from "../../src/index.ts";
 
 describe("record id", () => {
     test("inferred type", () => {

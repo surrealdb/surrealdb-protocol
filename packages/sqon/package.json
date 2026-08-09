@@ -18,6 +18,7 @@
         "qau": "biome check . --write --unsafe"
     },
     "devDependencies": {
+        "fast-check": "^4.3.0",
         "mitata": "^1.0.34"
     },
     "peerDependencies": {

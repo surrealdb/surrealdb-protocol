@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import fc from "fast-check";
-import { Decimal } from "surrealdb"; // adjust the import path as needed
+import { Decimal } from "../../src/index.ts"; // adjust the import path as needed
 
 describe("Decimal", () => {
     test("parses and returns high-precision values", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { BoundExcluded, BoundIncluded, RecordIdRange } from "surrealdb";
+import { BoundExcluded, BoundIncluded, RecordIdRange } from "../../src/index.ts";
 
 describe("RecordIdRange", () => {
     test("construct with included/excluded bounds", () => {

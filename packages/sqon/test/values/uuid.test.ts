@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Uuid } from "surrealdb";
+import { Uuid } from "../../src/index.ts";
 
 describe("Uuid", () => {
     const EXAMPLE = "d2f72714-a387-487a-8eae-451330796ff4";

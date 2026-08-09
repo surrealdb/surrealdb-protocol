@@ -9,19 +9,19 @@
     "url": "git+https://github.com/surrealdb/surrealdb-protocol.git"
   },
   "homepage": "https://github.com/surrealdb/surrealdb-protocol",
-  "packageManager": "^bun@1.1.17",
+  "packageManager": "^bun@1.2.21",
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
     "@biomejs/biome": "2.1.2",
-    "@types/bun": "1.2.17"
+    "@types/bun": "1.2.21"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "scripts": {
-    "build": "bun run --filter '*' build",
+    "build": "bun run --filter '@surrealdb/cbor' build && bun run --filter '@surrealdb/sqon' build && bun run --filter '@surrealdb/protocol' build",
     "test": "bun test",
     "ts": "tsc --watch --noEmit true --emitDeclarationOnly false",
     "qts": "tsc --noEmit",

@@ -6,7 +6,7 @@ import {
     InvalidRecordIdError,
     InvalidTableError,
     SqonError,
-} from "surrealdb";
+} from "../src/index.ts";
 
 describe("SQON errors", () => {
     test("SqonError is the base error class", () => {

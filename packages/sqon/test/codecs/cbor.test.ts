@@ -21,7 +21,7 @@ import {
     StringRecordId,
     Table,
     Uuid,
-} from "surrealdb";
+} from "../../src/index.ts";
 
 const codec = new CborCodec({});
 

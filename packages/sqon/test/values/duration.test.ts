@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import fc from "fast-check";
-import { Duration } from "surrealdb";
+import { Duration } from "../../src/index.ts";
 
 describe("Duration", () => {
     test("string equality", () => {
