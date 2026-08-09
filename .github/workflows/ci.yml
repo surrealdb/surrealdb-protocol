@@ -214,7 +214,15 @@ jobs:
         with:
           bun-version: "1.2.21"
       - run: bun install
-      - run: bun test
+      # `bun run test`, not `bun test`. sqon's source imports @surrealdb/cbor by
+      # package name, which resolves through cbor's `exports` to dist/ -- so on
+      # a tree that has not been built, every test touching the CBOR codec dies
+      # with "Cannot find module". The script builds cbor first.
+      #
+      # Only cbor: it is the sole package another one imports by name, and
+      # building it takes 7s against 64s for the whole workspace. Add to the
+      # script if that ever stops being true; the failure is loud.
+      - run: bun run test
 
   # Covers packages/protocol and the generated code it re-exports. cbor and
   # sqon are checked by their own builds, which generate declarations and

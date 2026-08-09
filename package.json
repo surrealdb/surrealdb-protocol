@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build": "bun run --filter '@surrealdb/cbor' build && bun run --filter '@surrealdb/sqon' build && bun run --filter '@surrealdb/protocol' build",
-    "test": "bun test",
+    "test": "bun run --filter '@surrealdb/cbor' build && bun test",
     "ts": "tsc --watch --noEmit true --emitDeclarationOnly false",
     "qts": "tsc --noEmit",
     "qc": "biome check .",

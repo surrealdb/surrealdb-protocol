@@ -145,8 +145,10 @@ bun run build
 `build` is ordered rather than parallel: sqon's declaration bundling resolves `@surrealdb/cbor` through cbor's built output, so cbor has to be built first.
 
 ```bash
-bun test
+bun run test
 bun run qc
 ```
+
+`bun run test`, not a bare `bun test`. sqon's source imports `@surrealdb/cbor` by package name, which resolves through cbor's `exports` to its build output, so on an unbuilt tree every test touching the CBOR codec fails to resolve the module. The script builds cbor first.
 
 `qc` runs biome from the root. The packages disagree on formatting, and each settles it with its own nested `biome.json`, so running biome from inside a package or with a different version will not agree with CI.
