@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
         with:
-          bun-version: "1.1.17"
+          bun-version: "1.2.21"
       - uses: bufbuild/buf-action@c231a1aa9281e5db706c970f468f0744a37561fd # v1
         with:
           setup_only: true
@@ -117,7 +117,7 @@ jobs:
           override: true
       - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
         with:
-          bun-version: "1.1.17"
+          bun-version: "1.2.21"
       - uses: bufbuild/buf-action@c231a1aa9281e5db706c970f468f0744a37561fd # v1
         with:
           setup_only: true
@@ -191,17 +191,20 @@ jobs:
           override: true
       - run: cargo build --no-default-features --features ${{ matrix.features }}
 
+  # Runs the workspace's own pinned biome via `bun run qc`, rather than a
+  # separately installed one. The packages disagree on formatting -- the
+  # protocol package is tab-indented, cbor and sqon are four-space -- and that
+  # is settled by nested biome configs, which only resolve when biome is
+  # invoked from the repository root against the version the manifest pins.
   ts-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
         with:
-          bun-version: "1.1.17"
-      - uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2
-
+          bun-version: "1.2.21"
       - run: bun install
-      - run: biome check ./typescript/
+      - run: bun run qc
 
   ts-test:
     runs-on: ubuntu-latest
@@ -209,9 +212,34 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
         with:
-          bun-version: "1.1.17"
+          bun-version: "1.2.21"
       - run: bun install
-      - run: bun test
+      # `bun run test`, not `bun test`. sqon's source imports @surrealdb/cbor by
+      # package name, which resolves through cbor's `exports` to dist/ -- so on
+      # a tree that has not been built, every test touching the CBOR codec dies
+      # with "Cannot find module". The script builds cbor first.
+      #
+      # Only cbor: it is the sole package another one imports by name, and
+      # building it takes 7s against 64s for the whole workspace. Add to the
+      # script if that ever stops being true; the failure is loud.
+      - run: bun run test
+
+  # Covers packages/protocol and the generated code it re-exports. cbor and
+  # sqon are checked by their own builds, which generate declarations and
+  # would fail on a type error before emitting.
+  #
+  # This could not run until the generated modules stopped exporting the same
+  # four helpers from every file: `export *` over them left tsc reporting
+  # TS2308 twelve times on a tree that was otherwise clean.
+  ts-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+      - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
+        with:
+          bun-version: "1.2.21"
+      - run: bun install
+      - run: bunx tsc --noEmit
 
   ts-build:
     runs-on: ubuntu-latest
@@ -219,6 +247,35 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
         with:
-          bun-version: "1.1.17"
+          bun-version: "1.2.21"
       - run: bun install
       - run: bun run build
+
+  # The release workflow publishes three packages from this repository, and a
+  # manifest that cannot be packed is not something to find out at tag time.
+  # Each package is packed exactly as the release would pack it.
+  ts-publish-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+      - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
+        with:
+          bun-version: "1.2.21"
+      - run: bun install
+      - run: bun run build
+      # The token is needed even for --dry-run: bun authenticates against the
+      # registry before it reports what it would have sent.
+      - name: Pack every package
+        run: |
+          for pkg in packages/cbor packages/sqon packages/protocol; do
+            echo "::group::$pkg"
+            (cd "$pkg" && bun publish --access public --dry-run)
+            echo "::endgroup::"
+          done
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Packing proves the tarball builds. It does not prove the tarball
+      # contains what the manifest points at -- @surrealdb/protocol packed
+      # cleanly for as long as it named a .d.ts it never emitted.
+      - run: bun run scripts/check-entry-points.ts

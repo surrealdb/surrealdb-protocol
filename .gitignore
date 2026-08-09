@@ -1,7 +1,17 @@
 
 # Build
+#
+# /build and /dist are unanchored below the root because each workspace package
+# emits into its own: packages/protocol/build/ts, packages/sqon/dist, and so on.
 /build
 /plugins
+packages/*/build
+packages/*/dist
+# Written by packages/cbor/build.ts on every build, for the JSR release.
+packages/*/jsr.json
+
+# OS X
+.DS_Store
 
 # Rust
 /target
@@ -11,6 +21,7 @@
 
 # Typescript / Javascript
 /node_modules
+packages/*/node_modules
 
 # Go
 /go.sum
