@@ -9,7 +9,7 @@
 <br>
 
 <p align="center">
-    <a href="https://github.com/surrealdb/cbor.js"><img src="https://img.shields.io/badge/status-beta-ff00bb.svg?style=flat-square"></a>
+    <a href="https://github.com/surrealdb/surrealdb-protocol"><img src="https://img.shields.io/badge/status-beta-ff00bb.svg?style=flat-square"></a>
     &nbsp;
     <a href="https://www.npmjs.com/package/@surrealdb/cbor"><img src="https://img.shields.io/npm/v/%40surrealdb%2Fcbor?style=flat-square"></a>
 </p>
@@ -27,6 +27,8 @@
 # cbor.js
 
 This library implements an efficient and lightweight CBOR encoder and decoder. While primary used by SurrealDB, it can be used independently for other projects.
+
+It lives in [surrealdb/surrealdb-protocol](https://github.com/surrealdb/surrealdb-protocol), alongside the wire schemas and the value model that build on it. It carries no SurrealDB semantics of its own: it is the CBOR layer that [`@surrealdb/sqon`](../sqon) encodes SurrealQL values through.
 
 Some features include:
 - Full support for the cbor specification

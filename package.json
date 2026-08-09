@@ -14,8 +14,8 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@biomejs/biome": "2.0.6",
-    "@types/bun": "latest"
+    "@biomejs/biome": "2.1.2",
+    "@types/bun": "1.2.17"
   },
   "peerDependencies": {
     "typescript": "^5"

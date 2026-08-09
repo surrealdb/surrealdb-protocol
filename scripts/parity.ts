@@ -296,7 +296,8 @@ function main(): void {
 
 		for (const member of fbMembers) {
 			if (offsetExempt.has(member.name.toLowerCase())) continue;
-			if (protoMembers.some((m) => m.number + shift === member.number)) continue;
+			if (protoMembers.some((m) => m.number + shift === member.number))
+				continue;
 			if (excused(union, member.name, "id")) continue;
 			problems.push(
 				`${label}: flatbuffers has ${member.name} = ${member.number}, proto has no field with tag ${member.number - shift}`,

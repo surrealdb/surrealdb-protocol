@@ -30,4 +30,4 @@ export async function compileDist(): Promise<void> {
 	]);
 }
 
-compileDist()
+compileDist();

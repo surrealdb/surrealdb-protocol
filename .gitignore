@@ -7,6 +7,11 @@
 /plugins
 packages/*/build
 packages/*/dist
+# Written by packages/cbor/build.ts on every build, for the JSR release.
+packages/*/jsr.json
+
+# OS X
+.DS_Store
 
 # Rust
 /target
