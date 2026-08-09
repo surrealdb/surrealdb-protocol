@@ -25,5 +25,9 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["packages/*/*.ts", "packages/*/src/**/*.ts", "gen/ts/**/*.ts"]
+  // Scoped to the protocol package and the generated code it re-exports.
+  // packages/cbor and packages/sqon each carry a standalone tsconfig, because
+  // they were written under settings that differ from these and a move is the
+  // wrong time to change what a package compiles under.
+  "include": ["packages/protocol/*.ts", "gen/ts/**/*.ts"]
 }

@@ -4,18 +4,20 @@
     "type": "module",
     "license": "Apache-2.0",
     "description": "SQON value types and codecs for SurrealDB.",
-    "homepage": "https://github.com/surrealdb/surrealdb.js",
+    "homepage": "https://github.com/surrealdb/surrealdb-protocol",
     "repository": {
         "type": "git",
-        "url": "https://github.com/surrealdb/surrealdb.js.git"
+        "url": "git+https://github.com/surrealdb/surrealdb-protocol.git",
+        "directory": "packages/sqon"
     },
     "scripts": {
         "build": "bun run build.ts",
         "bench": "bun run src/codec/text/parser.bench.ts",
-        "deploy": "bun run ../../scripts/publish.ts"
+        "qc": "biome check .",
+        "qa": "biome check . --write",
+        "qau": "biome check . --write --unsafe"
     },
     "devDependencies": {
-        "@types/bun": "^1.2.21",
         "mitata": "^1.0.34"
     },
     "peerDependencies": {
@@ -23,7 +25,7 @@
         "tslib": "^2.6.3"
     },
     "dependencies": {
-        "@surrealdb/cbor": "2.0.0-alpha.4",
+        "@surrealdb/cbor": "workspace:*",
         "uuidv7": "^1.0.1"
     },
     "types": "./dist/sqon.d.ts",
@@ -37,6 +39,7 @@
     },
     "files": [
         "dist",
+        "README.md",
         "LICENSE"
     ]
 }

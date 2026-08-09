@@ -10,7 +10,7 @@
 <br>
 
 <p align="center">
-    <a href="https://github.com/surrealdb/surrealdb.js"><img src="https://img.shields.io/badge/status-stable-ff00bb.svg?style=flat-square"></a>
+    <a href="https://github.com/surrealdb/surrealdb-protocol"><img src="https://img.shields.io/badge/status-stable-ff00bb.svg?style=flat-square"></a>
     &nbsp;
     <a href="https://surrealdb.com/docs/sdk/javascript"><img src="https://img.shields.io/badge/docs-view-44cc11.svg?style=flat-square"></a>
     &nbsp;
@@ -184,8 +184,12 @@ See the [codecs concept page](https://surrealdb.com/docs/languages/javascript/co
 | Utilities | `equals`, `jsonify`, `escapeIdent`, `escapeKey`, `escapeRid`, `escapeValue`, `toSurqlString` |
 | Errors | `SqonError`, `InvalidDateError`, `InvalidRecordIdError`, and related validation errors |
 
-> **Note:** `FlatBufferCodec` is exported for future API compatibility but is not implemented in this version.
+> **Note:** `FlatBufferCodec` is exported for future API compatibility but is not implemented in this version. The flatbuffers schema it needs is [`surrealdb/protocol/v1/value.fbs`](../../surrealdb/protocol/v1/value.fbs), in this same repository.
+
+## Specification
+
+The format this package implements is specified in [SQON_SPECIFICATION.md](../../spec/SQON_SPECIFICATION.md), which is language-neutral: it describes SQON, SQON Binary and SQON JSON for every SDK, not just this one.
 
 ## Contributing
 
-This package is part of the [surrealdb.js](https://github.com/surrealdb/surrealdb.js) monorepo. See the [main README](https://github.com/surrealdb/surrealdb.js/blob/main/README.md) for local setup, build commands, and contribution guidelines.
+This package is part of the [surrealdb-protocol](https://github.com/surrealdb/surrealdb-protocol) repository, alongside the wire schemas and the generated bindings. See the [main README](https://github.com/surrealdb/surrealdb-protocol/blob/main/README.md) for local setup, build commands, and contribution guidelines.

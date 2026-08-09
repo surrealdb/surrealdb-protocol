@@ -1,6 +1,30 @@
 {
-    "extends": "../../tsconfig.json",
+    // Standalone rather than extending the repository root, which is stricter
+    // than the settings this package was written and compiled under in
+    // surrealdb.js. Inheriting the root would turn a package move into a
+    // ~10-site type-error fix, and changing behaviour is not what a move is
+    // for. Tightening it to match is worth doing on its own.
     "compilerOptions": {
-        "isolatedDeclarations": false
-    }
+        "lib": ["ESNext", "DOM"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleDetection": "force",
+
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "emitDeclarationOnly": true,
+        "isolatedDeclarations": false,
+        "declaration": true,
+
+        "strict": true,
+        "skipLibCheck": true,
+        "noFallthroughCasesInSwitch": true,
+
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noPropertyAccessFromIndexSignature": false,
+        "noImplicitOverride": true
+    },
+    "include": ["src/**/*.ts", "build.ts"]
 }
