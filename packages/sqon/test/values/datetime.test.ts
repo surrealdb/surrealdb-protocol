@@ -138,4 +138,27 @@ describe("DateTime", () => {
             DateTime.parseString("invalid datetime");
         }).toThrow("Invalid datetime format: invalid datetime");
     });
+
+    // What actually keeps toISOString's trailing-zero trim cheap: every path
+    // that sets the nanoseconds field bounds it below one second, so the
+    // string it trims is always the nine characters padStart guarantees.
+    // A fraction longer than nine digits does not reach that field at all.
+    test("nanoseconds stays below one second whatever the fraction", () => {
+        // The ISO branch caps its fraction group at \d{1,9}.
+        expect(DateTime.parseString("2023-12-25T10:30:00.123456789Z")[1]).toBe(123456789n);
+
+        // A longer fraction fails that regex and falls through to Date.parse,
+        // which keeps millisecond precision.
+        const [, ns] = DateTime.parseString(`2023-12-25T10:30:00.${"1".repeat(40)}Z`);
+        expect(ns).toBeLessThan(1_000_000_000n);
+
+        // The tuple branch takes a remainder rather than trusting the caller.
+        expect(new DateTime([0n, 2_500_000_000n]).toISOString()).toBe("1970-01-01T00:00:02.5Z");
+    });
+
+    test("trailing zeros are trimmed exactly as before", () => {
+        // 123456000ns keeps six digits; 000000123ns keeps nine.
+        expect(new DateTime([0n, 123456000n]).toISOString()).toBe("1970-01-01T00:00:00.123456Z");
+        expect(new DateTime([0n, 123n]).toISOString()).toBe("1970-01-01T00:00:00.000000123Z");
+    });
 });

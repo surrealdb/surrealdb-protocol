@@ -152,7 +152,23 @@ export class DateTime extends Value {
         }
 
         const nanoseconds = this.#nanoseconds.toString().padStart(9, "0");
-        const trimmed = nanoseconds.replace(/0+$/, "");
+
+        // Trimmed by hand rather than with /0+$/, which CodeQL reports as
+        // js/polynomial-redos: that pattern backtracks from every start
+        // position when the run of zeros does not reach the end of the string.
+        //
+        // It was not actually reachable. Every path that sets #nanoseconds
+        // bounds it below one second -- parseString's fraction group is
+        // \d{1,9}, the Date and tuple paths take a remainder -- so this string
+        // is always the nine characters padStart guarantees, and nine
+        // characters cannot be slow.
+        //
+        // The loop is kept because it is exactly equivalent, is not slower,
+        // and does not depend on a reader re-deriving that bound to know the
+        // code is safe.
+        let end = nanoseconds.length;
+        while (end > 0 && nanoseconds.charCodeAt(end - 1) === 48) end--;
+        const trimmed = nanoseconds.slice(0, end);
 
         return isoString.replace(/\.\d{3}Z$/, `.${trimmed}Z`);
     }
