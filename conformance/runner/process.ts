@@ -139,7 +139,17 @@ export class ProcessAdapter implements Adapter {
 			this.waiting.set(id, (r) => {
 				clearTimeout(timer);
 				if (r instanceof Error) return reject(r);
-				if (r.ok) return resolve(r.result ?? null);
+				// A success carries a result (null for none) and no error, or a
+				// driver that dropped either would pass every step with no expect.
+				if (r.ok) {
+					if (!("result" in r) || "error" in r)
+						return reject(
+							new Error(
+								`driver answered ${op} with ok: true but ${"error" in r ? "an error" : "no result"}: ${JSON.stringify(r, bigints)}`,
+							),
+						);
+					return resolve(r.result ?? null);
+				}
 				// A failure must say what kind it is, or a loose expected error
 				// would pass on a driver that only said "no".
 				if (typeof r.error?.kind !== "string")
@@ -216,7 +226,7 @@ export async function serveDriver(adapter: Adapter) {
 					req.op === "hello"
 						? ((await adapter.hello()) as unknown as Json)
 						: await adapter.call(req.op, req.args ?? {});
-				write({ id: req.id, ok: true, result });
+				write({ id: req.id, ok: true, result: result ?? null });
 			} catch (e) {
 				const error: ErrorInfo =
 					e instanceof AdapterError
