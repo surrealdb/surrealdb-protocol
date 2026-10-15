@@ -892,6 +892,14 @@ vectors:
     cbor: d85c82d85982d85882f90000f90000d85882f93c00f93c00d85982d85882f94000f94000d85882f94200f94200
     diag: 92([89([88([0.0_1, 0.0_1]), 88([1.0_1, 1.0_1])]), 89([88([2.0_1, 2.0_1]), 88([3.0_1, 3.0_1])])])
 
+  - name: geometry-polygon-unclosed-ring
+    kind: decode
+    diag: "90([89([88([0.0, 0.0]), 88([4.0, 0.0]), 88([4.0, 4.0])])])"
+    value: { $geometry: { type: Polygon, coordinates: [ [ [ 0.0, 0.0 ], [ 4.0, 0.0 ], [ 4.0, 4.0 ], [ 0.0, 0.0 ] ] ] } }
+    notes: The server closes an open ring by repeating its first point, as geo::Polygon::new does.
+    cbor: d85a81d85983d85882f90000f90000d85882f94400f90000d85882f94400f94400
+    canonical: d85a81d85984d85882f90000f90000d85882f94400f90000d85882f94400f94400d85882f90000f90000
+
   - name: geometry-multipolygon
     kind: canonical
     surql: "{ type: 'MultiPolygon', coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 0]]], [[[2, 2], [3, 2], [3, 3], [2, 2]]]] }"

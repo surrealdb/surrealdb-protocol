@@ -629,6 +629,18 @@ function checkRecordKey(v: Value): Value {
 	return v;
 }
 
+/**
+ * geo::Polygon::new closes every ring, so the server holds an unclosed ring
+ * with its first point repeated at the end. Decoders do the same.
+ */
+export function closeRing(ring: Position[]): Position[] {
+	const first = ring[0];
+	const last = ring[ring.length - 1];
+	if (!first || !last || (first[0] === last[0] && first[1] === last[1]))
+		return ring;
+	return [...ring, [first[0], first[1]]];
+}
+
 function geometryFromCbor(i: CborItem): Geometry {
 	if (i.t !== "tag") throw new ValueError("geometry: expected a geometry tag");
 	const points = (c: CborItem) => asArray(c, "geometry").map((p) => pointOf(p));
@@ -642,7 +654,7 @@ function geometryFromCbor(i: CborItem): Geometry {
 			const rings = lines(i.v);
 			if (rings.length === 0)
 				throw new ValueError("polygon: needs at least one ring");
-			return { type: "Polygon", coordinates: rings };
+			return { type: "Polygon", coordinates: rings.map(closeRing) };
 		}
 		case TAG.MULTIPOINT:
 			return { type: "MultiPoint", coordinates: points(i.v) };
