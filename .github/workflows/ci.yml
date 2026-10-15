@@ -248,6 +248,12 @@ jobs:
       - name: Conformance scenarios (through the driver protocol)
         # Not `bun run conformance --`: older Bun splits the quoted command.
         run: bun conformance/runner/cli.ts --driver "bun conformance/runner/raw-driver.ts"
+      - name: Conformance scenarios (the JavaScript SDK example driver)
+        # Reports, not gates: the SDK has known gaps the scenarios record.
+        continue-on-error: true
+        run: |
+          (cd conformance/examples/surrealdb-js && bun install)
+          bun conformance/runner/cli.ts --driver "bun conformance/examples/surrealdb-js/driver.ts"
 
   ts-build:
     runs-on: ubuntu-latest

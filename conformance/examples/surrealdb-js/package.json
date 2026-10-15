@@ -1,0 +1,11 @@
+{
+	"name": "surrealdb-js-conformance-driver",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"surrealdb": "2.1.1"
+	},
+	"devDependencies": {
+		"@types/bun": "1.1.17"
+	}
+}
