@@ -382,6 +382,7 @@ export function toHex(b: Uint8Array): string {
 export function fromHex(h: string): Uint8Array {
 	const s = h.replace(/\s+/g, "");
 	if (s.length % 2) throw new Error(`odd-length hex: ${h}`);
+	if (!/^[0-9a-fA-F]*$/.test(s)) throw new Error(`not hex: ${h}`);
 	const out = new Uint8Array(s.length / 2);
 	for (let i = 0; i < out.length; i++)
 		out[i] = Number.parseInt(s.slice(i * 2, i * 2 + 2), 16);

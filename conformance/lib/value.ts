@@ -185,19 +185,29 @@ export function fromJson(j: Json): Value {
 		case "$uuid":
 			return { k: "uuid", v: normaliseUuid(a as string) };
 		case "$datetime":
+			if (Array.isArray(a) && a.length !== 2)
+				throw new ValueError("$datetime: expected [seconds, nanoseconds]");
 			return Array.isArray(a)
 				? {
 						k: "datetime",
-						secs: BigInt(a[0] as number | string),
-						nanos: Number(a[1] ?? 0),
+						secs: checkDatetimeSecs(
+							jsonInt(a[0], "datetime seconds", -(2n ** 63n), 2n ** 63n - 1n),
+						),
+						nanos: Number(
+							jsonInt(a[1] ?? 0, "datetime nanoseconds", 0n, 999_999_999n),
+						),
 					}
 				: { k: "datetime", ...parseDatetime(a as string) };
 		case "$duration":
+			if (Array.isArray(a) && a.length > 2)
+				throw new ValueError("$duration: at most [seconds, nanoseconds]");
 			return Array.isArray(a)
 				? {
 						k: "duration",
-						secs: BigInt((a[0] ?? 0) as number | string),
-						nanos: Number(a[1] ?? 0),
+						secs: jsonInt(a[0] ?? 0, "duration seconds", 0n, 2n ** 64n - 1n),
+						nanos: Number(
+							jsonInt(a[1] ?? 0, "duration nanoseconds", 0n, 999_999_999n),
+						),
 					}
 				: { k: "duration", ...parseDuration(a as string) };
 		case "$table":
@@ -923,6 +933,27 @@ function checkI64(n: bigint): bigint {
 // +262142-12-31T23:59:59.999999999Z; the server can't hold an instant outside.
 const DATETIME_MIN_SECS = -8_334_601_228_800n;
 const DATETIME_MAX_SECS = 8_210_266_876_799n;
+
+/**
+ * An integer component of a typed JSON array form (a number, a decimal string
+ * for values past 2^53, or a bigint as the YAML loader gives), within [min, max]. The array forms are the
+ * canonical [seconds, nanoseconds], so nothing is carried or normalised.
+ */
+function jsonInt(
+	v: Json | undefined,
+	what: string,
+	min: bigint,
+	max: bigint,
+): bigint {
+	let n: bigint;
+	if (typeof v === "bigint") n = v;
+	else if (typeof v === "number" && Number.isSafeInteger(v)) n = BigInt(v);
+	else if (typeof v === "string" && /^-?[0-9]+$/.test(v)) n = BigInt(v);
+	else throw new ValueError(`${what}: expected an integer, got ${String(v)}`);
+	if (n < min || n > max)
+		throw new ValueError(`${what}: ${n} is outside ${min}..=${max}`);
+	return n;
+}
 
 export function checkDatetimeSecs(secs: bigint): bigint {
 	if (secs < DATETIME_MIN_SECS || secs > DATETIME_MAX_SECS)
