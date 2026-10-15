@@ -38,6 +38,7 @@ interface Vector {
 	kind: "canonical" | "decode" | "reject";
 	surql?: string;
 	diag?: string;
+	raw?: boolean;
 	value?: Json;
 	cbor: string;
 	canonical?: string;
@@ -60,7 +61,9 @@ describe("cbor vectors", () => {
 			const bytes = fromHex(v.cbor);
 			if (v.kind === "reject") {
 				expect(() => fromCbor(decode(bytes))).toThrow();
-				expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
+				// A raw vector's diag is prose: its bytes are below what diag can say.
+				if (!v.raw)
+					expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
 				return;
 			}
 			const expected = fromJson(v.value as Json);
@@ -73,7 +76,9 @@ describe("cbor vectors", () => {
 				expect(toHex(encode(toCbor(expected)))).toBe(v.cbor);
 				expect(diagnostic(decode(bytes))).toBe(v.diag as string);
 			} else {
-				expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
+				// A raw vector's diag is prose: its bytes are below what diag can say.
+				if (!v.raw)
+					expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
 				expect(toHex(encode(toCbor(expected)))).toBe(v.canonical as string);
 			}
 		});

@@ -526,7 +526,7 @@ function fromTag(t: bigint, c: CborItem): Value {
 			const s = a[0] as CborItem;
 			if (s.t !== "uint" && s.t !== "nint")
 				throw new ValueError("datetime: seconds must be an integer");
-			const secs = s.t === "uint" ? s.v : -1n - s.v;
+			const secs = checkI64(s.t === "uint" ? s.v : -1n - s.v);
 			const nanos = Number(asUint(a[1], "datetime nanoseconds", 999_999_999n));
 			return { k: "datetime", secs, nanos };
 		}
@@ -608,9 +608,17 @@ function boundFromCbor(i: CborItem): Bound {
 }
 
 function recordKeyFromCbor(i: CborItem): Value {
-	const v = fromCbor(i);
+	return checkRecordKey(fromCbor(i));
+}
+
+/** A record id key, or a bound of a record id range, which must be one too. */
+function checkRecordKey(v: Value): Value {
 	if (!["int", "string", "array", "object", "uuid", "range"].includes(v.k)) {
 		throw new ValueError(`record id key cannot be ${v.k}`);
+	}
+	if (v.k === "range") {
+		if (v.start) checkRecordKey(v.start.v);
+		if (v.end) checkRecordKey(v.end.v);
 	}
 	return v;
 }
