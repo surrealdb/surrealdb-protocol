@@ -18,7 +18,8 @@
  *
  * Environment: SURREAL_BIN (the surreal binary), SURREAL_URL (an already
  * running server; scenarios needing their own flags are then skipped),
- * CONFORMANCE_SERVER_LOGS=1 (pass the server's logs through).
+ * CONFORMANCE_SERVER_LOGS=1 (pass the server's logs through),
+ * CONFORMANCE_OP_TIMEOUT_MS (how long a driver may take per op; default 30000).
  */
 
 import { writeFileSync } from "node:fs";

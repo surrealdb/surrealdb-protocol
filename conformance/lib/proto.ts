@@ -11,6 +11,7 @@ import {
 	normaliseDecimal,
 	normaliseUuid,
 	type Position,
+	utf8Compare,
 	type Value,
 	ValueError,
 } from "./value";
@@ -89,7 +90,7 @@ function arm(v: Value): pb.Value["value"] {
 function object(entries: [string, Value][]): pb.Object {
 	return {
 		items: [...entries]
-			.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+			.sort(([a], [b]) => utf8Compare(a, b))
 			.map(([key, x]) => ({ key, value: toProto(x) })),
 	};
 }
@@ -113,6 +114,12 @@ function recordKey(k: Value): pb.RecordIdKey {
 			return { id: { $case: "array", array: { values: k.v.map(toProto) } } };
 		case "object":
 			return { id: { $case: "object", object: object(k.v) } };
+		// value.proto has these two (from value.fbs); the server's own record
+		// ids do not, and it rejects them over CBOR (see the reject vectors).
+		case "float":
+			return { id: { $case: "float64", float64: k.v } };
+		case "decimal":
+			return { id: { $case: "decimal", decimal: { value: k.v } } };
 		case "range": {
 			const b = (x: Bound): pb.RecordIdKeyBound =>
 				x === null

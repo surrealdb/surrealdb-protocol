@@ -123,7 +123,7 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 								: { value: args }) as Record<string, Json>,
 						expect: s.expect as Step["expect"],
 						capture: s.capture as string | undefined,
-						transports: s.transports as Transport[] | undefined,
+						transports: transportList(s.transports, `${where}: step ${i + 1}`),
 						note: s.note as string | undefined,
 					};
 				},
@@ -133,10 +133,7 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 				name,
 				description: raw.description as string | undefined,
 				source: raw.source as string | undefined,
-				transports: (raw.transports as Transport[] | undefined) ?? [
-					"ws",
-					"http",
-				],
+				transports: transportList(raw.transports, where) ?? ["ws", "http"],
 				since: raw.since as string | undefined,
 				server: raw.server as Scenario["server"],
 				setup: (raw.setup as Scenario["setup"] | undefined) ?? "default",
@@ -145,6 +142,20 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 		}
 	}
 	return out;
+}
+
+/** A scenario's or step's `transports`, refusing anything but ws and http. */
+function transportList(raw: unknown, where: string): Transport[] | undefined {
+	if (raw === undefined) return undefined;
+	if (
+		!Array.isArray(raw) ||
+		raw.length === 0 ||
+		raw.some((t) => t !== "ws" && t !== "http")
+	)
+		throw new Error(
+			`${where}: transports must be a non-empty list of ws and http, got ${JSON.stringify(raw)}`,
+		);
+	return raw as Transport[];
 }
 
 function semver(v: string): number[] {

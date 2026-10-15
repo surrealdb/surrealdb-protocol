@@ -117,12 +117,26 @@ export class ProcessAdapter implements Adapter {
 				new AdapterError({ kind: "Connection", message: "driver exited" }),
 			);
 		const id = this.nextId++;
+		// A driver that never answers (a deadlocked SDK, say) fails the step
+		// and is killed, rather than hanging the whole run.
+		const ms = Number(process.env.CONFORMANCE_OP_TIMEOUT_MS ?? 30_000);
 		return new Promise((resolve, reject) => {
-			this.waiting.set(id, (r) =>
-				r.ok
+			const timer = setTimeout(() => {
+				if (!this.waiting.delete(id)) return;
+				this.proc.kill();
+				reject(
+					new AdapterError({
+						kind: "Internal",
+						message: `driver did not answer ${op} within ${ms}ms`,
+					}),
+				);
+			}, ms);
+			this.waiting.set(id, (r) => {
+				clearTimeout(timer);
+				return r.ok
 					? resolve(r.result ?? null)
-					: reject(new AdapterError(r.error ?? { kind: "Internal" })),
-			);
+					: reject(new AdapterError(r.error ?? { kind: "Internal" }));
+			});
 			this.proc.stdin.write(`${JSON.stringify({ id, op, args }, bigints)}\n`);
 			this.proc.stdin.flush();
 		});
