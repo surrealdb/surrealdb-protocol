@@ -675,7 +675,11 @@ for await (const chunk of process.stdin) {
 			continue;
 		}
 		try {
-			write({ id, ok: true, result: await driver.call(op, args ?? {}) });
+			write({
+				id,
+				ok: true,
+				result: (await driver.call(op, args ?? {})) ?? null,
+			});
 		} catch (e) {
 			write({ id, ok: false, error: errorInfo(e) });
 		}
