@@ -123,6 +123,43 @@ export interface Ops {
 }
 
 export type Op = keyof Ops;
+
+const CONTEXT = ["session", "txn"] as const;
+
+/** Each op's argument names, for checking scenarios: a typo would be ignored by the adapter. */
+export const OP_ARGS: { [K in Op]: readonly string[] } = {
+	connect: ["url", "transport"],
+	close: [],
+	version: [],
+	ping: CONTEXT,
+	signin: [...CONTEXT, "credentials"],
+	signup: [...CONTEXT, "credentials"],
+	authenticate: [...CONTEXT, "token"],
+	invalidate: CONTEXT,
+	info: CONTEXT,
+	use: [...CONTEXT, "namespace", "database"],
+	set: [...CONTEXT, "name", "value"],
+	unset: [...CONTEXT, "name"],
+	query: [...CONTEXT, "sql", "vars"],
+	query_stream: [...CONTEXT, "sql", "vars"],
+	run: [...CONTEXT, "name", "version", "args"],
+	live: [...CONTEXT, "table", "diff"],
+	live_of: [...CONTEXT, "id"],
+	live_id: ["subscription"],
+	next_notification: ["subscription", "timeout"],
+	kill: [...CONTEXT, "subscription"],
+	new_session: [],
+	fork_session: ["from"],
+	list_sessions: [],
+	close_session: ["session"],
+	begin: CONTEXT,
+	commit: [...CONTEXT, "txn"],
+	cancel: [...CONTEXT, "txn"],
+	import: [...CONTEXT, "surql"],
+	export: [...CONTEXT, "options"],
+	raw_rpc: [...CONTEXT, "method", "params"],
+	raw_http: ["method", "path", "headers", "body"],
+};
 export const OPS = [
 	"connect",
 	"close",

@@ -39,6 +39,7 @@ import {
 	AdapterError,
 	type AdapterFactory,
 	type Hello,
+	OP_ARGS,
 	OPS,
 	type Transport,
 } from "./protocol";
@@ -147,6 +148,24 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 					if (!(OPS as readonly string[]).includes(op) && !RUNNER_OPS.has(op))
 						throw new Error(`${where}: step ${i + 1}: unknown op ${op}`);
 					const args = s[op];
+					if (
+						op !== "sleep" &&
+						args !== null &&
+						args !== undefined &&
+						(typeof args !== "object" || Array.isArray(args))
+					)
+						throw new Error(
+							`${where}: step ${i + 1}: ${op} takes named arguments, got ${JSON.stringify(args, big)}`,
+						);
+					const allowed = OP_ARGS[op as keyof typeof OP_ARGS];
+					const unknown =
+						allowed && args && typeof args === "object"
+							? Object.keys(args).filter((k) => !allowed.includes(k))
+							: [];
+					if (unknown.length)
+						throw new Error(
+							`${where}: step ${i + 1}: ${op} has no argument ${unknown.join(", ")}`,
+						);
 					return {
 						op,
 						args: (args === null || args === undefined
@@ -407,111 +426,119 @@ async function runOne(
 	steps.push(...scenario.steps);
 
 	const adapter = await factory();
-	let disposed = false;
 	// Whether any of the scenario's own steps (not the setup) ran here.
 	let ranOwnStep = false;
+	let outcome: Outcome;
 	try {
-		for (let i = 0; i < steps.length; i++) {
-			const step = steps[i] as Step;
-			const label = i < setupCount ? `setup ${i + 1}` : `${i - setupCount + 1}`;
-			if (step.transports && !step.transports.includes(transport)) continue;
-			if (i >= setupCount && step.op !== "sleep") ranOwnStep = true;
-			if (step.op === "sleep") {
-				await Bun.sleep(Number(step.args.value ?? 0));
-				continue;
-			}
-			const raw = step.expect as Record<string, Expectation> | undefined;
-			const expect: Expectation | undefined =
-				raw && ("ws" in raw || "http" in raw)
-					? raw[transport]
-					: (raw as Expectation | undefined);
-			let args: Record<string, Json>;
-			try {
-				args = resolve(step.args as Json, captures) as Record<string, Json>;
-				if (step.op === "connect" && !args.url)
-					args = { ...args, url, transport };
-			} catch (e) {
-				return {
-					status: "fail",
-					step: i + 1,
-					op: step.op,
-					message: `step ${label}: ${(e as Error).message}`,
-				};
-			}
-			let result: Json | undefined;
-			let error: AdapterError | undefined;
-			try {
-				result = await adapter.call(step.op, args);
-			} catch (e) {
-				if (!(e instanceof AdapterError))
+		outcome = await (async (): Promise<Outcome> => {
+			for (let i = 0; i < steps.length; i++) {
+				const step = steps[i] as Step;
+				const label =
+					i < setupCount ? `setup ${i + 1}` : `${i - setupCount + 1}`;
+				if (step.transports && !step.transports.includes(transport)) continue;
+				if (i >= setupCount && step.op !== "sleep") ranOwnStep = true;
+				if (step.op === "sleep") {
+					await Bun.sleep(Number(step.args.value ?? 0));
+					continue;
+				}
+				const raw = step.expect as Record<string, Expectation> | undefined;
+				const expect: Expectation | undefined =
+					raw && ("ws" in raw || "http" in raw)
+						? raw[transport]
+						: (raw as Expectation | undefined);
+				let args: Record<string, Json>;
+				try {
+					args = resolve(step.args as Json, captures) as Record<string, Json>;
+					if (step.op === "connect" && !args.url)
+						args = { ...args, url, transport };
+				} catch (e) {
 					return {
 						status: "fail",
 						step: i + 1,
 						op: step.op,
-						message: `step ${label}: adapter threw ${String(e)}`,
+						message: `step ${label}: ${(e as Error).message}`,
 					};
-				error = e;
-			}
-			if (error?.info.kind === "Unsupported" && !expect?.error) {
-				return {
-					status: "skip",
-					reason: `adapter does not support ${step.op}${error.info.message && error.info.message !== step.op ? ` (${error.info.message})` : ""}`,
-				};
-			}
-			const fail = (message: string): Outcome => ({
-				status: "fail",
-				step: i + 1,
-				op: step.op,
-				message: `step ${label} (${step.op}): ${message}`,
-			});
-			if (expect?.error !== undefined) {
-				if (!error)
-					return fail(`expected an error, got ${JSON.stringify(result, big)}`);
-				const r = match(
-					expect.error,
-					fromJson(clean(error.info as unknown as Json)),
-					captures,
-					"error",
-					true,
-				);
-				if (r) return fail(r);
-			} else {
-				if (error)
-					return fail(`unexpected error ${JSON.stringify(error.info, big)}`);
-				if (expect?.result !== undefined) {
+				}
+				let result: Json | undefined;
+				let error: AdapterError | undefined;
+				try {
+					result = await adapter.call(step.op, args);
+				} catch (e) {
+					if (!(e instanceof AdapterError))
+						return {
+							status: "fail",
+							step: i + 1,
+							op: step.op,
+							message: `step ${label}: adapter threw ${String(e)}`,
+						};
+					error = e;
+				}
+				if (error?.info.kind === "Unsupported" && !expect?.error) {
+					return {
+						status: "skip",
+						reason: `adapter does not support ${step.op}${error.info.message && error.info.message !== step.op ? ` (${error.info.message})` : ""}`,
+					};
+				}
+				const fail = (message: string): Outcome => ({
+					status: "fail",
+					step: i + 1,
+					op: step.op,
+					message: `step ${label} (${step.op}): ${message}`,
+				});
+				if (expect?.error !== undefined) {
+					if (!error)
+						return fail(
+							`expected an error, got ${JSON.stringify(result, big)}`,
+						);
 					const r = match(
-						expect.result,
-						fromJson(clean(result as Json)),
+						expect.error,
+						fromJson(clean(error.info as unknown as Json)),
 						captures,
-						"result",
+						"error",
+						true,
 					);
 					if (r) return fail(r);
+				} else {
+					if (error)
+						return fail(`unexpected error ${JSON.stringify(error.info, big)}`);
+					if (expect?.result !== undefined) {
+						const r = match(
+							expect.result,
+							fromJson(clean(result as Json)),
+							captures,
+							"result",
+						);
+						if (r) return fail(r);
+					}
 				}
+				if (step.capture) captures.set(step.capture, (result ?? null) as Json);
 			}
-			if (step.capture) captures.set(step.capture, (result ?? null) as Json);
-		}
-		// A driver that broke the protocol after its last answer fails here.
-		disposed = true;
-		try {
-			await adapter.dispose();
-		} catch (e) {
+			// Only the setup ran: nothing in the scenario applies to this transport.
+			if (!ranOwnStep)
+				return {
+					status: "skip",
+					reason: `no steps apply over ${transport}`,
+				};
+			return { status: "pass" };
+		})();
+	} catch (e) {
+		await adapter.dispose().catch(() => {});
+		throw e;
+	}
+	// A driver that broke the protocol after its last answer, or exited badly,
+	// fails here, whether its steps passed or were skipped.
+	try {
+		await adapter.dispose();
+	} catch (e) {
+		if (outcome.status !== "fail")
 			return {
 				status: "fail",
 				step: scenario.steps.length,
 				op: "dispose",
 				message: `driver: ${(e as Error).message}`,
 			};
-		}
-		// Only the setup ran: nothing in the scenario applies to this transport.
-		if (!ranOwnStep)
-			return {
-				status: "skip",
-				reason: `no steps apply over ${transport}`,
-			};
-		return { status: "pass" };
-	} finally {
-		if (!disposed) await adapter.dispose().catch(() => {});
 	}
+	return outcome;
 }
 
 /** Drops undefined fields, which typed JSON has no spelling for. */

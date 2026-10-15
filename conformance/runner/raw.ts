@@ -247,9 +247,11 @@ class HttpRpc extends Rpc {
 		const bytes = new Uint8Array(await res.arrayBuffer());
 		if (!(res.headers.get("content-type") ?? "").includes("cbor")) {
 			const body = new TextDecoder().decode(bytes);
-			// A non-CBOR 5xx is the server or a proxy failing, not an RPC answer:
-			// a plain Error, so it cannot satisfy an expected error.
-			if (res.status >= 500)
+			// /rpc answers in CBOR. Outside that, only a bad request (400), auth
+			// (401, 403) or size and type refusals (413, 415) are its own answers;
+			// a 404, a redirect or a 5xx is a missing route or a failing server or
+			// proxy, so it is a plain Error and cannot satisfy an expected error.
+			if (![400, 401, 403, 413, 415].includes(res.status))
 				throw new Error(`${method}: HTTP ${res.status}: ${body.slice(0, 200)}`);
 			throw new AdapterError({
 				kind: res.status === 401 ? "NotAllowed" : "Validation",
