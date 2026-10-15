@@ -990,6 +990,18 @@ vectors:
     diag: '10("abc")'
     cbor: ca63616263
 
+  - name: reject-decimal-beyond-96-bits
+    kind: reject
+    diag: '10("79228162514264337593543950336")'
+    notes: One past the largest 96-bit decimal.
+    cbor: ca781d3739323238313632353134323634333337353933353433393530333336
+
+  - name: reject-datetime-impossible-date
+    kind: reject
+    diag: '0("2023-02-29T00:00:00Z")'
+    notes: 2023 is not a leap year. Date parsers that roll over to March 1 must not.
+    cbor: c074323032332d30322d32395430303a30303a30305a
+
   - name: reject-datetime-bad-string
     kind: reject
     diag: '0("not a date")'
