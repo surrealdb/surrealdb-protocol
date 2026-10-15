@@ -318,8 +318,11 @@ export function toJson(v: Value): Json {
 		case "array":
 			return v.v.map(toJson);
 		case "object": {
-			const o: { [k: string]: Json } = {};
-			for (const [k, x] of v.v) o[k] = toJson(x);
+			// fromEntries defines own properties, so a "__proto__" key stays a key
+			// instead of setting the prototype.
+			const o: { [k: string]: Json } = Object.fromEntries(
+				v.v.map(([k, x]) => [k, toJson(x)]),
+			);
 			return typedKey(o) ? { $object: o } : o;
 		}
 		case "set":

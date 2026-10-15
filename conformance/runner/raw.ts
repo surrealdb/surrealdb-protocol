@@ -391,10 +391,11 @@ export class RawAdapter implements Adapter {
 			if (result?.k !== "string") throw bad("is an error without a message");
 			const details = m.get("details");
 			const kind = m.get("kind");
+			if (kind?.k !== "string") throw bad("is an error without a kind");
 			return {
 				ok: false,
 				error: {
-					kind: kind?.k === "string" ? kind.v : "Internal",
+					kind: kind.v,
 					message: result?.k === "string" ? result.v : undefined,
 					...(details && details.k !== "none" && details.k !== "null"
 						? { details: toJson(details) }
@@ -487,6 +488,10 @@ export class RawAdapter implements Adapter {
 				// A new connection starts from nothing, as it does on the server.
 				this.sessions.clear();
 				this.sessions.set("", { vars: new Map() });
+				// Live queries belong to the old connection; so do their handles.
+				this.subscriptions.clear();
+				this.queues.clear();
+				this.waiters.clear();
 				const url = args.url as string;
 				this.base = url.replace(/^ws/, "http").replace(/\/rpc$/, "");
 				if (this.transport === "ws") {

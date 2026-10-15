@@ -7,6 +7,7 @@ import {
 	type Json,
 	normaliseDecimal,
 	toCbor,
+	toJson,
 	utf8Compare,
 } from "./value";
 
@@ -165,5 +166,17 @@ describe("value", () => {
 			[4, 4],
 			[0, 0],
 		]);
+	});
+
+	test("an object key named __proto__ round-trips", () => {
+		const v = { k: "object", v: [["__proto__", { k: "int", v: 1n }]] } as const;
+		const j = toJson(v as never);
+		expect(Object.hasOwn(j as object, "__proto__")).toBe(true);
+		expect(
+			JSON.stringify(j, (_, x) => (typeof x === "bigint" ? Number(x) : x)),
+		).toBe('{"__proto__":1}');
+		expect(equal(fromJson(JSON.parse('{"__proto__":1}')), v as never)).toBe(
+			true,
+		);
 	});
 });
