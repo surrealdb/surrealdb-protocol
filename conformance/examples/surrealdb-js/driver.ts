@@ -346,6 +346,8 @@ class Driver {
 	private db = new Surreal();
 	private readonly sessions = new Map<string, SurrealSession>();
 	private readonly txns = new Map<string, SurrealTransaction>();
+	// The session handle each transaction was begun in; undefined is the default session.
+	private readonly txnSessions = new Map<string, string | undefined>();
 	private readonly subs = new Map<
 		string,
 		{
@@ -376,6 +378,16 @@ class Driver {
 				throw new DriverError({
 					kind: "NotFound",
 					message: `no transaction ${args.txn}`,
+				});
+			// Transactions belong to a session: naming another one is a lookup
+			// that fails, as it does on the server, not a licence to use it.
+			if (
+				args.session !== undefined &&
+				args.session !== this.txnSessions.get(args.txn as string)
+			)
+				throw new DriverError({
+					kind: "NotFound",
+					message: `no transaction ${args.txn} in session ${args.session}`,
 				});
 			return t;
 		}
@@ -416,6 +428,7 @@ class Driver {
 				// Handles from the old connection must not reach the new one.
 				this.sessions.clear();
 				this.txns.clear();
+				this.txnSessions.clear();
 				this.subs.clear();
 				await this.db.connect(args.url as string, { reconnect: false });
 				return null;
@@ -579,11 +592,12 @@ class Driver {
 					handle,
 					await this.sessionOnly(op, args).beginTransaction(),
 				);
+				this.txnSessions.set(handle, args.session as string | undefined);
 				return handle;
 			}
 			case "commit":
 			case "cancel": {
-				const t = this.scope({ txn: args.txn });
+				const t = this.scope({ txn: args.txn, session: args.session });
 				// The handle stays valid: using a finished transaction is a scenario too.
 				await (op === "commit"
 					? (t as SurrealTransaction).commit()

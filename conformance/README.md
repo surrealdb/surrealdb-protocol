@@ -126,7 +126,7 @@ transaction. Neither means the connection's default session.
 | `list_sessions` | | the open session handles, without the default session |
 | `close_session` | `session` | `null` |
 | `begin` | Context | a transaction handle |
-| `commit`, `cancel` | `txn` | `null` |
+| `commit`, `cancel` | Context with `txn` (and the `session` it was begun in, if any) | `null` |
 | `import` | Context, `surql` | `null`. On a partial import, fail with `failures`: one error per failed statement |
 | `export` | Context, `options?` (the `/export` body) | the SurrealQL text |
 | `raw_rpc`, `raw_http` | | protocol-level escape hatches for the reference adapter. SDK drivers answer `Unsupported` |
