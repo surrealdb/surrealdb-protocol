@@ -136,8 +136,21 @@ class WsRpc extends Rpc {
 	static open(url: string): Promise<WsRpc> {
 		return new Promise((resolve, reject) => {
 			const ws = new WebSocket(url, ["cbor"]);
-			ws.onopen = () => resolve(new WsRpc(ws));
-			ws.onerror = () => reject(new Error(`cannot connect to ${url}`));
+			// An endpoint that accepts the connection but never finishes the
+			// upgrade fails the connect rather than hanging the run.
+			const ms = opTimeout();
+			const timer = setTimeout(() => {
+				ws.close();
+				reject(new Error(`no WebSocket upgrade from ${url} within ${ms} ms`));
+			}, ms);
+			ws.onopen = () => {
+				clearTimeout(timer);
+				resolve(new WsRpc(ws));
+			};
+			ws.onerror = () => {
+				clearTimeout(timer);
+				reject(new Error(`cannot connect to ${url}`));
+			};
 		});
 	}
 
