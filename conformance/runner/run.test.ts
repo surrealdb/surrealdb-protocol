@@ -33,4 +33,23 @@ describe("loadScenarios", () => {
 			"only ws and http",
 		);
 	});
+
+	test("rejects misspelt scenario fields and empty scenarios", () => {
+		const write = (yaml: string) => {
+			const dir = mkdtempSync(join(tmpdir(), "scenarios-"));
+			writeFileSync(join(dir, "x.yaml"), yaml);
+			return () => loadScenarios(dir);
+		};
+		expect(
+			write("scenarios:\n  - name: x\n    stpes:\n      - version: {}\n"),
+		).toThrow("unknown field stpes");
+		expect(write("scenarios:\n  - name: x\n    steps: []\n")).toThrow(
+			"non-empty list",
+		);
+		expect(
+			write(
+				"scenarios:\n  - name: x\n    setup: defualt\n    steps:\n      - version: {}\n",
+			),
+		).toThrow("setup must be");
+	});
 });

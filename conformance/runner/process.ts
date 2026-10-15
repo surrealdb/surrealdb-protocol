@@ -41,11 +41,15 @@ export class ProcessAdapter implements Adapter {
 	// step outright, where an AdapterError could satisfy an expected error.
 	private readonly waiting = new Map<number, (r: Response | Error) => void>();
 	private exited = false;
+	// The first protocol violation. It sticks: a stray answer can arrive while
+	// nothing is waiting, and every later request and dispose() report it.
+	private broken?: string;
+	private reading: Promise<void>;
 
 	private constructor(
 		private readonly proc: Subprocess<"pipe", "pipe", "inherit">,
 	) {
-		void this.read();
+		this.reading = this.read();
 		void proc.exited.then(() => {
 			this.exited = true;
 			for (const w of this.waiting.values()) w(new Error("driver exited"));
@@ -106,6 +110,7 @@ export class ProcessAdapter implements Adapter {
 	}
 
 	private failAll(message: string) {
+		this.broken ??= message;
 		for (const [id, settle] of this.waiting) {
 			this.waiting.delete(id);
 			settle(new Error(message));
@@ -116,10 +121,11 @@ export class ProcessAdapter implements Adapter {
 		op: string,
 		args: Record<string, Json | undefined>,
 	): Promise<Json> {
-		if (this.exited)
+		if (this.broken)
 			return Promise.reject(
-				new AdapterError({ kind: "Connection", message: "driver exited" }),
+				new Error(`driver broke the protocol earlier: ${this.broken}`),
 			);
+		if (this.exited) return Promise.reject(new Error("driver exited"));
 		const id = this.nextId++;
 		// A driver that never answers (a deadlocked SDK, say) fails the step
 		// and is killed, rather than hanging the whole run.
@@ -162,6 +168,10 @@ export class ProcessAdapter implements Adapter {
 		const timer = setTimeout(() => this.proc.kill(), 2000);
 		await this.proc.exited;
 		clearTimeout(timer);
+		// Read what the driver wrote before it exited, so a stray answer after
+		// the last step still counts.
+		await this.reading.catch(() => {});
+		if (this.broken) throw new Error(this.broken);
 	}
 }
 
