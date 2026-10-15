@@ -7,6 +7,7 @@ import * as pb from "../../gen/ts/surrealdb/protocol/v1/value";
 import { fromHex, toHex } from "./cbor";
 import {
 	type Bound,
+	checkDatetimeSecs,
 	type Geometry,
 	normaliseDecimal,
 	normaliseUuid,
@@ -213,7 +214,7 @@ export function fromProto(p: pb.Value): Value {
 		case "datetime":
 			return {
 				k: "datetime",
-				secs: BigInt(a.datetime.seconds),
+				secs: checkDatetimeSecs(BigInt(a.datetime.seconds)),
 				nanos: unnanos(a.datetime.nanos, "datetime"),
 			};
 		case "uuid":

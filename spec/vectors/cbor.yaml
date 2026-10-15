@@ -940,11 +940,30 @@ vectors:
     notes: The bounds of a record id range must be record id keys themselves.
     cbor: c88266706572736f6ed83182d832f5d83305
 
+  - name: reject-datetime-after-chrono-max
+    kind: reject
+    diag: "12([8210266876800, 0])"
+    notes: One second past +262142-12-31T23:59:59.999999999Z, the latest instant chrono holds.
+    cbor: cc821b000007779a0a6b8000
+
+  - name: reject-datetime-before-chrono-min
+    kind: reject
+    diag: "12([-8334601228801, 0])"
+    notes: One second before -262143-01-01T00:00:00Z, the earliest instant chrono holds.
+    cbor: cc823b000007948cf2120000
+
   - name: reject-datetime-seconds-beyond-i64
     kind: reject
     diag: "12([9223372036854775808, 0])"
     notes: Datetime seconds are i64.
     cbor: cc821b800000000000000000
+
+  - name: reject-indefinite-text-split-code-point
+    kind: reject
+    raw: true
+    diag: "indefinite text (_ ...) whose chunks h'c2' and h'a2' each hold half of U+00A2"
+    cbor: 7f61c261a2ff
+    notes: Each text chunk must be valid UTF-8 on its own.
 
   - name: reject-indefinite-text-with-bytes-chunk
     kind: reject
