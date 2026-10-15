@@ -192,10 +192,11 @@ Writing the driver turned up these points about the SDK:
   the function, instead of calling the `run` RPC, so `--deny-rpc run` does not stop
   it. That is a fair implementation, so the deny-list scenario checks the
   server at protocol level instead.
-- **No sessions over HTTP.** The SDK refuses `newSession` over HTTP. The
-  server holds nothing between HTTP requests either, so supporting it would
-  mean client-held sessions, as the reference adapter does. The scenarios
-  pass either way: refusing shows up as a skip.
+- **No sessions over HTTP.** The SDK refuses `newSession` over HTTP, though
+  the server does keep attached sessions there (each holds its own auth, so
+  the SDK would sign in inside it). The reference adapter instead keeps HTTP
+  sessions in the client. The scenarios pass either way: refusing shows up as
+  a skip.
 - **`health()` calls an RPC that does not exist.** `Surreal.health()` sends
   the `health` method, which the server answers as an unknown method
   (`protocol.yaml` pins this). Health is `GET /health`. The runner has no
