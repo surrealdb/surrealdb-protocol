@@ -10,6 +10,11 @@ scenarios:
       - version:
         expect:
           result: { $match: "^surrealdb-\\d+\\.\\d+\\.\\d+" }
+
+  - name: ping-without-auth
+    description: ping answers before signin and before any namespace is selected.
+    setup: connect
+    steps:
       - ping:
 
   - name: signin-root-returns-a-token

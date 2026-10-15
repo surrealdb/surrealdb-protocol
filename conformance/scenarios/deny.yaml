@@ -3,12 +3,16 @@
 
 scenarios:
   - name: deny-rpc-method-is-not-allowed
-    description: A method denied with --deny-rpc fails with NotAllowed/Method naming it, on every transport.
+    description: >
+      A method denied with --deny-rpc fails with NotAllowed/Method naming it,
+      on every transport. Protocol level, because an SDK may implement its
+      run API as a query (the JavaScript SDK does), which the deny list does
+      not cover.
     server: { args: ["--deny-rpc", "run"] }
     steps:
-      - run: { name: "string::len", args: [abc] }
+      - raw_rpc: { method: run, params: ["string::len", null, [abc]] }
         expect:
-          error: { kind: NotAllowed, details: { kind: Method, details: { name: run } } }
+          result: [{ $partial: { error: { kind: NotAllowed, code: -32602, details: { kind: Method, details: { name: run } } } } }]
       - query: { sql: "RETURN string::len('abc')" }
         expect:
           result: [{ ok: true, result: 3 }]
