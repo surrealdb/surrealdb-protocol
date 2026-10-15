@@ -406,7 +406,10 @@ class Driver {
 			case "connect":
 				await this.db.close().catch(() => {});
 				this.db = new Surreal();
+				// Handles from the old connection must not reach the new one.
 				this.sessions.clear();
+				this.txns.clear();
+				this.subs.clear();
 				await this.db.connect(args.url as string, { reconnect: false });
 				return null;
 			case "close":
@@ -498,7 +501,8 @@ class Driver {
 				const fnArgs = ((args.args as Json[]) ?? []).map(fromJson);
 				const q = this.scope(args);
 				return toJson(
-					await (args.version
+					// An empty version string is still a version: forward it.
+					await (args.version !== undefined && args.version !== null
 						? q.run(args.name as string, args.version as string, fnArgs)
 						: q.run(args.name as string, fnArgs)),
 				);
