@@ -158,17 +158,22 @@ case "query": {
 	);
 }
 case "live": {
-	const live = this.session(args.session).live(new Table(args.table));
+	const live = this.sessionOnly(op, args).live(new Table(args.table));
 	return this.subscribe(await (args.diff ? live.diff() : live));
 }
 case "fork_session":
 	return this.keep(await this.session(args.from).forkSession());
 case "begin": {
 	const handle = `txn-${this.nextHandle++}`;
-	this.txns.set(handle, await this.session(args.session).beginTransaction());
+	this.txns.set(handle, await this.sessionOnly(op, args).beginTransaction());
 	return handle;
 }
 ```
+
+`scope(args)` is the transaction when `txn` is given and the session
+otherwise. `sessionOnly(op, args)` is for ops the SDK has only on a session: it
+answers `Unsupported` to a `txn` rather than ignoring it, so the op never runs
+outside the transaction the scenario asked for.
 
 Error mapping is where a driver says how its SDK reports failures:
 

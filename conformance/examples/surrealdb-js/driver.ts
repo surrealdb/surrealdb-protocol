@@ -538,6 +538,8 @@ class Driver {
 						};
 			}
 			case "kill":
+				// The subscription is bound to its session; it has no kill in a transaction.
+				if (args.txn !== undefined) throw unsupported("kill in a transaction");
 				await this.sub(args).sub.kill();
 				return null;
 			case "new_session":
