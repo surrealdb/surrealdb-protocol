@@ -127,4 +127,17 @@ describe("value", () => {
 		expect(() => normaliseDecimal(`0.${"0".repeat(28)}1`, true)).toThrow();
 		expect(normaliseDecimal(`1.${"0".repeat(40)}`, true)).toBe("1");
 	});
+
+	test("string record ids refuse text after the key", () => {
+		const rid = (v: string) =>
+			fromCbor({ t: "tag", tag: 8n, v: { t: "text", v } });
+		for (const bad of [
+			"person:1..5",
+			"person:alice bob",
+			"person:",
+			":x",
+			"person:{a: 1, a: 2}",
+		])
+			expect(() => rid(bad)).toThrow("not a record id");
+	});
 });
