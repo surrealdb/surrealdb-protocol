@@ -305,7 +305,12 @@ class Reader {
 							throw new CborDecodeError(
 								`indefinite ${major === 2 ? "bytes" : "text"} has a chunk of another type`,
 							);
-						chunks.push(this.slice(Number(this.arg(h & 0x1f))));
+						const chunk = this.slice(Number(this.arg(h & 0x1f)));
+						// Each text chunk is valid UTF-8 on its own: a code point
+						// split across two chunks is malformed.
+						if (major === 3)
+							new TextDecoder("utf-8", { fatal: true }).decode(chunk);
+						chunks.push(chunk);
 					}
 					this.pos++;
 					raw = concat(chunks);

@@ -526,7 +526,9 @@ function fromTag(t: bigint, c: CborItem): Value {
 			const s = a[0] as CborItem;
 			if (s.t !== "uint" && s.t !== "nint")
 				throw new ValueError("datetime: seconds must be an integer");
-			const secs = checkI64(s.t === "uint" ? s.v : -1n - s.v);
+			const secs = checkDatetimeSecs(
+				checkI64(s.t === "uint" ? s.v : -1n - s.v),
+			);
 			const nanos = Number(asUint(a[1], "datetime nanoseconds", 999_999_999n));
 			return { k: "datetime", secs, nanos };
 		}
@@ -718,6 +720,17 @@ function checkI64(n: bigint): bigint {
  * trailing fractional zeros, and "0" rather than "-0". `strict` rejects
  * anything that is not plain decimal notation, as the server does.
  */
+// chrono's DateTime<Utc> spans -262143-01-01T00:00:00Z to
+// +262142-12-31T23:59:59.999999999Z; the server can't hold an instant outside.
+const DATETIME_MIN_SECS = -8_334_601_228_800n;
+const DATETIME_MAX_SECS = 8_210_266_876_799n;
+
+export function checkDatetimeSecs(secs: bigint): bigint {
+	if (secs < DATETIME_MIN_SECS || secs > DATETIME_MAX_SECS)
+		throw new ValueError(`datetime: ${secs} seconds is outside chrono's range`);
+	return secs;
+}
+
 const DECIMAL_MAX = 2n ** 96n - 1n;
 
 export function normaliseDecimal(s: string, strict = false): string {

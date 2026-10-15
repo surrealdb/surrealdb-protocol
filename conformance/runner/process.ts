@@ -37,7 +37,9 @@ interface Response {
 export class ProcessAdapter implements Adapter {
 	private nextId = 1;
 	private buffer = "";
-	private readonly waiting = new Map<number, (r: Response) => void>();
+	// An Error settles a request the driver broke the protocol on. It fails the
+	// step outright, where an AdapterError could satisfy an expected error.
+	private readonly waiting = new Map<number, (r: Response | Error) => void>();
 	private exited = false;
 
 	private constructor(
@@ -46,12 +48,7 @@ export class ProcessAdapter implements Adapter {
 		void this.read();
 		void proc.exited.then(() => {
 			this.exited = true;
-			for (const w of this.waiting.values())
-				w({
-					id: 0,
-					ok: false,
-					error: { kind: "Connection", message: "driver exited" },
-				});
+			for (const w of this.waiting.values()) w(new Error("driver exited"));
 			this.waiting.clear();
 		});
 	}
@@ -111,7 +108,7 @@ export class ProcessAdapter implements Adapter {
 	private failAll(message: string) {
 		for (const [id, settle] of this.waiting) {
 			this.waiting.delete(id);
-			settle({ id, ok: false, error: { kind: "Internal", message } });
+			settle(new Error(message));
 		}
 	}
 
@@ -131,18 +128,21 @@ export class ProcessAdapter implements Adapter {
 			const timer = setTimeout(() => {
 				if (!this.waiting.delete(id)) return;
 				this.proc.kill();
-				reject(
-					new AdapterError({
-						kind: "Internal",
-						message: `driver did not answer ${op} within ${ms}ms`,
-					}),
-				);
+				reject(new Error(`driver did not answer ${op} within ${ms}ms`));
 			}, ms);
 			this.waiting.set(id, (r) => {
 				clearTimeout(timer);
-				return r.ok
-					? resolve(r.result ?? null)
-					: reject(new AdapterError(r.error ?? { kind: "Internal" }));
+				if (r instanceof Error) return reject(r);
+				if (r.ok) return resolve(r.result ?? null);
+				// A failure must say what kind it is, or a loose expected error
+				// would pass on a driver that only said "no".
+				if (typeof r.error?.kind !== "string")
+					return reject(
+						new Error(
+							`driver answered ${op} with ok: false but no error {kind}: ${JSON.stringify(r, bigints)}`,
+						),
+					);
+				reject(new AdapterError(r.error));
 			});
 			this.proc.stdin.write(`${JSON.stringify({ id, op, args }, bigints)}\n`);
 			this.proc.stdin.flush();

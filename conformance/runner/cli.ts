@@ -105,4 +105,13 @@ if (values.report) {
 	);
 	console.log(`report written to ${values.report}`);
 }
+// Running nothing is not a pass: a mistyped --filter would otherwise go green.
+if (results.length === 0) {
+	console.error(
+		values.filter
+			? `no scenario matches --filter ${values.filter}`
+			: "no scenarios ran",
+	);
+	process.exit(1);
+}
 process.exit(count("fail") > 0 ? 1 : 0);
