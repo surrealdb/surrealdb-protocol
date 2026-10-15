@@ -122,7 +122,16 @@ routes:
   - { path: /sql, method: POST, capability: sql, description: "Raw SurrealQL in the body; returns the per-statement result list." }
   - { path: /signin, method: POST, capability: signin, description: 'Returns { code: 200, details: "Authentication succeeded", token }.' }
   - { path: /signup, method: POST, capability: signup }
-  - { path: "/key/{table}[/{id}]", capability: key, description: Legacy REST CRUD. }
+  - { path: "/key/{table}", method: GET, capability: key, description: "Legacy REST CRUD: select the whole table." }
+  - { path: "/key/{table}", method: POST, capability: key, description: "Legacy REST CRUD: create the whole table." }
+  - { path: "/key/{table}", method: PUT, capability: key, description: "Legacy REST CRUD: update the whole table." }
+  - { path: "/key/{table}", method: PATCH, capability: key, description: "Legacy REST CRUD: MERGE into every record in the table." }
+  - { path: "/key/{table}", method: DELETE, capability: key, description: "Legacy REST CRUD: delete the whole table." }
+  - { path: "/key/{table}/{id}", method: GET, capability: key, description: "Legacy REST CRUD: select one record." }
+  - { path: "/key/{table}/{id}", method: POST, capability: key, description: "Legacy REST CRUD: create one record." }
+  - { path: "/key/{table}/{id}", method: PUT, capability: key, description: "Legacy REST CRUD: update one record." }
+  - { path: "/key/{table}/{id}", method: PATCH, capability: key, description: "Legacy REST CRUD: MERGE into one record." }
+  - { path: "/key/{table}/{id}", method: DELETE, capability: key, description: "Legacy REST CRUD: delete one record." }
   - { path: /ml/import, method: POST, capability: ml }
   - { path: "/ml/export/{name}/{version}", method: GET, capability: ml }
   - { path: "/api/{ns}/{db}/{path}", capability: api, description: User-defined API endpoints. }
