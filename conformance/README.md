@@ -93,7 +93,10 @@ stdout, one JSON object per line:
   JSON or an answer that never comes.
 - Handles (sessions, transactions, live subscriptions) are strings the driver
   makes up. The runner only passes them back.
-- The process lasts for one scenario on one transport. Exit when stdin closes.
+- The process lasts for one scenario on one transport. Exit with status 0
+  when stdin closes, within 5 seconds. A driver that exits nonzero, or has to
+  be killed, fails the scenario. Close the SDK's connection and exit
+  explicitly: an open socket can keep the process alive.
 
 ### Ops
 
