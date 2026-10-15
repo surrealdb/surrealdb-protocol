@@ -1,0 +1,189 @@
+# SurrealDB's error taxonomy, as it appears on every wire.
+#
+# Source of truth: surrealdb/types/src/error.rs on surrealdb main at 6a9bc46152,
+# which defines the kinds, the detail sub-kinds and the legacy JSON-RPC codes.
+# `proto` is the matching ErrorKind in surrealdb/protocol/v1/error.proto.
+#
+# The error object on WebSocket and HTTP /rpc:
+#
+#   { code: int, message: tstr, kind: tstr,
+#     details?: { kind: tstr, details?: <next level or leaf payload> },
+#     cause?: <error> / NONE }
+#
+# `details` nests: NotAllowed -> Auth -> InvalidRole -> { name }. Over gRPC the
+# same information is a SurrealError message (error.proto), with `retry` set
+# for errors that may be retried.
+#
+# A per-statement failure inside a `query` result is a different shape: it has
+# `status: "ERR"`, the message in `result`, and `kind` and `details` alongside,
+# but no `code` (an SDK that wants one uses 0).
+#
+# Rules for SDKs:
+#   - Branch on `kind` and `details`, never on `message` (its wording changes)
+#     and, in new code, not on `code` (several kinds share -32000).
+#   - An unknown `kind` is Internal for behaviour, but keep the original string.
+#   - Walk `cause` with a depth limit.
+
+version: 1
+
+# Legacy JSON-RPC codes. New clients only need these to talk to old servers.
+codes:
+  - { code: -32700, name: PARSE_ERROR }
+  - { code: -32600, name: INVALID_REQUEST }
+  - { code: -32601, name: METHOD_NOT_FOUND }
+  - { code: -32602, name: METHOD_NOT_ALLOWED }
+  - { code: -32603, name: INVALID_PARAMS }
+  - { code: -32604, name: LIVE_QUERY_NOT_SUPPORTED }
+  - { code: -32605, name: BAD_LIVE_QUERY_CONFIG }
+  - { code: -32606, name: BAD_GRAPHQL_CONFIG }
+  - { code: -32607, name: DIALECT_NOT_SUPPORTED }
+  - { code: -32000, name: INTERNAL_ERROR, notes: The default whenever a kind has no more specific code. }
+  - { code: -32001, name: CLIENT_SIDE_ERROR }
+  - { code: -32002, name: INVALID_AUTH }
+  - { code: -32003, name: QUERY_NOT_EXECUTED }
+  - { code: -32004, name: QUERY_TIMEDOUT }
+  - { code: -32005, name: QUERY_CANCELLED }
+  - { code: -32006, name: THROWN }
+  - { code: -32007, name: SERIALIZATION_ERROR }
+  - { code: -32008, name: DESERIALIZATION_ERROR }
+  - { code: -32009, name: QUERY_TRANSACTION_CONFLICT, notes: Retryable. Older SDK code tables omit it. }
+
+# Each kind, with its detail sub-kinds. `code` is what the server sends for that
+# detail; a kind sent with no details uses `code_without_details`. `fields` is
+# the leaf payload under the detail's own `details`.
+kinds:
+  - kind: Validation
+    proto: ERROR_KIND_VALIDATION
+    description: Parse error, invalid request or invalid params.
+    code_without_details: -32000
+    details:
+      - { kind: Parse, code: -32700 }
+      - { kind: InvalidRequest, code: -32600 }
+      - { kind: InvalidParams, code: -32603 }
+      - { kind: NamespaceEmpty, code: -32600 }
+      - { kind: DatabaseEmpty, code: -32600 }
+      - { kind: InvalidParameter, code: -32600, fields: { name: tstr } }
+      - { kind: InvalidContent, code: -32600, fields: { value: tstr } }
+      - { kind: InvalidMerge, code: -32600, fields: { value: tstr } }
+    notes: >
+      A query that fails to parse is reported as a top-level Validation error
+      with message "Parse error: ..." and NO details, so code -32000, not -32700.
+
+  - kind: Configuration
+    proto: ERROR_KIND_CONFIGURATION
+    description: A feature or configuration is not supported.
+    code_without_details: -32000
+    details:
+      - { kind: LiveQueryNotSupported, code: -32604, notes: "What HTTP /rpc returns for live and kill." }
+      - { kind: BadLiveQueryConfig, code: -32605 }
+      - { kind: BadGraphqlConfig, code: -32606 }
+      - { kind: DialectNotSupported, code: -32607 }
+
+  - kind: Query
+    proto: ERROR_KIND_QUERY
+    description: Query execution failed.
+    code_without_details: -32000
+    details:
+      - { kind: NotExecuted, code: -32003, notes: "An earlier statement in the same transaction failed." }
+      - { kind: TimedOut, code: -32004, fields: { duration: duration } }
+      - { kind: Cancelled, code: -32005 }
+      - { kind: TransactionConflict, code: -32009, retryable: true }
+
+  - kind: Serialization
+    proto: ERROR_KIND_SERIALIZATION
+    description: Serialization or deserialization failed.
+    code_without_details: -32000
+    details:
+      - { kind: Serialization, code: -32007 }
+      - { kind: Deserialization, code: -32008 }
+
+  - kind: NotAllowed
+    proto: ERROR_KIND_NOT_ALLOWED
+    description: Permission or authorization failure.
+    code_without_details: -32000
+    details:
+      - kind: Auth
+        code: -32002
+        details:
+          - { kind: TokenExpired, code: -32002 }
+          - { kind: SessionExpired, code: -32000 }
+          - { kind: InvalidAuth, code: -32002, notes: "Wrong credentials. The message is \"There was a problem with authentication\"." }
+          - { kind: UnexpectedAuth, code: -32002 }
+          - { kind: MissingUserOrPass, code: -32002 }
+          - { kind: NoSigninTarget, code: -32002 }
+          - { kind: InvalidPass, code: -32002 }
+          - { kind: TokenMakingFailed, code: -32002 }
+          - { kind: InvalidSignup, code: -32002 }
+          - { kind: InvalidRole, code: -32002, fields: { name: tstr } }
+          - { kind: NotAllowed, code: -32002, fields: { actor: tstr, action: tstr, resource: tstr } }
+      - { kind: Method, code: -32602, fields: { name: tstr }, notes: "An RPC method denied by --deny-rpc (or sessions over HTTP)." }
+      - { kind: Scripting, code: -32602 }
+      - { kind: Function, code: -32602, fields: { name: tstr } }
+      - { kind: Target, code: -32602, fields: { name: tstr }, notes: A network target denied by --deny-net. }
+    notes: >
+      Without details (-32000) this is a permission failure inside the query,
+      such as a table PERMISSIONS clause or a denied arbitrary query.
+
+  - kind: NotFound
+    proto: ERROR_KIND_NOT_FOUND
+    description: The requested resource does not exist.
+    code_without_details: -32000
+    details:
+      - { kind: Method, code: -32601, fields: { name: tstr }, notes: "An unknown method is named \"unknown\", not by what the client sent." }
+      - { kind: Session, code: -32000, fields: { id: tstr / NONE } }
+      - { kind: Table, code: -32000, fields: { name: tstr } }
+      - { kind: Record, code: -32000, fields: { id: tstr } }
+      - { kind: Namespace, code: -32000, fields: { name: tstr } }
+      - { kind: Database, code: -32000, fields: { name: tstr } }
+      - { kind: Transaction, code: -32000, notes: Defined but not raised today; an unknown txn is Validation/InvalidParams. }
+
+  - kind: AlreadyExists
+    proto: ERROR_KIND_ALREADY_EXISTS
+    description: The resource already exists.
+    code_without_details: -32000
+    details:
+      - { kind: Session, code: -32000, fields: { id: tstr } }
+      - { kind: Table, code: -32000, fields: { name: tstr } }
+      - { kind: Record, code: -32000, fields: { id: tstr } }
+      - { kind: Namespace, code: -32000, fields: { name: tstr } }
+      - { kind: Database, code: -32000, fields: { name: tstr } }
+
+  - kind: Connection
+    proto: ERROR_KIND_CONNECTION
+    description: Client-side connection failure. Raised by SDKs, rarely by the server.
+    code_without_details: -32001
+    details:
+      - { kind: Uninitialised, code: -32001 }
+      - { kind: AlreadyConnected, code: -32001 }
+      - { kind: ConnectionFailed, code: -32001 }
+
+  - kind: Thrown
+    proto: ERROR_KIND_THROWN
+    description: Raised by THROW in SurrealQL. The message is "An error occurred: <thrown value>".
+    code_without_details: -32006
+    details: []
+
+  - kind: Internal
+    proto: ERROR_KIND_INTERNAL
+    description: >
+      Internal or unexpected failure, and the catch-all: an unknown kind from a
+      newer server is Internal for behaviour. Many ordinary statement failures
+      (field coercion, unknown function) are still Internal today.
+    code_without_details: -32000
+    details: []
+
+  - kind: Context
+    proto: ERROR_KIND_CONTEXT
+    description: Pure chaining context around another error, in `cause`. Carries no detail of its own.
+    code_without_details: -32000
+    details: []
+
+# How HTTP routes other than /rpc map an error kind to a status code
+# (surrealdb/server/src/ntw/error.rs). /rpc itself answers 200 with an error
+# envelope, except for a request it cannot parse at all, which is 400.
+http_status:
+  - { when: Query/TimedOut, status: 504 }
+  - { when: NotAllowed/Auth, status: 401 }
+  - { when: NotAllowed (anything else), status: 403 }
+  - { when: NotFound, status: 404 }
+  - { when: any other kind, status: 400 }

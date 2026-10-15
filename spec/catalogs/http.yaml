@@ -1,0 +1,133 @@
+# HTTP headers, MIME types, WebSocket subprotocols and routes.
+#
+# Source of truth: surrealdb/src/headers/mod.rs, surrealdb/rpc/src/format.rs,
+# surrealdb/core/src/rpc/format/mod.rs and surrealdb/server/src/ntw/ on
+# surrealdb main at 6a9bc46152. Header names are case-insensitive on the wire;
+# the canonical spelling is given.
+
+version: 1
+
+headers:
+  - name: Surreal-NS
+    direction: request
+    description: Selects the namespace for this request (HTTP) or the connection's initial namespace (WebSocket upgrade).
+  - name: Surreal-DB
+    direction: request
+    description: Selects the database. Needs a namespace.
+  - name: Surreal-Auth-NS
+    direction: request
+    description: >
+      With Basic auth, the namespace the user is defined in. Without it, Basic
+      credentials are checked as a root user.
+  - name: Surreal-Auth-DB
+    direction: request
+    description: With Basic auth and Surreal-Auth-NS, the database the user is defined in.
+  - name: Surreal-ID
+    direction: request
+    description: >
+      On a WebSocket upgrade, the connection id (a uuid). Reconnecting with the
+      id of a connection that is still open is rejected with HTTP 400.
+  - name: Authorization
+    direction: request
+    description: >
+      "Basic <base64 user:pass>" or "Bearer <token>". Basic auth signs in as
+      root unless Surreal-Auth-NS/DB say otherwise. The server rejects a
+      Surreal-NS/Surreal-DB pair the principal cannot access.
+  - name: Surreal-Version
+    direction: response
+    description: '"surrealdb/<semver>" on every response, when the server is configured to send it.'
+
+# Media types for Content-Type and Accept.
+mime:
+  - type: application/json
+    rpc: true
+    description: JSON. Values lose their types (see notes).
+  - type: application/cbor
+    rpc: true
+    description: CBOR with the tags in spec/cbor-tags.yaml. What SDKs should use.
+  - type: application/vnd.surrealdb.flatbuffers
+    rpc: true
+    description: FlatBuffers, surrealdb/protocol/v1/*.fbs.
+  - type: application/octet-stream
+    rpc: false
+    description: Raw bytes, for /import and /export bodies and /ml.
+  - type: text/plain
+    rpc: false
+    description: SurrealQL text, for /sql, /import, /export and /version; /signin returns the bare token with Accept text/plain.
+  - type: application/vnd.surrealdb.native
+    rpc: false
+    description: Reserved for in-process use. Not an HTTP format.
+
+mime_notes: >
+  On POST /rpc, Content-Type is required and, when Accept is present, it must
+  match Content-Type, else 415. "Accept: */*" means JSON. Over JSON the server
+  parses request values with the SurrealQL value parser, so a string that
+  looks like a record id, datetime or uuid ("person:1") arrives as that type;
+  CBOR has no such coercion, which is one reason SDKs should use CBOR. In JSON
+  responses NONE and NULL are both null.
+
+# Values for the Sec-WebSocket-Protocol header on GET /rpc.
+websocket_subprotocols:
+  - { name: cbor, mime: application/cbor }
+  - { name: json, mime: application/json }
+  - { name: flatbuffers, mime: application/vnd.surrealdb.flatbuffers }
+
+websocket_notes: >
+  Always send a subprotocol. Without one the server falls back to JSON and logs
+  that connecting without one is deprecated.
+
+# Routes. `capability` is the name --allow-http / --deny-http use.
+routes:
+  - { path: /rpc, method: GET, capability: rpc, description: WebSocket upgrade for RPC. }
+  - { path: /rpc, method: POST, capability: rpc, description: "One RPC request per HTTP request. See methods.yaml for what is missing over HTTP." }
+  - path: /health
+    method: GET
+    capability: health
+    description: 200 when the server and its storage are healthy, 500 when the storage check fails. Needs no auth. This, not an RPC, is the health check.
+  - { path: /status, method: GET, description: 200 when the server is up. }
+  - { path: /version, method: GET, capability: version, description: 'Plain text, "surrealdb-<semver>".' }
+  - path: /import
+    method: POST
+    capability: import
+    description: >
+      Runs a SurrealQL script, not transactionally. Send Surreal-NS, Surreal-DB
+      and Authorization. The script must start with `OPTION IMPORT;` (which
+      /export emits), else 400 and nothing runs. 200 means every statement applied, with the body an
+      empty list. 422 means some failed: the body is the list of failed
+      statement results (status "ERR", the message in `result`, `kind`,
+      `details`) in the negotiated format, and the other statements DID apply.
+      An SDK must surface 422 as an error that carries those failures. 401 and
+      403 mean nothing ran.
+  - path: /export
+    method: GET
+    capability: export
+    description: Streams the selected database as SurrealQL with every default option.
+  - path: /export
+    method: POST
+    capability: export
+    description: >
+      The same, with a JSON or CBOR body choosing what to include:
+      { users, accesses, params, functions, analyzers, apis, buckets, modules,
+        configs, records, sequences, database_definition: bool,
+        versions: bool (default false), tables: bool / [names] / { exclude: [names] } }.
+      Everything defaults to true except versions.
+  - { path: /sql, method: POST, capability: sql, description: "Raw SurrealQL in the body; returns the per-statement result list." }
+  - { path: /signin, method: POST, capability: signin, description: 'Returns { code: 200, details: "Authentication succeeded", token }.' }
+  - { path: /signup, method: POST, capability: signup }
+  - { path: "/key/{table}[/{id}]", capability: key, description: Legacy REST CRUD. }
+  - { path: /ml/import, method: POST, capability: ml }
+  - { path: "/ml/export/{name}/{version}", method: GET, capability: ml }
+  - { path: "/api/{ns}/{db}/{path}", capability: api, description: User-defined API endpoints. }
+  - { path: /graphql, method: POST, capability: graphql }
+  - { path: /sync, capability: sync, description: A stub. Do not use. }
+
+# The /rpc request and response envelopes, for reference; methods.yaml has the
+# per-method params and results and errors.yaml the error object.
+envelope:
+  request: "{ id?: null / uuid / int / tstr / datetime, method: tstr, params?: array, session?: uuid, txn?: uuid }"
+  response: "{ id?, result, session? } / { id?, error, session? }"
+  notification: "{ result: { id: uuid, action, record, result, session? }, session? }  (WebSocket only, no id)"
+  notes: >
+    `id` is echoed back and omitted when absent. `session` and `txn` are
+    top-level fields. A request `version` field (1 or 2) is accepted and
+    ignored.
