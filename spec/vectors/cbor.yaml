@@ -932,6 +932,18 @@ vectors:
     diag: '8(["person", true])'
     cbor: c88266706572736f6ef5
 
+  - name: reject-record-id-float-key
+    kind: reject
+    diag: '8(["person", 1.5])'
+    notes: value.proto's RecordIdKey has float64, but the server's record ids do not.
+    cbor: c88266706572736f6ef93e00
+
+  - name: reject-record-id-decimal-key
+    kind: reject
+    diag: '8(["person", 10("1.5")])'
+    notes: value.proto's RecordIdKey has decimal, but the server's record ids do not.
+    cbor: c88266706572736f6eca63312e35
+
   - name: reject-range-one-bound
     kind: reject
     diag: "49([50(1)])"

@@ -393,7 +393,7 @@ export function toCbor(v: Value): CborItem {
 			return {
 				t: "map",
 				v: [...v.v]
-					.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+					.sort(([a], [b]) => utf8Compare(a, b))
 					.map(([k, x]) => [text(k), toCbor(x)]),
 			};
 		case "set":
@@ -860,8 +860,50 @@ export function equal(a: Value, b: Value): boolean {
 			return a.bucket === y.bucket && a.key === y.key;
 		}
 		case "geometry":
-			return JSON.stringify(a.g) === JSON.stringify((b as typeof a).g);
+			return sameShape(a.g, (b as typeof a).g);
 	}
+}
+
+/** Deep equality that tells -0 from 0 and NaN from null, unlike JSON.stringify. */
+function sameShape(a: unknown, b: unknown): boolean {
+	if (typeof a === "number" || typeof b === "number") return Object.is(a, b);
+	if (Array.isArray(a) || Array.isArray(b)) {
+		return (
+			Array.isArray(a) &&
+			Array.isArray(b) &&
+			a.length === b.length &&
+			a.every((x, i) => sameShape(x, b[i]))
+		);
+	}
+	if (a && b && typeof a === "object" && typeof b === "object") {
+		const ka = Object.keys(a);
+		const kb = Object.keys(b);
+		return (
+			ka.length === kb.length &&
+			ka.every(
+				(k) =>
+					k in b &&
+					sameShape(
+						(a as Record<string, unknown>)[k],
+						(b as Record<string, unknown>)[k],
+					),
+			)
+		);
+	}
+	return a === b;
+}
+
+/**
+ * Orders strings by their UTF-8 bytes, as the server orders object keys.
+ * JavaScript's `<` compares UTF-16 code units, which differs above U+FFFF.
+ */
+export function utf8Compare(a: string, b: string): number {
+	const x = new TextEncoder().encode(a);
+	const y = new TextEncoder().encode(b);
+	for (let i = 0; i < Math.min(x.length, y.length); i++) {
+		if (x[i] !== y[i]) return (x[i] as number) - (y[i] as number);
+	}
+	return x.length - y.length;
 }
 
 function boundEqual(a: Bound, b: Bound): boolean {
