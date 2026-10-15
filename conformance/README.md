@@ -159,7 +159,8 @@ case "query": {
 }
 case "live": {
 	const live = this.sessionOnly(op, args).live(new Table(args.table));
-	return this.subscribe(await (args.diff ? live.diff() : live));
+	// The session goes with the subscription, so kill can check its context.
+	return this.subscribe(await (args.diff ? live.diff() : live), args.session);
 }
 case "fork_session":
 	return this.keep(await this.session(args.from).forkSession());
