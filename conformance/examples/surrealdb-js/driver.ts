@@ -348,7 +348,13 @@ class Driver {
 	private readonly txns = new Map<string, SurrealTransaction>();
 	private readonly subs = new Map<
 		string,
-		{ sub: LiveSubscription; queue: LiveMessage[]; wake?: () => void }
+		{
+			sub: LiveSubscription;
+			// The session handle it was started in; undefined is the default session.
+			session?: string;
+			queue: LiveMessage[];
+			wake?: () => void;
+		}
 	>();
 	private nextHandle = 1;
 
@@ -386,13 +392,14 @@ class Driver {
 		return this.session(args.session);
 	}
 
-	private subscribe(sub: LiveSubscription): string {
+	private subscribe(sub: LiveSubscription, session?: string): string {
 		const handle = `live-${this.nextHandle++}`;
-		const entry: {
+		const entry = { sub, session, queue: [] as LiveMessage[] } as {
 			sub: LiveSubscription;
+			session?: string;
 			queue: LiveMessage[];
 			wake?: () => void;
-		} = { sub, queue: [] };
+		};
 		sub.subscribe((m) => {
 			entry.queue.push(m);
 			entry.wake?.();
@@ -511,11 +518,15 @@ class Driver {
 				const live = this.sessionOnly(op, args).live(
 					new Table(args.table as string),
 				);
-				return this.subscribe(await (args.diff ? live.diff() : live));
+				return this.subscribe(
+					await (args.diff ? live.diff() : live),
+					args.session as string | undefined,
+				);
 			}
 			case "live_of":
 				return this.subscribe(
 					await this.sessionOnly(op, args).liveOf(fromJson(args.id) as Uuid),
+					args.session as string | undefined,
 				);
 			case "live_id":
 				return toJson(this.sub(args).sub.id);
@@ -543,7 +554,12 @@ class Driver {
 			}
 			case "kill":
 				// The subscription is bound to its session; it has no kill in a transaction.
+				// Its kill always runs in that session, so refuse any other context.
 				if (args.txn !== undefined) throw unsupported("kill in a transaction");
+				if (args.session !== this.sub(args).session)
+					throw unsupported(
+						"kill from a session other than the subscription's",
+					);
 				await this.sub(args).sub.kill();
 				return null;
 			case "new_session":
