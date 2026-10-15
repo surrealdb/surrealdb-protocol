@@ -2,8 +2,10 @@
  * A conformance driver for the JavaScript SDK (`surrealdb` on npm): the worked
  * example in conformance/README.md.
  *
- *   cd conformance/examples/surrealdb-js && bun install
- *   bun run conformance -- --driver "bun conformance/examples/surrealdb-js/driver.ts"
+ *   (cd conformance/examples/surrealdb-js && bun install)
+ *   bun conformance/runner/cli.ts --driver "bun conformance/examples/surrealdb-js/driver.ts"
+ *
+ * Run the second line from the repository root.
  *
  * The runner starts this process once per scenario and talks to it in JSON
  * lines: `{"id":1,"op":"query","args":{...}}` in, `{"id":1,"ok":true,"result":...}`
@@ -556,14 +558,16 @@ class Driver {
 					: (t as SurrealTransaction).cancel());
 				return null;
 			}
+			// The SDK imports and exports through the connection, outside any
+			// session or transaction, so refuse a context rather than ignore it.
 			case "import":
-				if (args.session !== undefined)
-					throw unsupported("import in a session");
+				if (args.session !== undefined || args.txn !== undefined)
+					throw unsupported("import in a session or transaction");
 				await this.db.import(args.surql as string);
 				return null;
 			case "export":
-				if (args.session !== undefined)
-					throw unsupported("export in a session");
+				if (args.session !== undefined || args.txn !== undefined)
+					throw unsupported("export in a session or transaction");
 				return await this.db.export((args.options as never) ?? undefined);
 		}
 		throw unsupported(op);
