@@ -52,6 +52,15 @@ if (values.list) {
 const transports = (values.transport as string)
 	.split(",")
 	.map((t) => t.trim()) as Transport[];
+if (
+	transports.length === 0 ||
+	transports.some((t) => t !== "ws" && t !== "http")
+) {
+	console.error(
+		`--transport takes ws, http or both, got "${values.transport}"`,
+	);
+	process.exit(2);
+}
 const adapter = values.driver ? processAdapter(values.driver) : rawAdapter;
 const colour = process.stdout.isTTY && !process.env.NO_COLOR;
 const paint = (code: number, s: string) =>
@@ -78,6 +87,9 @@ const { hello, results } = await runScenarios(scenarios, {
 			`${mark[o.status]} ${r.transport.padEnd(4)} ${r.scenario}${detail}`,
 		);
 	},
+}).catch((e: Error) => {
+	console.error(`conformance run aborted: ${e.message}`);
+	process.exit(1);
 });
 
 const count = (s: string) =>

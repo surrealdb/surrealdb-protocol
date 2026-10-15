@@ -285,8 +285,8 @@ export class RawAdapter implements Adapter {
 	) {
 		if (!this.rpc)
 			throw new AdapterError({ kind: "Connection", message: "not connected" });
-		// On HTTP every session lives on the client and travels as headers; only
-		// raw_rpc puts a session id on the wire there.
+		// Over HTTP this adapter keeps every session in the client and sends it
+		// as headers; only raw_rpc puts a session id on the wire there.
 		const session = ctx.session;
 		return this.rpc.request(method, params.map(toCbor), {
 			session: this.transport === "ws" || ctx.raw ? session : undefined,
@@ -470,7 +470,17 @@ export class RawAdapter implements Adapter {
 				return toJson(token);
 			}
 			case "authenticate": {
-				const token = args.token as string;
+				// signin may have returned {access, refresh}; authenticate takes the access token.
+				const t = args.token as Json;
+				const token =
+					t !== null && typeof t === "object" && !Array.isArray(t)
+						? (t as Record<string, Json>).access
+						: t;
+				if (typeof token !== "string")
+					throw new AdapterError({
+						kind: "Validation",
+						message: "authenticate needs a token string or {access}",
+					});
 				await this.rpcCall("authenticate", [{ k: "string", v: token }], ctx);
 				this.state(ctx.session).token = token;
 				return null;
@@ -658,7 +668,7 @@ export class RawAdapter implements Adapter {
 			}
 			case "new_session": {
 				const id = randomUuid();
-				// HTTP holds nothing between requests: sessions live in the client.
+				// Over HTTP this adapter keeps sessions in the client (see sessions.yaml).
 				if (this.transport === "ws")
 					await this.rpcCall("attach", [], { session: id });
 				this.sessions.set(id, { vars: new Map() });

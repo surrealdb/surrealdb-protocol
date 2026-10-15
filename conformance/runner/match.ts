@@ -133,16 +133,35 @@ export function match(
 				if (m === "$unordered" && want.length !== actual.v.length) {
 					return `${path}: expected ${want.length} elements in any order, got ${show(actual)}`;
 				}
-				const left = [...actual.v];
-				for (const w of want) {
-					const i = left.findIndex(
-						(x) => match(w, x, new Map(captures)) === null,
+				// Search for an assignment of distinct elements to patterns, backtracking
+				// so a loose pattern early on cannot take what a later one needs.
+				const assign = (
+					k: number,
+					used: Set<number>,
+					caps: Captures,
+				): Captures | null => {
+					if (k === want.length) return caps;
+					for (let i = 0; i < actual.v.length; i++) {
+						if (used.has(i)) continue;
+						const next = new Map(caps);
+						if (match(want[k] as Json, actual.v[i] as Value, next) !== null)
+							continue;
+						const done = assign(k + 1, new Set(used).add(i), next);
+						if (done) return done;
+					}
+					return null;
+				};
+				const found = assign(0, new Set(), captures);
+				if (!found) {
+					const lone = want.find(
+						(w) =>
+							!actual.v.some((x) => match(w, x, new Map(captures)) === null),
 					);
-					if (i < 0)
-						return `${path}: no element matches ${pat(w)} in ${show(actual)}`;
-					match(w, left[i] as Value, captures);
-					left.splice(i, 1);
+					return lone === undefined
+						? `${path}: no assignment of distinct elements matches ${pat(arg)} in ${show(actual)}`
+						: `${path}: no element matches ${pat(lone)} in ${show(actual)}`;
 				}
+				for (const [k, v] of found) captures.set(k, v);
 				return null;
 			}
 			case "$oneOf": {
