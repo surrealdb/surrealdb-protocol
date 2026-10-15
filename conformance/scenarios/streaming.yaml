@@ -101,8 +101,8 @@ scenarios:
               - { $partial: { result: { stream: rows } } }
               - { $partial: { result: { stream: finished, error: { $any: null } } } }
 
-  - name: stream-needs-a-request-id
-    description: query_stream without a request id is refused (the frames would have nothing to correlate on).
+  - name: query-cancel-unknown-stream
+    description: query_cancel for a request id with no stream running is refused, not silently accepted.
     since: "3.3.0"
     transports: [ws]
     steps:

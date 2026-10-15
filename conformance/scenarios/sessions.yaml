@@ -2,9 +2,11 @@
 #
 # On WebSocket the server has attach, detach and sessions; fork is SDK
 # behaviour (attach a new session and replay use, set and authenticate on it).
-# HTTP holds nothing between requests, so over HTTP an SDK keeps sessions in
-# the client (namespace, database, variables and token per session) and sends
-# them with each request. The behaviour scenarios run on both transports.
+# Over HTTP an SDK can attach sessions on the server too (an attached session
+# persists, but holds its own auth: the request's credentials do not carry
+# into it), or keep them in the client and send namespace, database, variables
+# and token with each request, as the reference adapter does. The behaviour
+# scenarios run on both transports either way.
 
 scenarios:
   - name: session-new-is-empty

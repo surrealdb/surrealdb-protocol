@@ -78,7 +78,18 @@ export class ProcessAdapter implements Adapter {
 					try {
 						r = JSON.parse(line) as Response;
 					} catch {
-						console.error(`driver wrote a line that is not JSON: ${line}`);
+						// A driver that breaks the protocol fails what it was asked, rather
+						// than leaving the runner waiting for an answer that never comes.
+						this.failAll(
+							`driver wrote a line that is not JSON: ${line.slice(0, 200)}`,
+						);
+						nl = this.buffer.indexOf("\n");
+						continue;
+					}
+					if (typeof r?.id !== "number" || !this.waiting.has(r.id)) {
+						this.failAll(
+							`driver answered an id it was not asked: ${line.slice(0, 200)}`,
+						);
 						nl = this.buffer.indexOf("\n");
 						continue;
 					}
@@ -87,6 +98,13 @@ export class ProcessAdapter implements Adapter {
 				}
 				nl = this.buffer.indexOf("\n");
 			}
+		}
+	}
+
+	private failAll(message: string) {
+		for (const [id, settle] of this.waiting) {
+			this.waiting.delete(id);
+			settle({ id, ok: false, error: { kind: "Internal", message } });
 		}
 	}
 
