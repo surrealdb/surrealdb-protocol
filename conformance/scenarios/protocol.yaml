@@ -86,8 +86,8 @@ scenarios:
     setup: default
     steps:
       - raw_rpc: { method: query, params: ["THROW 'x'"] }
+        # Matched exactly, not $partial, so a `code` on the statement fails it.
         expect:
           result:
-            - $partial:
-                result:
-                  - { status: ERR, kind: Thrown, result: { $match: x }, time: { $type: string }, type: { $oneOf: [null, { $none: null }] } }
+            - result:
+                - { status: ERR, kind: Thrown, result: { $match: x }, time: { $type: string }, type: { $oneOf: [null, { $none: null }] } }
