@@ -102,4 +102,16 @@ describe("ProcessAdapter", () => {
 			"did not exit when stdin closed",
 		);
 	}, 30_000);
+
+	test("a child that keeps stdout open cannot hang dispose", async () => {
+		// The shell answers, then leaves a child holding stdout and exits.
+		const js = `for await (const l of console) { if (!l.trim()) continue; const { id } = JSON.parse(l); console.log(JSON.stringify({ id, ok: true, result: null })); }`;
+		const a = ProcessAdapter.start(`sleep 60 & bun -e '${js}'`);
+		expect(await a.call("ping", {})).toBeNull();
+		const t = Date.now();
+		expect(String(await a.dispose().catch((x) => x))).toContain(
+			"kept its stdout open",
+		);
+		expect(Date.now() - t).toBeLessThan(15_000);
+	}, 30_000);
 });
