@@ -718,6 +718,8 @@ function checkI64(n: bigint): bigint {
  * trailing fractional zeros, and "0" rather than "-0". `strict` rejects
  * anything that is not plain decimal notation, as the server does.
  */
+const DECIMAL_MAX = 2n ** 96n - 1n;
+
 export function normaliseDecimal(s: string, strict = false): string {
 	const m = /^([+-]?)(\d*)(?:\.(\d*))?$/.exec(s.trim());
 	if (!m || (m[2] === "" && (m[3] ?? "") === "")) {
@@ -725,6 +727,9 @@ export function normaliseDecimal(s: string, strict = false): string {
 		return s;
 	}
 	const intPart = (m[2] as string).replace(/^0+(?=\d)/, "") || "0";
+	// rust_decimal holds a 96-bit mantissa, so the integer part caps out there.
+	if (strict && BigInt(intPart) > DECIMAL_MAX)
+		throw new ValueError(`decimal out of range: ${s}`);
 	const frac = (m[3] ?? "").replace(/0+$/, "");
 	const body = frac ? `${intPart}.${frac}` : intPart;
 	return m[1] === "-" && body !== "0" ? `-${body}` : body;
@@ -763,6 +768,24 @@ export function parseDatetime(s: string): { secs: bigint; nanos: number } {
 		`${m[1]}T${m[2]}${m[4]?.toUpperCase() === "Z" ? "Z" : m[4]}`,
 	);
 	if (Number.isNaN(ms)) throw new ValueError(`not an RFC 3339 datetime: ${s}`);
+	// Date.parse rolls 2023-02-29 over to March 1, so check the fields survive.
+	const [y, mo, d] = (m[1] as string).split(/(?<=\d)-/).map(Number);
+	const [h, mi, se] = (m[2] as string).split(":").map(Number);
+	const off =
+		m[4]?.toUpperCase() === "Z"
+			? 0
+			: (m[4]?.startsWith("-") ? -1 : 1) *
+				(Number(m[4]?.slice(1, 3)) * 60 + Number(m[4]?.slice(4, 6)));
+	const local = new Date(ms + off * 60_000);
+	if (
+		local.getUTCFullYear() !== y ||
+		local.getUTCMonth() + 1 !== mo ||
+		local.getUTCDate() !== d ||
+		local.getUTCHours() !== h ||
+		local.getUTCMinutes() !== mi ||
+		local.getUTCSeconds() !== se
+	)
+		throw new ValueError(`not a valid date and time: ${s}`);
 	return {
 		secs: BigInt(ms / 1000),
 		nanos: Number((m[3] ?? "").padEnd(9, "0")),

@@ -143,7 +143,8 @@ describe("cbor tag table", () => {
 				walk(x);
 			}
 	};
-	for (const v of vectors) walk(decode(fromHex(v.cbor)));
+	// Raw vectors are malformed CBOR, so there is nothing to walk.
+	for (const v of vectors) if (!v.raw) walk(decode(fromHex(v.cbor)));
 
 	test("tags are unique and sorted", () => {
 		const nums = tags.map((t) => t.tag);
