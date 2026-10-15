@@ -809,7 +809,7 @@ export function parseDatetime(s: string): { secs: bigint; nanos: number } {
 	)
 		throw new ValueError(`not a valid date and time: ${s}`);
 	return {
-		secs: BigInt(ms / 1000),
+		secs: checkDatetimeSecs(BigInt(ms / 1000)),
 		nanos: Number((m[3] ?? "").padEnd(9, "0")),
 	};
 }
@@ -839,6 +839,9 @@ export function parseDuration(s: string): { secs: bigint; nanos: number } {
 	}
 	if (s.length === 0 || matched !== s.length)
 		throw new ValueError(`not a duration: ${s}`);
+	// SurrealDB durations hold u64 seconds plus the nanoseconds within one.
+	if (total > (2n ** 64n - 1n) * 1_000_000_000n + 999_999_999n)
+		throw new ValueError(`duration out of range: ${s}`);
 	return {
 		secs: total / 1_000_000_000n,
 		nanos: Number(total % 1_000_000_000n),
