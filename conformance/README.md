@@ -88,6 +88,9 @@ stdout, one JSON object per line:
 - An error is `{"kind", "message"?, "details"?, "code"?}`. Report the server's
   `kind` and `details` as the SDK exposes them, not the message text. Use
   `Unsupported` only for "the SDK cannot do this", never for a server error.
+  Every `"ok": false` answer carries an `error` with a string `kind`; one
+  without fails the step as a protocol violation, as does a line that is not
+  JSON or an answer that never comes.
 - Handles (sessions, transactions, live subscriptions) are strings the driver
   makes up. The runner only passes them back.
 - The process lasts for one scenario on one transport. Exit when stdin closes.
@@ -103,12 +106,13 @@ transaction. Neither means the connection's default session.
 | `close` | | `null` |
 | `version` | | the server version string, `surrealdb-3.4.0` |
 | `ping` | Context | `null` |
-| `signin`, `signup` | Context, `credentials` with the RPC wire keys `user`, `pass`, `ns`, `db`, `ac`, plus record variables | the token, as the SDK returns it |
+| `signin`, `signup` | Context, `credentials` with the RPC wire keys `user`, `pass`, `ns`, `db`, `ac`, `key` (the bearer key for a bearer access method, as in rpc.proto's `BearerCredentials`), plus record variables | the token, as the SDK returns it |
 | `authenticate` | Context, `token` | `null` |
 | `invalidate` | Context | `null` |
 | `info` | Context | the authenticated record |
 | `use` | Context, `namespace?`, `database?` | `{namespace, database}` |
-| `set`, `unset` | Context, `name`, `value` | `null` |
+| `set` | Context, `name`, `value` | `null` |
+| `unset` | Context, `name` | `null` |
 | `query` | Context, `sql`, `vars?` | one `{ok: true, result}` or `{ok: false, error}` per statement. Fail the op only when the whole call fails, such as on a parse error |
 | `query_stream` | as `query` | the stream collected into the same shape as `query` |
 | `run` | Context, `name`, `version?`, `args?` | the function's result |
