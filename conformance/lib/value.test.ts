@@ -195,4 +195,25 @@ describe("value", () => {
 		expect(equal(fromCbor(toCbor(v)), v)).toBe(true);
 		expect(toJson(v)).toEqual(j);
 	});
+
+	test("typed datetime and duration arrays are canonical", () => {
+		for (const j of [
+			{ $duration: [0, 1_000_000_000] },
+			{ $duration: [-1, 0] },
+			{ $duration: ["18446744073709551616", 0] },
+			{ $duration: [1.5, 0] },
+			{ $datetime: [0, -1] },
+			{ $datetime: [0, 1_000_000_000] },
+			{ $datetime: [1] },
+		] as Json[])
+			expect(() => fromJson(j)).toThrow();
+		const d = fromJson({ $duration: ["18446744073709551615", 999_999_999] });
+		expect(equal(fromCbor(toCbor(d)), d)).toBe(true);
+	});
+
+	test("typed bytes must be hex", () => {
+		expect(() => fromJson({ $bytes: "gg" })).toThrow("not hex");
+		expect(() => fromJson({ $bytes: "0g" })).toThrow("not hex");
+		expect(toJson(fromJson({ $bytes: "0aFF" }))).toEqual({ $bytes: "0aff" });
+	});
 });
