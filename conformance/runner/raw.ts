@@ -74,6 +74,9 @@ function uuidItem(s: string): CborItem {
 
 const randomUuid = () => crypto.randomUUID();
 
+/** How long one request may take before it fails, as for driver processes. */
+const opTimeout = () => Number(process.env.CONFORMANCE_OP_TIMEOUT_MS ?? 30_000);
+
 /** One RPC connection, WebSocket or HTTP. */
 abstract class Rpc {
 	abstract request(
@@ -168,11 +171,29 @@ class WsRpc extends Rpc {
 	) {
 		const id = this.nextId++;
 		return new Promise<Envelope[]>((resolve, reject) => {
+			// A server that stops answering, or a stream with no `end` frame,
+			// fails the request rather than hanging the run.
+			const ms = opTimeout();
+			const timer = setTimeout(() => {
+				if (this.pending.delete(id))
+					reject(
+						new AdapterError({
+							kind: "Internal",
+							message: `no complete answer to ${method} within ${ms}ms`,
+						}),
+					);
+			}, ms);
 			this.pending.set(id, {
 				frames: [],
 				stream: !!opts.stream,
-				resolve,
-				reject,
+				resolve: (e) => {
+					clearTimeout(timer);
+					resolve(e);
+				},
+				reject: (e) => {
+					clearTimeout(timer);
+					reject(e);
+				},
 			});
 			this.ws.send(encodeRequest(id, method, params, opts.session, opts.txn));
 		});
@@ -195,6 +216,7 @@ class HttpRpc extends Rpc {
 		opts: { session?: string; txn?: string; headers?: Record<string, string> },
 	) {
 		const res = await fetch(this.url, {
+			signal: AbortSignal.timeout(opTimeout()),
 			method: "POST",
 			body: encodeRequest(
 				this.nextId++,
@@ -727,6 +749,7 @@ export class RawAdapter implements Adapter {
 				return null;
 			case "import": {
 				const res = await fetch(`${this.base}/import`, {
+					signal: AbortSignal.timeout(opTimeout()),
 					method: "POST",
 					body: args.surql as string,
 					headers: {
@@ -758,6 +781,7 @@ export class RawAdapter implements Adapter {
 			}
 			case "export": {
 				const res = await fetch(`${this.base}/export`, {
+					signal: AbortSignal.timeout(opTimeout()),
 					method: "POST",
 					body: JSON.stringify(args.options ?? {}),
 					headers: {
@@ -786,6 +810,7 @@ export class RawAdapter implements Adapter {
 			}
 			case "raw_http": {
 				const res = await fetch(`${this.base}${args.path as string}`, {
+					signal: AbortSignal.timeout(opTimeout()),
 					method: args.method as string,
 					headers: args.headers as Record<string, string> | undefined,
 					body: args.body as string | undefined,

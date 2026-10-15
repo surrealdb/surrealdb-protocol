@@ -86,6 +86,13 @@ export class ProcessAdapter implements Adapter {
 						nl = this.buffer.indexOf("\n");
 						continue;
 					}
+					if (typeof r?.ok !== "boolean") {
+						this.failAll(
+							`driver answered without a boolean ok: ${line.slice(0, 200)}`,
+						);
+						nl = this.buffer.indexOf("\n");
+						continue;
+					}
 					if (typeof r?.id !== "number" || !this.waiting.has(r.id)) {
 						this.failAll(
 							`driver answered an id it was not asked: ${line.slice(0, 200)}`,
