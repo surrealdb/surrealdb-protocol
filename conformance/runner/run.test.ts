@@ -52,4 +52,22 @@ describe("loadScenarios", () => {
 			),
 		).toThrow("setup must be");
 	});
+
+	test("checks the server block", () => {
+		const write = (server: string) => {
+			const dir = mkdtempSync(join(tmpdir(), "scenarios-"));
+			writeFileSync(
+				join(dir, "x.yaml"),
+				`scenarios:\n  - name: x\n    server: ${server}\n    steps:\n      - version: {}\n`,
+			);
+			return () => loadScenarios(dir);
+		};
+		expect(
+			write('{ args: ["--deny-rpc", "run"], env: { A: "1" } }'),
+		).not.toThrow();
+		expect(write('{ arg: ["--deny-rpc"] }')).toThrow("unknown field arg");
+		expect(write("{ args: [1] }")).toThrow("list of strings");
+		expect(write("{ env: { A: 1 } }")).toThrow("names to strings");
+		expect(write("[]")).toThrow("must be an object");
+	});
 });
