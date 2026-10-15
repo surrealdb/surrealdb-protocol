@@ -246,7 +246,8 @@ jobs:
       - name: Conformance scenarios (reference adapter)
         run: bun run conformance -- --report "$RUNNER_TEMP/conformance.json"
       - name: Conformance scenarios (through the driver protocol)
-        run: bun run conformance -- --driver "bun conformance/runner/raw-driver.ts"
+        # Not `bun run conformance --`: older Bun splits the quoted command.
+        run: bun conformance/runner/cli.ts --driver "bun conformance/runner/raw-driver.ts"
 
   ts-build:
     runs-on: ubuntu-latest
