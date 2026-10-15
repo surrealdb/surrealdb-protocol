@@ -179,7 +179,7 @@ Results for `surrealdb@2.1.1` against `surreal` 3.4.0-nightly (20261014):
 | | runs |
 |---|---|
 | pass | 91 |
-| fail | 2: `query-values-survive-the-full-stack` on ws and http |
+| fail | 4: `query-values-survive-the-full-stack` and `deny-rpc-run-is-not-bypassed`, each on ws and http |
 | skip | 51: protocol-level scenarios (`raw_rpc`/`raw_http`), `ping` (no SDK API), sessions over HTTP (the SDK refuses them with `UnsupportedFeatureError`), and scenarios that only apply to the other transport |
 
 Writing the driver turned up these points about the SDK:
@@ -189,9 +189,10 @@ Writing the driver turned up these points about the SDK:
   limitation of the JavaScript representation, and the failing scenario
   records it. The SDK could expose a float wrapper or document it.
 - **`run()` is a query.** The SDK compiles `run` into a query that calls
-  the function, instead of calling the `run` RPC, so `--deny-rpc run` does not stop
-  it. That is a fair implementation, so the deny-list scenario checks the
-  server at protocol level instead.
+  the function instead of sending the `run` method, so `--deny-rpc run` does
+  not stop it. rpc.proto rules this out (`rpc Run`: a synthesised query
+  bypasses the deny list, binds arguments by text, and moves name resolution
+  into the SDK), and `deny-rpc-run-is-not-bypassed` fails on it.
 - **No sessions over HTTP.** The SDK refuses `newSession` over HTTP, though
   the server does keep attached sessions there (each holds its own auth, so
   the SDK would sign in inside it). The reference adapter instead keeps HTTP
