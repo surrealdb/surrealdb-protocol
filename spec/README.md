@@ -107,7 +107,7 @@ other type is a single-key object whose key starts with `$`:
 | bytes | `{"$bytes": "68656c6c6f"}` (hex) |
 | uuid | `{"$uuid": "0189e0a5-1c3d-7abc-8def-0123456789ab"}` (lower case, hyphenated) |
 | datetime | `{"$datetime": "2024-02-29T12:34:56.123456789Z"}`: RFC 3339 in UTC, with nine fractional digits when the nanoseconds are not zero |
-| duration | `{"$duration": [seconds, nanoseconds]}`; seconds is a string when above 2^53 |
+| duration | `{"$duration": [seconds, nanoseconds]}`, nanoseconds in 0..999999999; seconds is a string when beyond ±2^53, and may be negative only where protobuf carries the value (CBOR's tag 14 is unsigned) |
 | array | `[...]`, or `{"$array": [...]}` |
 | object | `{...}`, or `{"$object": {...}}` when it would look like a typed value |
 | set | `{"$set": [...]}` |

@@ -204,7 +204,14 @@ export function fromJson(j: Json): Value {
 			return Array.isArray(a)
 				? {
 						k: "duration",
-						secs: jsonInt(a[0] ?? 0, "duration seconds", 0n, 2n ** 64n - 1n),
+						// Signed, as value.proto carries it; CBOR's tag 14 cannot, and
+						// toCbor refuses a negative one.
+						secs: jsonInt(
+							a[0] ?? 0,
+							"duration seconds",
+							-(2n ** 63n),
+							2n ** 64n - 1n,
+						),
 						nanos: Number(
 							jsonInt(a[1] ?? 0, "duration nanoseconds", 0n, 999_999_999n),
 						),
@@ -225,7 +232,7 @@ export function fromJson(j: Json): Value {
 			};
 		}
 		case "$set":
-			return { k: "set", v: (a as Json[]).map(fromJson) };
+			return { k: "set", v: distinct((a as Json[]).map(fromJson)) };
 		case "$file": {
 			const f = a as { bucket: string; key: string };
 			return { k: "file", bucket: f.bucket, key: f.key };
@@ -301,7 +308,9 @@ function parseFloatJson(a: Json): number {
 		case "-0":
 			return -0;
 	}
-	return Number(a);
+	throw new ValueError(
+		`$float: expected a number or "NaN", "Infinity", "-Infinity", "-0", got ${JSON.stringify(a)}`,
+	);
 }
 
 /** The canonical typed JSON for `v`: what a driver prints and what the vectors hold. */
@@ -407,6 +416,10 @@ export function toCbor(v: Value): CborItem {
 		case "datetime":
 			return tag(TAG.DATETIME, array([int(v.secs), int(v.nanos)]));
 		case "duration":
+			if (v.secs < 0n)
+				throw new ValueError(
+					`duration: tag 14 is unsigned, so ${v.secs} seconds has no CBOR form`,
+				);
 			return tag(
 				TAG.DURATION,
 				array(
@@ -615,13 +628,9 @@ function fromTag(t: bigint, c: CborItem): Value {
 				key: asText(a[1] as CborItem, "file key"),
 			};
 		}
-		case TAG.SET: {
+		case TAG.SET:
 			// Sets are deduplicated on decode. Order is not significant.
-			const out: Value[] = [];
-			for (const x of asArray(c, "set").map(fromCbor))
-				if (!out.some((y) => equal(x, y))) out.push(x);
-			return { k: "set", v: out };
-		}
+			return { k: "set", v: distinct(asArray(c, "set").map(fromCbor)) };
 		case TAG.POINT:
 		case TAG.LINE:
 		case TAG.POLYGON:
@@ -1085,6 +1094,16 @@ export function parseDuration(s: string): { secs: bigint; nanos: number } {
  * without regard to element order; floats compare with `Object.is`, so NaN
  * equals NaN and -0 does not equal 0.
  */
+/**
+ * A set's members without duplicates, as the server holds them. Order is kept:
+ * it is not significant to `equal`, and the server sorts on decode.
+ */
+export function distinct(values: Value[]): Value[] {
+	const out: Value[] = [];
+	for (const x of values) if (!out.some((y) => equal(x, y))) out.push(x);
+	return out;
+}
+
 export function equal(a: Value, b: Value): boolean {
 	if (a.k !== b.k) return false;
 	switch (a.k) {

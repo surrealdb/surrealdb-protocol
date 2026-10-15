@@ -9,6 +9,7 @@ import {
 	type Bound,
 	checkDatetimeSecs,
 	closeRing,
+	distinct,
 	type Geometry,
 	normaliseDecimal,
 	normaliseUuid,
@@ -57,6 +58,10 @@ function arm(v: Value): pb.Value["value"] {
 				datetime: { seconds: v.secs, nanos: v.nanos },
 			};
 		case "duration":
+			if (v.secs > 2n ** 63n - 1n)
+				throw new ValueError(
+					`duration: ${v.secs} seconds is past value.proto's int64`,
+				);
 			return {
 				$case: "duration",
 				duration: { seconds: v.secs, nanos: v.nanos },
@@ -249,7 +254,7 @@ export function fromProto(p: pb.Value): Value {
 		case "array":
 			return { k: "array", v: a.array.values.map(fromProto) };
 		case "set":
-			return { k: "set", v: a.set.values.map(fromProto) };
+			return { k: "set", v: distinct(a.set.values.map(fromProto)) };
 	}
 }
 
