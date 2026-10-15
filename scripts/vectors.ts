@@ -32,6 +32,7 @@ import {
 	decode,
 	diagnostic,
 	encode,
+	fromHex,
 	int,
 	parseDiagnostic,
 	text,
@@ -375,6 +376,8 @@ async function main() {
 				kind: string;
 				surql?: string;
 				diag?: string;
+				raw?: boolean;
+				cbor?: string;
 				value?: Json;
 				server_quirk?: string;
 			};
@@ -430,7 +433,11 @@ async function main() {
 				set(node, "cbor", toHex(input));
 				set(node, "canonical", toHex(out.bytes));
 			} else if (v.kind === "reject") {
-				const input = encode(parseDiagnostic(v.diag as string));
+				// `raw` vectors are malformed below the level diagnostic notation
+				// can express, so their bytes are given and their diag is prose.
+				const input = v.raw
+					? fromHex(v.cbor as string)
+					: encode(parseDiagnostic(v.diag as string));
 				if (!(tryDecode(input) instanceof Error))
 					fail("the reference decoder accepts it");
 				const out = await query(server, "RETURN $v", input);
