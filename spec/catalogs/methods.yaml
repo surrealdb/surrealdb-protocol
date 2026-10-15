@@ -218,9 +218,13 @@ methods:
     grpc: Run
     notes: >
       Calls fn::, ml:: (version required) or mod::/silo:: functions, and
-      built-ins such as string::len. The server groups it with the deprecated
-      methods in its source and ignores `txn` for it, so prefer compiling to
-      `RETURN fn::name($args)` with `query` where the SDK can.
+      built-ins such as string::len. SDKs MUST call this method, passing the
+      name through unaltered, rather than compiling `RETURN fn::name(...)` into
+      a `query` (rpc.proto, rpc Run): a synthesised query bypasses a deny list
+      that denies `run`, binds arguments through a text round-trip, and moves
+      name resolution into the SDK. The server ignores `txn` for it on
+      WebSocket and HTTP, so a call inside an interactive transaction runs
+      outside it.
 
   - name: graphql
     status: stable

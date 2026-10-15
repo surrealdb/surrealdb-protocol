@@ -134,7 +134,9 @@ routes:
       Raw ISO GQL in the body (not GraphQL), executed like /sql with the same
       headers and output negotiation. Enabled by default from 3.3; 3.2 needed
       --allow-experimental gql.
-  - { path: /mcp, method: "POST, GET, DELETE", capability: mcp, description: Model Context Protocol endpoint (streamable HTTP). Servers built without the mcp feature do not have it. }
+  - { path: /mcp, method: POST, capability: mcp, description: "Model Context Protocol (streamable HTTP): client messages. Servers built without the mcp feature do not have it." }
+  - { path: /mcp, method: GET, capability: mcp, description: "Model Context Protocol: the server-sent event stream." }
+  - { path: /mcp, method: DELETE, capability: mcp, description: "Model Context Protocol: ends the MCP session." }
   - { path: /sync, capability: sync, description: A stub. Do not use. }
 
 # The /rpc request and response envelopes, for reference; methods.yaml has the
