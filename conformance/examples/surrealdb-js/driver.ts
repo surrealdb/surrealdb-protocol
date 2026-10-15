@@ -353,16 +353,22 @@ function errorInfo(e: unknown): DriverError["info"] {
 
 /** The wire's signin keys (user, pass, ns, db, ac, record variables) as the SDK's. */
 function credentials(c: Record<string, Json>) {
-	const { user, pass, ns, db, ac, key, ...variables } = c;
+	const { ns, db, ac, ...rest } = c;
 	const auth: Record<string, unknown> = {};
 	if (ns !== undefined) auth.namespace = ns;
 	if (db !== undefined) auth.database = db;
 	if (ac !== undefined) auth.access = ac;
-	if (user !== undefined) auth.username = user;
-	if (pass !== undefined) auth.password = pass;
-	if (key !== undefined) auth.key = key;
-	if (ac !== undefined && user === undefined && key === undefined)
-		auth.variables = fromJson(variables);
+	if (rest.user !== undefined) {
+		// A system user: user and pass are the username and password.
+		auth.username = rest.user;
+		if (rest.pass !== undefined) auth.password = rest.pass;
+	} else if (rest.key !== undefined) {
+		auth.key = rest.key;
+	} else if (ac !== undefined) {
+		// Record access: everything else, `pass` included, is a variable for
+		// the access method's SIGNIN clause.
+		auth.variables = fromJson(rest);
+	}
 	return auth as never;
 }
 
@@ -541,11 +547,11 @@ class Driver {
 					if (frame.isValue()) {
 						if (frame.isSingle)
 							results[frame.query] = { ok: true, result: toJson(frame.value) };
-						else
-							rows.set(frame.query, [
-								...(rows.get(frame.query) ?? []),
-								frame.value,
-							]);
+						else {
+							const acc = rows.get(frame.query);
+							if (acc) acc.push(frame.value);
+							else rows.set(frame.query, [frame.value]);
+						}
 					} else if (frame.isError()) {
 						rows.delete(frame.query);
 						results[frame.query] = {
