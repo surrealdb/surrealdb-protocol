@@ -18,12 +18,16 @@ describe("ProcessAdapter", () => {
 	});
 
 	test("fails ok: false without an error kind as a protocol violation", async () => {
-		for (const reply of [`{ ok: false }`, `{ ok: false, error: {} }`]) {
+		for (const reply of [
+			`{ ok: false }`,
+			`{ ok: false, error: {} }`,
+			`{ ok: false, error: { kind: "Validation" }, result: 1 }`,
+		]) {
 			const a = driver(reply);
 			const e = await a.call("info", {}).catch((x) => x);
 			expect(e).toBeInstanceOf(Error);
 			expect(e).not.toBeInstanceOf(AdapterError);
-			expect(String(e)).toContain("no error {kind}");
+			expect(String(e)).toContain("ok: false but");
 			await a.dispose();
 		}
 	});

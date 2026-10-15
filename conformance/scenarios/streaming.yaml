@@ -22,6 +22,12 @@ scenarios:
           result:
             - { ok: true, result: [{ count: 120 }] }
             - { ok: true, result: { id: { $record: { table: wide, key: 1 } }, n: 1 } }
+      # NULL and NONE stay distinct when streamed, as they are buffered.
+      - query_stream: { sql: "RETURN NULL; RETURN NONE" }
+        expect:
+          result:
+            - { ok: true, result: null }
+            - { ok: true, result: { $none: null } }
 
   - name: stream-statement-errors-are-per-statement
     description: A failing statement is an error in its own slot; the others still deliver.
@@ -98,8 +104,10 @@ scenarios:
         expect:
           result:
             $contains:
-              - { $partial: { result: { stream: rows } } }
-              - { $partial: { result: { stream: finished, error: { $any: null } } } }
+              # Both frames name the SELECT (statement 1), so an error finishing
+              # the later THROW cannot stand in for the SELECT's retraction.
+              - { $partial: { result: { stream: rows, index: 1 } } }
+              - { $partial: { result: { stream: finished, index: 1, error: { $any: null } } } }
 
   - name: query-cancel-unknown-stream
     description: query_cancel for a request id with no stream running is refused, not silently accepted.

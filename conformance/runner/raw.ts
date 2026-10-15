@@ -112,6 +112,7 @@ function encodeRequest(
 
 class WsRpc extends Rpc {
 	private nextId = 1;
+	private broken?: string;
 	private readonly pending = new Map<
 		number,
 		{
@@ -164,7 +165,12 @@ class WsRpc extends Rpc {
 		}
 		const key = id.k === "int" ? Number(id.v) : Number.NaN;
 		const p = this.pending.get(key);
-		if (!p) return;
+		if (!p) {
+			// A response nobody is waiting for (a duplicate, a stale or made-up
+			// id) breaks the protocol. It sticks: later requests and close() fail.
+			this.broken ??= `the server sent a response for id ${JSON.stringify(toJson(id), big)}, which no request is waiting for`;
+			return;
+		}
 		p.frames.push(msg);
 		const result = msg.get("result");
 		const tag =
@@ -182,6 +188,7 @@ class WsRpc extends Rpc {
 		params: CborItem[],
 		opts: { session?: string; txn?: string; stream?: boolean },
 	) {
+		if (this.broken) return Promise.reject(new Error(this.broken));
 		const id = this.nextId++;
 		return new Promise<Envelope[]>((resolve, reject) => {
 			// A server that stops answering, or a stream with no `end` frame,
@@ -211,6 +218,7 @@ class WsRpc extends Rpc {
 
 	async close() {
 		this.ws.close();
+		if (this.broken) throw new Error(this.broken);
 	}
 }
 
@@ -434,7 +442,9 @@ export class RawAdapter implements Adapter {
 							ok: true,
 							result:
 								isSingle?.k === "bool" && isSingle.v
-									? (single.get(index) ?? { $none: null })
+									? single.has(index)
+										? (single.get(index) as Json)
+										: { $none: null }
 									: (rows.get(index) ?? []),
 						});
 					}
@@ -875,7 +885,7 @@ export class RawAdapter implements Adapter {
 	}
 }
 
-function httpError(status: number, body: string): AdapterError {
+function httpError(status: number, body: string): Error {
 	let message = body;
 	try {
 		const j = JSON.parse(body) as {
@@ -884,6 +894,9 @@ function httpError(status: number, body: string): AdapterError {
 		};
 		message = j.information ?? j.description ?? body;
 	} catch {}
+	// A 5xx is the server or a proxy failing, not an answer: a plain Error, so
+	// it fails the step instead of satisfying an expected error.
+	if (status >= 500) return new Error(`HTTP ${status}: ${message}`);
 	const kind =
 		status === 401 || status === 403
 			? "NotAllowed"

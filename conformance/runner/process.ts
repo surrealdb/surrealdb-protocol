@@ -160,10 +160,10 @@ export class ProcessAdapter implements Adapter {
 				}
 				// A failure must say what kind it is, or a loose expected error
 				// would pass on a driver that only said "no".
-				if (typeof r.error?.kind !== "string")
+				if (typeof r.error?.kind !== "string" || "result" in r)
 					return reject(
 						new Error(
-							`driver answered ${op} with ok: false but no error {kind}: ${JSON.stringify(r, bigints)}`,
+							`driver answered ${op} with ok: false but ${"result" in r ? "also a result" : "no error {kind}"}: ${JSON.stringify(r, bigints)}`,
 						),
 					);
 				reject(new AdapterError(r.error));
