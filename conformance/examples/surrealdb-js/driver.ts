@@ -376,6 +376,16 @@ class Driver {
 		return this.session(args.session);
 	}
 
+	/**
+	 * The session for an op the SDK only has on a session, not on a
+	 * transaction. A `txn` is refused rather than ignored, so the op never
+	 * runs outside the transaction the scenario asked for.
+	 */
+	private sessionOnly(op: string, args: Args) {
+		if (args.txn !== undefined) throw unsupported(`${op} in a transaction`);
+		return this.session(args.session);
+	}
+
 	private subscribe(sub: LiveSubscription): string {
 		const handle = `live-${this.nextHandle++}`;
 		const entry: {
@@ -406,37 +416,37 @@ class Driver {
 				return (await this.db.version()).version;
 			case "signin":
 			case "signup": {
-				const s = this.session(args.session);
+				const s = this.sessionOnly(op, args);
 				const tokens = await (op === "signin"
 					? s.signin(credentials(args.credentials as Record<string, Json>))
 					: s.signup(credentials(args.credentials as Record<string, Json>)));
 				return toJson(tokens);
 			}
 			case "authenticate":
-				await this.session(args.session).authenticate(
+				await this.sessionOnly(op, args).authenticate(
 					fromJson(args.token) as never,
 				);
 				return null;
 			case "invalidate":
-				await this.session(args.session).invalidate();
+				await this.sessionOnly(op, args).invalidate();
 				return null;
 			case "info":
-				return toJson(await this.session(args.session).auth());
+				return toJson(await this.sessionOnly(op, args).auth());
 			case "use":
 				return toJson(
-					await this.session(args.session).use({
+					await this.sessionOnly(op, args).use({
 						namespace: args.namespace as string | undefined,
 						database: args.database as string | undefined,
 					}),
 				);
 			case "set":
-				await this.session(args.session).set(
+				await this.sessionOnly(op, args).set(
 					args.name as string,
 					fromJson(args.value),
 				);
 				return null;
 			case "unset":
-				await this.session(args.session).unset(args.name as string);
+				await this.sessionOnly(op, args).unset(args.name as string);
 				return null;
 			case "query": {
 				const responses = await this.scope(args)
@@ -494,14 +504,14 @@ class Driver {
 				);
 			}
 			case "live": {
-				const live = this.session(args.session).live(
+				const live = this.sessionOnly(op, args).live(
 					new Table(args.table as string),
 				);
 				return this.subscribe(await (args.diff ? live.diff() : live));
 			}
 			case "live_of":
 				return this.subscribe(
-					await this.session(args.session).liveOf(fromJson(args.id) as Uuid),
+					await this.sessionOnly(op, args).liveOf(fromJson(args.id) as Uuid),
 				);
 			case "live_id":
 				return toJson(this.sub(args).sub.id);
@@ -537,7 +547,7 @@ class Driver {
 			case "list_sessions":
 				return (await this.db.sessions()).map((u) => u.toString());
 			case "close_session": {
-				await this.session(args.session).closeSession();
+				await this.sessionOnly(op, args).closeSession();
 				this.sessions.delete(args.session as string);
 				return null;
 			}
@@ -545,7 +555,7 @@ class Driver {
 				const handle = `txn-${this.nextHandle++}`;
 				this.txns.set(
 					handle,
-					await this.session(args.session).beginTransaction(),
+					await this.sessionOnly(op, args).beginTransaction(),
 				);
 				return handle;
 			}
