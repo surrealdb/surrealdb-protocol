@@ -225,10 +225,14 @@ function toJson(v: unknown): Json {
 			: { $int: v.toString() };
 	// The SDK decodes integers and floats alike to number, so an integral
 	// float reads back as an integer here (a JavaScript limitation).
-	if (typeof v === "number")
-		return Number.isInteger(v) && !Object.is(v, -0)
+	if (typeof v === "number") {
+		// JSON has no -0 (JSON.stringify writes 0) and String(-0) is "0", so
+		// spell it out, as spec/README.md does.
+		if (Object.is(v, -0)) return { $float: "-0" };
+		return Number.isInteger(v)
 			? v
 			: { $float: Number.isFinite(v) ? v : String(v) };
+	}
 	if (Array.isArray(v)) return v.map(toJson);
 	if (v instanceof Uint8Array)
 		return {
