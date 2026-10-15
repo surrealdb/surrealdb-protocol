@@ -84,6 +84,17 @@ export interface RunResult {
 
 const RUNNER_OPS = new Set(["sleep"]);
 const STEP_KEYS = new Set(["expect", "capture", "transports", "note"]);
+const SCENARIO_KEYS = new Set([
+	"name",
+	"description",
+	"source",
+	"transports",
+	"since",
+	"server",
+	"setup",
+	"steps",
+]);
+const SETUPS = new Set(["default", "connect", "none"]);
 
 export const SCENARIO_DIR = new URL("../scenarios/", import.meta.url).pathname;
 
@@ -103,6 +114,17 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 			if (!name) throw new Error(`${file}: a scenario has no name`);
 			if (names.has(name)) throw new Error(`${where}: duplicate scenario name`);
 			names.add(name);
+			// A misspelt key such as `stpes` would otherwise leave a scenario that
+			// runs only its setup and passes.
+			const unknown = Object.keys(raw).filter((k) => !SCENARIO_KEYS.has(k));
+			if (unknown.length)
+				throw new Error(`${where}: unknown field ${unknown.join(", ")}`);
+			if (!Array.isArray(raw.steps) || raw.steps.length === 0)
+				throw new Error(`${where}: steps must be a non-empty list`);
+			if (raw.setup !== undefined && !SETUPS.has(raw.setup as string))
+				throw new Error(
+					`${where}: setup must be default, connect or none, got ${JSON.stringify(raw.setup)}`,
+				);
 			const steps = ((raw.steps as Record<string, unknown>[]) ?? []).map(
 				(s, i) => {
 					const ops = Object.keys(s).filter((k) => !STEP_KEYS.has(k));
@@ -342,6 +364,7 @@ async function runOne(
 	steps.push(...scenario.steps);
 
 	const adapter = await factory();
+	let disposed = false;
 	try {
 		for (let i = 0; i < steps.length; i++) {
 			const step = steps[i] as Step;
@@ -421,9 +444,21 @@ async function runOne(
 			}
 			if (step.capture) captures.set(step.capture, (result ?? null) as Json);
 		}
+		// A driver that broke the protocol after its last answer fails here.
+		disposed = true;
+		try {
+			await adapter.dispose();
+		} catch (e) {
+			return {
+				status: "fail",
+				step: scenario.steps.length,
+				op: "dispose",
+				message: `driver: ${(e as Error).message}`,
+			};
+		}
 		return { status: "pass" };
 	} finally {
-		await adapter.dispose().catch(() => {});
+		if (!disposed) await adapter.dispose().catch(() => {});
 	}
 }
 

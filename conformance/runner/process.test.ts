@@ -4,7 +4,7 @@ import { AdapterError } from "./protocol";
 
 /** A driver that answers every request with `reply`, keeping the request's id. */
 function driver(reply: string) {
-	const js = `for await (const l of console) { const { id } = JSON.parse(l); console.log(JSON.stringify({ id, ...${reply} })); }`;
+	const js = `for await (const l of console) { if (!l.trim()) continue; const { id } = JSON.parse(l); console.log(JSON.stringify({ id, ...${reply} })); }`;
 	return ProcessAdapter.start(`bun -e '${js}'`);
 }
 
@@ -26,5 +26,19 @@ describe("ProcessAdapter", () => {
 			expect(String(e)).toContain("no error {kind}");
 			await a.dispose();
 		}
+	});
+
+	test("a stray answer while nothing waits breaks the adapter for good", async () => {
+		// Answers each request, then answers an id nobody asked for.
+		const js = `for await (const l of console) { if (!l.trim()) continue; const { id } = JSON.parse(l); console.log(JSON.stringify({ id, ok: true, result: null })); console.log(JSON.stringify({ id: 999, ok: true, result: null })); }`;
+		const a = ProcessAdapter.start(`bun -e '${js}'`);
+		expect(await a.call("ping", {})).toBeNull();
+		await Bun.sleep(300);
+		expect(String(await a.call("ping", {}).catch((x) => x))).toContain(
+			"broke the protocol earlier",
+		);
+		expect(String(await a.dispose().catch((x) => x))).toContain(
+			"an id it was not asked",
+		);
 	});
 });
