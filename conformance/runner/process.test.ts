@@ -41,4 +41,21 @@ describe("ProcessAdapter", () => {
 			"an id it was not asked",
 		);
 	});
+
+	test("fails ok: true without a result, or with an error", async () => {
+		for (const reply of [
+			`{ ok: true }`,
+			`{ ok: true, result: null, error: { kind: "NotFound" } }`,
+		]) {
+			const a = driver(reply);
+			const e = await a.call("ping", {}).catch((x) => x);
+			expect(e).toBeInstanceOf(Error);
+			expect(e).not.toBeInstanceOf(AdapterError);
+			expect(String(e)).toContain("ok: true but");
+			await a.dispose();
+		}
+		const ok = driver(`{ ok: true, result: null }`);
+		expect(await ok.call("ping", {})).toBeNull();
+		await ok.dispose();
+	});
 });
