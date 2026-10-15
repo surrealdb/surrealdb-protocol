@@ -1,0 +1,194 @@
+# query: one result per statement, each its own success or typed failure.
+
+scenarios:
+  - name: query-one-result-per-statement
+    source: surrealdb.js query.test.ts
+    steps:
+      - query: { sql: "RETURN 1; RETURN 'two'; RETURN [3]" }
+        expect:
+          result: [{ ok: true, result: 1 }, { ok: true, result: two }, { ok: true, result: [3] }]
+
+  - name: query-failed-statement-does-not-fail-the-others
+    description: A THROW fails only its own statement; the statements around it still run and report.
+    source: server/tests/grpc.rs a_failed_statement_does_not_fail_the_others; surrealdb.js query-batch.test.ts
+    steps:
+      - query: { sql: "RETURN 1; THROW 'boom'; RETURN 42" }
+        expect:
+          result:
+            - { ok: true, result: 1 }
+            - { ok: false, error: { kind: Thrown, message: { $match: boom } } }
+            - { ok: true, result: 42 }
+
+  - name: query-statements-are-not-atomic
+    description: Outside BEGIN/COMMIT each statement commits on its own, so a failure in the middle keeps the writes either side of it.
+    source: surrealdb.js query-batch.test.ts
+    steps:
+      - query: { sql: "CREATE person:a; THROW 'boom'; CREATE person:b" }
+      - query: { sql: "SELECT VALUE record::id(id) FROM person ORDER BY id" }
+        expect:
+          result: [{ ok: true, result: [a, b] }]
+
+  - name: query-transaction-block-abandons-its-statements
+    description: Inside BEGIN/COMMIT a failure abandons every statement, and the others report Query/NotExecuted.
+    source: server/tests/grpc.rs a_failed_statement_carries_its_typed_reason
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - query: { sql: "BEGIN; CREATE person:one; THROW 'nope'; CREATE person:two; COMMIT" }
+        expect:
+          result:
+            { $contains: [{ ok: false, error: { kind: Query, details: { kind: NotExecuted } } }, { ok: false, error: { kind: Thrown } }] }
+      - query: { sql: "SELECT * FROM person" }
+        expect:
+          result: [{ ok: true, result: [] }]
+
+  - name: query-parse-error-fails-the-whole-call
+    description: Text that does not parse produces no per-statement results; the call fails with Validation.
+    source: surrealdb.js query-batch.test.ts; structured-errors.test.ts
+    steps:
+      - query: { sql: "SEL ECT * FORM person" }
+        expect:
+          error: { kind: Validation, message: { $match: "Parse error" } }
+
+  - name: query-error-kinds-are-structured
+    description: Per-statement failures carry the server's kind and details, which is what SDKs branch on.
+    source: surrealdb.js structured-errors.test.ts
+    steps:
+      - query: { sql: "CREATE person:dup; CREATE person:dup" }
+        expect:
+          result:
+            - { ok: true, result: { $any: null } }
+            - { ok: false, error: { kind: AlreadyExists, details: { kind: Record, details: { id: { $any: null } } } } }
+      - query: { sql: "THROW 'custom user error'" }
+        expect:
+          result: [{ ok: false, error: { kind: Thrown, message: { $match: "custom user error" } } }]
+      - query: { sql: "DEFINE TABLE strict SCHEMAFULL; SELECT * FROM nonexistent_table_xyz" }
+        expect:
+          result:
+            - { ok: true, result: { $any: null } }
+            - { ok: false, error: { kind: NotFound, details: { kind: Table } } }
+
+  - name: query-timeout-is-query-timedout
+    description: A statement that exceeds its TIMEOUT fails with Query/TimedOut.
+    steps:
+      - query: { sql: "SELECT * FROM sleep(2s) TIMEOUT 50ms" }
+        expect:
+          result: [{ ok: false, error: { kind: Query, details: { kind: TimedOut } } }]
+
+  - name: query-records-round-trip
+    description: Records written with typed values come back with the same types.
+    source: server/tests/grpc.rs records_round_trip_through_the_query_stream
+    steps:
+      - query:
+          sql: "CREATE ONLY person:tobie CONTENT $data RETURN AFTER"
+          vars:
+            data:
+              name: Tobie
+              born: { $datetime: "1969-12-31T23:59:59.500000000Z" }
+              balance: { $decimal: "12345678901234567890.123456789" }
+              tags: { $set: [a, b] }
+              manager: { $record: { table: person, key: { $uuid: "0189e0a5-1c3d-7abc-8def-0123456789ab" } } }
+              nothing: null
+        expect:
+          result:
+            - ok: true
+              result:
+                id: { $record: { table: person, key: tobie } }
+                name: Tobie
+                born: { $datetime: "1969-12-31T23:59:59.500000000Z" }
+                balance: { $decimal: "12345678901234567890.123456789" }
+                tags: { $set: [a, b] }
+                manager: { $record: { table: person, key: { $uuid: "0189e0a5-1c3d-7abc-8def-0123456789ab" } } }
+                nothing: null
+
+  - name: query-values-survive-the-full-stack
+    description: >
+      Each value is sent as a query variable and returned unchanged, exercising
+      the SDK's encoder and decoder together (spec/vectors pins the bytes).
+    steps:
+      - query:
+          sql: "RETURN $v"
+          vars:
+            v:
+              none: { $none: null }
+              null: null
+              big: { $int: "9223372036854775807" }
+              small: { $int: "-9223372036854775808" }
+              float: { $float: 1.5 }
+              integral_float: { $float: 2.0 }
+              decimal: { $decimal: "79228162514264337593543950335" }
+              datetime_pre_epoch: { $datetime: "1969-12-31T23:59:59.999999999Z" }
+              datetime_nanos: { $datetime: "2024-02-29T12:34:56.123456789Z" }
+              duration_zero: { $duration: [0, 0] }
+              duration_nanos: { $duration: [1, 1] }
+              uuid: { $uuid: "0189e0a5-1c3d-7abc-8def-0123456789ab" }
+              bytes: { $bytes: "00ff10" }
+              table: { $table: person }
+              record_string: { $record: { table: person, key: "1" } }
+              record_int: { $record: { table: person, key: 1 } }
+              record_array: { $record: { table: person, key: [1, "a"] } }
+              record_object: { $record: { table: person, key: { a: 1 } } }
+              record_range: { $record: { table: person, key: { $range: { start: { included: 1 }, end: { excluded: 5 } } } } }
+              range_excluded: { $range: { start: { excluded: 1 }, end: { excluded: 5 } } }
+              range_unbounded: { $range: { start: null, end: null } }
+              set: { $set: [1, 2, 3] }
+              file: { $file: { bucket: b, key: /k } }
+              point: { $geometry: { type: Point, coordinates: [1.5, -2.5] } }
+              polygon: { $geometry: { type: Polygon, coordinates: [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]]] } }
+              string_that_looks_like_a_record: "person:1"
+        expect:
+          result:
+            - ok: true
+              result:
+                none: { $none: null }
+                null: null
+                big: { $int: "9223372036854775807" }
+                small: { $int: "-9223372036854775808" }
+                float: { $float: 1.5 }
+                integral_float: { $float: 2.0 }
+                decimal: { $decimal: "79228162514264337593543950335" }
+                datetime_pre_epoch: { $datetime: "1969-12-31T23:59:59.999999999Z" }
+                datetime_nanos: { $datetime: "2024-02-29T12:34:56.123456789Z" }
+                duration_zero: { $duration: [0, 0] }
+                duration_nanos: { $duration: [1, 1] }
+                uuid: { $uuid: "0189e0a5-1c3d-7abc-8def-0123456789ab" }
+                bytes: { $bytes: "00ff10" }
+                table: { $table: person }
+                record_string: { $record: { table: person, key: "1" } }
+                record_int: { $record: { table: person, key: 1 } }
+                record_array: { $record: { table: person, key: [1, "a"] } }
+                record_object: { $record: { table: person, key: { a: 1 } } }
+                record_range: { $record: { table: person, key: { $range: { start: { included: 1 }, end: { excluded: 5 } } } } }
+                range_excluded: { $range: { start: { excluded: 1 }, end: { excluded: 5 } } }
+                range_unbounded: { $range: { start: null, end: null } }
+                set: { $set: [1, 2, 3] }
+                file: { $file: { bucket: b, key: /k } }
+                point: { $geometry: { type: Point, coordinates: [1.5, -2.5] } }
+                polygon: { $geometry: { type: Polygon, coordinates: [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]]] } }
+                string_that_looks_like_a_record: "person:1"
+
+  - name: query-record-key-types-are-distinct
+    description: person:1 and person:⟨1⟩ are different records; an SDK must keep int and string keys apart.
+    steps:
+      - query:
+          sql: "CREATE $a; CREATE $b; SELECT VALUE id FROM person ORDER BY id"
+          vars:
+            a: { $record: { table: person, key: 1 } }
+            b: { $record: { table: person, key: "1" } }
+        expect:
+          result:
+            - { ok: true, result: { $any: null } }
+            - { ok: true, result: { $any: null } }
+            - ok: true
+              result: { $unordered: [{ $record: { table: person, key: 1 } }, { $record: { table: person, key: "1" } }] }
+
+  - name: query-in-a-later-session-sees-committed-writes
+    source: server/tests/grpc.rs sessions_are_independent_across_connections
+    steps:
+      - query: { sql: "CREATE person:one SET n = 1" }
+      - close:
+      - connect: {}
+      - signin: { credentials: { user: root, pass: root } }
+      - use: { namespace: { $ref: namespace }, database: { $ref: database } }
+      - query: { sql: "SELECT VALUE n FROM person:one" }
+        expect:
+          result: [{ ok: true, result: [1] }]

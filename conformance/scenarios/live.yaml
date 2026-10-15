@@ -1,0 +1,117 @@
+# Live queries. WebSocket only: HTTP has no channel to push notifications on
+# (see protocol.yaml for what HTTP answers).
+
+scenarios:
+  - name: live-create-update-delete
+    description: A managed live query delivers CREATE, UPDATE and DELETE with the record id and the record.
+    source: surrealdb.js query/live.test.ts; server/tests/grpc.rs live_queries_stream_notifications
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - live: { table: person }
+        capture: sub
+      - query: { sql: "CREATE person:1 CONTENT { name: 'John' }" }
+      - next_notification: { subscription: { $ref: sub } }
+        expect:
+          result:
+            action: CREATE
+            record: { $record: { table: person, key: 1 } }
+            result: { id: { $record: { table: person, key: 1 } }, name: John }
+      - query: { sql: "UPDATE person:1 SET name = 'Jane'" }
+      - next_notification: { subscription: { $ref: sub } }
+        expect:
+          result:
+            action: UPDATE
+            record: { $record: { table: person, key: 1 } }
+            result: { id: { $record: { table: person, key: 1 } }, name: Jane }
+      - query: { sql: "DELETE person:1" }
+      - next_notification: { subscription: { $ref: sub } }
+        expect:
+          result:
+            action: DELETE
+            record: { $record: { table: person, key: 1 } }
+            result: { $partial: { id: { $record: { table: person, key: 1 } } } }
+
+  - name: live-kill-stops-notifications
+    description: After kill the query delivers nothing more for later writes.
+    source: surrealdb.js query/live.test.ts; server/tests/grpc.rs killing_a_live_query_ends_its_stream
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - live: { table: person }
+        capture: sub
+      - kill: { subscription: { $ref: sub } }
+      - query: { sql: "CREATE person:2" }
+      - next_notification: { subscription: { $ref: sub }, timeout: 500 }
+        expect:
+          result: { $oneOf: [null, { action: KILLED }] }
+      - next_notification: { subscription: { $ref: sub }, timeout: 300 }
+        expect:
+          result: null
+
+  - name: live-killed-when-table-removed
+    description: Removing the table ends its live queries with a KILLED notification that has no record.
+    source: surrealdb.js query/live.test.ts (KILLED)
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - live: { table: person }
+        capture: sub
+      - query: { sql: "REMOVE TABLE person" }
+      - next_notification: { subscription: { $ref: sub } }
+        expect:
+          result: { action: KILLED }
+
+  - name: live-attach-by-id
+    description: >
+      A live query started with LIVE SELECT can be subscribed to by its id.
+      There is no RPC for this on WebSocket: the SDK filters the connection's
+      notifications by id.
+    source: surrealdb.js query/live.test.ts (liveOf)
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - query: { sql: "LIVE SELECT * FROM person WHERE age > 18" }
+        expect:
+          result: [{ ok: true, result: { $capture: live_id } }]
+      - live_of: { id: { $ref: live_id } }
+        capture: sub
+      - query: { sql: "CREATE person:child SET age = 10; CREATE person:adult SET age = 30" }
+      - next_notification: { subscription: { $ref: sub } }
+        expect:
+          result:
+            action: CREATE
+            record: { $record: { table: person, key: adult } }
+            result: { id: { $record: { table: person, key: adult } }, age: 30 }
+      - query: { sql: "KILL $id", vars: { id: { $ref: live_id } } }
+        expect:
+          result: [{ ok: true, result: { $any: null } }]
+      - next_notification: { subscription: { $ref: sub }, timeout: 1000 }
+        expect:
+          result: { action: KILLED }
+
+  - name: live-id-is-a-uuid
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - live: { table: person }
+        capture: sub
+      - live_id: { subscription: { $ref: sub } }
+        expect:
+          result: { $type: uuid }
+
+  - name: live-diff-sends-patches
+    description: With diff, notifications carry JSON Patch operations instead of the record.
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - live: { table: person, diff: true }
+        capture: sub
+      - query: { sql: "CREATE person:1 SET name = 'John'" }
+      - next_notification: { subscription: { $ref: sub } }
+        expect:
+          result:
+            action: CREATE
+            record: { $record: { table: person, key: 1 } }
+            result: { $contains: [{ $partial: { op: { $type: string } } }] }

@@ -104,14 +104,22 @@ export async function startServer(opts: ServerOptions = {}): Promise<Server> {
 				...opts.env,
 			},
 			stdout: "ignore",
-			stderr: process.env.CONFORMANCE_SERVER_LOGS ? "inherit" : "ignore",
+			stderr: process.env.CONFORMANCE_SERVER_LOGS ? "inherit" : "pipe",
 		},
 	);
 	try {
 		await waitHealthy(http, proc);
 	} catch (e) {
 		proc.kill();
-		throw e;
+		const stderr =
+			proc.stderr instanceof ReadableStream
+				? (await new Response(proc.stderr).text())
+						.trim()
+						.split("\n")
+						.slice(-3)
+						.join(" | ")
+				: "";
+		throw new Error(`${(e as Error).message}${stderr ? `: ${stderr}` : ""}`);
 	}
 	return {
 		http,

@@ -1,0 +1,111 @@
+# Streaming query results (query_stream). The op collects the stream into the
+# same per-statement shape as query, so the expectations are the same whatever
+# the transport; over HTTP, where the server cannot stream, an SDK buffers.
+# The protocol-level scenarios at the end look at the frames themselves.
+
+scenarios:
+  - name: stream-matches-buffered
+    description: Streaming a multi-statement query gives exactly what the buffered query gives.
+    source: surrealdb.js query/streaming.test.ts; server/tests/grpc.rs rows_arrive_before_the_query_finishes
+    since: "3.3.0"
+    steps:
+      - query: { sql: "FOR $i IN 1..=120 { CREATE type::record('wide', $i) SET n = $i }" }
+      - query:
+          sql: "SELECT * FROM wide ORDER BY id; RETURN 42; SELECT count() FROM wide GROUP ALL; SELECT * FROM ONLY wide:1"
+        capture: buffered
+      - query_stream:
+          sql: "SELECT * FROM wide ORDER BY id; RETURN 42; SELECT count() FROM wide GROUP ALL; SELECT * FROM ONLY wide:1"
+        expect:
+          result: { $ref: buffered }
+      - query_stream: { sql: "SELECT count() FROM wide GROUP ALL; SELECT * FROM ONLY wide:1" }
+        expect:
+          result:
+            - { ok: true, result: [{ count: 120 }] }
+            - { ok: true, result: { id: { $record: { table: wide, key: 1 } }, n: 1 } }
+
+  - name: stream-statement-errors-are-per-statement
+    description: A failing statement is an error in its own slot; the others still deliver.
+    source: surrealdb.js query/streaming.test.ts
+    since: "3.3.0"
+    steps:
+      - query: { sql: "FOR $i IN 1..=5 { CREATE type::record('wide', $i) SET n = $i }" }
+      - query_stream: { sql: "SELECT VALUE n FROM wide ORDER BY n LIMIT 2; THROW 'nope'; RETURN 7" }
+        expect:
+          result:
+            - { ok: true, result: [1, 2] }
+            - { ok: false, error: { kind: Thrown, message: { $match: nope } } }
+            - { ok: true, result: 7 }
+
+  - name: stream-retracts-rows-on-error
+    description: >
+      A statement whose rows were streamed and then voided (here by the
+      transaction block around it failing) reports only the error: the rows it
+      already sent are retracted, never returned as a partial result.
+    source: surrealdb.js query/streaming-views.test.ts; server embedded/src/stream.rs a_streamed_block_retracts_where_a_held_one_does_not
+    since: "3.3.0"
+    steps:
+      - query: { sql: "FOR $i IN 1..=200 { CREATE type::record('wide', $i) SET n = $i }" }
+      - query_stream: { sql: "BEGIN; SELECT * FROM wide; THROW 'nope'; COMMIT; RETURN 'after'" }
+        expect:
+          result:
+            - { ok: true, result: { $none: null } }
+            - { ok: false, error: { kind: Query, details: { kind: NotExecuted } } }
+            - { ok: false, error: { kind: Thrown, message: { $match: nope } } }
+            - { ok: false, error: { kind: Query, details: { kind: NotExecuted } } }
+            - { ok: true, result: after }
+
+  - name: stream-inside-a-transaction
+    description: A stream honours the transaction id and sees the transaction's own writes.
+    since: "3.3.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE account SCHEMALESS" }
+      - begin:
+        capture: t
+      - query: { sql: "CREATE account:one", txn: { $ref: t } }
+      - query_stream: { sql: "SELECT VALUE id FROM account", txn: { $ref: t } }
+        expect:
+          result: [{ ok: true, result: [{ $record: { table: account, key: one } }] }]
+      - cancel: { txn: { $ref: t } }
+
+  # --- Protocol level: the frames themselves (reference adapter) -----------
+
+  - name: stream-frames-begin-rows-finished-end
+    description: The frame sequence is begin, rows or value per statement, finished per statement, then end.
+    since: "3.3.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "FOR $i IN 1..=3 { CREATE type::record('wide', $i) SET n = $i }" }
+      - raw_rpc: { method: query_stream, params: ["SELECT VALUE n FROM wide ORDER BY n; RETURN 1"] }
+        expect:
+          result:
+            - { $partial: { result: { stream: begin, version: 1, statements: 2 } } }
+            - { $partial: { result: { stream: rows, index: 0, values: [1, 2, 3] } } }
+            - { $partial: { result: { stream: finished, index: 0, single: false } } }
+            - { $partial: { result: { stream: value, index: 1, value: 1 } } }
+            - { $partial: { result: { stream: finished, index: 1, single: true } } }
+            - { $partial: { result: { stream: end, results: 2 } } }
+
+  - name: stream-frames-retraction
+    description: Rows really are streamed before the block fails, and the SELECT's finished frame then carries the error.
+    since: "3.3.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "FOR $i IN 1..=200 { CREATE type::record('wide', $i) SET n = $i }" }
+      - raw_rpc:
+          method: query_stream
+          params: ["BEGIN; SELECT * FROM wide; THROW 'nope'; COMMIT"]
+        expect:
+          result:
+            $contains:
+              - { $partial: { result: { stream: rows } } }
+              - { $partial: { result: { stream: finished, error: { $any: null } } } }
+
+  - name: stream-needs-a-request-id
+    description: query_stream without a request id is refused (the frames would have nothing to correlate on).
+    since: "3.3.0"
+    transports: [ws]
+    steps:
+      - raw_rpc: { method: query_cancel, params: [999999] }
+        expect:
+          result: [{ error: { kind: Validation, message: { $match: "No streaming query" } } }]

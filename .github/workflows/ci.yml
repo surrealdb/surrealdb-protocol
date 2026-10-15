@@ -221,8 +221,8 @@ jobs:
   # The release is the gate. Nightly is reported but allowed to fail: a nightly
   # drift is a heads-up to regenerate before the next release, not a reason to
   # block an unrelated PR.
-  vectors-live:
-    name: vectors-live (${{ matrix.surrealdb }})
+  live-server:
+    name: live-server (${{ matrix.surrealdb }})
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.surrealdb == 'nightly' }}
     strategy:
@@ -243,6 +243,10 @@ jobs:
             | tar -xz -C "$RUNNER_TEMP"
           echo "SURREAL_BIN=$RUNNER_TEMP/surreal" >>"$GITHUB_ENV"
       - run: bun run vectors:check
+      - name: Conformance scenarios (reference adapter)
+        run: bun run conformance -- --report "$RUNNER_TEMP/conformance.json"
+      - name: Conformance scenarios (through the driver protocol)
+        run: bun run conformance -- --driver "bun conformance/runner/raw-driver.ts"
 
   ts-build:
     runs-on: ubuntu-latest
