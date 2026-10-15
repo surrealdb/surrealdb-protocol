@@ -157,7 +157,7 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 				source: raw.source as string | undefined,
 				transports: transportList(raw.transports, where) ?? ["ws", "http"],
 				since: raw.since as string | undefined,
-				server: raw.server as Scenario["server"],
+				server: serverConfig(raw.server, where),
 				setup: (raw.setup as Scenario["setup"] | undefined) ?? "default",
 				steps,
 			});
@@ -195,6 +195,31 @@ function expectation(raw: unknown, where: string): Step["expect"] {
 		};
 	}
 	return one(raw, where);
+}
+
+/** A scenario's `server`: only `args` (strings) and `env` (string values). */
+function serverConfig(raw: unknown, where: string): Scenario["server"] {
+	if (raw === undefined) return undefined;
+	const bad = (why: string) => new Error(`${where}: server ${why}`);
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw))
+		throw bad("must be an object with args and/or env");
+	const r = raw as Record<string, unknown>;
+	const extra = Object.keys(r).filter((k) => k !== "args" && k !== "env");
+	if (extra.length) throw bad(`has unknown field ${extra.join(", ")}`);
+	if (
+		r.args !== undefined &&
+		(!Array.isArray(r.args) || r.args.some((a) => typeof a !== "string"))
+	)
+		throw bad("args must be a list of strings");
+	if (
+		r.env !== undefined &&
+		(typeof r.env !== "object" ||
+			r.env === null ||
+			Array.isArray(r.env) ||
+			Object.values(r.env).some((v) => typeof v !== "string"))
+	)
+		throw bad("env must map names to strings");
+	return r as Scenario["server"];
 }
 
 /** A scenario's or step's `transports`, refusing anything but ws and http. */
@@ -365,11 +390,14 @@ async function runOne(
 
 	const adapter = await factory();
 	let disposed = false;
+	// Whether any of the scenario's own steps (not the setup) ran here.
+	let ranOwnStep = false;
 	try {
 		for (let i = 0; i < steps.length; i++) {
 			const step = steps[i] as Step;
 			const label = i < setupCount ? `setup ${i + 1}` : `${i - setupCount + 1}`;
 			if (step.transports && !step.transports.includes(transport)) continue;
+			if (i >= setupCount && step.op !== "sleep") ranOwnStep = true;
 			if (step.op === "sleep") {
 				await Bun.sleep(Number(step.args.value ?? 0));
 				continue;
@@ -456,6 +484,12 @@ async function runOne(
 				message: `driver: ${(e as Error).message}`,
 			};
 		}
+		// Only the setup ran: nothing in the scenario applies to this transport.
+		if (!ranOwnStep)
+			return {
+				status: "skip",
+				reason: `no steps apply over ${transport}`,
+			};
 		return { status: "pass" };
 	} finally {
 		if (!disposed) await adapter.dispose().catch(() => {});

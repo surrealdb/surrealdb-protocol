@@ -189,12 +189,9 @@ class WsRpc extends Rpc {
 			const ms = opTimeout();
 			const timer = setTimeout(() => {
 				if (this.pending.delete(id))
-					reject(
-						new AdapterError({
-							kind: "Internal",
-							message: `no complete answer to ${method} within ${ms}ms`,
-						}),
-					);
+					// A plain Error, not an AdapterError: a server that never answers
+					// must fail the step, never satisfy an expected error.
+					reject(new Error(`no complete answer to ${method} within ${ms}ms`));
 			}, ms);
 			this.pending.set(id, {
 				frames: [],
