@@ -228,9 +228,15 @@ class WsRpc extends Rpc {
 		// once close() has begun may be dropped. So first a ping: frames arrive
 		// in the order the server wrote them, so by the ping's answer everything
 		// it wrote before has arrived.
+		// The socket closes whatever the ping does; a ping that fails (a
+		// server gone quiet) still fails the cleanup, after the close.
+		let pinged: unknown;
 		if (!this.broken && this.ws.readyState === WebSocket.OPEN)
-			await this.request("ping", [], {});
+			pinged = await this.request("ping", [], {}).catch((e: unknown) =>
+				e instanceof Error ? e : new Error(String(e)),
+			);
 		this.ws.close();
+		if (pinged instanceof Error) throw pinged;
 		const ms = opTimeout();
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		const timedOut = await Promise.race([
@@ -280,7 +286,10 @@ class HttpRpc extends Rpc {
 			if (![400, 401, 403, 413, 415].includes(res.status))
 				throw new Error(`${method}: HTTP ${res.status}: ${body.slice(0, 200)}`);
 			throw new AdapterError({
-				kind: res.status === 401 ? "NotAllowed" : "Validation",
+				kind:
+					res.status === 401 || res.status === 403
+						? "NotAllowed"
+						: "Validation",
 				message: `HTTP ${res.status}: ${body}`,
 			});
 		}

@@ -199,7 +199,6 @@ describe("value", () => {
 	test("typed datetime and duration arrays are canonical", () => {
 		for (const j of [
 			{ $duration: [0, 1_000_000_000] },
-			{ $duration: [-1, 0] },
 			{ $duration: ["18446744073709551616", 0] },
 			{ $duration: [1.5, 0] },
 			{ $datetime: [0, -1] },
@@ -209,6 +208,27 @@ describe("value", () => {
 			expect(() => fromJson(j)).toThrow();
 		const d = fromJson({ $duration: ["18446744073709551615", 999_999_999] });
 		expect(equal(fromCbor(toCbor(d)), d)).toBe(true);
+	});
+
+	test("negative durations are typed JSON and protobuf, never CBOR", () => {
+		const neg = fromJson({ $duration: [-1, 500_000_000] });
+		expect(toJson(neg)).toEqual({ $duration: [-1, 500_000_000] });
+		expect(equal(decodeProto(encodeProto(neg)), neg)).toBe(true);
+		expect(() => toCbor(neg)).toThrow("unsigned");
+		const big = fromJson({ $duration: ["18446744073709551615", 0] });
+		expect(() => encodeProto(big)).toThrow("int64");
+	});
+
+	test("sets drop duplicates however they are built", () => {
+		const s = fromJson({ $set: [3, 1, 2, 1] });
+		expect(toJson(s)).toEqual({ $set: [3, 1, 2] });
+		expect(equal(fromCbor(toCbor(s)), s)).toBe(true);
+	});
+
+	test("typed floats are numbers or the four special spellings", () => {
+		for (const f of ["Infinty", "1.5", "", true, null] as Json[])
+			expect(() => fromJson({ $float: f })).toThrow("$float");
+		expect(toJson(fromJson({ $float: "-0" }))).toEqual({ $float: "-0" });
 	});
 
 	test("typed bytes must be hex", () => {

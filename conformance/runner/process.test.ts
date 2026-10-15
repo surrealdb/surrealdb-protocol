@@ -17,11 +17,15 @@ describe("ProcessAdapter", () => {
 		await a.dispose();
 	});
 
-	test("fails ok: false without an error kind as a protocol violation", async () => {
+	test("fails ok: false without a well-formed ErrorInfo as a protocol violation", async () => {
 		for (const reply of [
 			`{ ok: false }`,
 			`{ ok: false, error: {} }`,
 			`{ ok: false, error: { kind: "Validation" }, result: 1 }`,
+			`{ ok: false, error: { kind: "Validation", message: 123 } }`,
+			`{ ok: false, error: { kind: "Validation", code: "x" } }`,
+			`{ ok: false, error: { kind: "Validation", failures: {} } }`,
+			`{ ok: false, error: { kind: "Validation", failures: [{ message: "m" }] } }`,
 		]) {
 			const a = driver(reply);
 			const e = await a.call("info", {}).catch((x) => x);
