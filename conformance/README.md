@@ -170,7 +170,8 @@ case "fork_session":
 case "begin": {
 	const handle = `txn-${this.nextHandle++}`;
 	this.txns.set(handle, await this.sessionOnly(op, args).beginTransaction());
-	// Transactions belong to a session: scope() checks a named session against this.
+	// Transactions belong to a session: scope() checks the request's session
+	// (none means the default) against this.
 	this.txnSessions.set(handle, args.session);
 	return handle;
 }

@@ -385,10 +385,9 @@ class Driver {
 				});
 			// Transactions belong to a session: naming another one is a lookup
 			// that fails, as it does on the server, not a licence to use it.
-			if (
-				args.session !== undefined &&
-				args.session !== this.txnSessions.get(args.txn as string)
-			)
+			// No session means the default one, so { txn } alone only finds a
+			// transaction begun in the default session.
+			if (args.session !== this.txnSessions.get(args.txn as string))
 				throw new DriverError({
 					kind: "NotFound",
 					message: `no transaction ${args.txn} in session ${args.session}`,
