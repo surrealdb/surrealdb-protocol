@@ -72,13 +72,36 @@ const unsupported = (op: string) =>
 
 // --- typed JSON <-> SDK values -----------------------------------------------
 
+/** The typed-JSON keys (spec/README.md). Any other `$` key is an ordinary object key. */
+const TYPED = new Set([
+	"$none",
+	"$int",
+	"$float",
+	"$decimal",
+	"$string",
+	"$bytes",
+	"$uuid",
+	"$datetime",
+	"$duration",
+	"$array",
+	"$object",
+	"$set",
+	"$table",
+	"$record",
+	"$range",
+	"$file",
+	"$geometry",
+	"$regex",
+]);
+const typedKey = (keys: string[]) =>
+	keys.length === 1 && TYPED.has(keys[0] as string) ? keys[0] : undefined;
+
 function fromJson(j: Json | undefined): unknown {
 	if (j === undefined) return undefined;
 	if (j === null || typeof j !== "object") return j;
 	if (Array.isArray(j)) return j.map(fromJson);
 	const keys = Object.keys(j);
-	const key =
-		keys.length === 1 && keys[0]?.startsWith("$") ? keys[0] : undefined;
+	const key = typedKey(keys);
 	if (!key)
 		return Object.fromEntries(
 			Object.entries(j).map(([k, v]) => [k, fromJson(v)]),
@@ -213,14 +236,24 @@ function toJson(v: unknown): Json {
 	if (v instanceof Uuid) return { $uuid: v.toString() };
 	if (v instanceof Decimal) return { $decimal: v.toString() };
 	if (v instanceof DateTime) {
+		// RFC 3339 in UTC, with nine fractional digits when there are nanoseconds.
 		const ns = v.nanoseconds;
 		const frac = ((ns % 1_000_000_000n) + 1_000_000_000n) % 1_000_000_000n;
-		return { $datetime: [Number((ns - frac) / 1_000_000_000n), Number(frac)] };
+		const secs = (ns - frac) / 1_000_000_000n;
+		const base = new Date(Number(secs) * 1000).toISOString().slice(0, -5);
+		return {
+			$datetime: `${base}${frac ? `.${frac.toString().padStart(9, "0")}` : ""}Z`,
+		};
 	}
 	if (v instanceof Duration) {
 		const ns = v.nanoseconds;
+		const secs = ns / 1_000_000_000n;
 		return {
-			$duration: [Number(ns / 1_000_000_000n), Number(ns % 1_000_000_000n)],
+			// Seconds past 2^53 stay a string, as typed JSON requires.
+			$duration: [
+				secs <= 2n ** 53n ? Number(secs) : secs.toString(),
+				Number(ns % 1_000_000_000n),
+			],
 		};
 	}
 	if (v instanceof Table) return { $table: v.name };
@@ -237,7 +270,7 @@ function toJson(v: unknown): Json {
 			Object.entries(v).map(([k, x]) => [k, toJson(x)]),
 		);
 		const keys = Object.keys(o);
-		return keys.length === 1 && keys[0]?.startsWith("$") ? { $object: o } : o;
+		return typedKey(keys) ? { $object: o } : o;
 	}
 	throw new DriverError({
 		kind: "Internal",
