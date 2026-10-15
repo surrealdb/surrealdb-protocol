@@ -33,7 +33,7 @@ update this file in the same release.
 
 ## Value test vectors
 
-[`vectors/cbor.yaml`](vectors/cbor.yaml) holds 143 vectors covering every tag in
+[`vectors/cbor.yaml`](vectors/cbor.yaml) holds 146 vectors covering every tag in
 the table, including the cases that have broken SDKs: pre-1970 datetimes,
 nanosecond precision, durations that are empty or above i64, record ids with
 every key type (string, int, array, object, uuid and range), exclusive range

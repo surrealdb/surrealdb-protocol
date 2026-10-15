@@ -81,4 +81,17 @@ describe("value", () => {
 			}),
 		).toThrow();
 	});
+
+	test("protobuf datetimes stay within chrono's range", () => {
+		const at = (seconds: bigint) =>
+			fromProto({
+				value: { $case: "datetime", datetime: { seconds, nanos: 0 } },
+			});
+		expect(() => at(8_210_266_876_799n)).not.toThrow();
+		expect(() => at(-8_334_601_228_800n)).not.toThrow();
+		expect(() => at(8_210_266_876_800n)).toThrow("outside chrono's range");
+		expect(() => at(9_223_372_036_854_775_807n)).toThrow(
+			"outside chrono's range",
+		);
+	});
 });
