@@ -44,7 +44,8 @@
     "qau": "biome check ./typescript/ --write --unsafe",
     "build": "bun run scripts/build.ts",
     "vectors:write": "bun scripts/vectors.ts write",
-    "vectors:check": "bun scripts/vectors.ts check"
+    "vectors:check": "bun scripts/vectors.ts check",
+    "conformance": "bun conformance/runner/cli.ts"
   },
   "engines": {
     "node": ">=18.0.0"

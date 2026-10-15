@@ -1,0 +1,72 @@
+# Capabilities and deny lists. Each scenario gets a server started with its own
+# flags, so these are skipped when SURREAL_URL points at a shared server.
+
+scenarios:
+  - name: deny-rpc-method-is-not-allowed
+    description: A method denied with --deny-rpc fails with NotAllowed/Method naming it, on every transport.
+    server: { args: ["--deny-rpc", "run"] }
+    steps:
+      - raw_rpc: { method: run, params: ["string::len", null, [abc]] }
+        expect:
+          result: [{ $partial: { error: { kind: NotAllowed, code: -32602, details: { kind: Method, details: { name: run } } } } }]
+
+  - name: deny-rpc-run-is-not-bypassed
+    description: >
+      An SDK's run API sends the run method (rpc.proto, rpc Run), so denying
+      run stops it. Compiling it to a query instead would slip past the deny
+      list, and fails here.
+    server: { args: ["--deny-rpc", "run"] }
+    steps:
+      - run: { name: "string::len", args: [abc] }
+        expect:
+          error: { kind: NotAllowed, details: { kind: Method, details: { name: run } } }
+      - query: { sql: "RETURN string::len('abc')" }
+        expect:
+          result: [{ ok: true, result: 3 }]
+
+  - name: deny-query-stream-falls-back-to-query
+    description: >
+      With query_stream denied the server refuses it as NotAllowed (-32602),
+      and an SDK's streaming API falls back to a buffered query instead of
+      failing.
+    source: surrealdb.js query/streaming-intent.test.ts
+    since: "3.3.0"
+    server: { args: ["--deny-rpc", "query_stream"] }
+    steps:
+      - raw_rpc: { method: query_stream, params: ["RETURN 1"] }
+        transports: [ws]
+        expect:
+          result: [{ error: { kind: NotAllowed, code: -32602, details: { kind: Method, details: { name: query_stream } } } }]
+      - query_stream: { sql: "RETURN 1; RETURN 2" }
+        expect:
+          result: [{ ok: true, result: 1 }, { ok: true, result: 2 }]
+
+  - name: deny-arbitrary-query-for-guests
+    description: With arbitrary queries denied to guests, an unauthenticated query fails and the same query works after signin.
+    source: surrealdb.js query/streaming-intent.test.ts
+    server: { args: ["--deny-arbitrary-query", "guest"] }
+    setup: connect
+    steps:
+      - query: { sql: "RETURN 1" }
+        expect:
+          error: { kind: NotAllowed }
+      - signin: { credentials: { user: root, pass: root } }
+      - query: { sql: "RETURN 2" }
+        expect:
+          result: [{ ok: true, result: 2 }]
+
+  - name: deny-http-route-import
+    description: A denied HTTP route refuses the request, and the SDK reports it as NotAllowed.
+    server: { args: ["--deny-http", "import"] }
+    steps:
+      - import: { surql: "OPTION IMPORT;\nCREATE foo:1;" }
+        expect:
+          error: { kind: NotAllowed }
+
+  - name: deny-functions
+    description: A denied function fails its statement with NotAllowed/Function.
+    server: { args: ["--deny-funcs", "string::len"] }
+    steps:
+      - query: { sql: "RETURN string::len('abc')" }
+        expect:
+          result: [{ ok: false, error: { kind: NotAllowed } }]
