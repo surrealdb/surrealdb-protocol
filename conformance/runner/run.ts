@@ -295,7 +295,14 @@ export async function runScenarios(
 	const pool = new ServerPool();
 	const results: RunResult[] = [];
 	const probe = await opts.adapter();
-	const hello = await probe.hello();
+	let hello: Hello;
+	try {
+		hello = await probe.hello();
+	} catch (e) {
+		// Stop the driver even when its handshake fails, so it cannot linger.
+		await probe.dispose().catch(() => {});
+		throw e;
+	}
 	await probe.dispose();
 	try {
 		for (const scenario of scenarios) {

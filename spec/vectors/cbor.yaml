@@ -738,6 +738,26 @@ vectors:
     cbor: c8782e706572736f6e3a752730313839653061352d316333642d376162632d386465662d30313233343536373839616227
     canonical: c88266706572736f6ed825500189e0a51c3d7abc8def0123456789ab
 
+  - name: record-id-string-form-escapes
+    kind: decode
+    diag: '8("person:[\"\\u0061\\u{1F600}\\t\\\"\"]")'
+    value: { $record: { table: person, key: [ "a😀\t\"" ] } }
+    notes: Strings in the key take SurrealQL's escapes, \uXXXX and \u{X…} among them.
+    cbor: c8781e706572736f6e3a5b225c75303036315c757b31463630307d5c745c22225d
+    canonical: c88266706572736f6e816761f09f98800922
+
+  - name: reject-record-id-string-form-unknown-escape
+    kind: reject
+    diag: '8("person:[\"\\q\"]")'
+    notes: \q is not a SurrealQL escape, and the server refuses it.
+    cbor: c86d706572736f6e3a5b225c71225d
+
+  - name: reject-record-id-string-form-surrogate-escape
+    kind: reject
+    diag: '8("person:[\"\\uD83D\"]")'
+    notes: A lone surrogate is not a character.
+    cbor: c871706572736f6e3a5b225c7544383344225d
+
   - name: record-id-string-form-escaped-table
     kind: decode
     diag: '8("⟨user profile⟩:alice")'

@@ -179,4 +179,20 @@ describe("value", () => {
 			true,
 		);
 	});
+
+	test("geometry coordinates carry special floats through typed JSON", () => {
+		const j: Json = {
+			$geometry: {
+				type: "LineString",
+				coordinates: [
+					[{ $float: "-0" }, { $float: "NaN" }],
+					[{ $float: "Infinity" }, 1.5],
+				],
+			},
+		};
+		const v = fromJson(j);
+		expect(() => toCbor(v)).not.toThrow();
+		expect(equal(fromCbor(toCbor(v)), v)).toBe(true);
+		expect(toJson(v)).toEqual(j);
+	});
 });

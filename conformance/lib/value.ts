@@ -241,12 +241,29 @@ export function fromJson(j: Json): Value {
 }
 
 /** Geometry coordinates are always floats, whatever the YAML parser made of them. */
+/** Geometry coordinates as JS numbers: bigints, and `$float` for NaN, ±Infinity and -0. */
 function plainNumbers(j: Json): Json {
 	if (typeof j === "bigint") return Number(j);
 	if (Array.isArray(j)) return j.map(plainNumbers);
+	if (j !== null && typeof j === "object" && typedKey(j) === "$float")
+		return parseFloatJson((j as { $float: Json }).$float);
 	if (j !== null && typeof j === "object")
 		return Object.fromEntries(
 			Object.entries(j).map(([k, v]) => [k, plainNumbers(v)]),
+		);
+	return j;
+}
+
+/** The reverse of plainNumbers: JSON has no NaN, ±Infinity or -0, so those go as `$float`. */
+function jsonCoordinates(j: Json): Json {
+	if (typeof j === "number")
+		return Number.isFinite(j) && !Object.is(j, -0)
+			? j
+			: (toJson({ k: "float", v: j }) as Json);
+	if (Array.isArray(j)) return j.map(jsonCoordinates);
+	if (j !== null && typeof j === "object")
+		return Object.fromEntries(
+			Object.entries(j).map(([k, v]) => [k, jsonCoordinates(v)]),
 		);
 	return j;
 }
@@ -338,7 +355,7 @@ export function toJson(v: Value): Json {
 		case "file":
 			return { $file: { bucket: v.bucket, key: v.key } };
 		case "geometry":
-			return { $geometry: v.g as unknown as Json };
+			return { $geometry: jsonCoordinates(v.g as unknown as Json) };
 		case "regex":
 			return { $regex: v.v };
 	}
@@ -841,13 +858,21 @@ class SurqlReader {
 		return { k: "int", v: checkI64(BigInt(text as string)) };
 	}
 
-	/** A quoted string with backslash escapes. */
+	/**
+	 * A quoted string with SurrealQL's escapes: \\ \" \' \b \f \n \r \t \0,
+	 * \uXXXX and \u{X…}. Anything else, and surrogates, the server refuses.
+	 */
 	private str(): string {
 		const q = this.s[this.pos++];
 		const escapes: Record<string, string> = {
+			"\\": "\\",
+			'"': '"',
+			"'": "'",
+			b: "\b",
+			f: "\f",
 			n: "\n",
-			t: "\t",
 			r: "\r",
+			t: "\t",
 			"0": "\0",
 		};
 		let out = "";
@@ -861,7 +886,20 @@ class SurqlReader {
 			}
 			const e = this.s[this.pos++];
 			if (e === undefined) this.fail();
-			out += escapes[e] ?? e;
+			if (e !== "u") {
+				const r = escapes[e];
+				if (r === undefined) this.fail();
+				out += r;
+				continue;
+			}
+			const m =
+				/^\{([0-9A-Fa-f]{1,6})\}/.exec(this.rest()) ??
+				/^([0-9A-Fa-f]{4})/.exec(this.rest());
+			if (!m) this.fail();
+			this.pos += m[0].length;
+			const cp = Number.parseInt(m[1] as string, 16);
+			if (cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) this.fail();
+			out += String.fromCodePoint(cp);
 		}
 	}
 }
