@@ -199,14 +199,15 @@ export class ProcessAdapter implements Adapter {
 
 	async dispose() {
 		this.proc.stdin.end();
-		// A driver exits when stdin closes. One that does not gets SIGTERM, then
-		// SIGKILL, so it cannot hold up the run, and the scenario fails.
+		// A driver exits when stdin closes. One that does not within 5s gets
+		// SIGTERM, then SIGKILL at 10s, so it cannot hold up the run, and the
+		// scenario fails.
 		let killed = false;
 		const term = setTimeout(() => {
 			killed = true;
 			this.proc.kill();
-		}, 2000);
-		const hard = setTimeout(() => this.proc.kill("SIGKILL"), 4000);
+		}, 5000);
+		const hard = setTimeout(() => this.proc.kill("SIGKILL"), 10_000);
 		const status = await this.proc.exited;
 		clearTimeout(term);
 		clearTimeout(hard);
