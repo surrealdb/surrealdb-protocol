@@ -159,7 +159,7 @@ kinds:
 
   - kind: Thrown
     proto: ERROR_KIND_THROWN
-    description: Raised by THROW in SurrealQL. The message is "An error occurred: <thrown value>".
+    description: 'Raised by THROW in SurrealQL. The message is "An error occurred: <thrown value>".'
     code_without_details: -32006
     details: []
 

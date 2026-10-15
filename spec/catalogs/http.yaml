@@ -84,7 +84,15 @@ routes:
     method: GET
     capability: health
     description: 200 when the server and its storage are healthy, 500 when the storage check fails. Needs no auth. This, not an RPC, is the health check.
-  - { path: /status, method: GET, description: 200 when the server is up. }
+  - { path: /status, method: GET, description: 200 when the process is up and listening. }
+  - path: /ready
+    method: GET
+    description: >
+      200 once startup has finished (and, when a heartbeat budget is
+      configured, the node's cluster heartbeat is fresh); 503 while starting
+      up or when the heartbeat is stale. Needs no auth. Use it for readiness
+      probes; /health is for storage reachability.
+  - { path: /metrics, method: GET, description: Prometheus metrics in the text exposition format. }
   - { path: /version, method: GET, capability: version, description: 'Plain text, "surrealdb-<semver>".' }
   - path: /import
     method: POST
@@ -119,6 +127,14 @@ routes:
   - { path: "/ml/export/{name}/{version}", method: GET, capability: ml }
   - { path: "/api/{ns}/{db}/{path}", capability: api, description: User-defined API endpoints. }
   - { path: /graphql, method: POST, capability: graphql }
+  - path: /gql
+    method: POST
+    capability: gql
+    description: >
+      Raw ISO GQL in the body (not GraphQL), executed like /sql with the same
+      headers and output negotiation. Enabled by default from 3.3; 3.2 needed
+      --allow-experimental gql.
+  - { path: /mcp, method: "POST, GET, DELETE", capability: mcp, description: Model Context Protocol endpoint (streamable HTTP). Servers built without the mcp feature do not have it. }
   - { path: /sync, capability: sync, description: A stub. Do not use. }
 
 # The /rpc request and response envelopes, for reference; methods.yaml has the

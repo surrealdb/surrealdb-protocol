@@ -25,13 +25,16 @@ Points SDKs most often get wrong:
   them with `query`.
 - **HTTP `/rpc` is not WebSocket.** It has no `live`, `kill`, `sessions`,
   `begin`, `commit`, `cancel`, `query_stream` or `query_cancel`. Without an
-  attached session, `use` and `set` last for one request only.
+  attached session, `use` and `set` last for one request only. An attached
+  session does persist over HTTP, but it holds its own auth: the request's
+  Basic or Bearer credentials do not carry into it, so sign in or
+  authenticate inside the session.
 - **There is no `health` method.** Use `GET /health`, or `ping`.
 - **There is no capability RPC on WebSocket or HTTP.** Detect features from
   `version` and treat `-32601` as "not supported". Only gRPC has
   `GetCapabilities`.
 - **`gql` is not GraphQL.** `gql` is the ISO graph query language; GraphQL is
-  `graphql`.
+  `graphql`. Both `gql` (RPC) and `/gql` (HTTP) are on by default from 3.3.
 - **Sessions: the client picks the id on WebSocket and HTTP, the server picks
   it on gRPC.** There is no server-side fork.
 - **Branch on `kind` and `details`, not `code` or `message`.** A transaction

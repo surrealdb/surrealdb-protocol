@@ -238,7 +238,8 @@ methods:
     result: "[* statement-result]"
     notes: >
       GQL, the ISO graph query language, which is NOT GraphQL: `gql` and
-      `graphql` are different methods. Needs --allow-experimental gql.
+      `graphql` are different methods. Enabled by default from 3.3 (checked
+      against 3.3.4 and 3.4 nightly); 3.2 needed --allow-experimental gql.
 
   # --- Live queries --------------------------------------------------------
 
