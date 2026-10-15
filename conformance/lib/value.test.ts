@@ -140,4 +140,30 @@ describe("value", () => {
 		])
 			expect(() => rid(bad)).toThrow("not a record id");
 	});
+
+	test("protobuf polygons need an exterior and have closed rings", () => {
+		const pt = (x: number, y: number) => ({ x, y });
+		const poly = (exterior?: { points: { x: number; y: number }[] }) =>
+			fromProto({
+				value: {
+					$case: "geometry",
+					geometry: {
+						geometry: {
+							$case: "polygon",
+							polygon: { exterior, interiors: [] },
+						},
+					},
+				},
+			} as never);
+		expect(() => poly(undefined)).toThrow("missing exterior");
+		const v = poly({ points: [pt(0, 0), pt(4, 0), pt(4, 4)] });
+		expect(
+			v.k === "geometry" && v.g.type === "Polygon" && v.g.coordinates[0],
+		).toEqual([
+			[0, 0],
+			[4, 0],
+			[4, 4],
+			[0, 0],
+		]);
+	});
 });

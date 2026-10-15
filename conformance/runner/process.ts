@@ -62,7 +62,10 @@ export class ProcessAdapter implements Adapter {
 			stdin: "pipe",
 			stdout: "pipe",
 			stderr: "inherit",
-		});
+			// Its own process group, so a kill reaches an SDK the command started
+			// as a child (an npm script, a wrapper) and not just the shell.
+			detached: true,
+		} as Parameters<typeof spawn>[1]);
 		return new ProcessAdapter(proc);
 	}
 
@@ -141,7 +144,7 @@ export class ProcessAdapter implements Adapter {
 		return new Promise((resolve, reject) => {
 			const timer = setTimeout(() => {
 				if (!this.waiting.delete(id)) return;
-				this.proc.kill();
+				this.kill("SIGTERM");
 				reject(new Error(`driver did not answer ${op} within ${ms}ms`));
 			}, ms);
 			this.waiting.set(id, (r) => {
@@ -197,6 +200,15 @@ export class ProcessAdapter implements Adapter {
 		return this.request(op, args);
 	}
 
+	/** Signals the driver's whole process group, or just the driver where that fails. */
+	private kill(signal: "SIGTERM" | "SIGKILL") {
+		try {
+			process.kill(-this.proc.pid, signal);
+		} catch {
+			this.proc.kill(signal);
+		}
+	}
+
 	async dispose() {
 		this.proc.stdin.end();
 		// A driver exits when stdin closes. One that does not within 5s gets
@@ -205,15 +217,26 @@ export class ProcessAdapter implements Adapter {
 		let killed = false;
 		const term = setTimeout(() => {
 			killed = true;
-			this.proc.kill();
+			this.kill("SIGTERM");
 		}, 5000);
-		const hard = setTimeout(() => this.proc.kill("SIGKILL"), 10_000);
+		const hard = setTimeout(() => this.kill("SIGKILL"), 10_000);
 		const status = await this.proc.exited;
 		clearTimeout(term);
 		clearTimeout(hard);
 		// Read what the driver wrote before it exited, so a stray answer after
-		// the last step still counts.
-		await this.reading.catch(() => {});
+		// the last step still counts. A descendant that outlives it can hold
+		// stdout open, so the wait is bounded too.
+		const drained = await Promise.race([
+			this.reading.then(
+				() => true,
+				() => true,
+			),
+			Bun.sleep(2000).then(() => false),
+		]);
+		if (!drained) {
+			this.kill("SIGKILL");
+			throw new Error("driver exited but a child process kept its stdout open");
+		}
 		if (this.broken) throw new Error(this.broken);
 		if (killed) throw new Error("driver did not exit when stdin closed");
 		if (status !== 0) throw new Error(`driver exited with status ${status}`);

@@ -247,6 +247,10 @@ class HttpRpc extends Rpc {
 		const bytes = new Uint8Array(await res.arrayBuffer());
 		if (!(res.headers.get("content-type") ?? "").includes("cbor")) {
 			const body = new TextDecoder().decode(bytes);
+			// A non-CBOR 5xx is the server or a proxy failing, not an RPC answer:
+			// a plain Error, so it cannot satisfy an expected error.
+			if (res.status >= 500)
+				throw new Error(`${method}: HTTP ${res.status}: ${body.slice(0, 200)}`);
 			throw new AdapterError({
 				kind: res.status === 401 ? "NotAllowed" : "Validation",
 				message: `HTTP ${res.status}: ${body}`,

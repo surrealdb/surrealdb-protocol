@@ -8,6 +8,7 @@ import { fromHex, toHex } from "./cbor";
 import {
 	type Bound,
 	checkDatetimeSecs,
+	closeRing,
 	type Geometry,
 	normaliseDecimal,
 	normaliseUuid,
@@ -321,10 +322,11 @@ function ungeometry(g: pb.Geometry): Geometry {
 	if (!x) throw new ValueError("geometry is unset");
 	const pt = (p: pb.Point): Position => [p.x, p.y];
 	const ln = (l: pb.Line | undefined): Position[] => (l?.points ?? []).map(pt);
-	const pg = (p: pb.Polygon): Position[][] => [
-		ln(p.exterior),
-		...p.interiors.map(ln),
-	];
+	// As rust/convert.rs: a polygon needs its exterior, and geo closes rings.
+	const pg = (p: pb.Polygon): Position[][] => {
+		if (!p.exterior) throw new ValueError("polygon: missing exterior");
+		return [ln(p.exterior), ...p.interiors.map(ln)].map(closeRing);
+	};
 	switch (x.$case) {
 		case "point":
 			return { type: "Point", coordinates: pt(x.point) };
