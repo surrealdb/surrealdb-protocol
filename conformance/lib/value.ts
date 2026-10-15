@@ -547,6 +547,10 @@ function fromTag(t: bigint, c: CborItem): Value {
 			// std::time::Duration::new carries whole seconds out of the nanoseconds.
 			const carry = nanos / BigInt(NS);
 			nanos %= BigInt(NS);
+			if (secs + carry > 2n ** 64n - 1n)
+				throw new ValueError(
+					"duration: carrying the nanoseconds overflows u64 seconds",
+				);
 			return { k: "duration", secs: secs + carry, nanos: Number(nanos) };
 		}
 		case TAG.UUID_STRING:
@@ -740,8 +744,13 @@ export function normaliseDecimal(s: string, strict = false): string {
 		return s;
 	}
 	const intPart = (m[2] as string).replace(/^0+(?=\d)/, "") || "0";
-	// rust_decimal holds a 96-bit mantissa, so the integer part caps out there.
-	if (strict && BigInt(intPart) > DECIMAL_MAX)
+	// rust_decimal holds a 96-bit unscaled mantissa and at most 28 fractional
+	// digits; the trailing zeros are gone, so neither check counts them.
+	const fracDigits = (m[3] ?? "").replace(/0+$/, "");
+	if (
+		strict &&
+		(fracDigits.length > 28 || BigInt(intPart + fracDigits) > DECIMAL_MAX)
+	)
 		throw new ValueError(`decimal out of range: ${s}`);
 	const frac = (m[3] ?? "").replace(/0+$/, "");
 	const body = frac ? `${intPart}.${frac}` : intPart;

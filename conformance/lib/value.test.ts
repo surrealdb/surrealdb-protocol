@@ -5,6 +5,7 @@ import {
 	fromCbor,
 	fromJson,
 	type Json,
+	normaliseDecimal,
 	toCbor,
 	utf8Compare,
 } from "./value";
@@ -93,5 +94,37 @@ describe("value", () => {
 		expect(() => at(9_223_372_036_854_775_807n)).toThrow(
 			"outside chrono's range",
 		);
+	});
+
+	test("durations whose nanoseconds carry past u64 seconds are refused", () => {
+		const dur = (secs: bigint, nanos: bigint) =>
+			fromCbor({
+				t: "tag",
+				tag: 14n,
+				v: {
+					t: "array",
+					v: [
+						{ t: "uint", v: secs },
+						{ t: "uint", v: nanos },
+					],
+				},
+			});
+		const max = 2n ** 64n - 1n;
+		expect(() => dur(max - 1n, 1_000_000_000n)).not.toThrow();
+		expect(() => dur(max, 1_000_000_000n)).toThrow("overflows u64");
+	});
+
+	test("strict decimals fit rust_decimal's mantissa and scale", () => {
+		expect(normaliseDecimal("7922816251426433759354395033.5", true)).toBe(
+			"7922816251426433759354395033.5",
+		);
+		expect(() =>
+			normaliseDecimal("7922816251426433759354395033.6", true),
+		).toThrow();
+		expect(normaliseDecimal(`0.${"0".repeat(27)}1`, true)).toBe(
+			`0.${"0".repeat(27)}1`,
+		);
+		expect(() => normaliseDecimal(`0.${"0".repeat(28)}1`, true)).toThrow();
+		expect(normaliseDecimal(`1.${"0".repeat(40)}`, true)).toBe("1");
 	});
 });

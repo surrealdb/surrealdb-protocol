@@ -1015,6 +1015,24 @@ vectors:
     notes: One past the largest 96-bit decimal.
     cbor: ca781d3739323238313632353134323634333337353933353433393530333336
 
+  - name: reject-decimal-mantissa-beyond-96-bits
+    kind: reject
+    diag: '10("7922816251426433759354395033.6")'
+    notes: Its unscaled mantissa is one past 2^96-1, though the integer part fits.
+    server_quirk: >
+      The server does not reject this today: it rounds to 28 significant digits and answers 7922816251426433759354395034 (see `canonical`). SDK decoders must still refuse a decimal rust_decimal cannot hold exactly, and encoders must never send one.
+    canonical: "ca781c37393232383136323531343236343333373539333534333935303334"
+    cbor: ca781e373932323831363235313432363433333735393335343339353033332e36
+
+  - name: reject-decimal-scale-beyond-28
+    kind: reject
+    diag: '10("0.00000000000000000000000000001")'
+    notes: Decimals carry at most 28 fractional digits.
+    server_quirk: >
+      The server does not reject this today: it rounds to 28 fractional digits and answers 0 (see `canonical`). SDK decoders must still refuse it, and encoders must never send it.
+    canonical: "ca6130"
+    cbor: ca781f302e3030303030303030303030303030303030303030303030303030303031
+
   - name: reject-datetime-impossible-date
     kind: reject
     diag: '0("2023-02-29T00:00:00Z")'
