@@ -420,6 +420,11 @@ class Driver {
 		return handle;
 	}
 
+	/** Closes the connection, giving the SDK a second to say goodbye. */
+	async shutdown() {
+		await Promise.race([this.db.close().catch(() => {}), Bun.sleep(1000)]);
+	}
+
 	async call(op: string, args: Args): Promise<Json> {
 		switch (op) {
 			case "connect":
@@ -715,3 +720,8 @@ for await (const chunk of process.stdin) {
 		}
 	}
 }
+
+// stdin closed: the scenario is over. Exit, or the open connection would keep
+// the process alive and the runner would have to kill it.
+await driver.shutdown();
+process.exit(0);
