@@ -76,7 +76,6 @@ methods! {
     // Import and export.
     IMPORT_SURQL => "ImportSurql",
     EXPORT_SURQL => "ExportSurql",
-    EXPORT_DIRECTORY => "ExportDirectory",
     EXPORT_ML_MODEL => "ExportMlModel",
     IMPORT_ML_MODEL => "ImportMlModel",
 }
