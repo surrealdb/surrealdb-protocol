@@ -121,7 +121,7 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 							: typeof args === "object"
 								? args
 								: { value: args }) as Record<string, Json>,
-						expect: s.expect as Step["expect"],
+						expect: expectation(s.expect, `${where}: step ${i + 1}`),
 						capture: s.capture as string | undefined,
 						transports: transportList(s.transports, `${where}: step ${i + 1}`),
 						note: s.note as string | undefined,
@@ -142,6 +142,37 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 		}
 	}
 	return out;
+}
+
+/**
+ * A step's `expect`, refusing anything that would assert nothing: a misspelt
+ * key such as `reslt` would otherwise let any successful call pass.
+ */
+function expectation(raw: unknown, where: string): Step["expect"] {
+	if (raw === undefined) return undefined;
+	const obj = (x: unknown): x is Record<string, unknown> =>
+		typeof x === "object" && x !== null && !Array.isArray(x);
+	const one = (x: unknown, at: string): Expectation => {
+		const keys = obj(x) ? Object.keys(x) : [];
+		if (keys.length !== 1 || (keys[0] !== "result" && keys[0] !== "error"))
+			throw new Error(
+				`${at}: expect must be {result: ...} or {error: ...}, got ${JSON.stringify(x, big)}`,
+			);
+		return x as Expectation;
+	};
+	if (obj(raw) && ("ws" in raw || "http" in raw)) {
+		const extra = Object.keys(raw).filter((k) => k !== "ws" && k !== "http");
+		if (extra.length)
+			throw new Error(
+				`${where}: a per-transport expect has only ws and http, not ${extra.join(", ")}`,
+			);
+		return {
+			ws: raw.ws === undefined ? undefined : one(raw.ws, `${where} (ws)`),
+			http:
+				raw.http === undefined ? undefined : one(raw.http, `${where} (http)`),
+		};
+	}
+	return one(raw, where);
 }
 
 /** A scenario's or step's `transports`, refusing anything but ws and http. */
