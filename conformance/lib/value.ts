@@ -880,7 +880,9 @@ export function checkDatetimeSecs(secs: bigint): bigint {
 const DECIMAL_MAX = 2n ** 96n - 1n;
 
 export function normaliseDecimal(s: string, strict = false): string {
-	const m = /^([+-]?)(\d*)(?:\.(\d*))?$/.exec(s.trim());
+	// Typed JSON may be loose about whitespace; wire decimals may not, since
+	// the server's parser rejects it.
+	const m = /^([+-]?)(\d*)(?:\.(\d*))?$/.exec(strict ? s : s.trim());
 	if (!m || (m[2] === "" && (m[3] ?? "") === "")) {
 		if (strict) throw new ValueError(`not a decimal: ${s}`);
 		return s;

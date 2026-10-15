@@ -1059,6 +1059,17 @@ vectors:
     notes: One past the largest 96-bit decimal.
     cbor: ca781d3739323238313632353134323634333337353933353433393530333336
 
+  - name: reject-decimal-surrounding-whitespace
+    kind: reject
+    diag: '10(" 1.5 ")'
+    notes: The server's decimal parser does not trim.
+    cbor: ca6520312e3520
+
+  - name: reject-decimal-trailing-whitespace
+    kind: reject
+    diag: '10("1.5 ")'
+    cbor: ca64312e3520
+
   - name: reject-decimal-mantissa-beyond-96-bits
     kind: reject
     diag: '10("7922816251426433759354395033.6")'
