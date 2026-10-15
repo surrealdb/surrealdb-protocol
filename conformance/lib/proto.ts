@@ -208,13 +208,13 @@ export function fromProto(p: pb.Value): Value {
 			return {
 				k: "duration",
 				secs: BigInt(a.duration.seconds),
-				nanos: a.duration.nanos,
+				nanos: unnanos(a.duration.nanos, "duration"),
 			};
 		case "datetime":
 			return {
 				k: "datetime",
 				secs: BigInt(a.datetime.seconds),
-				nanos: a.datetime.nanos,
+				nanos: unnanos(a.datetime.nanos, "datetime"),
 			};
 		case "uuid":
 			return { k: "uuid", v: unuuid(a.uuid) };
@@ -243,18 +243,35 @@ export function fromProto(p: pb.Value): Value {
 		case "regex":
 			return { k: "regex", v: a.regex };
 		case "object":
-			return {
-				k: "object",
-				v: a.object.items.map((kv) => [
-					kv.key,
-					fromProto(kv.value ?? { value: undefined }),
-				]),
-			};
+			return unobject(a.object);
 		case "array":
 			return { k: "array", v: a.array.values.map(fromProto) };
 		case "set":
 			return { k: "set", v: a.set.values.map(fromProto) };
 	}
+}
+
+// value.proto: nanoseconds are in [0, 999999999].
+function unnanos(n: number, what: string): number {
+	if (!Number.isInteger(n) || n < 0 || n > 999_999_999)
+		throw new ValueError(`${what}: nanoseconds ${n} out of range`);
+	return n;
+}
+
+// value.proto: keys are unique and in ascending UTF-8 byte order.
+function unobject(o: pb.Object): Value {
+	const v: [string, Value][] = [];
+	for (const kv of o.items) {
+		const prev = v[v.length - 1];
+		if (prev && utf8Compare(prev[0], kv.key) >= 0)
+			throw new ValueError(
+				utf8Compare(prev[0], kv.key) === 0
+					? `object: duplicate key ${JSON.stringify(kv.key)}`
+					: `object: key ${JSON.stringify(kv.key)} is out of order`,
+			);
+		v.push([kv.key, fromProto(kv.value ?? { value: undefined })]);
+	}
+	return { k: "object", v };
 }
 
 function unbound(b: pb.ValueBound | undefined): Bound {
@@ -279,13 +296,7 @@ function unrecordKey(k: pb.RecordIdKey | undefined): Value {
 		case "array":
 			return { k: "array", v: x.array.values.map(fromProto) };
 		case "object":
-			return {
-				k: "object",
-				v: x.object.items.map((kv) => [
-					kv.key,
-					fromProto(kv.value ?? { value: undefined }),
-				]),
-			};
+			return unobject(x.object);
 		case "range": {
 			const b = (y: pb.RecordIdKeyBound | undefined): Bound => {
 				const z = y?.bound;

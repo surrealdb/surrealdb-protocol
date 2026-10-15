@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { decodeProto, encodeProto } from "./proto";
+import { decodeProto, encodeProto, fromProto } from "./proto";
 import {
 	equal,
 	fromCbor,
@@ -36,5 +36,49 @@ describe("value", () => {
 			const v = fromJson({ $record: { table: "person", key } });
 			expect(equal(decodeProto(encodeProto(v)), v)).toBe(true);
 		}
+	});
+
+	test("protobuf rejects nanoseconds outside 0..999999999", () => {
+		for (const nanos of [-1, 1_000_000_000]) {
+			expect(() =>
+				fromProto({
+					value: { $case: "datetime", datetime: { seconds: 0n, nanos } },
+				}),
+			).toThrow("out of range");
+			expect(() =>
+				fromProto({
+					value: { $case: "duration", duration: { seconds: 0n, nanos } },
+				}),
+			).toThrow("out of range");
+		}
+	});
+
+	test("protobuf objects need unique keys in UTF-8 order", () => {
+		const obj = (...keys: string[]) =>
+			fromProto({
+				value: {
+					$case: "object",
+					object: {
+						items: keys.map((key) => ({
+							key,
+							value: { value: { $case: "bool", bool: true } },
+						})),
+					},
+				},
+			});
+		expect(() => obj("a", "\u{E000}", "\u{10000}")).not.toThrow();
+		expect(() => obj("a", "a")).toThrow("duplicate key");
+		expect(() => obj("b", "a")).toThrow("out of order");
+		expect(() => obj("\u{10000}", "\u{E000}")).toThrow("out of order");
+	});
+
+	test("datetimes must name a real date", () => {
+		expect(() =>
+			fromCbor({
+				t: "tag",
+				tag: 0n,
+				v: { t: "text", v: "2023-02-29T00:00:00Z" },
+			}),
+		).toThrow();
 	});
 });
