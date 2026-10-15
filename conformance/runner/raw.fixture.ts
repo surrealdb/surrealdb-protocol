@@ -1,6 +1,7 @@
 /**
  * A misbehaving /rpc for raw.test.ts. Over WebSocket it answers every request
- * twice; over HTTP it answers with a CBOR envelope under a 500 status.
+ * twice; over HTTP it answers with a CBOR envelope under a 500 status, or
+ * under /forbidden with a plain-text 403.
  *
  * Run as a script (`bun raw.fixture.ts ws-duplicate`), it drives the raw
  * adapter against the WebSocket half itself and prints how dispose ended:
@@ -30,6 +31,8 @@ export function fakeRpc() {
 		hostname: "127.0.0.1",
 		port: 0,
 		fetch(req, srv) {
+			if (new URL(req.url).pathname.startsWith("/forbidden"))
+				return new Response("denied", { status: 403 });
 			if (srv.upgrade(req, { headers: { "Sec-WebSocket-Protocol": "cbor" } }))
 				return;
 			return req.arrayBuffer().then(

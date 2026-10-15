@@ -34,6 +34,25 @@ interface Response {
 	error?: ErrorInfo;
 }
 
+/** What makes `e` not an ErrorInfo (protocol.ts), or undefined if it is one. */
+function errorInfoProblem(e: unknown, at: string): string | undefined {
+	if (!e || typeof e !== "object" || Array.isArray(e)) return `no ${at} object`;
+	const o = e as Record<string, unknown>;
+	if (typeof o.kind !== "string") return `no ${at}.kind string`;
+	if ("message" in o && typeof o.message !== "string")
+		return `${at}.message is not a string`;
+	if ("code" in o && !Number.isInteger(o.code))
+		return `${at}.code is not an integer`;
+	if ("failures" in o) {
+		if (!Array.isArray(o.failures)) return `${at}.failures is not an array`;
+		for (const [i, f] of o.failures.entries()) {
+			const p = errorInfoProblem(f, `${at}.failures[${i}]`);
+			if (p) return p;
+		}
+	}
+	return undefined;
+}
+
 export class ProcessAdapter implements Adapter {
 	private nextId = 1;
 	private buffer = "";
@@ -162,14 +181,18 @@ export class ProcessAdapter implements Adapter {
 					return resolve(r.result ?? null);
 				}
 				// A failure must say what kind it is, or a loose expected error
-				// would pass on a driver that only said "no".
-				if (typeof r.error?.kind !== "string" || "result" in r)
+				// would pass on a driver that only said "no"; and the rest of it
+				// must be the ErrorInfo it claims to be, even where a step looks
+				// only at the kind.
+				const problem =
+					"result" in r ? "also a result" : errorInfoProblem(r.error, "error");
+				if (problem)
 					return reject(
 						new Error(
-							`driver answered ${op} with ok: false but ${"result" in r ? "also a result" : "no error {kind}"}: ${JSON.stringify(r, bigints)}`,
+							`driver answered ${op} with ok: false but ${problem}: ${JSON.stringify(r, bigints)}`,
 						),
 					);
-				reject(new AdapterError(r.error));
+				reject(new AdapterError(r.error as ErrorInfo));
 			});
 			this.proc.stdin.write(`${JSON.stringify({ id, op, args }, bigints)}\n`);
 			this.proc.stdin.flush();
