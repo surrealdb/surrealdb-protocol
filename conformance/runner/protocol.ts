@@ -94,8 +94,9 @@ export interface Ops {
 	close_session: { args: { session: string }; result: null };
 	/** Starts an interactive transaction; returns its handle. */
 	begin: { args: Context; result: string };
-	commit: { args: { txn: string }; result: null };
-	cancel: { args: { txn: string }; result: null };
+	/** `session` names the session the transaction belongs to, as begin was given it. */
+	commit: { args: Context & { txn: string }; result: null };
+	cancel: { args: Context & { txn: string }; result: null };
 	/** Imports a SurrealQL script. Fails, with `failures`, if any statement failed. */
 	import: { args: Context & { surql: string }; result: null };
 	/** Exports the current database as SurrealQL. `options` is the /export body. */
