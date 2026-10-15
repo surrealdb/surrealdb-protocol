@@ -3,16 +3,20 @@
 
 scenarios:
   - name: deny-rpc-method-is-not-allowed
-    description: >
-      A method denied with --deny-rpc fails with NotAllowed/Method naming it,
-      on every transport. SDKs must send their run API as the run method
-      (rpc.proto, rpc Run): compiling it to a query would slip past this deny
-      list, and fails here.
+    description: A method denied with --deny-rpc fails with NotAllowed/Method naming it, on every transport.
     server: { args: ["--deny-rpc", "run"] }
     steps:
       - raw_rpc: { method: run, params: ["string::len", null, [abc]] }
         expect:
           result: [{ $partial: { error: { kind: NotAllowed, code: -32602, details: { kind: Method, details: { name: run } } } } }]
+
+  - name: deny-rpc-run-is-not-bypassed
+    description: >
+      An SDK's run API sends the run method (rpc.proto, rpc Run), so denying
+      run stops it. Compiling it to a query instead would slip past the deny
+      list, and fails here.
+    server: { args: ["--deny-rpc", "run"] }
+    steps:
       - run: { name: "string::len", args: [abc] }
         expect:
           error: { kind: NotAllowed, details: { kind: Method, details: { name: run } } }
