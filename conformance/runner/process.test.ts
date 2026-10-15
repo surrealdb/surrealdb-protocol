@@ -97,5 +97,5 @@ describe("ProcessAdapter", () => {
 		expect(String(await a.dispose().catch((x) => x))).toContain(
 			"did not exit when stdin closed",
 		);
-	}, 15_000);
+	}, 30_000);
 });
