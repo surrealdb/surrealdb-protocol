@@ -717,6 +717,50 @@ vectors:
     cbor: c868706572736f6e3a31
     canonical: c88266706572736f6e01
 
+  - name: record-id-string-form-array-key
+    kind: decode
+    diag: '8("person:[1, ''x'']")'
+    value: { $record: { table: person, key: [ 1, x ] } }
+    cbor: c86f706572736f6e3a5b312c202778275d
+    canonical: c88266706572736f6e82016178
+
+  - name: record-id-string-form-object-key
+    kind: decode
+    diag: '8("person:{a: 1}")'
+    value: { $record: { table: person, key: { a: 1 } } }
+    cbor: c86d706572736f6e3a7b613a20317d
+    canonical: c88266706572736f6ea1616101
+
+  - name: record-id-string-form-uuid-key
+    kind: decode
+    diag: '8("person:u''0189e0a5-1c3d-7abc-8def-0123456789ab''")'
+    value: { $record: { table: person, key: { $uuid: "0189e0a5-1c3d-7abc-8def-0123456789ab" } } }
+    cbor: c8782e706572736f6e3a752730313839653061352d316333642d376162632d386465662d30313233343536373839616227
+    canonical: c88266706572736f6ed825500189e0a51c3d7abc8def0123456789ab
+
+  - name: record-id-string-form-escaped-table
+    kind: decode
+    diag: '8("⟨user profile⟩:alice")'
+    value: { $record: { table: user profile, key: alice } }
+    notes: The escape delimiters are syntax, not part of the table name.
+    cbor: c87818e29fa8757365722070726f66696c65e29fa93a616c696365
+    canonical: c8826c757365722070726f66696c6565616c696365
+
+  - name: record-id-string-form-backtick-table
+    kind: decode
+    diag: '8("`user profile`:alice")'
+    value: { $record: { table: user profile, key: alice } }
+    cbor: c87460757365722070726f66696c65603a616c696365
+    canonical: c8826c757365722070726f66696c6565616c696365
+
+  - name: record-id-string-form-digits-past-i64
+    kind: decode
+    diag: '8("person:9223372036854775808")'
+    value: { $record: { table: person, key: "9223372036854775808" } }
+    notes: Digits that do not fit i64 are an identifier, so the key is a string.
+    cbor: c8781a706572736f6e3a39323233333732303336383534373735383038
+    canonical: c88266706572736f6e7339323233333732303336383534373735383038
+
   - name: record-id-uuid-string-key
     kind: decode
     diag: '8(["person", 9("0189e0a5-1c3d-7abc-8def-0123456789ab")])'
