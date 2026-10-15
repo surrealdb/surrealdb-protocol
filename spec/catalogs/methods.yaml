@@ -256,8 +256,10 @@ methods:
     result: uuid
     grpc: Subscribe
     notes: >
-      Starts LIVE SELECT on a table. A LIVE SELECT sent with `query` works the
-      same way and is what SDKs that need WHERE or FETCH use. Notifications
+      Starts LIVE SELECT on a table. The server takes only (what, diff), with
+      no field selection, on every 3.x release. A LIVE SELECT sent with `query`
+      works the same way and is what SDKs that need a projection, WHERE or
+      FETCH use. Notifications
       arrive on the same WebSocket with no `id`:
         { result: { id: <live uuid>, action, record, result, session? }, session? }
       where action is CREATE, UPDATE, DELETE, KILLED or ERROR. KILLED (3.x)

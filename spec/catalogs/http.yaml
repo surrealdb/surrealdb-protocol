@@ -120,6 +120,13 @@ routes:
         versions: bool (default false), tables: bool / [names] / { exclude: [names] } }.
       Everything defaults to true except versions.
   - { path: /sql, method: POST, capability: sql, description: "Raw SurrealQL in the body; returns the per-statement result list." }
+  - path: /sql
+    method: GET
+    capability: sql
+    description: >
+      WebSocket upgrade for raw SurrealQL: each text message is run as a query
+      with the upgrade request's session and answered with the per-statement
+      result list as JSON.
   - { path: /signin, method: POST, capability: signin, description: 'Returns { code: 200, details: "Authentication succeeded", token }.' }
   - { path: /signup, method: POST, capability: signup }
   - { path: "/key/{table}", method: GET, capability: key, description: "Legacy REST CRUD: select the whole table." }
@@ -136,6 +143,14 @@ routes:
   - { path: "/ml/export/{name}/{version}", method: GET, capability: ml }
   - { path: "/api/{ns}/{db}/{path}", capability: api, description: User-defined API endpoints. }
   - { path: /graphql, method: POST, capability: graphql }
+  - path: /graphql
+    method: GET
+    capability: graphql
+    since: "3.1.0"
+    description: >
+      WebSocket upgrade for GraphQL subscriptions (graphql-transport-ws by
+      default, or the protocol named in Sec-WebSocket-Protocol). Needs a
+      namespace and database on the upgrade request.
   - path: /gql
     method: POST
     capability: gql
