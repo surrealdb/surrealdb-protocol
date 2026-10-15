@@ -54,6 +54,12 @@ mime:
   - type: text/plain
     rpc: false
     description: SurrealQL text, for /sql, /import, /export and /version; /signin returns the bare token with Accept text/plain.
+  - type: text/event-stream
+    rpc: false
+    description: >
+      Server-sent events, for the MCP stream on /mcp. An MCP client sends
+      "Accept: application/json, text/event-stream" on POST /mcp and
+      "Accept: text/event-stream" on GET /mcp.
   - type: application/vnd.surrealdb.native
     rpc: false
     description: Reserved for in-process use. Not an HTTP format.
