@@ -174,7 +174,23 @@ export class ProcessAdapter implements Adapter {
 	}
 
 	async hello(): Promise<Hello> {
-		return (await this.request("hello", {})) as unknown as Hello;
+		const h = (await this.request("hello", {})) as unknown as Record<
+			string,
+			unknown
+		> | null;
+		// The handshake names the SDK in every report, so it must be well formed.
+		if (
+			typeof h !== "object" ||
+			h === null ||
+			typeof h.name !== "string" ||
+			typeof h.version !== "string" ||
+			(h.ops !== undefined &&
+				(!Array.isArray(h.ops) || h.ops.some((o) => typeof o !== "string")))
+		)
+			throw new Error(
+				`driver's hello must be {name: string, version: string, ops?: string[]}, got ${JSON.stringify(h, bigints)}`,
+			);
+		return h as unknown as Hello;
 	}
 
 	call(op: string, args: Record<string, Json | undefined>): Promise<Json> {
@@ -183,13 +199,23 @@ export class ProcessAdapter implements Adapter {
 
 	async dispose() {
 		this.proc.stdin.end();
-		const timer = setTimeout(() => this.proc.kill(), 2000);
-		await this.proc.exited;
-		clearTimeout(timer);
+		// A driver exits when stdin closes. One that does not gets SIGTERM, then
+		// SIGKILL, so it cannot hold up the run, and the scenario fails.
+		let killed = false;
+		const term = setTimeout(() => {
+			killed = true;
+			this.proc.kill();
+		}, 2000);
+		const hard = setTimeout(() => this.proc.kill("SIGKILL"), 4000);
+		const status = await this.proc.exited;
+		clearTimeout(term);
+		clearTimeout(hard);
 		// Read what the driver wrote before it exited, so a stray answer after
 		// the last step still counts.
 		await this.reading.catch(() => {});
 		if (this.broken) throw new Error(this.broken);
+		if (killed) throw new Error("driver did not exit when stdin closed");
+		if (status !== 0) throw new Error(`driver exited with status ${status}`);
 	}
 }
 

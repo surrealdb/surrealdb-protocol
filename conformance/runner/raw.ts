@@ -225,16 +225,11 @@ class HttpRpc extends Rpc {
 		params: CborItem[],
 		opts: { session?: string; txn?: string; headers?: Record<string, string> },
 	) {
+		const id = this.nextId++;
 		const res = await fetch(this.url, {
 			signal: AbortSignal.timeout(opTimeout()),
 			method: "POST",
-			body: encodeRequest(
-				this.nextId++,
-				method,
-				params,
-				opts.session,
-				opts.txn,
-			),
+			body: encodeRequest(id, method, params, opts.session, opts.txn),
 			headers: {
 				"Content-Type": "application/cbor",
 				Accept: "application/cbor",
@@ -249,7 +244,14 @@ class HttpRpc extends Rpc {
 				message: `HTTP ${res.status}: ${body}`,
 			});
 		}
-		return [envelope(fromCbor(decode(bytes)))];
+		const msg = envelope(fromCbor(decode(bytes)));
+		// The response echoes the request's id, as it does over WebSocket.
+		const echoed = msg.get("id");
+		if (echoed?.k !== "int" || echoed.v !== BigInt(id))
+			throw new Error(
+				`${method}: the response id ${echoed ? JSON.stringify(toJson(echoed), big) : "is missing"}${echoed ? `, not ${id}` : ""}`,
+			);
+		return [msg];
 	}
 
 	async close() {}

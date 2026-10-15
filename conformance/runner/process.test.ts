@@ -68,4 +68,34 @@ describe("ProcessAdapter", () => {
 			"no closing newline",
 		);
 	});
+
+	test("a malformed hello is refused", async () => {
+		for (const reply of [
+			`{ ok: true, result: {} }`,
+			`{ ok: true, result: { name: 123, version: null } }`,
+			`{ ok: true, result: { name: "x", version: "1", ops: [1] } }`,
+		]) {
+			const a = driver(reply);
+			expect(String(await a.hello().catch((x) => x))).toContain(
+				"hello must be",
+			);
+			await a.dispose();
+		}
+	});
+
+	test("a driver that exits nonzero fails dispose", async () => {
+		const js = `for await (const l of console) { if (!l.trim()) continue; const { id } = JSON.parse(l); console.log(JSON.stringify({ id, ok: true, result: null })); } process.exit(3);`;
+		const a = ProcessAdapter.start(`bun -e '${js}'`);
+		expect(await a.call("ping", {})).toBeNull();
+		expect(String(await a.dispose().catch((x) => x))).toContain("status 3");
+	});
+
+	test("a driver that ignores SIGTERM is killed and fails dispose", async () => {
+		const js = `process.on("SIGTERM", () => {}); for await (const l of console) { if (!l.trim()) continue; const { id } = JSON.parse(l); console.log(JSON.stringify({ id, ok: true, result: null })); } setInterval(() => {}, 1000);`;
+		const a = ProcessAdapter.start(`exec bun -e '${js}'`);
+		expect(await a.call("ping", {})).toBeNull();
+		expect(String(await a.dispose().catch((x) => x))).toContain(
+			"did not exit when stdin closed",
+		);
+	}, 15_000);
 });
