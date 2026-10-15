@@ -131,8 +131,14 @@ class WsRpc extends Rpc {
 			for (const p of this.pending.values())
 				p.reject(new Error("connection closed"));
 			this.pending.clear();
+			this.closed();
 		};
 	}
+
+	private closed: () => void = () => {};
+	private readonly hasClosed = new Promise<void>((resolve) => {
+		this.closed = resolve;
+	});
 
 	static open(url: string): Promise<WsRpc> {
 		return new Promise((resolve, reject) => {
@@ -217,8 +223,28 @@ class WsRpc extends Rpc {
 	}
 
 	async close() {
+		// A message the server sent after the last answer (a duplicate, say)
+		// must be judged before cleanup counts as clean, and messages arriving
+		// once close() has begun may be dropped. So first a ping: frames arrive
+		// in the order the server wrote them, so by the ping's answer everything
+		// it wrote before has arrived.
+		if (!this.broken && this.ws.readyState === WebSocket.OPEN)
+			await this.request("ping", [], {});
 		this.ws.close();
+		const ms = opTimeout();
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const timedOut = await Promise.race([
+			this.hasClosed.then(() => false),
+			new Promise<boolean>((resolve) => {
+				timer = setTimeout(() => resolve(true), ms);
+			}),
+		]);
+		clearTimeout(timer);
 		if (this.broken) throw new Error(this.broken);
+		if (timedOut)
+			throw new Error(
+				`the WebSocket close handshake did not finish within ${ms}ms`,
+			);
 	}
 }
 
@@ -258,6 +284,10 @@ class HttpRpc extends Rpc {
 				message: `HTTP ${res.status}: ${body}`,
 			});
 		}
+		// The server sends every CBOR answer, success or RPC error, with 200;
+		// any other status on a CBOR body is not an RPC answer to accept.
+		if (res.status !== 200)
+			throw new Error(`${method}: HTTP ${res.status} with a CBOR body`);
 		const msg = envelope(fromCbor(decode(bytes)));
 		// The response echoes the request's id, as it does over WebSocket.
 		const echoed = msg.get("id");
