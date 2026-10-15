@@ -1033,6 +1033,24 @@ vectors:
     canonical: "ca6130"
     cbor: ca781f302e3030303030303030303030303030303030303030303030303030303031
 
+  - name: reject-datetime-string-after-chrono-max
+    kind: reject
+    diag: '0("+270000-01-01T00:00:00Z")'
+    notes: A valid RFC 3339 date beyond the latest instant chrono holds.
+    cbor: c0772b3237303030302d30312d30315430303a30303a30305a
+
+  - name: reject-duration-string-beyond-u64
+    kind: reject
+    diag: '13("18446744073709551616s")'
+    notes: One second past u64::MAX.
+    cbor: cd75313834343637343430373337303935353136313673
+
+  - name: reject-duration-string-nanoseconds-carry-beyond-u64
+    kind: reject
+    diag: '13("18446744073709551615s1000000000ns")'
+    notes: The units add up to more than u64::MAX seconds.
+    cbor: cd7821313834343637343430373337303935353136313573313030303030303030306e73
+
   - name: reject-datetime-impossible-date
     kind: reject
     diag: '0("2023-02-29T00:00:00Z")'
