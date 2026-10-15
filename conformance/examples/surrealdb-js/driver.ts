@@ -185,10 +185,13 @@ function geometryFrom(g: {
 	geometries?: Json[];
 }): Geometry {
 	const c = g.coordinates as never;
-	const point = (p: [number, number]) => new GeometryPoint(p);
-	const line = (l: [number, number][]) =>
-		new GeometryLine(l.map(point) as never);
-	const polygon = (p: [number, number][][]) =>
+	// Coordinates are numbers, or $float for NaN, the infinities and -0.
+	const coord = (x: Json) =>
+		typeof x === "number" ? x : Number((x as { $float: string }).$float);
+	const point = (p: [Json, Json]) =>
+		new GeometryPoint([coord(p[0]), coord(p[1])]);
+	const line = (l: [Json, Json][]) => new GeometryLine(l.map(point) as never);
+	const polygon = (p: [Json, Json][][]) =>
 		new GeometryPolygon(p.map(line) as never);
 	switch (g.type) {
 		case "Point":
@@ -214,6 +217,23 @@ function geometryFrom(g: {
 				(g.geometries ?? []).map((x) => geometryFrom(x as never)) as never,
 			);
 	}
+}
+
+/**
+ * GeoJSON as typed JSON: coordinates are plain numbers, except that NaN,
+ * the infinities and -0, which JSON cannot hold, are written as $float.
+ */
+function geoJson(v: unknown): Json {
+	if (typeof v === "number")
+		return Number.isFinite(v) && !Object.is(v, -0)
+			? v
+			: { $float: Object.is(v, -0) ? "-0" : String(v) };
+	if (Array.isArray(v)) return v.map(geoJson);
+	if (v && typeof v === "object")
+		return Object.fromEntries(
+			Object.entries(v).map(([k, x]) => [k, geoJson(x)]),
+		);
+	return v as Json;
 }
 
 function toJson(v: unknown): Json {
@@ -269,7 +289,7 @@ function toJson(v: unknown): Json {
 		return { $record: { table: v.table.name, key: rangeJson(v.begin, v.end) } };
 	if (v instanceof Range) return rangeJson(v.begin, v.end);
 	if (v instanceof FileRef) return { $file: { bucket: v.bucket, key: v.key } };
-	if (v instanceof Geometry) return { $geometry: v.toJSON() as Json };
+	if (v instanceof Geometry) return { $geometry: geoJson(v.toJSON()) };
 	if (v instanceof Date) return toJson(new DateTime(v));
 	if (typeof v === "object") {
 		const o = Object.fromEntries(
@@ -707,8 +727,10 @@ const write = (r: unknown) =>
 	);
 
 let buffer = "";
+// One decoder across chunks: a pipe may split a multibyte character.
+const utf8 = new TextDecoder("utf-8", { fatal: true });
 for await (const chunk of process.stdin) {
-	buffer += chunk;
+	buffer += utf8.decode(chunk as Uint8Array, { stream: true });
 	let nl = buffer.indexOf("\n");
 	while (nl >= 0) {
 		const line = buffer.slice(0, nl).trim();
