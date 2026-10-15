@@ -1,0 +1,463 @@
+# The RPC methods a SurrealDB server answers over WebSocket and HTTP /rpc.
+#
+# Source of truth: surrealdb/rpc/src/method.rs (the method names) and
+# surrealdb/core/src/rpc/protocol.rs (dispatch), with the transport overrides in
+# surrealdb/server/src/rpc/{websocket,http}.rs. Checked against surrealdb main
+# at 6a9bc46152 and, for every `http: false` below, against a running
+# 3.4.0-nightly+20261014.4f7fa16, which returns exactly the listed error.
+#
+# Fields:
+#   name        The method string, as sent in the request's `method` field.
+#               Matched case-sensitively.
+#   aliases     Other strings the server maps to the same method.
+#   status      `stable` or `deprecated`. Deprecated methods still work, but
+#               the server says nothing when one is called (no warning, no
+#               header), so an SDK should not call them. Compile the operation
+#               to SurrealQL and send it with `query` instead.
+#   transports  Whether WebSocket (`ws`) and HTTP POST /rpc (`http`) carry it.
+#   http_error  What HTTP /rpc answers when `http` is false.
+#   params      The `params` array, in CDDL-ish shorthand.
+#   result      The `result` on success.
+#   grpc        The SurrealDBService RPC with the same job, if any.
+#   since       The first server release with the method, where it is newer than 3.0.
+#   notes       Anything an SDK needs that the above does not say.
+#
+# Request envelope (both transports):
+#   { id?, method, params?, session?: uuid, txn?: uuid }
+# `session` and `txn` are top-level fields, never params. A response echoes `id`
+# and, when the request named one, `session`:
+#   { id?, result, session? }  or  { id?, error: <error>, session? }
+# See errors.yaml for the error object.
+
+version: 1
+
+methods:
+  # --- Connection and session state ----------------------------------------
+
+  - name: ping
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: NONE
+    grpc: Health
+    notes: Liveness of the RPC layer. Use it for WebSocket keepalive.
+
+  - name: version
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: tstr
+    notes: >
+      "surrealdb-<semver>", e.g. "surrealdb-3.4.0-nightly+20261014.4f7fa16".
+      Any argument is an InvalidParams error. The same string is served by
+      GET /version and in the `surreal-version` response header (as
+      "surrealdb/<semver>"). gRPC reports it in GetCapabilities.server_version.
+
+  - name: info
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: "object / NONE"
+    notes: The signed-in record (the first row of SELECT * FROM $auth), or NONE.
+
+  - name: use
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[ns, db]"
+    result: "{ namespace: tstr / null, database: tstr / null }"
+    grpc: Use
+    notes: >
+      Exactly two params. A string selects, null clears and NONE leaves that
+      side unchanged; [NONE, NONE] applies the server defaults ("main" and
+      "main" on 3.x). Selecting a database with no namespace is InvalidParams.
+      On HTTP each request without a `session` gets a fresh session, so `use`
+      only lasts for that request; send the Surreal-NS and Surreal-DB headers
+      or attach a session instead.
+
+  - name: set
+    aliases: [let]
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[name: tstr, value?]"
+    result: "null"
+    grpc: SetVariable
+    notes: >
+      Defines a session variable, $name. A value of NONE, or no value, removes
+      it. Protected names ($auth, $session, ...) are InvalidParams.
+
+  - name: unset
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[name: tstr]"
+    result: "null"
+    grpc: UnsetVariable
+
+  - name: reset
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: NONE
+    grpc: ResetSession
+    notes: Clears auth, ns/db and variables, and kills the session's live queries and transactions.
+
+  # --- Authentication ------------------------------------------------------
+
+  - name: signup
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[{ ns?, db?, ac, ...variables }]"
+    result: "token"
+    grpc: Signup
+    notes: >
+      Record access only. A token is a JWT string, or
+      { access: tstr, refresh: tstr } when the access method issues refresh
+      tokens (3.0 and later).
+
+  - name: signin
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[{ user, pass, ns?, db?, ac? } / { ns, db, ac, ...variables } / { ns?, db?, ac, key }]"
+    result: "token"
+    grpc: Signin
+    notes: >
+      Root, namespace or database users send user and pass (plus ns, db and ac
+      to narrow the level); record users send ac and their variables; bearer
+      access sends ac and key. The keys are the short ones: user/pass, ns/db/ac.
+
+  - name: authenticate
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[token: tstr]"
+    result: NONE
+    grpc: Authenticate
+
+  - name: refresh
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[{ access, refresh }]"
+    result: "token"
+    grpc: RefreshTokens
+    since: "3.0.0"
+
+  - name: revoke
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[{ access, refresh }]"
+    result: NONE
+    grpc: RevokeTokens
+    since: "3.0.0"
+
+  - name: invalidate
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: NONE
+    grpc: Invalidate
+
+  # --- Queries -------------------------------------------------------------
+
+  - name: query
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[sql: tstr, vars?: object / null]"
+    result: "[* statement-result]"
+    grpc: Query
+    notes: >
+      One entry per statement:
+        { status: "OK", result, time: tstr, type: NONE / "live" / "kill" }
+        { status: "ERR", result: tstr (the message), time, type,
+          kind: <ErrorKind>, details?: { kind, details? } }
+      A statement error has no `code`. A parse error fails the whole call with
+      a top-level Validation error instead, and there are no per-statement
+      results. `vars` are layered over the session's variables for this call
+      only. Honours `txn`.
+
+  - name: query_stream
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
+    params: "[sql: tstr, vars?: object / null]"
+    result: "a sequence of frames"
+    grpc: Query
+    since: "3.3.0"
+    notes: >
+      Requires a request `id`; every frame is an ordinary response carrying
+      that id, with `result` a frame tagged by `stream`:
+        { stream: "begin", version: 1, statements }        (an upper bound)
+        { stream: "rows", index, values: [..] }
+        { stream: "value", index, value }                  (single-value statements)
+        { stream: "finished", index, time, type, single, error? }
+        { stream: "end", results, time, error? }
+      A statement sends rows or one value, never both. A `finished` with an
+      error retracts that statement's rows; an `end` with an error retracts
+      every statement not yet finished. Batches start at 16 rows and double up
+      to 256; the size is not negotiated. Clients must ignore unknown frame
+      tags and fields. Gated by both the `query_stream` and `query` RPC
+      capabilities: when `query_stream` is denied the call fails with
+      NotAllowed (-32602), and a client should fall back to `query`. Honours
+      `txn`; do not commit before `end`.
+
+  - name: query_cancel
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
+    params: "[id]"
+    result: NONE
+    since: "3.3.0"
+    notes: >
+      Cancels the query_stream started with request id `id`, which must have
+      the same type as the original id (1 is not "1"). The cancelled stream
+      still ends with an `end` frame carrying an error. Cancelling an id with
+      nothing in flight is InvalidParams.
+
+  - name: run
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[name: tstr, version?: tstr / null, args?: array]"
+    result: any
+    grpc: Run
+    notes: >
+      Calls fn::, ml:: (version required) or mod::/silo:: functions, and
+      built-ins such as string::len. SDKs MUST call this method, passing the
+      name through unaltered, rather than compiling `RETURN fn::name(...)` into
+      a `query` (rpc.proto, rpc Run): a synthesised query bypasses a deny list
+      that denies `run`, binds arguments through a text round-trip, and moves
+      name resolution into the SDK. The server ignores `txn` for it on
+      WebSocket and HTTP, so a call inside an interactive transaction runs
+      outside it.
+
+  - name: graphql
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[query: tstr, variables?: object, operationName?: tstr]"
+    result: "{ data, errors? }"
+    notes: >
+      GraphQL. Needs the graphql capability and a DEFINE CONFIG GRAPHQL in the
+      database. Rejects a `txn`.
+
+  - name: gql
+    status: stable
+    transports: { ws: true, http: true }
+    since: "3.2.0"
+    params: "[query: tstr, vars?: object]"
+    result: "[* statement-result]"
+    notes: >
+      GQL, the ISO graph query language, which is NOT GraphQL: `gql` and
+      `graphql` are different methods. Enabled by default from 3.3 (checked
+      against 3.3.4 and 3.4 nightly); 3.2 needed --allow-experimental gql.
+
+  # --- Live queries --------------------------------------------------------
+
+  - name: live
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32604, kind: Configuration, details: { kind: LiveQueryNotSupported } }
+    params: "[table: tstr / table, diff?: bool]"
+    result: uuid
+    grpc: Subscribe
+    notes: >
+      Starts LIVE SELECT on a table. The server takes only (what, diff), with
+      no field selection, on every 3.x release. A LIVE SELECT sent with `query`
+      works the same way and is what SDKs that need a projection, WHERE or
+      FETCH use. Notifications
+      arrive on the same WebSocket with no `id`:
+        { result: { id: <live uuid>, action, record, result, session? }, session? }
+      where action is CREATE, UPDATE, DELETE, KILLED or ERROR. KILLED (3.x)
+      arrives when the query is killed or its table, database, namespace or
+      permission goes away; it has no record or result, and it ends the query.
+      There is no RPC to subscribe to a live query by id: notifications for
+      every live query on the connection already arrive, so "attaching" to a
+      known id is a client-side filter. gRPC Subscribe can attach by id.
+
+  - name: kill
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32604, kind: Configuration, details: { kind: LiveQueryNotSupported } }
+    params: "[id: uuid]"
+    result: NONE
+    grpc: Kill
+
+  # --- Sessions ------------------------------------------------------------
+
+  - name: attach
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: NONE
+    grpc: AttachSession
+    since: "3.0.0"
+    notes: >
+      Creates the session named by the request's top-level `session` field,
+      which the CLIENT chooses (a uuid). Without one it is InvalidParams. An id
+      already in use is AlreadyExists (details kind Session). Over gRPC it is
+      the other way round: the server mints the id. WebSocket sessions belong
+      to the connection, at most 256 of them. HTTP sessions are shared by the
+      server and checked against the caller's principal, so a request from
+      someone else gets NotFound rather than a hint that the id exists. A new
+      session starts empty: no auth, ns/db or variables.
+
+  - name: detach
+    status: stable
+    transports: { ws: true, http: true }
+    params: "[]"
+    result: NONE
+    grpc: DetachSession
+    since: "3.0.0"
+    notes: >
+      Ends the session named by `session`, killing its live queries and
+      transactions. Detaching the connection's implicit session is
+      InvalidParams.
+
+  - name: sessions
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32602, kind: NotAllowed, details: { kind: Method } }
+    params: "[]"
+    result: "[* uuid]"
+    since: "3.0.0"
+    notes: >
+      The connection's attached sessions, not including its implicit default
+      session. There is no server-side fork: an SDK forks a session by
+      attaching a new one and replaying use, set and authenticate on it.
+
+  # --- Interactive transactions ---------------------------------------------
+
+  - name: begin
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
+    params: "[]"
+    result: uuid
+    grpc: BeginTransaction
+    since: "3.0.0"
+    notes: >
+      Returns a transaction id. Send it as the top-level `txn` field on query,
+      query_stream, live, kill and the CRUD methods. run, relate, patch and
+      the other CRUD methods that bypass the executor ignore it. Open
+      transactions are capped per session and counted separately: the
+      connection's default session by SURREAL_MAX_TRANSACTIONS_PER_CONNECTION,
+      each attached session by SURREAL_MAX_TRANSACTIONS_PER_SESSION (64 each by
+      default; server main at 6a9bc46152). Past the cap, begin fails with "Too
+      many open transactions". An unknown `txn` is InvalidParams "Transaction
+      not found".
+
+  - name: commit
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
+    params: "[txn: uuid]"
+    result: NONE
+    grpc: CommitTransaction
+    since: "3.0.0"
+
+  - name: cancel
+    status: stable
+    transports: { ws: true, http: false }
+    http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
+    params: "[txn: uuid]"
+    result: NONE
+    grpc: CancelTransaction
+    since: "3.0.0"
+
+  # --- Deprecated CRUD methods ----------------------------------------------
+  #
+  # SDKs compile these operations to SurrealQL and send them with `query`,
+  # which is also the only way they work over gRPC (which has no CRUD RPCs).
+  # A single non-range record id as the target returns one object rather than
+  # an array. `replacement` is the shape of the equivalent statement; the exact
+  # compilation (ONLY for single records, RETURN clauses, identifier escaping)
+  # belongs to the SurrealQL compilation spec, not this catalog.
+
+  - name: select
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what]"
+    result: any
+    replacement: SELECT * FROM $what
+
+  - name: create
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, data?]"
+    result: any
+    replacement: CREATE $what CONTENT $data
+
+  - name: insert
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, data]"
+    result: any
+    replacement: INSERT INTO $what $data
+
+  - name: insert_relation
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, data]"
+    result: any
+    replacement: INSERT RELATION INTO $what $data
+
+  - name: upsert
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, data?]"
+    result: any
+    replacement: UPSERT $what CONTENT $data
+
+  - name: update
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, data?]"
+    result: any
+    replacement: UPDATE $what CONTENT $data
+
+  - name: merge
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, data?]"
+    result: any
+    replacement: UPDATE $what MERGE $data
+
+  - name: patch
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what, patches?, diff?: bool]"
+    result: any
+    replacement: UPDATE $what PATCH $patches
+
+  - name: delete
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[what]"
+    result: any
+    replacement: DELETE $what
+
+  - name: relate
+    status: deprecated
+    transports: { ws: true, http: true }
+    params: "[from, kind, to, data?]"
+    result: any
+    replacement: RELATE $from->$kind->$to CONTENT $data
+
+# Names SDKs have called that are not methods. Every one of these is answered
+# with NotFound/Method (-32601), and the error names the method "unknown", not
+# the string that was sent.
+not_methods:
+  - name: health
+    use_instead: GET /health (HTTP), or the ping method
+    notes: >
+      There is no `health` RPC. GET /health answers 200 when the server and its
+      storage are healthy and 500 when the storage check fails; it needs no
+      auth. Over gRPC, use Health.
+  - name: capabilities
+    use_instead: version, or gRPC GetCapabilities
+    notes: >
+      WebSocket and HTTP have no capability negotiation. Detect features from
+      the `version` string, and treat -32601 (method not found) as "this server
+      does not have that method".
+  - name: api
+    use_instead: HTTP /api/{ns}/{db}/{path}
+    notes: User-defined API endpoints are not an RPC method.
+  - name: import
+    use_instead: HTTP POST /import (see http.yaml)
+  - name: export
+    use_instead: HTTP GET or POST /export (see http.yaml)
