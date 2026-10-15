@@ -14,7 +14,9 @@
 #                    too, rather than produce some other value.
 #
 # `value` is typed JSON (see conformance/lib/value.ts or spec/README.md).
-# `diag` is CBOR diagnostic notation for `cbor`, for reading only.
+# `diag` is CBOR diagnostic notation for `cbor`, for reading only. A reject
+# vector with `raw: true` is malformed below what diagnostic notation can
+# express: its `cbor` is the input and its `diag` is a description.
 #
 # `cbor`, `diag`, `canonical` and `server` are written by `bun run vectors:write`
 # against a live server, which also checks every `value` independently. Edit the
@@ -931,6 +933,25 @@ vectors:
     kind: reject
     diag: '8(["person", true])'
     cbor: c88266706572736f6ef5
+
+  - name: reject-record-id-range-bool-bound
+    kind: reject
+    diag: '8(["person", 49([50(true), 51(5)])])'
+    notes: The bounds of a record id range must be record id keys themselves.
+    cbor: c88266706572736f6ed83182d832f5d83305
+
+  - name: reject-datetime-seconds-beyond-i64
+    kind: reject
+    diag: "12([9223372036854775808, 0])"
+    notes: Datetime seconds are i64.
+    cbor: cc821b800000000000000000
+
+  - name: reject-indefinite-text-with-bytes-chunk
+    kind: reject
+    raw: true
+    diag: "indefinite text (_ ...) whose chunk is the byte string h'00'"
+    cbor: 7f4100ff
+    notes: Every chunk of an indefinite text string must be text (RFC 8949).
 
   - name: reject-record-id-float-key
     kind: reject

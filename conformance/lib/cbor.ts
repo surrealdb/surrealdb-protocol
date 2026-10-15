@@ -298,8 +298,15 @@ class Reader {
 				let raw: Uint8Array;
 				if (arg === null) {
 					const chunks: Uint8Array[] = [];
-					while (this.b[this.pos] !== 0xff)
-						chunks.push(this.slice(Number(this.arg(this.u8() & 0x1f))));
+					while (this.b[this.pos] !== 0xff) {
+						// Each chunk must be a definite string of the same major type.
+						const h = this.u8();
+						if (h >> 5 !== major || (h & 0x1f) === 31)
+							throw new CborDecodeError(
+								`indefinite ${major === 2 ? "bytes" : "text"} has a chunk of another type`,
+							);
+						chunks.push(this.slice(Number(this.arg(h & 0x1f))));
+					}
 					this.pos++;
 					raw = concat(chunks);
 				} else raw = this.slice(Number(arg));
