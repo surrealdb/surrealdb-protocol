@@ -58,4 +58,14 @@ describe("ProcessAdapter", () => {
 		expect(await ok.call("ping", {})).toBeNull();
 		await ok.dispose();
 	});
+
+	test("output left without a newline at exit breaks the adapter", async () => {
+		// Answers one request, writes a stray fragment and exits.
+		const js = `for await (const l of console) { if (!l.trim()) continue; const { id } = JSON.parse(l); process.stdout.write(JSON.stringify({ id, ok: true, result: null }) + "\\n" + "{\\"id\\": 9"); process.exit(0); }`;
+		const a = ProcessAdapter.start(`bun -e '${js}'`);
+		expect(await a.call("ping", {})).toBeNull();
+		expect(String(await a.dispose().catch((x) => x))).toContain(
+			"no closing newline",
+		);
+	});
 });

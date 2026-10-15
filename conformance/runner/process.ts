@@ -107,6 +107,14 @@ export class ProcessAdapter implements Adapter {
 				nl = this.buffer.indexOf("\n");
 			}
 		}
+		// Every answer ends in a newline, so bytes left over at EOF are a
+		// truncated or stray answer, and they break the protocol like any other.
+		const rest = (this.buffer + decoder.decode()).trim();
+		this.buffer = "";
+		if (rest)
+			this.failAll(
+				`driver wrote output with no closing newline: ${rest.slice(0, 200)}`,
+			);
 	}
 
 	private failAll(message: string) {
