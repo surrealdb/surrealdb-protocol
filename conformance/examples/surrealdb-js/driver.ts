@@ -346,6 +346,20 @@ function credentials(c: Record<string, Json>) {
 	return auth as never;
 }
 
+/**
+ * Signup is record access only: ns, db and ac pick the access method, and every
+ * other key, `user`, `pass` and `key` included, is a variable for its SIGNUP clause.
+ */
+function signupCredentials(c: Record<string, Json>) {
+	const { ns, db, ac, ...variables } = c;
+	return {
+		...(ns !== undefined && { namespace: ns }),
+		...(db !== undefined && { database: db }),
+		access: ac,
+		variables: fromJson(variables),
+	} as never;
+}
+
 class Driver {
 	private db = new Surreal();
 	private readonly sessions = new Map<string, SurrealSession>();
@@ -450,7 +464,9 @@ class Driver {
 				const s = this.sessionOnly(op, args);
 				const tokens = await (op === "signin"
 					? s.signin(credentials(args.credentials as Record<string, Json>))
-					: s.signup(credentials(args.credentials as Record<string, Json>)));
+					: s.signup(
+							signupCredentials(args.credentials as Record<string, Json>),
+						));
 				return toJson(tokens);
 			}
 			case "authenticate":

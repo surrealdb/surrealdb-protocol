@@ -109,7 +109,7 @@ transaction. Neither means the connection's default session.
 | `close` | | `null` |
 | `version` | | the server version string, `surrealdb-3.4.0` |
 | `ping` | Context | `null` |
-| `signin`, `signup` | Context, `credentials` with the RPC wire keys `user`, `pass`, `ns`, `db`, `ac`, `key` (the bearer key for a bearer access method, as in rpc.proto's `BearerCredentials`), plus record variables | the token, as the SDK returns it |
+| `signin`, `signup` | Context, `credentials` with the RPC wire keys `user`, `pass`, `ns`, `db`, `ac`, `key` (the bearer key for a bearer access method, as in rpc.proto's `BearerCredentials`), plus record variables; for `signup`, which is record access only, every key but `ns`, `db` and `ac` is a variable, `user` and `pass` included | the token, as the SDK returns it |
 | `authenticate` | Context, `token` | `null` |
 | `invalidate` | Context | `null` |
 | `info` | Context | the authenticated record |
