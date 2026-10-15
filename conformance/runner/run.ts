@@ -107,8 +107,19 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 		.sort()) {
 		const doc = parse(readFileSync(join(dir, file), "utf8"), {
 			intAsBigInt: true,
-		}) as { scenarios: Record<string, unknown>[] };
-		for (const raw of doc.scenarios ?? []) {
+		}) as unknown;
+		// A misspelt root such as `scenario:` would otherwise drop the whole file.
+		if (
+			typeof doc !== "object" ||
+			doc === null ||
+			!Array.isArray((doc as { scenarios?: unknown }).scenarios) ||
+			Object.keys(doc).some((k) => k !== "scenarios")
+		)
+			throw new Error(
+				`${file}: the root must be { scenarios: [...] } and nothing else`,
+			);
+		for (const raw of (doc as { scenarios: Record<string, unknown>[] })
+			.scenarios) {
 			const name = raw.name as string;
 			const where = `${file}: ${name}`;
 			if (!name) throw new Error(`${file}: a scenario has no name`);

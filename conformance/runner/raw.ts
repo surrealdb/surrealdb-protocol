@@ -306,8 +306,14 @@ export class RawAdapter implements Adapter {
 	): Promise<Value> {
 		const frames = await this.send(method, params, ctx);
 		const msg = frames[0] as Envelope;
+		// Exactly one of result and error, or the server broke the envelope: a
+		// plain Error, so it fails the step rather than reading as NONE.
+		if (msg.has("result") === msg.has("error"))
+			throw new Error(
+				`${method}: the response has ${msg.has("error") ? "both result and error" : "neither result nor error"}`,
+			);
 		if (msg.has("error")) throw new AdapterError(errorInfo(msg.get("error")));
-		return msg.get("result") ?? { k: "none" };
+		return msg.get("result") as Value;
 	}
 
 	private send(
@@ -351,17 +357,24 @@ export class RawAdapter implements Adapter {
 	}
 
 	private statementResults(v: Value): StatementResult[] {
-		if (v.k !== "array")
-			throw new AdapterError({
-				kind: "Internal",
-				message: "query result is not an array",
-			});
-		return v.v.map((s) => {
-			const m = new Map(s.k === "object" ? s.v : []);
+		// A malformed answer is a plain Error, so it fails the step instead of
+		// passing for an expected statement error.
+		if (v.k !== "array") throw new Error("query result is not an array");
+		return v.v.map((s, i) => {
+			const bad = (why: string) =>
+				new Error(
+					`query statement ${i} ${why}: ${JSON.stringify(toJson(s), big)}`,
+				);
+			if (s.k !== "object") throw bad("is not an object");
+			const m = new Map(s.v);
 			const status = m.get("status");
-			if (status?.k === "string" && status.v === "OK")
-				return { ok: true, result: toJson(m.get("result") ?? { k: "none" }) };
+			if (status?.k !== "string" || (status.v !== "OK" && status.v !== "ERR"))
+				throw bad("has no OK or ERR status");
+			if (!m.has("result")) throw bad("has no result");
+			if (status.v === "OK")
+				return { ok: true, result: toJson(m.get("result") as Value) };
 			const result = m.get("result");
+			if (result?.k !== "string") throw bad("is an error without a message");
 			const details = m.get("details");
 			const kind = m.get("kind");
 			return {
@@ -879,3 +892,8 @@ function httpError(status: number, body: string): AdapterError {
 }
 
 export const rawAdapter = async (): Promise<Adapter> => new RawAdapter();
+
+/** JSON.stringify replacer for typed JSON with bigints. */
+function big(_: string, x: unknown) {
+	return typeof x === "bigint" ? x.toString() : x;
+}

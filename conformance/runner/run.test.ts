@@ -70,4 +70,17 @@ describe("loadScenarios", () => {
 		expect(write("{ env: { A: 1 } }")).toThrow("names to strings");
 		expect(write("[]")).toThrow("must be an object");
 	});
+
+	test("rejects a file whose root is not a scenarios list", () => {
+		for (const yaml of [
+			"scenario:\n  - name: x\n",
+			"[]\n",
+			"scenarios: {}\n",
+			"scenarios: []\nextra: 1\n",
+		]) {
+			const dir = mkdtempSync(join(tmpdir(), "scenarios-"));
+			writeFileSync(join(dir, "x.yaml"), yaml);
+			expect(() => loadScenarios(dir)).toThrow("the root must be");
+		}
+	});
 });

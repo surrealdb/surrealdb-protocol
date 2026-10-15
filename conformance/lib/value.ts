@@ -688,25 +688,167 @@ function geometryFromCbor(i: CborItem): Geometry {
 }
 
 /**
- * The string form of tag 8. The server parses it as full SurrealQL record id
- * syntax; this covers the forms the vectors use (identifier, integer and
- * bracketed keys), which is all a decoder test needs.
+ * The string form of tag 8, parsed as SurrealQL record id syntax: the table
+ * is an identifier or escaped with ⟨…⟩ or backticks; the key is an i64, an
+ * identifier, an escaped string, a u"…" uuid, or an array or object literal.
+ * The server ignores text after a valid prefix ("person:1..5" is person:1);
+ * this decoder rejects it, since an encoder that sends it has a bug.
  */
 function parseRecordIdString(s: string): Value {
-	const i = s.indexOf(":");
-	if (i <= 0) throw new ValueError(`not a record id: ${s}`);
-	const table = s.slice(0, i);
-	const rest = s.slice(i + 1);
-	let key: Value;
-	if (/^-?\d+$/.test(rest)) key = { k: "int", v: checkI64(BigInt(rest)) };
-	else if (/^⟨.*⟩$/.test(rest) || /^`.*`$/.test(rest))
-		key = { k: "string", v: rest.slice(1, -1) };
-	else if (/^[A-Za-z0-9_]+$/.test(rest)) key = { k: "string", v: rest };
-	else
-		throw new ValueError(
-			`record id key form not supported by this decoder: ${s}`,
-		);
+	const p = new SurqlReader(s);
+	const table = p.name();
+	p.expect(":");
+	const key = p.recordKey();
+	if (!p.done()) throw new ValueError(`not a record id: ${s}`);
 	return { k: "record", table, key };
+}
+
+/** Just enough of the SurrealQL literal grammar for record id strings. */
+class SurqlReader {
+	private pos = 0;
+	constructor(private readonly s: string) {}
+
+	done(): boolean {
+		return this.pos === this.s.length;
+	}
+
+	private fail(): never {
+		throw new ValueError(`not a record id: ${this.s}`);
+	}
+
+	private rest(): string {
+		return this.s.slice(this.pos);
+	}
+
+	private ws() {
+		while (/\s/.test(this.s[this.pos] ?? "")) this.pos++;
+	}
+
+	expect(c: string) {
+		if (!this.s.startsWith(c, this.pos)) this.fail();
+		this.pos += c.length;
+	}
+
+	private eat(c: string): boolean {
+		this.ws();
+		if (!this.s.startsWith(c, this.pos)) return false;
+		this.pos += c.length;
+		return true;
+	}
+
+	/** An identifier, or text escaped with ⟨…⟩ or backticks. */
+	name(): string {
+		const open = this.s[this.pos];
+		if (open === "⟨" || open === "`") {
+			const end = this.s.indexOf(open === "⟨" ? "⟩" : "`", this.pos + 1);
+			if (end < 0) this.fail();
+			const v = this.s.slice(this.pos + 1, end);
+			this.pos = end + 1;
+			return v;
+		}
+		const m = /^[A-Za-z0-9_]+/.exec(this.rest());
+		if (!m) this.fail();
+		this.pos += m[0].length;
+		return m[0];
+	}
+
+	recordKey(): Value {
+		const rest = this.rest();
+		if (/^[[{]/.test(rest) || /^u["']/.test(rest)) return this.value();
+		// Digits that fit i64 are an integer key; past i64 they are an
+		// identifier, as on the server.
+		const m = /^-?\d+(?![A-Za-z0-9_])/.exec(rest);
+		if (m) {
+			const n = BigInt(m[0]);
+			if (n >= I64_MIN && n <= I64_MAX) {
+				this.pos += m[0].length;
+				return { k: "int", v: n };
+			}
+			if (m[0].startsWith("-")) this.fail();
+		}
+		return { k: "string", v: this.name() };
+	}
+
+	/** A literal inside an array or object key. */
+	private value(): Value {
+		this.ws();
+		const rest = this.rest();
+		if (this.eat("[")) {
+			const v: Value[] = [];
+			if (!this.eat("]")) {
+				do v.push(this.value());
+				while (this.eat(","));
+				if (!this.eat("]")) this.fail();
+			}
+			return { k: "array", v };
+		}
+		if (this.eat("{")) {
+			const v: [string, Value][] = [];
+			if (!this.eat("}")) {
+				do {
+					this.ws();
+					const q = this.s[this.pos];
+					const key = q === '"' || q === "'" ? this.str() : this.name();
+					if (!this.eat(":")) this.fail();
+					v.push([key, this.value()]);
+				} while (this.eat(","));
+				if (!this.eat("}")) this.fail();
+			}
+			if (new Set(v.map(([k]) => k)).size !== v.length) this.fail();
+			return { k: "object", v };
+		}
+		if (/^["']/.test(rest)) return { k: "string", v: this.str() };
+		if (/^u["']/.test(rest)) {
+			this.pos++;
+			return { k: "uuid", v: normaliseUuid(this.str()) };
+		}
+		const words: [string, Value][] = [
+			["true", { k: "bool", v: true }],
+			["false", { k: "bool", v: false }],
+			["null", { k: "null" }],
+			["NULL", { k: "null" }],
+			["NONE", { k: "none" }],
+		];
+		for (const [word, v] of words)
+			if (new RegExp(`^${word}(?![A-Za-z0-9_])`).test(rest)) {
+				this.pos += word.length;
+				return v;
+			}
+		const n = /^(-?\d+(\.\d+)?(e[+-]?\d+)?)(f|dec)?(?![A-Za-z0-9_])/i.exec(
+			rest,
+		);
+		if (!n) this.fail();
+		this.pos += n[0].length;
+		const [, text, frac, exp, suffix] = n as unknown as string[];
+		if (suffix?.toLowerCase() === "dec")
+			return { k: "decimal", v: normaliseDecimal(text as string, true) };
+		if (frac || exp || suffix) return { k: "float", v: Number(text) };
+		return { k: "int", v: checkI64(BigInt(text as string)) };
+	}
+
+	/** A quoted string with backslash escapes. */
+	private str(): string {
+		const q = this.s[this.pos++];
+		const escapes: Record<string, string> = {
+			n: "\n",
+			t: "\t",
+			r: "\r",
+			"0": "\0",
+		};
+		let out = "";
+		for (;;) {
+			const c = this.s[this.pos++];
+			if (c === undefined) this.fail();
+			if (c === q) return out;
+			if (c !== "\\") {
+				out += c;
+				continue;
+			}
+			const e = this.s[this.pos++];
+			if (e === undefined) this.fail();
+			out += escapes[e] ?? e;
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
