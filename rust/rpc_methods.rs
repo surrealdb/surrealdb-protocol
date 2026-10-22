@@ -212,6 +212,11 @@ impl export_config::Tables {
 /// [`QueryResponseValueStream`]), so they are only suitable for
 /// single-statement queries.
 #[async_trait]
+#[allow(
+    clippy::allow_attributes,
+    clippy::double_must_use,
+    reason = "`#[async_trait]` output trips double_must_use from clippy 1.99 on; an `expect` would be unfulfilled on the pinned toolchain"
+)]
 pub trait TryFromQueryStream {
     /// Converts a stream of query responses into a specific type.
     async fn try_from_query_stream(stream: Streaming<QueryResponse>) -> Result<Self, anyhow::Error>
