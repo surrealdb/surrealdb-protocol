@@ -27,7 +27,9 @@ pub mod proto {
     //! Protobuf generated code.
 
     mod generated {
-        #![allow(missing_docs, clippy::allow_attributes)]
+        // `double_must_use` fires on tonic's `#[async_trait]` output from clippy
+        // 1.99 on; an `expect` would be unfulfilled on the pinned toolchain.
+        #![allow(missing_docs, clippy::allow_attributes, clippy::double_must_use)]
 
         pub mod surrealdb {
             pub mod protocol {
