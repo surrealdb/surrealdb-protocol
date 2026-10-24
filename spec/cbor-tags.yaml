@@ -1,0 +1,384 @@
+# The CBOR tags SurrealDB uses on the WebSocket and HTTP /rpc wire, as of the
+# SurrealDB 4.0 wire.
+#
+# This file is the authoritative table. Every SDK's CBOR codec should agree with
+# it, and spec/vectors/cbor.yaml holds hex test vectors for every row.
+#
+# Source of truth on the server side:
+#   surrealdb/core/src/rpc/format/cbor/convert.rs  (to_value / from_value)
+#   surrealdb/rpc/src/format.rs                    (the media types)
+# checked against surrealdb main at c63ff8cfa1 (the 4.0 line, which still
+# reports 3.4.0-nightly, 2026-10-24).
+#
+# Formats. The server speaks three CBOR dialects; `formats` below lists them.
+#   cbor     WebSocket subprotocol `cbor`, HTTP `application/cbor`. Frozen: it
+#            keeps its exact bytes with released 3.x peers.
+#   cbor.2   WebSocket subprotocol `cbor.2`, HTTP `application/cbor; v=2`.
+#            Byte-identical to `cbor` for every type `cbor` has, plus the
+#            sized-number tags 180 to 188.
+#   shaped   WebSocket subprotocol `shaped`, HTTP
+#            `application/vnd.surrealdb.shaped`. Requests are `cbor.2`;
+#            responses are `cbor.2` with each list of result rows written as a
+#            tag 57 shaped block.
+# A server before 4.0 offers only `cbor`.
+#
+# Strict decoding. The server refuses, with a Validation (Parse) error whose
+# message names the problem, any request that holds:
+#   - a tag this table marks `refused` or `reserved`, or any tag not in it;
+#   - a tag outside its `formats` (180 to 188 under plain `cbor`);
+#   - an integer outside i64 (see `untagged`);
+#   - a map with a duplicate key;
+#   - tag 6 around anything but null.
+# Servers before 4.0 accepted some of these; an SDK MUST NOT rely on that.
+#
+# Fields:
+#   tag        CBOR tag number.
+#   name       The SurrealDB type the tag carries.
+#   status     `active`   the server encodes it and decodes it.
+#              `refused`  the server once decoded it and now refuses it. SDKs
+#                         MUST NOT encode it; `use` says what to send instead.
+#              `reserved` unused. Never encode it; the server refuses it as an
+#                         unknown tag.
+#   formats    The dialects the tag is valid in. Absent means all three.
+#   content    The CBOR item inside the tag, in CDDL-ish shorthand.
+#   notes      Edge cases. "MUST" and "SHOULD" are as in RFC 2119.
+#
+# Untagged CBOR major types map as you would expect and have no row here:
+#   null -> NULL, bool -> bool, int -> int (i64), float -> float (f64),
+#   bytes -> bytes, text -> string, array -> array, map -> object.
+# See `untagged` at the bottom for the details that still trip SDKs up.
+
+version: 1
+
+tags:
+  - tag: 0
+    name: datetime
+    status: refused
+    use: 12
+    content: tstr  # RFC 3339
+    notes: >
+      The IANA standard date/time string. Refused from 4.0 on, anywhere in a
+      request: "CBOR tag 0 (a datetime as text) is not accepted: send tag 12
+      [seconds, nanos]". Every server since 1.5.0 reads tag 12, so an SDK can
+      send tag 12 to any server it supports. The server never emitted tag 0.
+
+  - tag: 6
+    name: none
+    status: active
+    content: "null"
+    notes: >
+      SurrealDB's NONE, which is distinct from NULL. The server always encodes
+      the tagged item as CBOR null (bytes c6 f6), and refuses any other item:
+      6(1) is "Expected a CBOR null under the NONE tag". (Servers before 4.0
+      ignored the item.)
+      An SDK MUST keep NONE and NULL apart in both directions: an untagged CBOR
+      null is NULL, never NONE. How a language spells the two is up to the SDK,
+      but both must round-trip.
+
+  - tag: 7
+    name: table
+    status: active
+    content: tstr
+    notes: A table name, as opposed to a plain string.
+
+  - tag: 8
+    name: record-id
+    status: active
+    content: "[tstr, key] / tstr"
+    notes: >
+      Encoded as a two-element array, [table, key]. The key is one of: int,
+      tstr, array, map, tag 37 uuid, or tag 49 range (a record id range such as
+      person:1..5); under `cbor.2` also a tag 180 to 186 sized integer, which
+      the server reads as a plain int key. A tag 9 key is refused, as tag 9 is
+      everywhere. Float and decimal keys are refused. A tstr content ("person:alice") is decode-only: the server parses it as
+      SurrealQL record id syntax, so `8("person:alice")` is the record
+      person:alice. SDKs SHOULD always encode the array form, which needs no
+      escaping, and MUST decode both. An array with other than two elements is
+      an error.
+
+  - tag: 9
+    name: uuid
+    status: refused
+    use: 37
+    content: tstr  # hyphenated
+    notes: >
+      A UUID in its string form. Refused from 4.0 on, as a value and as a
+      record id key: "CBOR tag 9 (a uuid as text) is not accepted: send tag 37
+      (16 bytes)". Every server since 1.5.0 reads tag 37. The server never
+      emitted tag 9.
+
+  - tag: 10
+    name: decimal
+    status: active
+    content: tstr
+    notes: >
+      An arbitrary-precision decimal as a string, for example "1.5" or
+      "79228162514264337593543950335". The server's decimal is 96-bit
+      (rust_decimal): up to 28-29 significant digits, scale up to 28. The
+      server normalises trailing zeros on decode ("1.50" decodes as 1.5).
+      SDKs MUST NOT round-trip decimals through a binary float.
+
+  - tag: 11
+    name: binary-decimal
+    status: reserved
+    content: "-"
+    notes: Commented out in the server, which refuses it as an unknown tag.
+
+  - tag: 12
+    name: datetime
+    status: active
+    content: "[int, uint]  # [seconds, nanoseconds]"
+    notes: >
+      Seconds since the Unix epoch (i64) and nanoseconds within that second
+      (0..999999999). Exactly two elements. Datetimes before 1970 have negative
+      seconds and POSITIVE nanoseconds: 1969-12-31T23:59:59.5Z is [-1, 500000000],
+      not [0, -500000000]. Nanosecond precision is part of the contract; an SDK
+      whose native datetime is coarser MUST say so and SHOULD offer a type that
+      keeps the nanoseconds.
+
+  - tag: 13
+    name: duration
+    status: refused
+    use: 14
+    content: tstr  # SurrealQL duration, e.g. "1h30m"
+    notes: >
+      A SurrealQL duration string. Refused from 4.0 on: "CBOR tag 13 (a
+      duration as text) is not accepted: send tag 14 [seconds, nanos]". Every
+      server since 1.5.0 reads tag 14. The server never emitted tag 13.
+
+  - tag: 14
+    name: duration
+    status: active
+    content: "[] / [uint] / [uint, uint]  # [seconds, nanoseconds]"
+    notes: >
+      The server emits the shortest form: [] for a zero duration, [s] when the
+      nanoseconds are zero, and [s, ns] otherwise. Decoders MUST accept all
+      three. Durations are unsigned: SurrealDB has no negative durations, so a
+      negative seconds or nanoseconds element is an error, not a negative
+      duration. More than two elements is an error.
+
+  - tag: 15
+    name: future
+    status: reserved
+    content: "-"
+    notes: >
+      Was SurrealQL's <future>. Kept reserved so the number is not reused.
+      The server rejects it as an unknown tag.
+
+  - tag: 37
+    name: uuid
+    status: active
+    content: bstr .size 16
+    notes: >
+      The IANA UUID tag, as 16 raw bytes. Any other length is an error. Used for
+      uuid values and uuid record id keys alike.
+
+  - tag: 49
+    name: range
+    status: active
+    content: "[bound, bound]  # [start, end]"
+    notes: >
+      Always exactly two bounds. Each bound is tag 50 (included), tag 51
+      (excluded), or CBOR null for an unbounded side. So 1..=5 is
+      49([50(1), 50(5)]), 1>..5 is 49([51(1), 51(5)]), 1..5 is
+      49([50(1), 51(5)]) and .. is 49([null, null]). Also used, with record id
+      keys as the bound values, as the key of a record id range.
+
+  - tag: 50
+    name: bound-included
+    status: active
+    content: any
+    notes: An inclusive range bound. Only meaningful inside tag 49.
+
+  - tag: 51
+    name: bound-excluded
+    status: active
+    content: any
+    notes: An exclusive range bound. Only meaningful inside tag 49.
+
+  - tag: 55
+    name: file
+    status: active
+    content: "[tstr, tstr]  # [bucket, key]"
+    notes: >
+      A file pointer, f"bucket:/key" in SurrealQL. The key keeps its leading
+      slash. Both elements must be strings. Files are an experimental feature
+      on the server (--allow-experimental files) but the tag itself is always
+      decoded.
+
+  - tag: 56
+    name: set
+    status: active
+    content: "[* any]"
+    notes: >
+      A set of values. The server stores sets ordered and deduplicated, and
+      encodes them in its own sort order. On decode it sorts and deduplicates
+      whatever arrives, so a client need not send them sorted. SDKs must not
+      decode a set as an array.
+
+  - tag: 57
+    name: shaped-block
+    status: active
+    content: bstr  # surrealdb_types::shaped block
+    notes: >
+      A block of rows that share their shapes, sent once (surrealdb_types::shaped
+      in the server). The server emits it only on the `shaped` format, for each
+      list of result rows. It accepts it in a request on every CBOR format, at
+      any value position (not as a record id key), where it decodes to the
+      array of its rows; the rows are held to the same rules as plain CBOR, and
+      all blocks in one request together materialise at most 128 bytes per
+      request byte plus 1 MiB. Outside a request it is refused: "CBOR tag 57 (a
+      shaped block) is not accepted here". Servers before 4.0 refuse it as an
+      unknown tag.
+
+  - tag: 88
+    name: geometry-point
+    status: active
+    content: "[number, number]  # [x, y], i.e. [longitude, latitude]"
+    notes: >
+      The server encodes both coordinates as floats, in the shortest IEEE 754
+      width that holds the value exactly (so 1.0 is the half-precision f9 3c00).
+      It decodes any number, including integers and tag 10 decimals (and,
+      under `cbor.2`, the sized-number tags).
+
+  - tag: 89
+    name: geometry-line
+    status: active
+    content: "[* point]"
+    notes: Each element is a tag 88 point. GeoJSON calls this a LineString.
+
+  - tag: 90
+    name: geometry-polygon
+    status: active
+    content: "[+ line]"
+    notes: >
+      The first tag 89 line is the exterior ring and the rest are interiors.
+      At least one line is required. Rings are closed: the server repeats the
+      first point at the end of each ring when it encodes.
+
+  - tag: 91
+    name: geometry-multipoint
+    status: active
+    content: "[* point]"
+
+  - tag: 92
+    name: geometry-multiline
+    status: active
+    content: "[* line]"
+    notes: GeoJSON calls this a MultiLineString.
+
+  - tag: 93
+    name: geometry-multipolygon
+    status: active
+    content: "[* polygon]"
+
+  - tag: 94
+    name: geometry-collection
+    status: active
+    content: "[* geometry]"
+    notes: Any of tags 88 to 94, including nested collections.
+
+  # --- Sized numbers (cbor.2 only) -------------------------------------------
+  # SurrealDB 4.0's fixed-width number kinds. Under `cbor.2` (and `shaped`) the
+  # server wraps a value of each kind in its tag, and range-checks the item on
+  # decode. Under plain `cbor` it encodes them widened, as an untagged int or
+  # float (a u64 above i64::MAX as a tag 10 decimal), and refuses the tags:
+  # "CBOR tag 181 is not accepted here: use cbor.2". Servers before 4.0 refuse
+  # them as unknown tags.
+
+  - tag: 180
+    name: i8
+    status: active
+    formats: [cbor.2, shaped]
+    content: int .within -128..127
+    notes: Out of range is an error ("integer 128 is outside the 8-bit signed range").
+
+  - tag: 181
+    name: u8
+    status: active
+    formats: [cbor.2, shaped]
+    content: uint .within 0..255
+
+  - tag: 182
+    name: i16
+    status: active
+    formats: [cbor.2, shaped]
+    content: int .within -32768..32767
+
+  - tag: 183
+    name: u16
+    status: active
+    formats: [cbor.2, shaped]
+    content: uint .within 0..65535
+
+  - tag: 184
+    name: i32
+    status: active
+    formats: [cbor.2, shaped]
+    content: int .within -2147483648..2147483647
+
+  - tag: 185
+    name: u32
+    status: active
+    formats: [cbor.2, shaped]
+    content: uint .within 0..4294967295
+
+  - tag: 186
+    name: u64
+    status: active
+    formats: [cbor.2, shaped]
+    content: uint .within 0..18446744073709551615
+    notes: >
+      The only way to carry an integer above i64::MAX as an integer. As a
+      record id key it must still fit in i64.
+
+  - tag: 187
+    name: f16
+    status: active
+    formats: [cbor.2, shaped]
+    content: float
+    notes: >
+      The float must be exactly representable as an IEEE 754 half ("float 0.1
+      cannot be losslessly represented as f16" otherwise). A CBOR integer is
+      an error.
+
+  - tag: 188
+    name: f32
+    status: active
+    formats: [cbor.2, shaped]
+    content: float
+    notes: The float must be exactly representable as an IEEE 754 single.
+
+# Details of the untagged types, which are where most SDK bugs have been.
+untagged:
+  int: >
+    SurrealDB integers are i64. The server encodes every integer in the
+    shortest CBOR head. An untagged integer outside the i64 range is refused
+    ("integer 18446744073709551615 is outside the 64-bit signed range"); servers
+    before 4.0 silently truncated it to 64 bits (so it decoded as -1), so SDKs
+    MUST refuse to encode one rather than rely on the server. Use a decimal
+    (tag 10) for larger values, or tag 186 under `cbor.2`.
+  float: >
+    SurrealDB floats are f64. The server encodes them in the shortest IEEE 754
+    width that is exact (half, single or double), and decodes any width. NaN,
+    +Infinity and -Infinity round-trip.
+  object: >
+    Map keys MUST be text strings, and MUST be unique. The server rejects any
+    other key type, and a map that repeats a key ("duplicate key a in a CBOR
+    map"; servers before 4.0 kept the last). It encodes object keys in sorted
+    order.
+  lengths: >
+    Indefinite-length arrays, maps, byte strings and text strings are accepted;
+    the server only emits definite lengths.
+  bytes: Byte strings are SurrealDB bytes.
+
+# Things that have no CBOR encoding at all.
+not-encodable:
+  - type: regex
+    notes: >
+      A SurrealQL regex value is not CBOR-encodable. A response containing one
+      fails as a whole, with an `Internal` error "Unsupported value type: Regex",
+      rather than sending a string. SDKs cannot send one either; build it in
+      SurrealQL instead. (The protobuf Value does carry regex, as field 18.)
+  - type: closure
+    notes: Functions and closures are not values on the wire.

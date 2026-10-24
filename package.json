@@ -27,7 +27,8 @@
     "@biomejs/biome": "2.0.6",
     "@types/bun": "latest",
     "esbuild": "^0.25.5",
-    "esbuild-plugin-tsc": "^0.5.0"
+    "esbuild-plugin-tsc": "^0.5.0",
+    "yaml": "2.8.1"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -41,7 +42,10 @@
     "qc": "biome check ./typescript/",
     "qa": "biome check ./typescript/ --write",
     "qau": "biome check ./typescript/ --write --unsafe",
-    "build": "bun run scripts/build.ts"
+    "build": "bun run scripts/build.ts",
+    "vectors:write": "bun scripts/vectors.ts write",
+    "vectors:check": "bun scripts/vectors.ts check",
+    "conformance": "bun conformance/runner/cli.ts"
   },
   "engines": {
     "node": ">=18.0.0"

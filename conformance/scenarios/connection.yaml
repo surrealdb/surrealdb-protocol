@@ -1,0 +1,178 @@
+# Connecting, authenticating, selecting a namespace and database, and session
+# variables.
+
+scenarios:
+  - name: connect-version-without-auth
+    description: version works before signin and before any namespace is selected.
+    source: surrealdb.js connection.test.ts; server/tests/grpc.rs the_server_reports_its_version
+    setup: connect
+    steps:
+      - version:
+        expect:
+          result: { $match: "^surrealdb-\\d+\\.\\d+\\.\\d+" }
+
+  - name: ping-without-auth
+    description: ping answers before signin and before any namespace is selected.
+    setup: connect
+    steps:
+      - ping:
+
+  - name: signin-root-returns-a-token
+    source: surrealdb.js authentication.test.ts
+    setup: connect
+    steps:
+      - signin: { credentials: { user: root, pass: root } }
+        expect:
+          result: { $oneOf: [{ $type: string }, { $partial: { access: { $type: string } } }] }
+      - query: { sql: "INFO FOR ROOT" }
+        expect:
+          result: [{ ok: true, result: { $type: object } }]
+
+  - name: signin-wrong-password-is-invalid-auth
+    description: Bad credentials are NotAllowed with details Auth/InvalidAuth, never a bare message.
+    source: surrealdb.js structured-errors.test.ts
+    setup: connect
+    steps:
+      - signin: { credentials: { user: root, pass: wrong } }
+        expect:
+          error: { kind: NotAllowed, details: { kind: Auth, details: { kind: InvalidAuth } } }
+
+  - name: anonymous-cannot-reach-root
+    description: Before signin the session is anonymous; root-level statements fail and signin then enables them.
+    source: server/tests/grpc.rs a_session_carries_auth_and_namespace_across_requests
+    setup: connect
+    steps:
+      - query: { sql: "INFO FOR ROOT" }
+        expect:
+          result: [{ ok: false, error: { kind: NotAllowed } }]
+      - signin: { credentials: { user: root, pass: root } }
+      - query: { sql: "INFO FOR ROOT" }
+        expect:
+          result: [{ ok: true, result: { $type: object } }]
+
+  - name: use-selects-namespace-and-database
+    description: use returns the selection and it stays in effect for later requests.
+    source: server/tests/grpc.rs a_session_carries_auth_and_namespace_across_requests
+    steps:
+      - use: { namespace: { $ref: namespace }, database: { $ref: database } }
+        expect:
+          result: { namespace: { $ref: namespace }, database: { $ref: database } }
+      - query: { sql: "RETURN [$session.ns, $session.db]" }
+        expect:
+          result: [{ ok: true, result: [{ $ref: namespace }, { $ref: database }] }]
+
+  - name: query-without-database-fails
+    description: Selecting from a table with no namespace or database selected fails rather than guessing one.
+    source: surrealdb.js connection.test.ts
+    setup: connect
+    steps:
+      - signin: { credentials: { user: root, pass: root } }
+      - use: { namespace: null, database: null }
+      - query: { sql: "SELECT * FROM person" }
+        expect:
+          result: [{ ok: false, error: { kind: { $any: null } } }]
+
+  - name: authenticate-with-a-token
+    description: A token from signin authenticates another connection.
+    source: surrealdb.js authentication.test.ts
+    setup: connect
+    steps:
+      - signin: { credentials: { user: root, pass: root } }
+        capture: token
+      - close:
+      - connect: {}
+      - query: { sql: "INFO FOR ROOT" }
+        expect:
+          result: [{ ok: false, error: { kind: NotAllowed } }]
+      - authenticate: { token: { $ref: token } }
+      - query: { sql: "INFO FOR ROOT" }
+        expect:
+          result: [{ ok: true, result: { $type: object } }]
+
+  - name: invalidate-drops-auth
+    source: surrealdb.js authentication.test.ts
+    steps:
+      - invalidate:
+      - query: { sql: "INFO FOR ROOT" }
+        expect:
+          result: [{ ok: false, error: { kind: NotAllowed } }]
+
+  - name: record-access-signup-signin-info
+    description: Record access users sign up and sign in with their variables, and info returns their record.
+    source: surrealdb.js authentication.test.ts
+    steps:
+      - query:
+          sql: >
+            DEFINE TABLE user SCHEMALESS PERMISSIONS FULL;
+            DEFINE ACCESS user ON DATABASE TYPE RECORD
+              SIGNUP (CREATE type::record('user', $id) SET name = $name)
+              SIGNIN (SELECT * FROM type::record('user', $id))
+              DURATION FOR TOKEN 1h;
+      - signup:
+          credentials: { ns: { $ref: namespace }, db: { $ref: database }, ac: user, id: 123, name: Tobie }
+        expect:
+          result: { $oneOf: [{ $type: string }, { $partial: { access: { $type: string } } }] }
+      - info:
+        expect:
+          result: { id: { $record: { table: user, key: 123 } }, name: Tobie }
+      - invalidate:
+      - signin:
+          credentials: { ns: { $ref: namespace }, db: { $ref: database }, ac: user, id: 123 }
+      - info:
+        expect:
+          result: { $partial: { id: { $record: { table: user, key: 123 } } } }
+
+  - name: session-variables-persist-and-unset
+    description: A variable set on the session is visible to later queries until unset.
+    source: server/tests/grpc.rs session_variables_persist_and_can_be_removed; surrealdb.js query/params.test.ts
+    steps:
+      - set: { name: greeting, value: hello }
+      - query: { sql: "RETURN $greeting" }
+        expect:
+          result: [{ ok: true, result: hello }]
+      - unset: { name: greeting }
+      - query: { sql: "RETURN $greeting" }
+        expect:
+          result: [{ ok: true, result: { $none: null } }]
+
+  - name: query-variables-do-not-leak-into-the-session
+    source: server/tests/grpc.rs query_variables_do_not_leak_into_the_session
+    steps:
+      - query: { sql: "RETURN $temp", vars: { temp: 1 } }
+        expect:
+          result: [{ ok: true, result: 1 }]
+      - query: { sql: "RETURN $temp" }
+        expect:
+          result: [{ ok: true, result: { $none: null } }]
+
+  - name: query-variables-shadow-session-variables
+    steps:
+      - set: { name: x, value: session }
+      - query: { sql: "RETURN $x", vars: { x: call } }
+        expect:
+          result: [{ ok: true, result: call }]
+      - query: { sql: "RETURN $x" }
+        expect:
+          result: [{ ok: true, result: session }]
+
+  - name: protected-variables-cannot-be-set
+    description: >
+      The server refuses to let a session variable shadow $auth, $session and
+      the like. WebSocket only: over HTTP an SDK holds variables itself.
+    transports: [ws]
+    steps:
+      - set: { name: auth, value: 1 }
+        expect:
+          error: { kind: Validation }
+
+  - name: run-calls-a-function
+    description: run calls built-in and user-defined functions.
+    source: server/tests/grpc.rs a_function_runs_through_its_own_rpc; surrealdb.js query/run.test.ts
+    steps:
+      - run: { name: "string::len", args: [hello] }
+        expect:
+          result: 5
+      - query: { sql: "DEFINE FUNCTION fn::add($a: int, $b: int) { RETURN $a + $b; }" }
+      - run: { name: "fn::add", args: [2, 3] }
+        expect:
+          result: 5
