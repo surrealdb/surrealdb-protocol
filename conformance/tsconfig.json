@@ -3,5 +3,6 @@
 	"compilerOptions": {
 		"types": ["bun"]
 	},
-	"include": ["./**/*.ts", "../scripts/vectors.ts"]
+	"include": ["./**/*.ts", "../scripts/vectors.ts"],
+	"exclude": ["./examples"]
 }
