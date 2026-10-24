@@ -224,7 +224,7 @@ pub struct Limits {
     /// Largest message the server will accept or emit, in bytes.
     #[prost(uint64, tag = "1")]
     pub max_message_bytes: u64,
-    /// Largest `DataChunk` or `FileChunk` payload, in bytes.
+    /// Largest `DataChunk` payload, in bytes.
     #[prost(uint64, tag = "2")]
     pub max_chunk_bytes: u64,
     /// Longest a single query may run before the server aborts it.
@@ -233,8 +233,8 @@ pub struct Limits {
     /// Largest number of records the server will put in one query batch,
     /// whatever `QueryRequest.max_batch_records` asks for.
     ///
-    /// Distinct from `max_chunk_bytes`, which bounds a `DataChunk` or
-    /// `FileChunk` and has never applied to query batches. Zero means the server
+    /// Distinct from `max_chunk_bytes`, which bounds a `DataChunk` and has
+    /// never applied to query batches. Zero means the server
     /// is not reporting one, which is what a server predating this field looks
     /// like; a client MUST treat that as "unknown" and not as "no records
     /// allowed".
@@ -298,7 +298,6 @@ pub struct ServerCapabilities {
     ///    TRANSACTIONS           explicit client-driven transactions
     ///    LIVE_QUERIES           live queries and subscriptions
     ///    REFRESH_TOKENS         refresh-token exchange
-    ///    EXPORT_DIRECTORY       directory-format export
     ///    ML_MODELS              SurrealML model export and import
     ///    COLUMNAR_RESULTS       columnar (Arrow) query results
     ///    EXPORT_EXCLUDE_TABLES  `ExportConfig.Tables.excluded`
@@ -352,9 +351,7 @@ pub struct ServerCapabilities {
     /// `QueryRequest.accepted_encodings`, which selects the shape of a result
     /// (row-oriented values or columnar Arrow) and is unrelated to how the
     /// message carrying it is framed. The two names are close enough to be
-    /// confused, so: this field is transport, that field is payload. Neither is
-    /// `ExportCompression`, which compresses the contents of an export file and
-    /// is applied before the message is built.
+    /// confused, so: this field is transport, that field is payload.
     ///
     /// Tokens rather than an enum because the values are the gRPC codec
     /// registry's, not SurrealDB's. An enum would need a protocol release for
@@ -1838,268 +1835,6 @@ impl ::prost::Name for ImportMlModelResponse {
 const NAME: &'static str = "ImportMlModelResponse";
 const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ImportMlModelResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ImportMlModelResponse".into() }}
-/// Stream the export to the requesting client, which writes the files to its
-/// own local disk.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ClientStreamDestination {
-}
-impl ::prost::Name for ClientStreamDestination {
-const NAME: &'static str = "ClientStreamDestination";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ClientStreamDestination".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ClientStreamDestination".into() }}
-/// Write the export directly to an object-storage bucket from the server.
-///
-/// Reserved for a future server-side destination; not yet served.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct BucketDestination {
-    /// The bucket URL (for example `s3://my-bucket`).
-    #[prost(string, tag = "1")]
-    pub url: ::prost::alloc::string::String,
-    /// A key prefix within the bucket to write files under.
-    #[prost(string, tag = "2")]
-    pub prefix: ::prost::alloc::string::String,
-}
-impl ::prost::Name for BucketDestination {
-const NAME: &'static str = "BucketDestination";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.BucketDestination".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.BucketDestination".into() }}
-/// Where the exported files should be written.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ExportDestination {
-    #[prost(oneof = "export_destination::Destination", tags = "1, 2")]
-    pub destination: ::core::option::Option<export_destination::Destination>,
-}
-/// Nested message and enum types in `ExportDestination`.
-pub mod export_destination {
-    #[derive(serde::Deserialize,serde::Serialize)]
-    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
-    pub enum Destination {
-        /// Stream the files back to the client (the default).
-        #[prost(message, tag = "1")]
-        ClientStream(super::ClientStreamDestination),
-        /// Write the files to an object-storage bucket (future).
-        #[prost(message, tag = "2")]
-        Bucket(super::BucketDestination),
-    }
-}
-impl ::prost::Name for ExportDestination {
-const NAME: &'static str = "ExportDestination";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDestination".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDestination".into() }}
-/// Request to export data from the database as a streamed directory.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ExportDirectoryRequest {
-    #[prost(message, optional, tag = "1")]
-    pub context: ::core::option::Option<RequestContext>,
-    /// Which sections of the database to export.
-    #[prost(message, optional, tag = "2")]
-    pub config: ::core::option::Option<ExportConfig>,
-    /// The compression to apply to each data file.
-    #[prost(enumeration = "ExportCompression", tag = "3")]
-    pub compression: i32,
-    /// A hint for how many files to produce concurrently. Zero means the
-    /// server chooses a default.
-    #[prost(uint32, tag = "4")]
-    pub parallelism: u32,
-    /// The directory format version the client expects. Empty means the client
-    /// accepts whatever the server produces. A server that cannot produce the
-    /// requested version rejects the request before sending any frame.
-    #[prost(string, tag = "5")]
-    pub format_version: ::prost::alloc::string::String,
-    /// Where the server should write the exported files. Unset is equivalent
-    /// to a client_stream destination. A server that does not support the
-    /// requested destination rejects the request before sending any frame.
-    #[prost(message, optional, tag = "6")]
-    pub destination: ::core::option::Option<ExportDestination>,
-}
-impl ::prost::Name for ExportDirectoryRequest {
-const NAME: &'static str = "ExportDirectoryRequest";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryRequest".into() }}
-/// Frame: the export has begun. Sent once, before any files.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ExportDirectoryBegin {
-    /// The directory format version.
-    #[prost(string, tag = "1")]
-    pub format_version: ::prost::alloc::string::String,
-    /// The namespace being exported.
-    #[prost(string, tag = "2")]
-    pub namespace: ::prost::alloc::string::String,
-    /// The database being exported.
-    #[prost(string, tag = "3")]
-    pub database: ::prost::alloc::string::String,
-    /// The SurrealDB version producing the export.
-    #[prost(string, tag = "4")]
-    pub surrealdb_version: ::prost::alloc::string::String,
-    /// The compression applied to the data files.
-    #[prost(enumeration = "ExportCompression", tag = "5")]
-    pub compression: i32,
-}
-impl ::prost::Name for ExportDirectoryBegin {
-const NAME: &'static str = "ExportDirectoryBegin";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryBegin".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryBegin".into() }}
-/// Frame: a new file in the stream has begun.
-///
-/// All frames for a given file share its `file_id`. A file's own frames are
-/// always ordered FileBegin -> FileChunk* -> FileEnd, but frames belonging to
-/// different files MAY be interleaved when the server streams files
-/// concurrently.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct FileBegin {
-    /// Correlates this file's frames within the stream. Values are unique for
-    /// the lifetime of the stream and are never reused, even after the file's
-    /// FileEnd; a FileBegin repeating a previously seen file_id is a protocol
-    /// error.
-    #[prost(uint64, tag = "1")]
-    pub file_id: u64,
-    /// The file's path relative to the export root. Paths use `/` separators
-    /// and MUST NOT be absolute, contain `..` components, or repeat within the
-    /// stream; clients MUST reject a violating path before opening any file.
-    #[prost(string, tag = "2")]
-    pub relative_path: ::prost::alloc::string::String,
-    /// The table the file holds data for. Empty for schema or metadata files
-    /// (table names are never empty).
-    #[prost(string, tag = "3")]
-    pub table: ::prost::alloc::string::String,
-    /// The compression applied to this file's chunks.
-    #[prost(enumeration = "ExportCompression", tag = "4")]
-    pub compression: i32,
-}
-impl ::prost::Name for FileBegin {
-const NAME: &'static str = "FileBegin";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.FileBegin".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.FileBegin".into() }}
-/// Frame: a chunk of a file's content.
-///
-/// `data` carries the file's on-disk bytes verbatim — already zstd-compressed
-/// when the file's compression is ZSTD. Producers MUST NOT exceed 1 MiB
-/// (1,048,576 bytes) of data per chunk (256 KiB is the recommended default),
-/// so neither peer ever buffers a whole file; consumers MAY treat a larger
-/// chunk as a protocol error. Chunk boundaries carry no meaning: a file may be
-/// split at any byte position, and empty chunks are permitted.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct FileChunk {
-    /// The file this chunk belongs to.
-    #[prost(uint64, tag = "1")]
-    pub file_id: u64,
-    /// The chunk's bytes.
-    #[prost(bytes = "bytes", tag = "2")]
-    pub data: ::prost::bytes::Bytes,
-}
-impl ::prost::Name for FileChunk {
-const NAME: &'static str = "FileChunk";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.FileChunk".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.FileChunk".into() }}
-/// Frame: a file has ended.
-///
-/// The trailer carries the file's total size and hash, both computed
-/// incrementally while the chunks were produced — so no whole-file buffering is
-/// needed to learn them up front. Clients MUST verify that the bytes they
-/// received for the file match both `bytes` and `blake3`, and treat any
-/// mismatch as a failed export.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct FileEnd {
-    /// The file these totals apply to.
-    #[prost(uint64, tag = "1")]
-    pub file_id: u64,
-    /// The total number of bytes streamed for the file.
-    #[prost(uint64, tag = "2")]
-    pub bytes: u64,
-    /// The BLAKE3 of the streamed bytes, lowercase hex.
-    #[prost(string, tag = "3")]
-    pub blake3: ::prost::alloc::string::String,
-}
-impl ::prost::Name for FileEnd {
-const NAME: &'static str = "FileEnd";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.FileEnd".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.FileEnd".into() }}
-/// Frame: the export completed successfully.
-///
-/// This is the completion token. A stream that ends without this frame MUST be
-/// treated as failed, and the client MUST NOT leave behind an importable
-/// directory.
-///
-/// The manifest is not carried here: `manifest.json` is streamed as the final
-/// file of the export, listing every other file in replay order (the order an
-/// importer must apply them) in the schema defined by the directory format
-/// version, and its content MUST agree with the streamed FileBegin and FileEnd
-/// frames. This keeps the terminal frame O(1) regardless of how many files the
-/// export contains.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ExportDirectoryEnd {
-    /// The total number of files streamed, including `manifest.json`.
-    #[prost(uint64, tag = "1")]
-    pub file_count: u64,
-    /// The sum of every streamed file's size (the sum of all `FileEnd.bytes`).
-    #[prost(uint64, tag = "2")]
-    pub total_bytes: u64,
-}
-impl ::prost::Name for ExportDirectoryEnd {
-const NAME: &'static str = "ExportDirectoryEnd";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryEnd".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryEnd".into() }}
-/// A single frame in a directory export stream.
-///
-/// A successful export arrives as: Begin (exactly once, first), then for each
-/// file FileBegin -> FileChunk* -> FileEnd, then End. The final file streamed
-/// is always `manifest.json`, which lists every other file. An error frame MAY
-/// terminate the stream at any point instead, including before Begin and while
-/// files are still open; all open files are then abandoned and no further
-/// frames follow.
-///
-/// A single file's frames are always sent in order, but frames belonging to
-/// different `file_id`s MAY be interleaved; clients MUST demultiplex by
-/// `file_id`.
-///
-/// Clients MUST treat any deviation from this grammar as a failed export,
-/// including a response whose frame is unset (an unrecognised variant from a
-/// newer server). Servers MUST NOT send frame variants that the format version
-/// negotiated with the client does not define.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ExportDirectoryResponse {
-    #[prost(oneof = "export_directory_response::Frame", tags = "1, 2, 3, 4, 5, 6")]
-    pub frame: ::core::option::Option<export_directory_response::Frame>,
-}
-/// Nested message and enum types in `ExportDirectoryResponse`.
-pub mod export_directory_response {
-    #[derive(serde::Deserialize,serde::Serialize)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Frame {
-        /// The export has begun.
-        #[prost(message, tag = "1")]
-        Begin(super::ExportDirectoryBegin),
-        /// A new file has begun.
-        #[prost(message, tag = "2")]
-        FileBegin(super::FileBegin),
-        /// A chunk of the current file.
-        #[prost(message, tag = "3")]
-        FileChunk(super::FileChunk),
-        /// The current file has ended (size + hash trailer).
-        #[prost(message, tag = "4")]
-        FileEnd(super::FileEnd),
-        /// The export completed successfully (carries the stream totals).
-        #[prost(message, tag = "5")]
-        End(super::ExportDirectoryEnd),
-        /// The export failed.
-        #[prost(message, tag = "6")]
-        Error(super::super::super::v1::SurrealError),
-    }
-}
-impl ::prost::Name for ExportDirectoryResponse {
-const NAME: &'static str = "ExportDirectoryResponse";
-const PACKAGE: &'static str = "surrealdb.protocol.rpc.v1";
-fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.rpc.v1.ExportDirectoryResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.rpc.v1.ExportDirectoryResponse".into() }}
 /// How hard the server tries to deliver a live-query notification.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -2329,41 +2064,6 @@ impl SubscribeEndReason {
             "SUBSCRIBE_END_REASON_SERVER_SHUTDOWN" => Some(Self::ServerShutdown),
             "SUBSCRIBE_END_REASON_NODE_REASSIGNED" => Some(Self::NodeReassigned),
             "SUBSCRIBE_END_REASON_CURSOR_TOO_OLD" => Some(Self::CursorTooOld),
-            _ => None,
-        }
-    }
-}
-/// Compression applied to exported data files.
-#[derive(serde::Deserialize,serde::Serialize)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum ExportCompression {
-    /// No explicit compression was specified. On a request this selects the
-    /// server default; it MUST NOT appear on a response frame.
-    Unspecified = 0,
-    /// Files are streamed uncompressed.
-    None = 1,
-    /// Each file's bytes are zstd-compressed (the on-disk `.surql.zst` form).
-    Zstd = 2,
-}
-impl ExportCompression {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            Self::Unspecified => "EXPORT_COMPRESSION_UNSPECIFIED",
-            Self::None => "EXPORT_COMPRESSION_NONE",
-            Self::Zstd => "EXPORT_COMPRESSION_ZSTD",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "EXPORT_COMPRESSION_UNSPECIFIED" => Some(Self::Unspecified),
-            "EXPORT_COMPRESSION_NONE" => Some(Self::None),
-            "EXPORT_COMPRESSION_ZSTD" => Some(Self::Zstd),
             _ => None,
         }
     }

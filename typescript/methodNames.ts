@@ -71,7 +71,6 @@ export const METHOD_NAMES = {
 	// Import and export.
 	ImportSurql: qualify("ImportSurql"),
 	ExportSurql: qualify("ExportSurql"),
-	ExportDirectory: qualify("ExportDirectory"),
 	ExportMlModel: qualify("ExportMlModel"),
 	ImportMlModel: qualify("ImportMlModel"),
 } as const;
