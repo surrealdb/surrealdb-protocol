@@ -1,0 +1,350 @@
+# HTTP headers, MIME types, WebSocket subprotocols and routes.
+#
+# Source of truth: surrealdb/rpc/src/headers.rs, surrealdb/rpc/src/format.rs,
+# surrealdb/core/src/rpc/format/mod.rs and surrealdb/server/src/ntw/ on
+# surrealdb main at c63ff8cfa1 (the 4.0 line, 2026-10-24); first written at
+# 6a9bc46152. Header names are case-insensitive on the wire; the canonical
+# spelling is given. `since: "4.0"` marks what a 3.x server lacks.
+
+version: 1
+
+headers:
+  - name: Surreal-NS
+    direction: request
+    description: Selects the namespace for this request (HTTP) or the connection's initial namespace (WebSocket upgrade).
+  - name: Surreal-DB
+    direction: request
+    description: Selects the database. Needs a namespace.
+  - name: Surreal-Auth-NS
+    direction: request
+    description: >
+      With Basic auth, the namespace the user is defined in. Without it, Basic
+      credentials are checked as a root user.
+  - name: Surreal-Auth-DB
+    direction: request
+    description: With Basic auth and Surreal-Auth-NS, the database the user is defined in.
+  - name: Surreal-ID
+    direction: request
+    description: >
+      On a WebSocket upgrade, the connection id (a uuid). Reconnecting with the
+      id of a connection that is still open is rejected with HTTP 400.
+  - name: Authorization
+    direction: request
+    description: >
+      "Basic <base64 user:pass>" or "Bearer <token>". Basic auth signs in as
+      root unless Surreal-Auth-NS/DB say otherwise. The server rejects a
+      Surreal-NS/Surreal-DB pair the principal cannot access.
+  - name: Surreal-Version
+    direction: response
+    description: '"surrealdb/<semver>" on every response, when the server is configured to send it.'
+  - name: Retry-After
+    direction: response
+    description: >
+      Seconds to wait before retrying. Sent with 503 when the memory guard
+      refuses a POST /rpc (always 1, from 4.0) and with every 503 during
+      startup (1), and with 429 when the auth routes are rate limited
+      (SURREAL_HTTP_AUTH_RATE_LIMIT_ENABLED=true). CORS exposes it.
+  - name: Cookie
+    direction: request
+    since: "4.0"
+    description: >
+      With --cookie-auth on and no Authorization header, the surreal_token
+      cookie authenticates any route (the GET /rpc upgrade included) whose
+      request passes the origin gate (see cookie_auth). A cookie that fails
+      verification gives an anonymous session and a clearing Set-Cookie, not
+      a 401.
+
+# Media types for Content-Type and Accept.
+mime:
+  - type: application/json
+    rpc: true
+    description: JSON. Values lose their types (see notes).
+  - type: application/cbor
+    rpc: true
+    description: >
+      CBOR with the tags in spec/cbor-tags.yaml. What SDKs should use. Frozen
+      at its 3.x bytes; `application/cbor; v=1` is the same thing.
+  - type: application/cbor; v=2
+    rpc: true
+    since: "4.0"
+    description: >
+      CBOR v2: byte-identical to application/cbor for every type it has, plus
+      the sized-number tags 180 to 188 (spec/cbor-tags.yaml). The `v`
+      parameter is matched case-insensitively and may be quoted; any other
+      value, or a repeated `v`, is an invalid header (400).
+  - type: application/vnd.surrealdb.shaped
+    rpc: true
+    since: "4.0"
+    description: >
+      Responses are CBOR v2 with each list of result rows written as a tag 57
+      shaped block (`query` results, `query_stream` rows, live notification
+      results); requests are CBOR v2.
+  - type: application/vnd.surrealdb.flatbuffers
+    rpc: true
+    description: FlatBuffers, surrealdb/protocol/v1/*.fbs.
+  - type: application/octet-stream
+    rpc: false
+    description: Raw bytes, for /import and /export bodies and /ml.
+  - type: text/plain
+    rpc: false
+    description: SurrealQL text, for /sql, /import, /export and /version; /signin returns the bare token with Accept text/plain.
+  - type: text/event-stream
+    rpc: false
+    description: >
+      Server-sent events, for the MCP stream on /mcp. An MCP client sends
+      "Accept: application/json, text/event-stream" on POST /mcp and
+      "Accept: text/event-stream" on GET /mcp.
+  - type: application/vnd.surrealdb.native
+    rpc: false
+    description: Reserved for in-process use. Not an HTTP format.
+
+mime_notes: >
+  On POST /rpc, Content-Type is required and, when Accept is present, it must
+  match Content-Type, else 415, with two exceptions from 4.0: a Content-Type of
+  application/cbor or application/cbor; v=2 may take Accept
+  application/cbor; v=2 or application/vnd.surrealdb.shaped, so a client can
+  negotiate up from its first plain CBOR request. Content-Type
+  application/cbor; v=2 with Accept application/cbor is 415. "Accept: */*"
+  means JSON. Over JSON the server
+  parses request values with the SurrealQL value parser, so a string that
+  looks like a record id, datetime or uuid ("person:1") arrives as that type;
+  CBOR has no such coercion, which is one reason SDKs should use CBOR. In JSON
+  responses NONE and NULL are both null.
+
+# Values for the Sec-WebSocket-Protocol header on GET /rpc.
+websocket_subprotocols:
+  - { name: cbor, mime: application/cbor }
+  - { name: cbor.2, mime: "application/cbor; v=2", since: "4.0" }
+  - { name: shaped, mime: application/vnd.surrealdb.shaped, since: "4.0" }
+  - { name: json, mime: application/json }
+  - { name: flatbuffers, mime: application/vnd.surrealdb.flatbuffers }
+
+websocket_notes: >
+  Always send a subprotocol. Without one the server falls back to JSON and logs
+  that connecting without one is deprecated. Offer exactly one: the server
+  picks the first entry of ITS list (json, cbor.2, cbor, flatbuffers, shaped)
+  that the client offered, not the client's preference, so offering
+  "shaped, cbor" gets cbor and offering json with anything gets json. A 3.x
+  server does not know cbor.2 or shaped; to fall back, reconnect offering cbor.
+  When the memory guard refuses a WebSocket request the server answers it with
+  an Internal error "The server is unable to handle the request", or closes
+  the connection with code 1013 (try again later) and that reason.
+
+# Routes. `capability` is the name --allow-http / --deny-http use.
+routes:
+  - { path: /rpc, method: GET, capability: rpc, description: WebSocket upgrade for RPC. }
+  - { path: /rpc, method: POST, capability: rpc, description: "One RPC request per HTTP request. See methods.yaml for what is missing over HTTP." }
+  - path: /health
+    method: GET
+    capability: health
+    description: >
+      200 when the server and its storage are healthy, 500 when the storage
+      check fails, and (from 4.0) 503 "Health check failed" once the memory
+      guard has refused every request for SURREAL_MEMORY_THRESHOLD_UNHEALTHY_AFTER
+      seconds (default 60; 0 turns it off), meaning the instance needs a
+      restart. Needs no auth. This, not an RPC, is the health check.
+  - { path: /status, method: GET, description: 200 when the process is up and listening. }
+  - path: /ready
+    method: GET
+    description: >
+      200 once startup has finished (and, when a heartbeat budget is
+      configured, the node's cluster heartbeat is fresh); 503 while starting
+      up or when the heartbeat is stale. Needs no auth. Use it for readiness
+      probes; /health is for storage reachability.
+  - { path: /metrics, method: GET, description: Prometheus metrics in the text exposition format. }
+  - { path: /version, method: GET, capability: version, description: 'Plain text, "surrealdb-<semver>".' }
+  - path: /import
+    method: POST
+    capability: import
+    description: >
+      Runs a SurrealQL script, not transactionally. Send Surreal-NS, Surreal-DB
+      and Authorization. The script must start with `OPTION IMPORT;` (which
+      /export emits), else 400 and nothing runs. 200 means every statement applied, with the body an
+      empty list. 422 means some failed: the body is the list of failed
+      statement results (status "ERR", the message in `result`, `kind`,
+      `details`) in the negotiated format, and the other statements DID apply.
+      An SDK must surface 422 as an error that carries those failures. 401 and
+      403 mean nothing ran.
+  - path: /export
+    method: GET
+    capability: export
+    description: Streams the selected database as SurrealQL with every default option.
+  - path: /kvexport
+    method: POST
+    capability: kvexport
+    since: "4.0"
+    description: >
+      A raw keyspace export for operators, off unless the server runs with
+      --allow-experimental kvexport and allows the kvexport HTTP route (else
+      403). Root owners only: anonymous is 401, anyone else 403, both with an
+      empty body. JSON body { after?: hex key, latest_only?: bool }; bad input
+      400, too large 413, a datastore that keeps history without latest_only
+      409. 200 is application/vnd.surrealdb.kvexport, never compressed. Not
+      an SDK feature.
+  - path: /export
+    method: POST
+    capability: export
+    description: >
+      The same, with a JSON or CBOR body (application/cbor; v=2 and shaped
+      too, from 4.0) choosing what to include:
+      { users, accesses, params, functions, analyzers, apis, buckets, modules,
+        configs, records, sequences, database_definition: bool,
+        versions: bool (default false), tables: bool / [names] / { exclude: [names] } }.
+      Everything defaults to true except versions. From 4.0 an export that
+      fails part way aborts the response body rather than ending it cleanly,
+      so a body that ends in an error is an incomplete export; and a principal
+      whose reads are permission-checked (a namespace or database user with
+      no role, say) is refused with 403.
+  - path: /sql
+    method: POST
+    capability: sql
+    description: >
+      Raw SurrealQL in the body; returns the per-statement result list (Accept
+      application/cbor; v=2 and shaped too, from 4.0). Query-string parameters
+      are bound as variables, JSON-decoded where they parse as JSON (4.0:
+      ?x={"a":1} binds an object, ?n=42 a number) and as text otherwise. 4.0
+      reserves read_only_max_staleness=<duration> and read_only_strict=true/false
+      to run the body read-only, as `query`'s options do; read_only_strict
+      alone, or a bad value, is 400.
+  - path: /sql
+    method: GET
+    capability: sql
+    description: >
+      WebSocket upgrade for raw SurrealQL: each text message is run as a query
+      with the upgrade request's session and answered with the per-statement
+      result list as JSON.
+  - { path: /signin, method: POST, capability: signin, description: 'Returns { code: 200, details: "Authentication succeeded", token }. From 4.0 an expired bearer token on the request is ignored rather than a 401.' }
+  - { path: /signup, method: POST, capability: signup, description: "As /signin. From 4.0 an expired bearer token is ignored." }
+  - path: /signin/cookie
+    method: POST
+    capability: signin
+    since: "4.0"
+    description: >
+      Browser sign-in (see cookie_auth): the /signin body, answered with
+      { code: 200, details: "Authentication succeeded" } and no token in the
+      body (empty for text/plain or no Accept; Accept application/cbor; v=2,
+      shaped or octet-stream is 415). Sets surreal_token, and surreal_refresh
+      when the record access issues refresh tokens. A token with no expiry on
+      a session with no expiry cannot be put in a cookie: 400.
+  - path: /signup/cookie
+    method: POST
+    capability: signup
+    since: "4.0"
+    description: As /signin/cookie, for /signup.
+  - path: /refresh/cookie
+    method: POST
+    capability: signin
+    since: "4.0"
+    description: >
+      Exchanges the surreal_refresh cookie for a new pair; no body is needed.
+      Rotation is single use, so two concurrent refreshes race and the loser
+      fails: a browser client must serialise its refreshes. Any failure
+      (missing, expired, revoked, reused or wrong cookie) is 401 with no
+      Set-Cookie, so the winner's fresh cookies survive. The session it signs
+      in from is a fresh anonymous one, so an expired access cookie or bearer
+      token cannot block it.
+  - path: /signout
+    method: POST
+    capability: signin
+    since: "4.0"
+    description: >
+      Revokes the refresh grant when the surreal_refresh cookie verifies, and
+      always answers 200 with an empty body and both cookies cleared
+      (Max-Age=0).
+  - { path: "/key/{table}", method: GET, capability: key, description: "Legacy REST CRUD: select the whole table." }
+  - { path: "/key/{table}", method: POST, capability: key, description: "Legacy REST CRUD: create the whole table." }
+  - { path: "/key/{table}", method: PUT, capability: key, description: "Legacy REST CRUD: update the whole table." }
+  - { path: "/key/{table}", method: PATCH, capability: key, description: "Legacy REST CRUD: MERGE into every record in the table." }
+  - { path: "/key/{table}", method: DELETE, capability: key, description: "Legacy REST CRUD: delete the whole table." }
+  - { path: "/key/{table}/{id}", method: GET, capability: key, description: "Legacy REST CRUD: select one record." }
+  - { path: "/key/{table}/{id}", method: POST, capability: key, description: "Legacy REST CRUD: create one record." }
+  - { path: "/key/{table}/{id}", method: PUT, capability: key, description: "Legacy REST CRUD: update one record." }
+  - { path: "/key/{table}/{id}", method: PATCH, capability: key, description: "Legacy REST CRUD: MERGE into one record." }
+  - { path: "/key/{table}/{id}", method: DELETE, capability: key, description: "Legacy REST CRUD: delete one record." }
+  - { path: /ml/import, method: POST, capability: ml }
+  - { path: "/ml/export/{name}/{version}", method: GET, capability: ml }
+  - { path: "/api/{ns}/{db}/{path}", capability: api, description: User-defined API endpoints. }
+  - { path: /graphql, method: POST, capability: graphql }
+  - path: /graphql
+    method: GET
+    capability: graphql
+    since: "3.1.0"
+    description: >
+      WebSocket upgrade for GraphQL subscriptions (graphql-transport-ws by
+      default, or the protocol named in Sec-WebSocket-Protocol). Needs a
+      namespace and database on the upgrade request.
+  - path: /gql
+    method: POST
+    capability: gql
+    description: >
+      Raw ISO GQL in the body (not GraphQL), executed like /sql with the same
+      headers and output negotiation. Enabled by default from 3.3; 3.2 needed
+      --allow-experimental gql.
+  - { path: /mcp, method: POST, capability: mcp, description: "Model Context Protocol (streamable HTTP): client messages. Servers built without the mcp feature do not have it." }
+  - { path: /mcp, method: GET, capability: mcp, description: "Model Context Protocol: the server-sent event stream." }
+  - { path: /mcp, method: DELETE, capability: mcp, description: "Model Context Protocol: ends the MCP session." }
+  - { path: /sync, capability: sync, description: A stub. Do not use. }
+
+# Cookie authentication for browsers, from 4.0 (surrealdb/server/src/ntw/auth.rs).
+cookie_auth:
+  enable: >
+    --cookie-auth / SURREAL_COOKIE_AUTH (default off). Needs a non-empty
+    --allow-origin without `*`, else the server does not start; with it on,
+    CORS sends Access-Control-Allow-Credentials: true.
+  cookies:
+    - name: surreal_token
+      value: the access token (JWT)
+      attributes: "HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=<until the earlier of the token's exp and the session's expiry>"
+    - name: surreal_refresh
+      value: "unpadded base64url of the JSON { ns, db, ac, rt }"
+      attributes: "HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=<the refresh grant's duration>"
+  origin_gate: >
+    The cookie routes, and cookie credentials on any route, are allowed only
+    for a browser request from an allowed origin: Sec-Fetch-Site: same-origin,
+    or an Origin (not "null") equal to an --allow-origin entry. Sec-Fetch-Site
+    without a usable Origin is refused, and so is a request with neither
+    header: a non-browser SDK cannot use the cookie routes at all, and should
+    keep to /signin, the token and Authorization.
+  checks: >
+    In order: the route's capability (403), cookie authentication off (404),
+    the origin gate (403 "The request origin is not allowed to use cookie
+    authentication"). The four routes share the sign-in rate limit;
+    /signup/cookie also the sign-up one. Credential cookies are stripped from
+    the headers user-defined /api code sees.
+
+# Statuses any route can answer that are not error kinds (errors.yaml has those).
+statuses:
+  - status: 503
+    when: The memory guard refuses a POST /rpc (tracked memory above SURREAL_MEMORY_THRESHOLD).
+    headers: { Retry-After: "1" }
+    body: '{ code: 503, details: "Service unavailable", description: "The server is under memory pressure and refused this request. Retry shortly.", information: "The server is unable to handle the request" }'
+    retry: true
+    since: "4.0"
+    notes: A 3.x server answers this case with 400. Retry after the delay; the request did not run.
+  - status: 503
+    when: >
+      The server is still starting, on every route except /, /status, /health,
+      /version, /ready and /metrics.
+    headers: { Retry-After: "1" }
+    retry: true
+  - status: 503
+    when: GET /health while the memory guard has been engaged past SURREAL_MEMORY_THRESHOLD_UNHEALTHY_AFTER.
+    retry: false
+    since: "4.0"
+  - status: 429
+    when: The auth routes are rate limited (SURREAL_HTTP_AUTH_RATE_LIMIT_ENABLED=true; burst and per-minute 60 by default).
+    headers: { Retry-After: "<seconds>" }
+    retry: true
+
+# The /rpc request and response envelopes, for reference; methods.yaml has the
+# per-method params and results and errors.yaml the error object.
+envelope:
+  request: "{ id?: null / uuid / int / tstr / datetime, method: tstr, params?: array, session?: uuid, txn?: uuid }"
+  response: "{ id?, result, session? } / { id?, error, session? }"
+  notification: "{ result: { id: uuid, action, record, result, session? }, session? }  (WebSocket only, no id)"
+  notes: >
+    `id` is echoed back and omitted when absent. `session` and `txn` are
+    top-level fields. A request `version` field (1 or 2) is accepted and
+    ignored. From 4.0 a WebSocket request the server cannot decode is answered
+    under its `id` where the id itself decodes (JSON, CBOR, cbor.2 and shaped;
+    not FlatBuffers); before 4.0 such an answer had no id.
