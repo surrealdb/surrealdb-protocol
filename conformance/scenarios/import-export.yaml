@@ -1,0 +1,73 @@
+# Import and export over the HTTP /import and /export endpoints, which SDKs
+# use whatever their RPC transport.
+
+scenarios:
+  - name: import-applies-a-script
+    source: surrealdb.js import.test.ts; server/tests/grpc.rs a_complete_import_reports_success
+    steps:
+      - import: { surql: "OPTION IMPORT;\nCREATE foo:1 CONTENT { hello: 'world' };" }
+      - query: { sql: "SELECT * FROM foo" }
+        expect:
+          result: [{ ok: true, result: [{ id: { $record: { table: foo, key: 1 } }, hello: world }] }]
+
+  - name: import-reports-failed-statements
+    description: >
+      A partial import is an error that carries each failed statement with its
+      kind, and the statements that succeeded stay applied (import is not
+      transactional).
+    source: surrealdb.js import.test.ts; server/tests/grpc.rs an_import_reports_the_statements_it_could_not_apply
+    since: "3.1.0"
+    steps:
+      - import: { surql: "OPTION IMPORT;\nCREATE dup:1;\nCREATE dup:1;\nCREATE dup:2;" }
+        expect:
+          error:
+            failures: [{ kind: AlreadyExists, details: { kind: Record } }]
+      - query: { sql: "SELECT VALUE record::id(id) FROM dup ORDER BY id" }
+        expect:
+          result: [{ ok: true, result: [1, 2] }]
+
+  - name: import-needs-option-import
+    description: A script that does not start with OPTION IMPORT is refused before anything runs.
+    steps:
+      - import: { surql: "CREATE foo:1;" }
+        expect:
+          error: { kind: Validation }
+      - query: { sql: "SELECT * FROM foo" }
+        expect:
+          result: [{ ok: false, error: { kind: NotFound } }]
+
+  - name: export-selected-tables
+    source: surrealdb.js export.test.ts
+    steps:
+      - query: { sql: "CREATE foo:1 SET hello = 'world'; CREATE bar:1 SET hello = 'world'; DEFINE FUNCTION fn::foo() { RETURN 'bar'; };" }
+      - export: { options: { tables: [foo] } }
+        expect:
+          result: { $match: "foo:1" }
+      - export: { options: { tables: [foo] } }
+        expect:
+          result: { $not: { $match: "bar:1" } }
+
+  - name: export-functions-only
+    source: surrealdb.js export.test.ts
+    steps:
+      - query: { sql: "CREATE foo:1; DEFINE FUNCTION fn::foo() { RETURN 'bar'; };" }
+      - export: { options: { functions: true, tables: false } }
+        expect:
+          result: { $match: "DEFINE FUNCTION fn::foo" }
+      - export: { options: { functions: true, tables: false } }
+        expect:
+          result: { $not: { $match: "foo:1" } }
+
+  - name: export-then-import-round-trips
+    description: An export imports into an empty database and reproduces the data.
+    source: server/tests/grpc.rs a_database_round_trips_through_export_and_import
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMAFULL; DEFINE FIELD name ON person TYPE string; CREATE person:1 SET name = 'Tobie'" }
+      - export:
+        capture: dump
+      - query: { sql: "DEFINE DATABASE IF NOT EXISTS $db", vars: { db: { $ref: database_b } } }
+      - use: { namespace: { $ref: namespace }, database: { $ref: database_b } }
+      - import: { surql: { $ref: dump } }
+      - query: { sql: "SELECT * FROM person" }
+        expect:
+          result: [{ ok: true, result: [{ id: { $record: { table: person, key: 1 } }, name: Tobie }] }]

@@ -1,0 +1,93 @@
+# Version and capability detection, and protocol facts every SDK depends on.
+# Most of these use raw_rpc and raw_http, which only the reference adapter is
+# required to implement; they pin server behaviour the catalogs describe.
+
+scenarios:
+  - name: version-detection
+    description: >
+      There is no capability RPC on WebSocket or HTTP. A client detects
+      features from the version string, which is also on GET /version and the
+      Surreal-Version header.
+    source: surrealdb.js connection.test.ts; utils/features.ts
+    setup: connect
+    steps:
+      - version:
+        capture: version
+        expect:
+          result: { $match: "^surrealdb-\\d+\\.\\d+\\.\\d+" }
+      - raw_http: { method: GET, path: /version }
+        expect:
+          result: { status: 200, body: { $ref: version } }
+      - raw_rpc: { method: capabilities }
+        expect:
+          result: [{ error: { kind: NotFound, code: -32601 } }]
+
+  - name: health-is-an-http-route-not-a-method
+    description: >
+      There is no health RPC: the server answers it as an unknown method.
+      Health is GET /health, which needs no auth.
+    source: parity audit (the JS SDK's health() sends RPC "health")
+    setup: connect
+    steps:
+      - raw_rpc: { method: health }
+        expect:
+          result: [{ error: { kind: NotFound, code: -32601, details: { kind: Method } } }]
+      - raw_http: { method: GET, path: /health }
+        expect:
+          result: { status: 200, body: "" }
+      - ping:
+
+  - name: unknown-method-is-not-found
+    setup: connect
+    steps:
+      - raw_rpc: { method: no_such_method }
+        expect:
+          result: [{ error: { kind: NotFound, code: -32601, details: { kind: Method, details: { name: unknown } } } }]
+
+  - name: http-rpc-has-no-websocket-only-methods
+    description: HTTP /rpc refuses each WebSocket-only method with the error methods.yaml lists.
+    transports: [http]
+    steps:
+      - raw_rpc: { method: live, params: [person] }
+        expect:
+          result: [{ error: { kind: Configuration, code: -32604, details: { kind: LiveQueryNotSupported } } }]
+      - raw_rpc: { method: kill, params: [{ $uuid: "0189e0a5-1c3d-7abc-8def-0123456789ab" }] }
+        expect:
+          result: [{ error: { kind: Configuration, code: -32604 } }]
+      - raw_rpc: { method: sessions }
+        expect:
+          result: [{ error: { kind: NotAllowed, code: -32602, details: { kind: Method } } }]
+      - raw_rpc: { method: begin }
+        expect:
+          result: [{ error: { kind: NotFound, code: -32601 } }]
+      - raw_rpc: { method: query_stream, params: ["RETURN 1"] }
+        expect:
+          result: [{ error: { kind: NotFound, code: -32601 } }]
+
+  - name: deprecated-crud-methods-still-answer
+    description: The deprecated CRUD methods still work (SDKs should not call them), and a single record id returns one object.
+    steps:
+      - raw_rpc: { method: create, params: [{ $record: { table: person, key: 1 } }, { name: Tobie }] }
+        expect:
+          result: [{ $partial: { result: { id: { $record: { table: person, key: 1 } }, name: Tobie } } }]
+      - raw_rpc: { method: select, params: [{ $table: person }] }
+        expect:
+          result: [{ $partial: { result: [{ id: { $record: { table: person, key: 1 } }, name: Tobie }] } }]
+
+  - name: gql-is-not-graphql
+    description: gql and graphql are different methods; gql needs --allow-experimental gql.
+    steps:
+      - raw_rpc: { method: gql, params: ["MATCH (n) RETURN n"] }
+        expect:
+          result: [{ error: { kind: { $any: null } } }]
+
+  - name: statement-errors-have-no-code
+    description: A per-statement error carries kind and details but not a JSON-RPC code.
+    setup: default
+    steps:
+      - raw_rpc: { method: query, params: ["THROW 'x'"] }
+        # Matched exactly, not $partial, so a `code` on the statement fails it.
+        expect:
+          result:
+            - result:
+                - { status: ERR, kind: Thrown, result: { $match: x }, time: { $type: string }, type: { $oneOf: [null, { $none: null }] } }

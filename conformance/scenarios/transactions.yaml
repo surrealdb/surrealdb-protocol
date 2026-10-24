@@ -1,0 +1,104 @@
+# Interactive transactions: begin, statements carrying the transaction id,
+# commit and cancel. WebSocket only on the server; over HTTP an SDK should
+# refuse up front (Unsupported) or pass on the server's NotFound.
+
+scenarios:
+  - name: transaction-isolates-writes-until-commit
+    source: server/tests/grpc.rs a_transaction_spans_requests_and_isolates_its_writes; surrealdb.js transactions.test.ts
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE account SCHEMALESS" }
+      - begin:
+        capture: t
+      - query: { sql: "CREATE account:one SET balance = 10", txn: { $ref: t } }
+        expect:
+          result: [{ ok: true, result: { $any: null } }]
+      - query: { sql: "SELECT * FROM account", txn: { $ref: t } }
+        expect:
+          result: [{ ok: true, result: [{ id: { $record: { table: account, key: one } }, balance: 10 }] }]
+      - query: { sql: "SELECT * FROM account" }
+        expect:
+          result: [{ ok: true, result: [] }]
+      - commit: { txn: { $ref: t } }
+      - query: { sql: "SELECT * FROM account" }
+        expect:
+          result: [{ ok: true, result: [{ id: { $record: { table: account, key: one } }, balance: 10 }] }]
+
+  - name: transaction-cancel-discards-writes
+    source: server/tests/grpc.rs a_cancelled_transaction_discards_its_writes; surrealdb.js transactions.test.ts
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE account SCHEMALESS" }
+      - begin:
+        capture: t
+      - query: { sql: "CREATE account:two", txn: { $ref: t } }
+      - cancel: { txn: { $ref: t } }
+      - query: { sql: "SELECT * FROM account" }
+        expect:
+          result: [{ ok: true, result: [] }]
+
+  - name: transaction-unknown-id-is-rejected
+    description: A statement naming a transaction that does not exist fails rather than running outside it.
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - raw_rpc:
+          method: query
+          params: ["RETURN 1"]
+          txn: "0189e0a5-1c3d-7abc-8def-0123456789ab"
+        expect:
+          result: [{ error: { kind: Validation, message: { $match: "Transaction not found" } } }]
+
+  - name: transaction-is-finished-after-commit
+    description: A committed transaction id cannot be used again.
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - begin:
+        capture: t
+      - commit: { txn: { $ref: t } }
+      - query: { sql: "RETURN 1", txn: { $ref: t } }
+        expect:
+          error: { kind: Validation }
+
+  - name: transaction-ids-are-per-session
+    description: Sessions can each hold a transaction, and their writes stay apart until commit.
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE account SCHEMALESS" }
+      - fork_session:
+        capture: s
+      - begin: { session: { $ref: s } }
+        capture: t
+      - query: { sql: "CREATE account:three", session: { $ref: s }, txn: { $ref: t } }
+      - query: { sql: "SELECT VALUE id FROM account" }
+        expect:
+          result: [{ ok: true, result: [] }]
+      - commit: { txn: { $ref: t }, session: { $ref: s } }
+      - query: { sql: "SELECT VALUE id FROM account" }
+        expect:
+          result: [{ ok: true, result: [{ $record: { table: account, key: three } }] }]
+
+  - name: transaction-not-over-http
+    description: HTTP /rpc has no interactive transactions. An SDK refuses (Unsupported) or reports the server's NotFound.
+    source: surrealdb.js transactions.test.ts (UnsupportedFeatureError over HTTP)
+    transports: [http]
+    steps:
+      - begin:
+        expect:
+          error: { kind: { $oneOf: [Unsupported, NotFound] } }
+
+  - name: transaction-block-in-one-query
+    description: A BEGIN ... COMMIT block inside a single query is atomic on every transport.
+    source: surrealdb.js transactions.test.ts (transaction())
+    steps:
+      - query: { sql: "BEGIN; CREATE account:a; CREATE account:b; COMMIT; SELECT VALUE record::id(id) FROM account ORDER BY id" }
+        expect:
+          result: { $contains: [{ ok: true, result: [a, b] }] }
+      - query: { sql: "BEGIN; CREATE account:c; THROW 'boom'; COMMIT" }
+      - query: { sql: "SELECT VALUE record::id(id) FROM account ORDER BY id" }
+        expect:
+          result: [{ ok: true, result: [a, b] }]

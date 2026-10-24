@@ -1,0 +1,134 @@
+# Multiple sessions on one connection: attach (new), fork, list and close.
+#
+# On WebSocket the server has attach, detach and sessions; fork is SDK
+# behaviour (attach a new session and replay use, set and authenticate on it).
+# Over HTTP an SDK can attach sessions on the server too (an attached session
+# persists, but holds its own auth: the request's credentials do not carry
+# into it), or keep them in the client and send namespace, database, variables
+# and token with each request, as the reference adapter does. The behaviour
+# scenarios run on both transports either way.
+
+scenarios:
+  - name: session-new-is-empty
+    description: A new session has no variables, namespace, database or auth of its own.
+    source: surrealdb.js sessions.test.ts
+    since: "3.0.0"
+    steps:
+      - set: { name: foo, value: bar }
+      - new_session:
+        capture: s
+      - use: { namespace: { $ref: namespace }, database: { $ref: database }, session: { $ref: s } }
+      - query: { sql: "RETURN [$foo, $auth]", session: { $ref: s } }
+        expect:
+          result: [{ ok: true, result: [{ $none: null }, { $oneOf: [null, { $none: null }] }] }]
+      - query: { sql: "RETURN $foo" }
+        expect:
+          result: [{ ok: true, result: bar }]
+
+  - name: session-fork-inherits-state
+    description: A fork starts with its parent's namespace, database, variables and auth.
+    source: surrealdb.js sessions.test.ts
+    since: "3.0.0"
+    steps:
+      - set: { name: foo, value: bar }
+      - fork_session:
+        capture: f
+      - query: { sql: "RETURN [$foo, $session.ns, $session.db]", session: { $ref: f } }
+        expect:
+          result: [{ ok: true, result: [bar, { $ref: namespace }, { $ref: database }] }]
+      - query: { sql: "INFO FOR DB", session: { $ref: f } }
+        expect:
+          result: [{ ok: true, result: { $type: object } }]
+
+  - name: session-forks-are-isolated
+    description: Changing one session's variables does not touch another's or the default session's.
+    source: surrealdb.js sessions.test.ts
+    since: "3.0.0"
+    steps:
+      - set: { name: foo, value: base }
+      - fork_session:
+        capture: a
+      - fork_session:
+        capture: b
+      - set: { name: foo, value: hello, session: { $ref: a } }
+      - set: { name: foo, value: world, session: { $ref: b } }
+      - query: { sql: "RETURN $foo", session: { $ref: a } }
+        expect:
+          result: [{ ok: true, result: hello }]
+      - query: { sql: "RETURN $foo", session: { $ref: b } }
+        expect:
+          result: [{ ok: true, result: world }]
+      - query: { sql: "RETURN $foo" }
+        expect:
+          result: [{ ok: true, result: base }]
+
+  - name: session-list-and-close
+    description: list_sessions returns the attached sessions without the default one; a closed session is gone.
+    source: surrealdb.js sessions.test.ts
+    since: "3.0.0"
+    steps:
+      - new_session:
+        capture: a
+      - fork_session:
+        capture: b
+      - list_sessions:
+        expect:
+          result: { $unordered: [{ $ref: a }, { $ref: b }] }
+      - close_session: { session: { $ref: a } }
+      - list_sessions:
+        expect:
+          result: [{ $ref: b }]
+
+  - name: session-closed-is-not-found
+    description: Using a session after closing it fails with NotFound/Session.
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - fork_session:
+        capture: s
+      - close_session: { session: { $ref: s } }
+      - raw_rpc: { method: query, params: ["RETURN 1"], session: { $ref: s } }
+        expect:
+          result: [{ $partial: { error: { kind: NotFound, details: { kind: Session } } } }]
+
+  - name: session-close-kills-its-live-queries
+    description: Closing a session ends the live queries it started.
+    source: surrealdb.js sessions.test.ts
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - query: { sql: "DEFINE TABLE person SCHEMALESS" }
+      - fork_session:
+        capture: s
+      - live: { table: person, session: { $ref: s } }
+        capture: sub
+      - close_session: { session: { $ref: s } }
+      - query: { sql: "CREATE person:after" }
+      - next_notification: { subscription: { $ref: sub }, timeout: 500 }
+        expect:
+          result: { $oneOf: [null, { action: KILLED }] }
+      - query: { sql: "INFO FOR TABLE person" }
+        expect:
+          result: [{ ok: true, result: { $partial: { lives: {} } } }]
+
+  - name: session-attach-twice-is-already-exists
+    description: The client chooses session ids; reusing one that is attached is AlreadyExists/Session.
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - new_session:
+        capture: s
+      - raw_rpc: { method: attach, session: { $ref: s } }
+        expect:
+          result: [{ $partial: { error: { kind: AlreadyExists, details: { kind: Session } } } }]
+
+  - name: session-response-echoes-session
+    description: A response to a request that named a session carries the session id back.
+    since: "3.0.0"
+    transports: [ws]
+    steps:
+      - new_session:
+        capture: s
+      - raw_rpc: { method: ping, session: { $ref: s } }
+        expect:
+          result: [{ $partial: { session: { $uuid: { $ref: s } } } }]

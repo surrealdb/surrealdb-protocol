@@ -104,14 +104,35 @@ export async function startServer(opts: ServerOptions = {}): Promise<Server> {
 				...opts.env,
 			},
 			stdout: "ignore",
-			stderr: process.env.CONFORMANCE_SERVER_LOGS ? "inherit" : "ignore",
+			stderr: process.env.CONFORMANCE_SERVER_LOGS ? "inherit" : "pipe",
 		},
 	);
+	// Keep reading stderr for the server's whole life, so a chatty log level
+	// cannot fill the pipe and stall it, but remember only the last lines.
+	const tail: string[] = [];
+	const drained =
+		proc.stderr instanceof ReadableStream
+			? (async () => {
+					const decoder = new TextDecoder();
+					for await (const chunk of proc.stderr as ReadableStream<Uint8Array>) {
+						tail.push(
+							...decoder
+								.decode(chunk, { stream: true })
+								.split("\n")
+								.filter(Boolean),
+						);
+						tail.splice(0, Math.max(0, tail.length - 3));
+					}
+				})()
+			: Promise.resolve();
 	try {
 		await waitHealthy(http, proc);
 	} catch (e) {
 		proc.kill();
-		throw e;
+		await drained;
+		throw new Error(
+			`${(e as Error).message}${tail.length ? `: ${tail.join(" | ")}` : ""}`,
+		);
 	}
 	return {
 		http,
