@@ -223,6 +223,35 @@ describe("value", () => {
 		const s = fromJson({ $set: [3, 1, 2, 1] });
 		expect(toJson(s)).toEqual({ $set: [3, 1, 2] });
 		expect(equal(fromCbor(toCbor(s)), s)).toBe(true);
+		// A set built by hand, not through fromJson, is deduplicated on the wire.
+		const raw = { k: "set" as const, v: [1, 1].map((n) => fromJson(n)) };
+		const wire = toCbor(raw);
+		expect(wire.t === "tag" && wire.v.t === "array" && wire.v.v.length).toBe(1);
+		expect(encodeProto(raw)).toEqual(encodeProto(fromJson({ $set: [1] })));
+	});
+
+	test("the 4.0 decoder refuses what the server refuses", () => {
+		const text = (v: string) => ({ t: "text" as const, v });
+		for (const [tag, msg] of [
+			[0n, "send tag 12"],
+			[9n, "send tag 37"],
+			[13n, "send tag 14"],
+			[57n, "shaped block"],
+			[181n, "use cbor.2"],
+		] as const)
+			expect(() => fromCbor({ t: "tag", tag, v: text("x") })).toThrow(msg);
+		expect(() =>
+			fromCbor({ t: "tag", tag: 6n, v: { t: "uint", v: 1n } }),
+		).toThrow("NONE");
+		expect(() =>
+			fromCbor({
+				t: "map",
+				v: [
+					[text("a"), { t: "uint", v: 1n }],
+					[text("a"), { t: "uint", v: 2n }],
+				],
+			}),
+		).toThrow("duplicate key a");
 	});
 
 	test("typed floats are numbers or the four special spellings", () => {

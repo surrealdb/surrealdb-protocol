@@ -15,6 +15,13 @@
  *
  * So a vector that disagrees with the server, or a `value` that disagrees with
  * the server's encoding, cannot be committed silently.
+ *
+ * The file describes the 4.0 wire. A server that does not speak cbor.2 is
+ * taken to be from before 4.0: it is held to each vector's `legacy` entry
+ * where there is one (and must accept the input, returning
+ * `legacy.canonical`), and to the 4.0 expectation everywhere else. Against
+ * such a server `write` only fills in `legacy.canonical`; every other
+ * difference is a failure.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -67,6 +74,26 @@ const mode = process.argv[2];
 if (mode !== "write" && mode !== "check") {
 	console.error("usage: bun scripts/vectors.ts write|check");
 	process.exit(2);
+}
+
+/** Whether `server` speaks the 4.0 wire: it answers `Accept: application/cbor; v=2` in kind. */
+async function speaksCbor2(server: Server): Promise<boolean> {
+	const res = await fetch(`${server.http}/rpc`, {
+		method: "POST",
+		body: encode({
+			t: "map",
+			v: [
+				[text("id"), int(1)],
+				[text("method"), text("version")],
+			],
+		}),
+		headers: {
+			"Content-Type": "application/cbor",
+			Accept: "application/cbor; v=2",
+		},
+	});
+	await res.arrayBuffer();
+	return (res.headers.get("content-type") ?? "").includes("v=2");
 }
 
 type Outcome =
@@ -354,19 +381,33 @@ async function main() {
 	});
 	const vectors = doc.get("vectors") as YAMLSeq<YAMLMap>;
 	const server = await startServer();
+	const strict = await speaksCbor2(server);
 	const failures: string[] = [];
 	const drift: string[] = [];
 	const names = new Set<string>();
 
+	// Only a 4.0 server writes the 4.0 fields; an older one only `legacy`.
 	const set = (node: YAMLMap, key: string, value: string | undefined) => {
 		const before = node.get(key);
 		if (before === value) return;
-		if (mode === "check")
-			drift.push(
-				`${node.get("name")}: ${key} is ${before ?? "missing"}, server gives ${value}`,
+		const what = `${node.get("name")}: ${key} is ${before ?? "missing"}, server gives ${value}`;
+		if (mode === "check") drift.push(what);
+		else if (!strict)
+			failures.push(
+				`${what}; a server before 4.0 differs here, so give it a \`legacy\` entry`,
 			);
 		else if (value === undefined) node.delete(key);
 		else node.set(key, value);
+	};
+	const setLegacy = (node: YAMLMap, value: string) => {
+		const legacy = node.get("legacy") as YAMLMap;
+		const before = legacy.get("canonical");
+		if (before === value) return;
+		if (mode === "check")
+			drift.push(
+				`${node.get("name")}: legacy.canonical is ${before ?? "missing"}, server gives ${value}`,
+			);
+		else legacy.set("canonical", value);
 	};
 
 	try {
@@ -380,10 +421,32 @@ async function main() {
 				cbor?: string;
 				value?: Json;
 				server_quirk?: string;
+				legacy?: { canonical?: string };
 			};
 			const fail = (msg: string) => failures.push(`${v.name}: ${msg}`);
 			if (names.has(v.name)) fail("duplicate name");
 			names.add(v.name);
+
+			if (v.legacy && v.kind !== "reject")
+				fail("only a reject vector has a legacy entry");
+			if (v.legacy && v.kind === "reject" && !strict) {
+				// A server before 4.0 accepted this input; hold it to what it returned.
+				const input = v.raw
+					? fromHex(v.cbor as string)
+					: encode(parseDiagnostic(v.diag as string));
+				const out = await query(server, "RETURN $v", input);
+				if (!out.ok) {
+					fail(
+						`server before 4.0 now rejects it (${out.kind}); drop the legacy entry`,
+					);
+					continue;
+				}
+				if (tryDecode(out.bytes) instanceof Error)
+					fail(`the reference decoder cannot read ${toHex(out.bytes)}`);
+				setLegacy(node, toHex(out.bytes));
+				set(node, "cbor", toHex(input));
+				continue;
+			}
 
 			if (v.kind === "canonical") {
 				const out = await query(server, `RETURN ${v.surql}`);
@@ -473,38 +536,42 @@ async function main() {
 			lineWidth: 0,
 			flowCollectionPadding: true,
 		});
-		if (
-			mode === "check" &&
-			(!existsSync(PROTO_FILE) ||
-				readFileSync(PROTO_FILE, "utf8").replace(/^server: .*$/m, "") !==
-					protoText.replace(/^server: .*$/m, ""))
-		) {
+		const protoDrifted =
+			!existsSync(PROTO_FILE) ||
+			readFileSync(PROTO_FILE, "utf8").replace(/^server: .*$/m, "") !==
+				protoText.replace(/^server: .*$/m, "");
+		if (mode === "check" && protoDrifted) {
 			drift.push(
 				"proto.yaml no longer matches the server; run `bun run vectors:write`",
 			);
+		} else if (protoDrifted && !strict) {
+			failures.push(
+				"proto.yaml differs on a server before 4.0; only a 4.0 server writes it",
+			);
 		}
-		if (mode === "write" && failures.length === 0)
+		if (mode === "write" && strict && failures.length === 0)
 			writeFileSync(PROTO_FILE, protoText);
 	} finally {
 		await server.stop();
 	}
 
 	if (mode === "write" && failures.length === 0) {
-		doc.set("server", server.version);
+		doc.set(strict ? "server" : "legacy_server", server.version);
 		writeFileSync(
 			FILE,
 			doc.toString({ lineWidth: 0, flowCollectionPadding: true }),
 		);
 	}
-	if (mode === "check" && doc.get("server") !== server.version) {
+	const generated = doc.get(strict ? "server" : "legacy_server");
+	if (mode === "check" && generated !== server.version) {
 		console.warn(
-			`note: vectors were generated with ${doc.get("server")}, checked against ${server.version}`,
+			`note: vectors were generated with ${generated}, checked against ${server.version}`,
 		);
 	}
 	for (const f of failures) console.error(`FAIL ${f}`);
 	for (const d of drift) console.error(`DRIFT ${d}`);
 	console.log(
-		`${vectors.items.length} vectors, ${failures.length} failures, ${drift.length} drifted, server ${server.version}`,
+		`${vectors.items.length} vectors, ${failures.length} failures, ${drift.length} drifted, server ${server.version}${strict ? "" : " (before 4.0: legacy entries apply)"}`,
 	);
 	if (failures.length || drift.length) process.exit(1);
 }

@@ -11,7 +11,7 @@
 # A vector with `proto: null` has no protobuf encoding; `notes` says why.
 
 version: 1
-server: surrealdb-3.4.0-nightly+20261014.4f7fa16
+server: surrealdb-3.4.0-nightly
 vectors:
   - name: none
     kind: canonical
