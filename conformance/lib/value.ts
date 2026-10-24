@@ -46,6 +46,7 @@ import {
 } from "./cbor";
 
 export const TAG = {
+	// Refused from 4.0 on: send DATETIME, UUID and DURATION instead.
 	DATETIME_STRING: 0n,
 	NONE: 6n,
 	TABLE: 7n,
@@ -61,6 +62,8 @@ export const TAG = {
 	BOUND_EXCLUDED: 51n,
 	FILE: 55n,
 	SET: 56n,
+	// A shaped block: rows in a request, or the shaped format's result lists.
+	SHAPED_BLOCK: 57n,
 	POINT: 88n,
 	LINE: 89n,
 	POLYGON: 90n,
@@ -68,7 +71,17 @@ export const TAG = {
 	MULTILINE: 92n,
 	MULTIPOLYGON: 93n,
 	COLLECTION: 94n,
+	// Sized numbers, cbor.2 only: i8, u8, i16, u16, i32, u32, u64, f16, f32.
+	SIZED_FIRST: 180n,
+	SIZED_LAST: 188n,
 } as const;
+
+/** What the server says to send in place of a refused text-form tag. */
+const REFUSED: Record<string, string> = {
+	"0": "CBOR tag 0 (a datetime as text) is not accepted: send tag 12 [seconds, nanos]",
+	"9": "CBOR tag 9 (a uuid as text) is not accepted: send tag 37 (16 bytes)",
+	"13": "CBOR tag 13 (a duration as text) is not accepted: send tag 14 [seconds, nanos]",
+};
 
 export type Bound = { kind: "included" | "excluded"; v: Value } | null;
 export type Position = [number, number];
@@ -440,7 +453,8 @@ export function toCbor(v: Value): CborItem {
 					.map(([k, x]) => [text(k), toCbor(x)]),
 			};
 		case "set":
-			return tag(TAG.SET, array(v.v.map(toCbor)));
+			// A set built by hand may repeat a member; the server would drop it.
+			return tag(TAG.SET, array(distinct(v.v).map(toCbor)));
 		case "table":
 			return tag(TAG.TABLE, text(v.v));
 		case "record":
@@ -496,9 +510,10 @@ function geometryToCbor(g: Geometry): CborItem {
 }
 
 /**
- * Decodes `item` with the server's rules, including the decode-only forms
- * (tags 0, 9, 13 and the string form of tag 8). Throws `ValueError` for input
- * the server rejects.
+ * Decodes `item` with the 4.0 server's plain `cbor` rules, including the
+ * string form of tag 8. Throws `ValueError` for input the server rejects: the
+ * text-form tags 0, 9 and 13, the cbor.2-only tags 180 to 188, unknown tags,
+ * integers outside i64, duplicate map keys and tag 6 around anything but null.
  */
 export function fromCbor(item: CborItem): Value {
 	switch (item.t) {
@@ -517,15 +532,20 @@ export function fromCbor(item: CborItem): Value {
 			return { k: "string", v: item.v };
 		case "array":
 			return { k: "array", v: item.v.map(fromCbor) };
-		case "map":
+		case "map": {
+			const seen = new Set<string>();
 			return {
 				k: "object",
 				v: item.v.map(([key, x]) => {
 					if (key.t !== "text")
 						throw new ValueError("object keys must be text");
+					if (seen.has(key.v))
+						throw new ValueError(`duplicate key ${key.v} in a CBOR map`);
+					seen.add(key.v);
 					return [key.v, fromCbor(x)] as [string, Value];
 				}),
 			};
+		}
 		case "simple":
 			if (item.v === 20) return { k: "bool", v: false };
 			if (item.v === 21) return { k: "bool", v: true };
@@ -555,13 +575,13 @@ const asUint = (i: CborItem | undefined, what: string, max: bigint): bigint => {
 function fromTag(t: bigint, c: CborItem): Value {
 	switch (t) {
 		case TAG.NONE:
+			if (c.t !== "simple" || c.v !== 22)
+				throw new ValueError("Expected a CBOR null under the NONE tag");
 			return { k: "none" };
 		case TAG.TABLE:
 			return { k: "table", v: asText(c, "table") };
 		case TAG.DECIMAL:
 			return { k: "decimal", v: normaliseDecimal(asText(c, "decimal"), true) };
-		case TAG.DATETIME_STRING:
-			return { k: "datetime", ...parseDatetime(asText(c, "datetime")) };
 		case TAG.DATETIME: {
 			const a = asArray(c, "datetime");
 			if (a.length !== 2)
@@ -575,8 +595,6 @@ function fromTag(t: bigint, c: CborItem): Value {
 			const nanos = Number(asUint(a[1], "datetime nanoseconds", 999_999_999n));
 			return { k: "datetime", secs, nanos };
 		}
-		case TAG.DURATION_STRING:
-			return { k: "duration", ...parseDuration(asText(c, "duration")) };
 		case TAG.DURATION: {
 			const a = asArray(c, "duration");
 			if (a.length > 2)
@@ -596,8 +614,6 @@ function fromTag(t: bigint, c: CborItem): Value {
 				);
 			return { k: "duration", secs: secs + carry, nanos: Number(nanos) };
 		}
-		case TAG.UUID_STRING:
-			return { k: "uuid", v: normaliseUuid(asText(c, "uuid")) };
 		case TAG.UUID:
 			if (c.t !== "bytes" || c.v.length !== 16)
 				throw new ValueError("uuid: expected 16 bytes");
@@ -640,6 +656,12 @@ function fromTag(t: bigint, c: CborItem): Value {
 		case TAG.COLLECTION:
 			return { k: "geometry", g: geometryFromCbor({ t: "tag", tag: t, v: c }) };
 	}
+	const refused = REFUSED[t.toString()];
+	if (refused) throw new ValueError(refused);
+	if (t === TAG.SHAPED_BLOCK)
+		throw new ValueError("CBOR tag 57 (a shaped block) is not accepted here");
+	if (t >= TAG.SIZED_FIRST && t <= TAG.SIZED_LAST)
+		throw new ValueError(`CBOR tag ${t} is not accepted here: use cbor.2`);
 	throw new ValueError(`unknown tag ${t}`);
 }
 

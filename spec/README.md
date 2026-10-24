@@ -42,7 +42,7 @@ update this file in the same release.
 
 ## Value test vectors
 
-[`vectors/cbor.yaml`](vectors/cbor.yaml) holds 163 vectors covering every tag in
+[`vectors/cbor.yaml`](vectors/cbor.yaml) holds 175 vectors covering every tag in
 the table, including the cases that have broken SDKs: pre-1970 datetimes,
 nanosecond precision, durations that are empty or above i64, record ids with
 every key type (string, int, array, object, uuid and range), exclusive range
@@ -52,8 +52,17 @@ files. Each vector has a `kind`:
 | kind | What the SDK must do |
 |---|---|
 | `canonical` | Decode `cbor` to `value`. Encode `value` to something that decodes back to `value`; encoding to exactly `cbor` is recommended, because `cbor` is the server's own encoding of `surql`. |
-| `decode` | Decode `cbor` to `value`. This is input the server accepts but never sends (string-form tags, non-shortest floats, indefinite lengths, unsorted sets). `canonical` is what the server sends back for it. |
+| `decode` | Decode `cbor` to `value`. This is input the server accepts but never sends (string-form record ids, non-shortest floats, indefinite lengths, unsorted sets). `canonical` is what the server sends back for it. |
 | `reject` | Fail to decode `cbor`. The server rejects these, so an SDK that accepts one is reading garbage as data. |
+
+The vectors describe the SurrealDB 4.0 wire over plain `application/cbor`.
+4.0 decodes strictly, so some input that 3.x servers accepted is now a
+`reject` vector: the text-form tags 0, 9 and 13, integers outside i64,
+duplicate map keys and tag 6 around anything but null. Each of those carries a
+`legacy` entry whose `canonical` is what a 3.x server sent back for it, so
+the file still checks against 3.x; an SDK must not send any of them to any
+server. The sized-number tags 180 to 188 are `cbor.2` only and appear here as
+plain-CBOR reject vectors.
 
 [`vectors/proto.yaml`](vectors/proto.yaml) repeats every `canonical` vector as a
 protobuf `Value`, for SDKs that speak gRPC. An SDK must decode `proto` to
@@ -70,8 +79,13 @@ server's bytes decode to, the bytes must round-trip through the server
 unchanged (or, for `reject` vectors, the server must refuse them), and the
 reference encoder in `conformance/lib` must reproduce the server's bytes.
 `bun run vectors:check` does the same without writing, and CI runs it against
-the latest release and nightly. The current files were generated with
-`3.4.0-nightly+20261014.4f7fa16` and also pass against `3.3.4`.
+the latest release and nightly. The script tells a 4.0 server from an older
+one by whether it answers `Accept: application/cbor; v=2` in kind: a 4.0
+server writes every field except `legacy`, an older one only
+`legacy.canonical` (any other difference fails the run). The current files
+were generated with surrealdb main at `c63ff8cfa1` (which reports
+`3.4.0-nightly`) and `3.3.4`, and also pass against
+`3.4.0-nightly+20261022.0690f2a`.
 
 Set `SURREAL_BIN` to choose the `surreal` binary, or `SURREAL_URL` to use a
 server that is already running.
@@ -86,6 +100,7 @@ canonical:  assert decode(hex(cbor)) == typed(value)
             optionally assert encode(typed(value)) == hex(cbor)
 decode:     assert decode(hex(cbor)) == typed(value)
 reject:     assert decode(hex(cbor)) raises
+            (ignore `legacy`: it records old servers, not SDK behaviour)
 ```
 
 where `typed(value)` converts typed JSON (below) into the SDK's native values.

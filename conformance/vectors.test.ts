@@ -43,12 +43,15 @@ interface Vector {
 	cbor: string;
 	canonical?: string;
 	server_quirk?: string;
+	legacy?: { canonical: string };
 }
 
 interface Tag {
 	tag: bigint;
 	name: string;
-	status: "active" | "decode-only" | "reserved";
+	status: "active" | "refused" | "reserved";
+	use?: bigint;
+	formats?: ("cbor" | "cbor.2" | "shaped")[];
 }
 
 const vectors = read("../spec/vectors/cbor.yaml").vectors as Vector[];
@@ -59,6 +62,17 @@ describe("cbor vectors", () => {
 		test(v.name, () => {
 			expect(v.cbor, "run `bun run vectors:write`").toBeString();
 			const bytes = fromHex(v.cbor);
+			if (v.legacy) {
+				expect(v.kind, "only a reject vector has a legacy entry").toBe(
+					"reject",
+				);
+				expect(
+					v.legacy.canonical,
+					"run `bun run vectors:write` on 3.x",
+				).toBeString();
+				// What a server before 4.0 sent back is still valid 4.0 output.
+				fromCbor(decode(fromHex(v.legacy.canonical)));
+			}
 			if (v.kind === "reject") {
 				expect(() => fromCbor(decode(bytes))).toThrow();
 				// A raw vector's diag is prose: its bytes are below what diag can say.
@@ -145,6 +159,13 @@ describe("cbor tag table", () => {
 	};
 	// Raw vectors are malformed CBOR, so there is nothing to walk.
 	for (const v of vectors) if (!v.raw) walk(decode(fromHex(v.cbor)));
+
+	test("a refused tag names an active replacement", () => {
+		for (const t of tags.filter((t) => t.status === "refused"))
+			expect(tags.find((r) => r.tag === t.use)?.status, `tag ${t.tag}`).toBe(
+				"active",
+			);
+	});
 
 	test("tags are unique and sorted", () => {
 		const nums = tags.map((t) => t.tag);
