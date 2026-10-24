@@ -1,7 +1,9 @@
 # SurrealDB's error taxonomy, as it appears on every wire.
 #
 # Source of truth: surrealdb/types/src/error.rs on surrealdb main at 6a9bc46152,
-# which defines the kinds, the detail sub-kinds and the legacy JSON-RPC codes.
+# which defines the kinds, the detail sub-kinds and the legacy JSON-RPC codes;
+# rechecked at c63ff8cfa1 (the 4.0 line, 2026-10-24), where the kinds, details
+# and codes are unchanged.
 # `proto` is the matching ErrorKind in surrealdb/protocol/v1/error.proto.
 #
 # The error object on WebSocket and HTTP /rpc:
@@ -68,6 +70,11 @@ kinds:
     notes: >
       A query that fails to parse is reported as a top-level Validation error
       with message "Parse error: ..." and NO details, so code -32000, not -32700.
+      A CBOR request the server's decoder refuses is Validation/Parse (-32700);
+      from 4.0 its message is the decoder's own ("CBOR tag 0 (a datetime as
+      text) is not accepted: send tag 12 [seconds, nanos]", "duplicate key a in
+      a CBOR map", ...; spec/cbor-tags.yaml lists what it refuses), where 3.x
+      said only "Parse error".
 
   - kind: Configuration
     proto: ERROR_KIND_CONFIGURATION
@@ -180,7 +187,9 @@ kinds:
 
 # How HTTP routes other than /rpc map an error kind to a status code
 # (surrealdb/server/src/ntw/error.rs). /rpc itself answers 200 with an error
-# envelope, except for a request it cannot parse at all, which is 400.
+# envelope, except for a request it cannot parse at all, which is 400, and a
+# memory-guard refusal, which is 503 with Retry-After from 4.0. http.yaml's
+# `statuses` lists the statuses that are not error kinds.
 http_status:
   - { when: Query/TimedOut, status: 504 }
   - { when: NotAllowed/Auth, status: 401 }

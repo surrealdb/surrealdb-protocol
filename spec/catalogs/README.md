@@ -14,7 +14,9 @@ server unnoticed.
 Each file was read from surrealdb main at `6a9bc46152` and says which server
 source it came from. Every transport difference in `methods.yaml`, and the
 `/import` behaviour in `http.yaml`, was also checked against a running
-`3.4.0-nightly+20261014.4f7fa16`.
+`3.4.0-nightly+20261014.4f7fa16`. All three were then brought up to the 4.0
+line at surrealdb main `c63ff8cfa1`; what a 3.x server lacks is marked
+`since: "4.0"` or says "from 4.0".
 
 Points SDKs most often get wrong:
 
@@ -37,5 +39,18 @@ Points SDKs most often get wrong:
   `graphql`. Both `gql` (RPC) and `/gql` (HTTP) are on by default from 3.3.
 - **Sessions: the client picks the id on WebSocket and HTTP, the server picks
   it on gRPC.** There is no server-side fork.
+- **Back off on 503.** From 4.0, POST `/rpc` answers 503 with
+  `Retry-After: 1` when the server is under memory pressure (3.x said 400),
+  as every route does while the server starts. The request did not run; wait
+  and retry. `GET /health` answering 503 means the instance needs a restart.
+- **Negotiate CBOR v2, do not assume it.** 4.0 adds `application/cbor; v=2`
+  and the `cbor.2` subprotocol (sized numbers), and `shaped`. A 3.x server
+  knows neither, so send a plain `application/cbor` request with
+  `Accept: application/cbor; v=2` and use v2 only if the response says so.
+  On WebSocket offer one subprotocol: the server picks from its own order.
+- **Cookie routes are for browsers only.** `/signin/cookie`, `/signup/cookie`,
+  `/refresh/cookie` and `/signout` (4.0, `--cookie-auth`) refuse any request
+  without a browser origin, so an SDK outside a browser keeps to `/signin`
+  and a bearer token.
 - **Branch on `kind` and `details`, not `code` or `message`.** A transaction
   conflict is `Query`/`TransactionConflict` (code -32009) and is retryable.

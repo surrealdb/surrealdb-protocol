@@ -5,6 +5,10 @@
 # surrealdb/server/src/rpc/{websocket,http}.rs. Checked against surrealdb main
 # at 6a9bc46152 and, for every `http: false` below, against a running
 # 3.4.0-nightly+20261014.4f7fa16, which returns exactly the listed error.
+# Brought up to the 4.0 line at surrealdb main c63ff8cfa1 (2026-10-24): no
+# method was added or removed; `query`, `query_stream` and `begin` gained
+# options, the protected names shrank to four, `run` takes ext::, and HTTP
+# attached sessions moved into the datastore.
 #
 # Fields:
 #   name        The method string, as sent in the request's `method` field.
@@ -83,7 +87,11 @@ methods:
     grpc: SetVariable
     notes: >
       Defines a session variable, $name. A value of NONE, or no value, removes
-      it. Protected names ($auth, $session, ...) are InvalidParams.
+      it. The protected names are exactly access, auth, token and session:
+      setting one is InvalidParams "Cannot set protected variable: <name>",
+      in `set`, `unset` and a `query`'s vars alike. (Before 4.0 this, self,
+      parent, value, input, before, after and event were protected too; 4.0
+      lets a client bind them.)
 
   - name: unset
     status: stable
@@ -159,7 +167,7 @@ methods:
   - name: query
     status: stable
     transports: { ws: true, http: true }
-    params: "[sql: tstr, vars?: object / null]"
+    params: "[sql: tstr, vars?: object / null, options?: query-options / null]"
     result: "[* statement-result]"
     grpc: Query
     notes: >
@@ -172,11 +180,22 @@ methods:
       results. `vars` are layered over the session's variables for this call
       only. Honours `txn`.
 
+      4.0 adds `options`: { read_only?: { max_staleness?: duration (default
+      0s), strict?: bool (default false) } / null }. Any other key, here or
+      inside read_only, is InvalidParams ("Unknown query option `x`"), and so
+      is `isolation`, which only `begin` takes. A read-only call runs as
+      `BEGIN READ ONLY MAX STALENESS <d> [STRICT]; <sql>; COMMIT;`, so its
+      result list has the BEGIN result first ({ position: bytes / NONE, age:
+      duration, stale: bool }, the snapshot read) and the COMMIT result last:
+      statement i is at index i + 1. A read-only call with a `txn`, or whose
+      sql holds BEGIN, COMMIT or CANCEL, is a Validation error (-32000). A
+      server before 4.0 refuses a third param as InvalidParams.
+
   - name: query_stream
     status: stable
     transports: { ws: true, http: false }
     http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
-    params: "[sql: tstr, vars?: object / null]"
+    params: "[sql: tstr, vars?: object / null, options?: query-options / null]"
     result: "a sequence of frames"
     grpc: Query
     since: "3.3.0"
@@ -195,7 +214,10 @@ methods:
       tags and fields. Gated by both the `query_stream` and `query` RPC
       capabilities: when `query_stream` is denied the call fails with
       NotAllowed (-32602), and a client should fall back to `query`. Honours
-      `txn`; do not commit before `end`.
+      `txn`; do not commit before `end`. `options` is as for `query` (4.0),
+      with the BEGIN and COMMIT statements streamed like any other. On the
+      `shaped` subprotocol each `rows` frame's `values` is a tag 57 shaped
+      block, with shapes scoped to the whole stream.
 
   - name: query_cancel
     status: stable
@@ -217,7 +239,8 @@ methods:
     result: any
     grpc: Run
     notes: >
-      Calls fn::, ml:: (version required) or mod::/silo:: functions, and
+      Calls fn::, ml:: (version required) or mod::/silo:: functions (4.0 also
+      takes ext::<name>, the same as mod::<name>), and
       built-ins such as string::len. SDKs MUST call this method, passing the
       name through unaltered, rather than compiling `RETURN fn::name(...)` into
       a `query` (rpc.proto, rpc Run): a synthesised query bypasses a deny list
@@ -296,6 +319,18 @@ methods:
       someone else gets NotFound rather than a hint that the id exists. A new
       session starts empty: no auth, ns/db or variables.
 
+      From 4.0 every attached HTTP session is stored in the datastore: it
+      survives a restart and is served by any node on the same datastore. It
+      expires between one and one and a half times --durable-session-ttl
+      (SURREAL_DURABLE_SESSION_TTL, default 24h) after its last request, each
+      request sliding the expiry; an expired one is NotFound (Session). At most
+      SURREAL_HTTP_MAX_ATTACHED_SESSIONS (16384) per node, past which attach is
+      NotAllowed (Method). A request on a session that was detached, expired or
+      re-authenticated while it ran fails with Internal (-32000) "Session <id>
+      was detached, expired or re-authenticated while this request ran, so the
+      request's changes to it were not stored": the method itself did run, so
+      do not retry it blindly.
+
   - name: detach
     status: stable
     transports: { ws: true, http: true }
@@ -326,8 +361,8 @@ methods:
     status: stable
     transports: { ws: true, http: false }
     http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
-    params: "[]"
-    result: uuid
+    params: "[] / [{ isolation?: \"snapshot\" / \"serializable\" / null, read_only?: { max_staleness?: duration, strict?: bool } }]"
+    result: "uuid / { id: uuid, isolation: \"snapshot\" / \"serializable\", snapshot?: { position: bytes / NONE, age: duration, stale: bool } }"
     grpc: BeginTransaction
     since: "3.0.0"
     notes: >
@@ -340,6 +375,16 @@ methods:
       default; server main at 6a9bc46152). Past the cap, begin fails with "Too
       many open transactions". An unknown `txn` is InvalidParams "Transaction
       not found".
+
+      4.0 takes an options object (isolation matched case-insensitively). With
+      no options, or options equal to the defaults, the result is still the
+      bare uuid; otherwise it is an object, which is how a client knows the
+      server understood them, carrying `snapshot` for a read-only transaction.
+      SERIALIZABLE with a MAX STALENESS above zero, a level the datastore does
+      not offer (SurrealKV and TiKV offer only SNAPSHOT), a staleness above the
+      datastore's maximum and, with strict, a snapshot that is too stale are
+      Query errors (-32000). A server before 4.0 takes no params. gRPC's
+      BeginTransaction takes no options.
 
   - name: commit
     status: stable
