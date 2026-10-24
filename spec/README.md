@@ -97,8 +97,8 @@ one by whether it answers `Accept: application/cbor; v=2` in kind: a 4.0
 server writes every field except `legacy`, an older one only
 `legacy.canonical` (any other difference fails the run), and an older one
 skips `cbor2.yaml` and the `since: "4.0"` vectors. The current files
-were generated with a build of the 4.0 line from 2026-10-24, the first with
-the sized numbers (it reports `3.4.0-nightly`), and with `3.3.4`.
+were generated with `4.0.0-nightly` (a build from 2026-10-25, the first
+with the sized numbers) and with `3.3.4`.
 
 Set `SURREAL_BIN` to choose the `surreal` binary, or `SURREAL_URL` to use a
 server that is already running.

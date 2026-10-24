@@ -19,7 +19,7 @@
 # fields; never edit the hex by hand.
 
 version: 1
-server: surrealdb-3.4.0-nightly
+server: surrealdb-4.0.0-nightly
 vectors:
   # --- integers ------------------------------------------------------------
 

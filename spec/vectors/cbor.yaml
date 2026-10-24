@@ -31,7 +31,7 @@
 # the hex by hand. `bun run vectors:check` re-verifies the file against a server.
 
 version: 1
-server: surrealdb-3.4.0-nightly
+server: surrealdb-4.0.0-nightly
 legacy_server: surrealdb-3.3.4
 vectors:
   # --- NONE and NULL -------------------------------------------------------
