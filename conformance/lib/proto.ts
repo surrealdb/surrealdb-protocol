@@ -71,7 +71,7 @@ function arm(v: Value): pb.Value["value"] {
 		case "object":
 			return { $case: "object", object: object(v.v) };
 		case "set":
-			return { $case: "set", set: { values: v.v.map(toProto) } };
+			return { $case: "set", set: { values: distinct(v.v).map(toProto) } };
 		case "table":
 			return { $case: "table", table: v.v };
 		case "record":
