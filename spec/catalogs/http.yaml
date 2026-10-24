@@ -2,8 +2,8 @@
 #
 # Source of truth: surrealdb/rpc/src/headers.rs, surrealdb/rpc/src/format.rs,
 # surrealdb/core/src/rpc/format/mod.rs and surrealdb/server/src/ntw/ on
-# surrealdb main at c63ff8cfa1 (the 4.0 line, 2026-10-24); first written at
-# 6a9bc46152. Header names are case-insensitive on the wire; the canonical
+# the 4.0 line as of 2026-10-24; first written against the server's main
+# branch as of 2026-10-15. Header names are case-insensitive on the wire; the canonical
 # spelling is given. `since: "4.0"` marks what a 3.x server lacks.
 
 version: 1

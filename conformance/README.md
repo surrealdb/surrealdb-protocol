@@ -191,7 +191,7 @@ if (e instanceof ServerError) return { kind: e.kind, message: e.message, details
 ```
 
 Results for `surrealdb@2.1.1` against `surreal` 3.4.0-nightly (20261014), and
-the same again against 3.3.4 and the 4.0 line (surrealdb main at `c63ff8cfa1`),
+the same again against 3.3.4 and the 4.0 line as of 2026-10-24,
 whose strict CBOR decoding this SDK does not trip over:
 
 | | runs |

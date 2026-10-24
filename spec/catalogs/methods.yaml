@@ -2,10 +2,10 @@
 #
 # Source of truth: surrealdb/rpc/src/method.rs (the method names) and
 # surrealdb/core/src/rpc/protocol.rs (dispatch), with the transport overrides in
-# surrealdb/server/src/rpc/{websocket,http}.rs. Checked against surrealdb main
-# at 6a9bc46152 and, for every `http: false` below, against a running
-# 3.4.0-nightly+20261014.4f7fa16, which returns exactly the listed error.
-# Brought up to the 4.0 line at surrealdb main c63ff8cfa1 (2026-10-24): no
+# surrealdb/server/src/rpc/{websocket,http}.rs. Checked against the server's
+# main branch as of 2026-10-15 and, for every `http: false` below, against a
+# running 3.4.0-nightly of 2026-10-14, which returns exactly the listed error.
+# Brought up to the 4.0 line as of 2026-10-24: no
 # method was added or removed; `query`, `query_stream` and `begin` gained
 # options, the protected names shrank to four, `run` takes ext::, and HTTP
 # attached sessions moved into the datastore.
@@ -52,7 +52,7 @@ methods:
     params: "[]"
     result: tstr
     notes: >
-      "surrealdb-<semver>", e.g. "surrealdb-3.4.0-nightly+20261014.4f7fa16".
+      "surrealdb-<semver>", e.g. "surrealdb-3.3.4".
       Any argument is an InvalidParams error. The same string is served by
       GET /version and in the `surreal-version` response header (as
       "surrealdb/<semver>"). gRPC reports it in GetCapabilities.server_version.
@@ -372,7 +372,7 @@ methods:
       transactions are capped per session and counted separately: the
       connection's default session by SURREAL_MAX_TRANSACTIONS_PER_CONNECTION,
       each attached session by SURREAL_MAX_TRANSACTIONS_PER_SESSION (64 each by
-      default; server main at 6a9bc46152). Past the cap, begin fails with "Too
+      default; server main as of 2026-10-15). Past the cap, begin fails with "Too
       many open transactions". An unknown `txn` is InvalidParams "Transaction
       not found".
 

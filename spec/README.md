@@ -36,8 +36,8 @@ differently, the row says so. Every server since 1.5.0 reads tags 12, 37 and
 14, so an SDK that sends those in place of 0, 9 and 13 needs no version check.
 
 The table was written from the server's codec,
-`surrealdb/core/src/rpc/format/cbor/convert.rs`, on surrealdb main at
-`c63ff8cfa1` (2026-10-24). When the server's codec changes,
+`surrealdb/core/src/rpc/format/cbor/convert.rs`, on the 4.0 line as of
+2026-10-24. When the server's codec changes,
 update this file in the same release.
 
 ## Value test vectors
@@ -83,9 +83,9 @@ the latest release and nightly. The script tells a 4.0 server from an older
 one by whether it answers `Accept: application/cbor; v=2` in kind: a 4.0
 server writes every field except `legacy`, an older one only
 `legacy.canonical` (any other difference fails the run). The current files
-were generated with surrealdb main at `c63ff8cfa1` (which reports
-`3.4.0-nightly`) and `3.3.4`, and also pass against
-`3.4.0-nightly+20261022.0690f2a`.
+were generated with the 4.0 line as of 2026-10-24 (which reports
+`3.4.0-nightly`) and `3.3.4`, and also pass against the
+`3.4.0-nightly` of 2026-10-22.
 
 Set `SURREAL_BIN` to choose the `surreal` binary, or `SURREAL_URL` to use a
 server that is already running.
