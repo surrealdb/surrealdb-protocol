@@ -2,8 +2,7 @@
 # SurrealDB 4.0 wire.
 #
 # This file is the authoritative table. Every SDK's CBOR codec should agree with
-# it. Hex test vectors for the rows are a separate data set (spec/vectors/,
-# added after this table); this file does not depend on them.
+# it, and spec/vectors/cbor.yaml holds hex test vectors for every row.
 #
 # Source of truth on the server side:
 #   surrealdb/core/src/rpc/format/cbor/convert.rs  (to_value / from_value)
