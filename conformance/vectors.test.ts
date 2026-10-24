@@ -1,5 +1,5 @@
 /**
- * Offline checks of spec/cbor-tags.yaml and spec/vectors/cbor.yaml.
+ * Offline checks of spec/cbor-tags.yaml and the vectors in spec/vectors.
  *
  * These run in plain `bun test` with no server: they hold the committed
  * vectors to the reference codec in conformance/lib, and the tag table to the
@@ -21,6 +21,7 @@ import {
 import { decodeProto, encodeProto } from "./lib/proto";
 import {
 	equal,
+	type Format,
 	fromCbor,
 	fromJson,
 	type Json,
@@ -44,6 +45,8 @@ interface Vector {
 	canonical?: string;
 	server_quirk?: string;
 	legacy?: { canonical: string };
+	formats?: Format[];
+	since?: string;
 }
 
 interface Tag {
@@ -55,13 +58,40 @@ interface Tag {
 }
 
 const vectors = read("../spec/vectors/cbor.yaml").vectors as Vector[];
+const cbor2Vectors = read("../spec/vectors/cbor2.yaml").vectors as Vector[];
 const tags = read("../spec/cbor-tags.yaml").tags as Tag[];
+
+/** Holds `v` to the reference codec in `format`. */
+function check(v: Vector, format: Format) {
+	expect(v.cbor, "run `bun run vectors:write`").toBeString();
+	const bytes = fromHex(v.cbor);
+	const decode2 = (b: Uint8Array) => fromCbor(decode(b), format);
+	if (v.kind === "reject") {
+		expect(() => decode2(bytes)).toThrow();
+		// A raw vector's diag is prose: its bytes are below what diag can say.
+		if (!v.raw)
+			expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
+		return;
+	}
+	const expected = fromJson(v.value as Json);
+	const decoded = decode2(bytes);
+	expect(
+		equal(decoded, expected),
+		`decodes to ${JSON.stringify(toJson(decoded), big)}`,
+	).toBeTrue();
+	if (v.kind === "canonical") {
+		expect(toHex(encode(toCbor(expected, format)))).toBe(v.cbor);
+		expect(diagnostic(decode(bytes))).toBe(v.diag as string);
+	} else {
+		if (!v.raw)
+			expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
+		expect(toHex(encode(toCbor(expected, format)))).toBe(v.canonical as string);
+	}
+}
 
 describe("cbor vectors", () => {
 	for (const v of vectors) {
 		test(v.name, () => {
-			expect(v.cbor, "run `bun run vectors:write`").toBeString();
-			const bytes = fromHex(v.cbor);
 			if (v.legacy) {
 				expect(v.kind, "only a reject vector has a legacy entry").toBe(
 					"reject",
@@ -73,33 +103,38 @@ describe("cbor vectors", () => {
 				// What a server before 4.0 sent back is still valid 4.0 output.
 				fromCbor(decode(fromHex(v.legacy.canonical)));
 			}
-			if (v.kind === "reject") {
-				expect(() => fromCbor(decode(bytes))).toThrow();
-				// A raw vector's diag is prose: its bytes are below what diag can say.
-				if (!v.raw)
-					expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
-				return;
-			}
-			const expected = fromJson(v.value as Json);
-			const decoded = fromCbor(decode(bytes));
-			expect(
-				equal(decoded, expected),
-				`decodes to ${JSON.stringify(toJson(decoded), big)}`,
-			).toBeTrue();
-			if (v.kind === "canonical") {
-				expect(toHex(encode(toCbor(expected)))).toBe(v.cbor);
-				expect(diagnostic(decode(bytes))).toBe(v.diag as string);
-			} else {
-				// A raw vector's diag is prose: its bytes are below what diag can say.
-				if (!v.raw)
-					expect(toHex(encode(parseDiagnostic(v.diag as string)))).toBe(v.cbor);
-				expect(toHex(encode(toCbor(expected)))).toBe(v.canonical as string);
-			}
+			check(v, "cbor");
 		});
 	}
 
 	test("names are unique", () => {
 		expect(new Set(vectors.map((v) => v.name)).size).toBe(vectors.length);
+	});
+});
+
+describe("cbor.2 vectors", () => {
+	for (const v of cbor2Vectors) test(v.name, () => check(v, "cbor.2"));
+
+	// cbor.2 is plain cbor plus the sized-number tags.
+	for (const v of vectors.filter(
+		(v) => !v.formats || v.formats.includes("cbor.2"),
+	))
+		test(`cbor.yaml ${v.name}`, () => check(v, "cbor.2"));
+
+	test("a plain-cbor-only reject vector is a sized number cbor.2 accepts", () => {
+		for (const v of vectors.filter(
+			(v) => v.kind === "reject" && v.formats && !v.formats.includes("cbor.2"),
+		))
+			expect(() => fromCbor(decode(fromHex(v.cbor)), "cbor.2")).not.toThrow();
+	});
+
+	test("names are unique across both files", () => {
+		const names = [...vectors, ...cbor2Vectors].map((v) => v.name);
+		expect(new Set(names).size).toBe(names.length);
+	});
+
+	test("there are no legacy entries", () => {
+		expect(cbor2Vectors.filter((v) => v.legacy)).toEqual([]);
 	});
 });
 
@@ -158,7 +193,8 @@ describe("cbor tag table", () => {
 			}
 	};
 	// Raw vectors are malformed CBOR, so there is nothing to walk.
-	for (const v of vectors) if (!v.raw) walk(decode(fromHex(v.cbor)));
+	for (const v of [...vectors, ...cbor2Vectors])
+		if (!v.raw && v.cbor) walk(decode(fromHex(v.cbor)));
 
 	test("a refused tag names an active replacement", () => {
 		for (const t of tags.filter((t) => t.status === "refused"))

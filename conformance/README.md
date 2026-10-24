@@ -84,7 +84,9 @@ stdout, one JSON object per line:
   each answer. Write anything else (logs) to stderr.
 - Values in `args` and `result` are [typed JSON](../spec/README.md#typed-json).
   Integers are plain numbers, or `{"$int": "..."}` beyond ±2^53, and floats are
-  always `{"$float": ...}`.
+  always `{"$float": ...}`. An SDK on `cbor.2` reports SurrealDB 4.0's sized
+  numbers as `{"$u8": 5}`, `{"$f32": 1.5}` and so on; over plain `cbor` the
+  server widens them, and the scenarios expect them widened.
 - An error is `{"kind", "message"?, "details"?, "code"?}`. Report the server's
   `kind` and `details` as the SDK exposes them, not the message text. Use
   `Unsupported` only for "the SDK cannot do this", never for a server error.

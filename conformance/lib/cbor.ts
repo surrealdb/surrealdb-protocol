@@ -115,7 +115,7 @@ export function shortestFloatWidth(v: number): 16 | 32 | 64 {
 }
 
 /** Half-precision bits for `v`, or undefined when it is not exactly representable. */
-function f16Bits(v: number): number | undefined {
+export function f16Bits(v: number): number | undefined {
 	if (Number.isNaN(v)) return 0x7e00;
 	if (v === Number.POSITIVE_INFINITY) return 0x7c00;
 	if (v === Number.NEGATIVE_INFINITY) return 0xfc00;
@@ -426,7 +426,8 @@ export function diagnostic(item: CborItem): string {
 						: Object.is(item.v, -0)
 							? "-0.0"
 							: Number.isInteger(item.v)
-								? `${item.v}.0`
+								? // A float always has a point: 1.0, 1.0e+300.
+									String(item.v).replace(/^(-?\d+)(e|$)/, "$1.0$2")
 								: String(item.v);
 			const width = item.width ?? shortestFloatWidth(item.v);
 			return `${s}_${width === 16 ? 1 : width === 32 ? 2 : 3}`;

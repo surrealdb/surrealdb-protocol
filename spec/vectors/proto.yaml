@@ -169,6 +169,78 @@ vectors:
     value: { $float: -Infinity }
     proto: 29000000000000f0ff
 
+  - name: sized-i8-widens-to-int
+    kind: canonical
+    surql: -128i8
+    value: -128
+    proto: 2080ffffffffffffffff01
+
+  - name: sized-u8-widens-to-int
+    kind: canonical
+    surql: 255u8
+    value: 255
+    proto: 20ff01
+
+  - name: sized-i16-widens-to-int
+    kind: canonical
+    surql: -32768i16
+    value: -32768
+    proto: 208080feffffffffffff01
+
+  - name: sized-u16-widens-to-int
+    kind: canonical
+    surql: 65535u16
+    value: 65535
+    proto: 20ffff03
+
+  - name: sized-i32-widens-to-int
+    kind: canonical
+    surql: -2147483648i32
+    value: -2147483648
+    proto: 2080808080f8ffffffff01
+
+  - name: sized-u32-widens-to-int
+    kind: canonical
+    surql: 4294967295u32
+    value: 4294967295
+    proto: 20ffffffff0f
+
+  - name: sized-u64-widens-to-int
+    kind: canonical
+    surql: 9223372036854775807u64
+    value: { $int: "9223372036854775807" }
+    proto: 20ffffffffffffffff7f
+
+  - name: sized-u64-past-i64-widens-to-decimal
+    kind: canonical
+    surql: 18446744073709551615u64
+    value: { $decimal: "18446744073709551615" }
+    proto: 32160a143138343436373434303733373039353531363135
+
+  - name: sized-f16-widens-to-float
+    kind: canonical
+    surql: 1.5f16
+    value: { $float: 1.5 }
+    proto: 29000000000000f83f
+
+  - name: sized-f32-widens-to-float
+    kind: canonical
+    surql: 0.1f32
+    value: { $float: 0.10000000149011612 }
+    proto: 29000000a09999b93f
+
+  - name: sized-f32-nan-widens-to-float
+    kind: canonical
+    surql: <f32>NaN
+    value: { $float: NaN }
+    proto: 29000000000000f87f
+
+  - name: sized-numbers-in-record-id-key-widen
+    kind: canonical
+    surql: t:[5u8, 1.5f32]
+    value: { $record: { table: t, key: [ 5, { $float: 1.5 } ] } }
+    proto: 72160a01741211220f0a0220050a0929000000000000f83f
+
   - name: decimal-simple
     kind: canonical
     surql: 1.5dec

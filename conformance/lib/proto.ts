@@ -44,6 +44,20 @@ function arm(v: Value): pb.Value["value"] {
 			return { $case: "int64", int64: v.v };
 		case "float":
 			return { $case: "float64", float64: v.v };
+		// value.proto has no sized numbers: the server widens them, as over plain cbor.
+		case "i8":
+		case "u8":
+		case "i16":
+		case "u16":
+		case "i32":
+		case "u32":
+		case "u64":
+			return v.v > 2n ** 63n - 1n
+				? { $case: "decimal", decimal: { value: v.v.toString() } }
+				: { $case: "int64", int64: v.v };
+		case "f16":
+		case "f32":
+			return { $case: "float64", float64: v.v };
 		case "decimal":
 			return { $case: "decimal", decimal: { value: v.v } };
 		case "string":

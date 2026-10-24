@@ -103,8 +103,11 @@ mime_notes: >
   match Content-Type, else 415, with two exceptions from 4.0: a Content-Type of
   application/cbor or application/cbor; v=2 may take Accept
   application/cbor; v=2 or application/vnd.surrealdb.shaped, so a client can
-  negotiate up from its first plain CBOR request. Content-Type
-  application/cbor; v=2 with Accept application/cbor is 415. "Accept: */*"
+  negotiate up from its first plain CBOR request: it sends Content-Type
+  application/cbor with Accept application/cbor; v=2, and the response's
+  Content-Type says which it got (a 3.x server ignores the parameter and
+  answers application/cbor). Content-Type application/cbor; v=2 with Accept
+  application/cbor is 415. "Accept: */*"
   means JSON. Over JSON the server
   parses request values with the SurrealQL value parser, so a string that
   looks like a record id, datetime or uuid ("person:1") arrives as that type;
@@ -121,11 +124,16 @@ websocket_subprotocols:
 
 websocket_notes: >
   Always send a subprotocol. Without one the server falls back to JSON and logs
-  that connecting without one is deprecated. Offer exactly one: the server
-  picks the first entry of ITS list (json, cbor.2, cbor, flatbuffers, shaped)
-  that the client offered, not the client's preference, so offering
-  "shaped, cbor" gets cbor and offering json with anything gets json. A 3.x
-  server does not know cbor.2 or shaped; to fall back, reconnect offering cbor.
+  that connecting without one is deprecated. The server picks the first entry
+  of ITS list (json, cbor.2, cbor, flatbuffers, shaped) that the client
+  offered, not the client's preference, and names it in the handshake
+  response's Sec-WebSocket-Protocol. So an SDK that speaks cbor.2 offers
+  "cbor.2, cbor" and reads the response: a 4.0 server picks cbor.2, and a 3.x
+  server, which does not know cbor.2, picks cbor on the same connection.
+  Never offer json alongside anything else (it always wins), and offer shaped
+  alone (offering "shaped, cbor" gets cbor); a 3.x server does not know
+  shaped either, so a client that wants it reconnects offering cbor when the
+  handshake fails.
   When the memory guard refuses a WebSocket request the server answers it with
   an Internal error "The server is unable to handle the request", or closes
   the connection with code 1013 (try again later) and that reason.

@@ -30,6 +30,8 @@ import {
 	equal,
 	fromJson,
 	type Json,
+	SIZED_FLOATS,
+	SIZED_INTS,
 	toJson,
 	typedKey,
 	type Value,
@@ -80,7 +82,13 @@ const show = (v: Value) =>
 
 function kindMatches(v: Value, want: string): boolean {
 	if (want === "number")
-		return v.k === "int" || v.k === "float" || v.k === "decimal";
+		return (
+			v.k === "int" ||
+			v.k === "float" ||
+			v.k === "decimal" ||
+			Object.hasOwn(SIZED_INTS, v.k) ||
+			Object.hasOwn(SIZED_FLOATS, v.k)
+		);
 	return v.k === want;
 }
 

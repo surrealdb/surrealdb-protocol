@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { decode, encode, fromHex, toHex } from "./cbor";
 import { decodeProto, encodeProto, fromProto } from "./proto";
 import {
 	equal,
@@ -264,5 +265,61 @@ describe("value", () => {
 		expect(() => fromJson({ $bytes: "gg" })).toThrow("not hex");
 		expect(() => fromJson({ $bytes: "0g" })).toThrow("not hex");
 		expect(toJson(fromJson({ $bytes: "0aFF" }))).toEqual({ $bytes: "0aff" });
+	});
+
+	test("sized numbers are tagged under cbor.2 and widened under cbor", () => {
+		const hex = (j: Json, format: "cbor" | "cbor.2") =>
+			toHex(encode(toCbor(fromJson(j), format)));
+		expect(hex({ $u8: 5 }, "cbor.2")).toBe("d8b505");
+		expect(hex({ $u8: 5 }, "cbor")).toBe("05");
+		expect(hex({ $i16: -3 }, "cbor.2")).toBe("d8b622");
+		expect(hex({ $u64: "18446744073709551615" }, "cbor.2")).toBe(
+			"d8ba1bffffffffffffffff",
+		);
+		// Past i64, plain cbor has only the decimal.
+		expect(hex({ $u64: "18446744073709551615" }, "cbor")).toBe(
+			"ca743138343436373434303733373039353531363135",
+		);
+		expect(hex({ $f32: 1.5 }, "cbor.2")).toBe("d8bcf93e00");
+		expect(hex({ $f32: 0.10000000149011612 }, "cbor.2")).toBe("d8bcfa3dcccccd");
+		expect(hex([{ $f16: "NaN" }], "cbor")).toBe("81f97e00");
+		// Nested values carry the format down.
+		expect(hex({ a: [{ $i8: -1 }] }, "cbor.2")).toBe("a1616181d8b420");
+	});
+
+	test("the cbor.2 decoder reads sized numbers within their kind", () => {
+		const v = (hex: string) => toJson(fromCbor(decode(fromHex(hex)), "cbor.2"));
+		expect(v("d8b505")).toEqual({ $u8: 5 });
+		expect(v("d8ba1bffffffffffffffff")).toEqual({
+			$u64: "18446744073709551615",
+		});
+		expect(v("d8bbf93e00")).toEqual({ $f16: 1.5 });
+		for (const [hex, msg] of [
+			["d8b41880", "integer 128 is outside the 8-bit signed range"],
+			["d8b520", "integer -1 is outside the 8-bit unsigned range"],
+			["d8bbfb3fb999999999999a", "cannot be losslessly represented as f16"],
+			["d8bc05", "Expected a CBOR float under tag 188"],
+			["d8b5f93c00", "Expected a CBOR integer under tag 181"],
+		] as const)
+			expect(() => fromCbor(decode(fromHex(hex)), "cbor.2")).toThrow(msg);
+		// Plain cbor still refuses the tags.
+		expect(() => fromCbor(decode(fromHex("d8b505")))).toThrow("use cbor.2");
+		// A sized record id key is an int key; one past i64 is refused.
+		expect(v("d80882617ad8b505")).toEqual({
+			$record: { table: "z", key: 5 },
+		});
+		expect(() =>
+			fromCbor(decode(fromHex("d80882617ad8ba1bffffffffffffffff")), "cbor.2"),
+		).toThrow("64-bit signed range");
+	});
+
+	test("typed sized numbers are range-checked", () => {
+		expect(() => fromJson({ $u8: 256 })).toThrow("$u8");
+		expect(() => fromJson({ $i8: "1.5" })).toThrow("$i8");
+		expect(() => fromJson({ $f16: 0.1 })).toThrow("f16");
+		expect(toJson(fromJson({ $f32: "-Infinity" }))).toEqual({
+			$f32: "-Infinity",
+		});
+		expect(equal(fromJson({ $u8: 5 }), fromJson(5))).toBe(false);
 	});
 });

@@ -192,3 +192,27 @@ scenarios:
       - query: { sql: "SELECT VALUE n FROM person:one" }
         expect:
           result: [{ ok: true, result: [1] }]
+
+  - name: query-sized-numbers-widen-over-plain-cbor
+    description: >
+      SurrealDB 4.0 keeps a number's width (i8 to u64, f16, f32) on the server,
+      checks it on write, and reports it from type::of, but a plain cbor client
+      gets the value widened: an int, a float, or a decimal for a u64 above
+      i64::MAX. Only cbor.2 carries the width (spec/vectors/cbor2.yaml).
+    source: spec/vectors/cbor.yaml sized-*-widens-*
+    since: "4.0.0"
+    steps:
+      - query: { sql: "RETURN [5u8, -3i16, 18446744073709551615u64, 1.5f32, <f16>NaN]; RETURN type::of(5u8)" }
+        expect:
+          result:
+            - ok: true
+              result: [5, -3, { $decimal: "18446744073709551615" }, { $float: 1.5 }, { $float: "NaN" }]
+            - { ok: true, result: u8 }
+      - query:
+          sql: "DEFINE FIELD n ON person TYPE u8; CREATE person:one SET n = $n; SELECT VALUE [n, type::of(n)] FROM person:one"
+          vars: { n: 200 }
+        expect:
+          result: [{ ok: true, result: { $any: null } }, { ok: true, result: { $any: null } }, { ok: true, result: [[200, u8]] }]
+      - query: { sql: "CREATE person:two SET n = 300" }
+        expect:
+          result: [{ ok: false, error: { kind: Validation, message: { $match: "Expected `u8` but found `300`" } } }]
