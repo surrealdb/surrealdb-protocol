@@ -201,6 +201,7 @@ scenarios:
       i64::MAX. Only cbor.2 carries the width (spec/vectors/cbor2.yaml).
     source: spec/vectors/cbor.yaml sized-*-widens-*
     since: "4.0.0"
+    format: cbor
     steps:
       - query: { sql: "RETURN [5u8, -3i16, 18446744073709551615u64, 1.5f32, <f16>NaN]; RETURN type::of(5u8)" }
         expect:

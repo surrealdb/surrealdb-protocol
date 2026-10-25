@@ -10,6 +10,7 @@
  *       source: where the scenario was taken from
  *       transports: [ws, http]      # default: both
  *       since: "3.0.0"              # oldest server it applies to
+ *       format: cbor                # wire format every connect must use
  *       server: { args: [...] }     # extra `surreal start` flags; gets its own server
  *       setup: default              # default | connect | none
  *       steps:
@@ -42,6 +43,7 @@ import {
 	OP_ARGS,
 	OPS,
 	type Transport,
+	type WireFormat,
 } from "./protocol";
 
 export interface Expectation {
@@ -65,6 +67,7 @@ export interface Scenario {
 	source?: string;
 	transports: Transport[];
 	since?: string;
+	format?: WireFormat;
 	server?: { args?: string[]; env?: Record<string, string> };
 	setup: "default" | "connect" | "none";
 	steps: Step[];
@@ -91,6 +94,7 @@ const SCENARIO_KEYS = new Set([
 	"source",
 	"transports",
 	"since",
+	"format",
 	"server",
 	"setup",
 	"steps",
@@ -187,6 +191,7 @@ export function loadScenarios(dir = SCENARIO_DIR): Scenario[] {
 				source: raw.source as string | undefined,
 				transports: transportList(raw.transports, where) ?? ["ws", "http"],
 				since: raw.since as string | undefined,
+				format: wireFormat(raw.format, where),
 				server: serverConfig(raw.server, where),
 				setup: (raw.setup as Scenario["setup"] | undefined) ?? "default",
 				steps,
@@ -250,6 +255,15 @@ function serverConfig(raw: unknown, where: string): Scenario["server"] {
 	)
 		throw bad("env must map names to strings");
 	return r as Scenario["server"];
+}
+
+/** A scenario's `format`, refusing anything but cbor and cbor.2. */
+function wireFormat(raw: unknown, where: string): WireFormat | undefined {
+	if (raw === undefined) return undefined;
+	if (raw === "cbor" || raw === "cbor.2") return raw;
+	throw new Error(
+		`${where}: format must be cbor or cbor.2, got ${JSON.stringify(raw)}`,
+	);
 }
 
 /** A scenario's or step's `transports`, refusing anything but ws and http. */
@@ -451,6 +465,8 @@ async function runOne(
 					args = resolve(step.args as Json, captures) as Record<string, Json>;
 					if (step.op === "connect" && !args.url)
 						args = { ...args, url, transport };
+					if (step.op === "connect" && scenario.format && !args.format)
+						args = { ...args, format: scenario.format };
 				} catch (e) {
 					return {
 						status: "fail",

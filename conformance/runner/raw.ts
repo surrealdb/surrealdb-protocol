@@ -526,6 +526,11 @@ export class RawAdapter implements Adapter {
 		};
 		switch (op) {
 			case "connect": {
+				if (args.format && args.format !== "cbor")
+					throw new AdapterError({
+						kind: "Unsupported",
+						message: `the reference adapter speaks only plain cbor, not ${args.format}`,
+					});
 				this.transport = args.transport as Transport;
 				// A new connection starts from nothing, as it does on the server.
 				this.sessions.clear();

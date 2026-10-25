@@ -87,6 +87,10 @@ stdout, one JSON object per line:
   always `{"$float": ...}`. An SDK on `cbor.2` reports SurrealDB 4.0's sized
   numbers as `{"$u8": 5}`, `{"$f32": 1.5}` and so on; over plain `cbor` the
   server widens them, and the scenarios expect them widened.
+- When `connect` has a `format`, connect with exactly that format, or answer
+  `Unsupported` if the SDK cannot choose it (the scenario is then skipped).
+  Without one, use the SDK's default. A driver that only ever speaks plain
+  `cbor` can ignore `format: cbor`.
 - An error is `{"kind", "message"?, "details"?, "code"?}`. Report the server's
   `kind` and `details` as the SDK exposes them, not the message text. Use
   `Unsupported` only for "the SDK cannot do this", never for a server error.
@@ -107,7 +111,7 @@ transaction. Neither means the connection's default session.
 
 | Op | Args | Result |
 |---|---|---|
-| `connect` | `url`, `transport` (`ws` or `http`) | `null` |
+| `connect` | `url`, `transport` (`ws` or `http`), `format`? (`cbor` or `cbor.2`) | `null` |
 | `close` | | `null` |
 | `version` | | the server version string, `surrealdb-3.4.0` |
 | `ping` | Context | `null` |
@@ -269,6 +273,7 @@ A scenario file holds a `scenarios:` list. Each scenario:
   source: Where it came from (a server test, an SDK test, an audit).
   transports: [ws]           # default [ws, http]
   since: "3.0.0"             # skipped on older servers
+  format: cbor               # every connect asks for this wire format
   server: { args: ["--deny-rpc", "run"] }   # its own server, with these flags
   setup: default             # default | connect | none
   steps:
@@ -286,7 +291,9 @@ A step is one op with its args. It can also have `expect`, `capture`,
 `transports` (to limit just that step) and `note`. `sleep: { value: ms }` is
 handled by the runner. `setup: default` connects, signs in as root, and selects
 a fresh database. `connect` only connects. `none` leaves even that to the
-steps.
+steps. `format` passes that wire format to every `connect`, so a scenario whose
+expectations hold for one format only can say so; an SDK that cannot choose
+the format skips it.
 
 `expect` is `{result: <pattern>}` or `{error: <pattern>}`. Either one can be
 split per transport as `{ws: {...}, http: {...}}`. A step without `expect` must

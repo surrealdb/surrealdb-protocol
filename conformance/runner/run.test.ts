@@ -71,6 +71,20 @@ describe("loadScenarios", () => {
 		expect(write("[]")).toThrow("must be an object");
 	});
 
+	test("checks the format", () => {
+		const write = (format: string) => {
+			const dir = mkdtempSync(join(tmpdir(), "scenarios-"));
+			writeFileSync(
+				join(dir, "x.yaml"),
+				`scenarios:\n  - name: x\n    format: ${format}\n    steps:\n      - version: {}\n`,
+			);
+			return () => loadScenarios(dir);
+		};
+		expect(write("cbor")()[0]?.format).toBe("cbor");
+		expect(write("cbor.2")()[0]?.format).toBe("cbor.2");
+		expect(write("json")).toThrow("format must be cbor or cbor.2");
+	});
+
 	test("rejects a file whose root is not a scenarios list", () => {
 		for (const yaml of [
 			"scenario:\n  - name: x\n",

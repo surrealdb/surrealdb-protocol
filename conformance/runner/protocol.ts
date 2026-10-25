@@ -19,6 +19,9 @@ import type { Json } from "../lib/value";
 
 export type Transport = "ws" | "http";
 
+/** The RPC wire format a scenario pins. Absent means the SDK's default. */
+export type WireFormat = "cbor" | "cbor.2";
+
 /** What the adapter reports about itself when the runner says hello. */
 export interface Hello {
 	/** e.g. "surrealdb.js". */
@@ -40,8 +43,15 @@ export interface Context {
  * full semantics; this is the type-level summary.
  */
 export interface Ops {
-	/** Opens a connection. `url` is ws://host/rpc or http://host/rpc. */
-	connect: { args: { url: string; transport: Transport }; result: null };
+	/**
+	 * Opens a connection. `url` is ws://host/rpc or http://host/rpc. With
+	 * `format`, the connection must use exactly that format, or the adapter
+	 * answers `Unsupported`.
+	 */
+	connect: {
+		args: { url: string; transport: Transport; format?: WireFormat };
+		result: null;
+	};
 	/** Closes the connection. */
 	close: { args: Record<string, never>; result: null };
 	/** The server version string, e.g. "surrealdb-3.4.0". */
@@ -128,7 +138,7 @@ const CONTEXT = ["session", "txn"] as const;
 
 /** Each op's argument names, for checking scenarios: a typo would be ignored by the adapter. */
 export const OP_ARGS: { [K in Op]: readonly string[] } = {
-	connect: ["url", "transport"],
+	connect: ["url", "transport", "format"],
 	close: [],
 	version: [],
 	ping: CONTEXT,
