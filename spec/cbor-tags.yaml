@@ -7,8 +7,8 @@
 # Source of truth on the server side:
 #   surrealdb/core/src/rpc/format/cbor/convert.rs  (to_value / from_value)
 #   surrealdb/rpc/src/format.rs                    (the media types)
-# checked against surrealdb main at c63ff8cfa1 (the 4.0 line, which still
-# reports 3.4.0-nightly, 2026-10-24).
+# checked against the 4.0 line as of 2026-10-24 (which still reports
+# 3.4.0-nightly).
 #
 # Formats. The server speaks three CBOR dialects; `formats` below lists them.
 #   cbor     WebSocket subprotocol `cbor`, HTTP `application/cbor`. Frozen: it
