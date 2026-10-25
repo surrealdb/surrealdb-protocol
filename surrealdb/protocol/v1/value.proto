@@ -212,7 +212,24 @@ message Range {
 //   NONE        -> `none`, an explicit variant
 //   NULL        -> `null`
 //   absent key  -> no `KeyValue` entry for that key at all
+//
+// The sized numbers (`i8` to `f32`) are SurrealDB 4.0's fixed-width kinds. The
+// arm is the kind; the field type only has to hold its range, as protobuf has
+// no 8- or 16-bit integers and no half float:
+//   i8, i16, i32   sint32, and MUST lie within the kind's range
+//   u8, u16, u32   uint32, likewise
+//   u64            uint64
+//   f16            float, and MUST be exactly representable as an IEEE 754
+//                  binary16 (any NaN will do); every binary16 is a float
+//   f32            float
+// Decoders MUST reject an out-of-range or inexact value rather than clamp or
+// round it. A peer that predates them sends `int64`, `float64` or (a u64 above
+// i64::MAX) `decimal` instead, as plain CBOR does.
 message Value {
+    // Skipped so that every arm stays one above its `ValueType` tag in
+    // value.fbs, where 21 is `None` (see parity.toml).
+    reserved 22;
+
     oneof value {
         NoneValue none = 1;
         NullValue null = 2;
@@ -235,6 +252,15 @@ message Value {
         Object object = 19;
         Array array = 20;
         Set set = 21;
+        sint32 i8 = 23;
+        uint32 u8 = 24;
+        sint32 i16 = 25;
+        uint32 u16 = 26;
+        sint32 i32 = 27;
+        uint32 u32 = 28;
+        uint64 u64 = 29;
+        float f16 = 30;
+        float f32 = 31;
     }
 }
 
@@ -296,6 +322,16 @@ message StringKind {}
 message UuidKind {}
 message RegexKind {}
 message RangeKind {}
+// The sized number kinds, SurrealDB 4.0's i8 to f32.
+message I8Kind {}
+message U8Kind {}
+message I16Kind {}
+message U16Kind {}
+message I32Kind {}
+message U32Kind {}
+message U64Kind {}
+message F16Kind {}
+message F32Kind {}
 
 message TableName { 
     string name = 1; 
@@ -398,5 +434,14 @@ message Kind {
         RangeKind range = 23;
         LiteralKind literal = 24;
         FileKind file = 25;
+        I8Kind i8 = 26;
+        U8Kind u8 = 27;
+        I16Kind i16 = 28;
+        U16Kind u16 = 29;
+        I32Kind i32 = 30;
+        U32Kind u32 = 31;
+        U64Kind u64 = 32;
+        F16Kind f16 = 33;
+        F32Kind f32 = 34;
     }
 }

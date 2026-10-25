@@ -202,7 +202,10 @@ function main(): void {
 	// buf does not create parent directories, and build/ is gitignored, so it
 	// is absent on a fresh checkout -- which is every CI run.
 	mkdirSync(dirname(DESCRIPTOR), { recursive: true });
-	execFileSync("buf", ["build", "-o", DESCRIPTOR], { stdio: "inherit" });
+	// `make parity-check` passes the buf it pins; otherwise, the one on the PATH.
+	execFileSync(process.env.BUF ?? "buf", ["build", "-o", DESCRIPTOR], {
+		stdio: "inherit",
+	});
 
 	const descriptor: DescriptorSet = JSON.parse(
 		readFileSync(DESCRIPTOR, "utf8"),

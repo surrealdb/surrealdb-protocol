@@ -427,6 +427,141 @@ impl<'a> Kind<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_i8(&self) -> Option<I8Kind<'a>> {
+    if self.kind_type() == KindType::I8 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { I8Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_u8(&self) -> Option<U8Kind<'a>> {
+    if self.kind_type() == KindType::U8 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { U8Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_i16(&self) -> Option<I16Kind<'a>> {
+    if self.kind_type() == KindType::I16 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { I16Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_u16(&self) -> Option<U16Kind<'a>> {
+    if self.kind_type() == KindType::U16 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { U16Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_i32(&self) -> Option<I32Kind<'a>> {
+    if self.kind_type() == KindType::I32 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { I32Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_u32(&self) -> Option<U32Kind<'a>> {
+    if self.kind_type() == KindType::U32 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { U32Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_u64(&self) -> Option<U64Kind<'a>> {
+    if self.kind_type() == KindType::U64 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { U64Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_f16(&self) -> Option<F16Kind<'a>> {
+    if self.kind_type() == KindType::F16 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { F16Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_f32(&self) -> Option<F32Kind<'a>> {
+    if self.kind_type() == KindType::F32 {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { F32Kind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for Kind<'_> {
@@ -462,6 +597,15 @@ impl ::flatbuffers::Verifiable for Kind<'_> {
           KindType::Range => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<RangeKind>>("KindType::Range", pos),
           KindType::Literal => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<LiteralKind>>("KindType::Literal", pos),
           KindType::File => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<FileKind>>("KindType::File", pos),
+          KindType::I8 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<I8Kind>>("KindType::I8", pos),
+          KindType::U8 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<U8Kind>>("KindType::U8", pos),
+          KindType::I16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<I16Kind>>("KindType::I16", pos),
+          KindType::U16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<U16Kind>>("KindType::U16", pos),
+          KindType::I32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<I32Kind>>("KindType::I32", pos),
+          KindType::U32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<U32Kind>>("KindType::U32", pos),
+          KindType::U64 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<U64Kind>>("KindType::U64", pos),
+          KindType::F16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<F16Kind>>("KindType::F16", pos),
+          KindType::F32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<F32Kind>>("KindType::F32", pos),
           _ => Ok(()),
         }
      })?
@@ -686,6 +830,69 @@ impl ::core::fmt::Debug for Kind<'_> {
         },
         KindType::File => {
           if let Some(x) = self.kind_as_file() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::I8 => {
+          if let Some(x) = self.kind_as_i8() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::U8 => {
+          if let Some(x) = self.kind_as_u8() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::I16 => {
+          if let Some(x) = self.kind_as_i16() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::U16 => {
+          if let Some(x) = self.kind_as_u16() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::I32 => {
+          if let Some(x) = self.kind_as_i32() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::U32 => {
+          if let Some(x) = self.kind_as_u32() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::U64 => {
+          if let Some(x) = self.kind_as_u64() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::F16 => {
+          if let Some(x) = self.kind_as_f16() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::F32 => {
+          if let Some(x) = self.kind_as_f32() {
             ds.field("kind", &x)
           } else {
             ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")

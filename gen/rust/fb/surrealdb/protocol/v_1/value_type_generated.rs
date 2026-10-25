@@ -5,10 +5,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 21;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 30;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 31] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -31,6 +31,15 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 22] = [
   ValueType::Array,
   ValueType::Set,
   ValueType::None,
+  ValueType::I8,
+  ValueType::U8,
+  ValueType::I16,
+  ValueType::U16,
+  ValueType::I32,
+  ValueType::U32,
+  ValueType::U64,
+  ValueType::F16,
+  ValueType::F32,
 ];
 
 /// A union of all possible value types in SurrealDB.
@@ -79,9 +88,22 @@ impl ValueType {
   /// Deliberately does NOT match `none = 1` in value.proto, which took tag 1
   /// and shifted its own oneof the same way. Recorded in parity.toml.
   pub const None: Self = Self(21);
+  /// The sized numbers, SurrealDB 4.0's fixed-width kinds. Appended after
+  /// `None`, so 22 on; each sits one below its value.proto tag, like the
+  /// rest. A peer that predates them sends `Int64`, `Float64` or (a u64
+  /// above i64::MAX) `Decimal` instead.
+  pub const I8: Self = Self(22);
+  pub const U8: Self = Self(23);
+  pub const I16: Self = Self(24);
+  pub const U16: Self = Self(25);
+  pub const I32: Self = Self(26);
+  pub const U32: Self = Self(27);
+  pub const U64: Self = Self(28);
+  pub const F16: Self = Self(29);
+  pub const F32: Self = Self(30);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 21;
+  pub const ENUM_MAX: u8 = 30;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -105,6 +127,15 @@ impl ValueType {
     Self::Array,
     Self::Set,
     Self::None,
+    Self::I8,
+    Self::U8,
+    Self::I16,
+    Self::U16,
+    Self::I32,
+    Self::U32,
+    Self::U64,
+    Self::F16,
+    Self::F32,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -131,6 +162,15 @@ impl ValueType {
       Self::Array => Some("Array"),
       Self::Set => Some("Set"),
       Self::None => Some("None"),
+      Self::I8 => Some("I8"),
+      Self::U8 => Some("U8"),
+      Self::I16 => Some("I16"),
+      Self::U16 => Some("U16"),
+      Self::I32 => Some("I32"),
+      Self::U32 => Some("U32"),
+      Self::U64 => Some("U64"),
+      Self::F16 => Some("F16"),
+      Self::F32 => Some("F32"),
       _ => None,
     }
   }

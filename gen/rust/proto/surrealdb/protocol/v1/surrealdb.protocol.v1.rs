@@ -372,10 +372,23 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range"
 ///    NONE        -> `none`, an explicit variant
 ///    NULL        -> `null`
 ///    absent key  -> no `KeyValue` entry for that key at all
+///
+/// The sized numbers (`i8` to `f32`) are SurrealDB 4.0's fixed-width kinds. The
+/// arm is the kind; the field type only has to hold its range, as protobuf has
+/// no 8- or 16-bit integers and no half float:
+///    i8, i16, i32   sint32, and MUST lie within the kind's range
+///    u8, u16, u32   uint32, likewise
+///    u64            uint64
+///    f16            float, and MUST be exactly representable as an IEEE 754
+///                   binary16 (any NaN will do); every binary16 is a float
+///    f32            float
+/// Decoders MUST reject an out-of-range or inexact value rather than clamp or
+/// round it. A peer that predates them sends `int64`, `float64` or (a u64 above
+/// i64::MAX) `decimal` instead, as plain CBOR does.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof = "value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21")]
+    #[prost(oneof = "value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -426,6 +439,24 @@ pub mod value {
         Array(super::Array),
         #[prost(message, tag = "21")]
         Set(super::Set),
+        #[prost(sint32, tag = "23")]
+        I8(i32),
+        #[prost(uint32, tag = "24")]
+        U8(u32),
+        #[prost(sint32, tag = "25")]
+        I16(i32),
+        #[prost(uint32, tag = "26")]
+        U16(u32),
+        #[prost(sint32, tag = "27")]
+        I32(i32),
+        #[prost(uint32, tag = "28")]
+        U32(u32),
+        #[prost(uint64, tag = "29")]
+        U64(u64),
+        #[prost(float, tag = "30")]
+        F16(f32),
+        #[prost(float, tag = "31")]
+        F32(f32),
     }
 }
 impl ::prost::Name for Value {
@@ -651,6 +682,79 @@ impl ::prost::Name for RangeKind {
 const NAME: &'static str = "RangeKind";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.RangeKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.RangeKind".into() }}
+/// The sized number kinds, SurrealDB 4.0's i8 to f32.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct I8Kind {
+}
+impl ::prost::Name for I8Kind {
+const NAME: &'static str = "I8Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.I8Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.I8Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct U8Kind {
+}
+impl ::prost::Name for U8Kind {
+const NAME: &'static str = "U8Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.U8Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.U8Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct I16Kind {
+}
+impl ::prost::Name for I16Kind {
+const NAME: &'static str = "I16Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.I16Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.I16Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct U16Kind {
+}
+impl ::prost::Name for U16Kind {
+const NAME: &'static str = "U16Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.U16Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.U16Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct I32Kind {
+}
+impl ::prost::Name for I32Kind {
+const NAME: &'static str = "I32Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.I32Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.I32Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct U32Kind {
+}
+impl ::prost::Name for U32Kind {
+const NAME: &'static str = "U32Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.U32Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.U32Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct U64Kind {
+}
+impl ::prost::Name for U64Kind {
+const NAME: &'static str = "U64Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.U64Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.U64Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct F16Kind {
+}
+impl ::prost::Name for F16Kind {
+const NAME: &'static str = "F16Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.F16Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.F16Kind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct F32Kind {
+}
+impl ::prost::Name for F32Kind {
+const NAME: &'static str = "F32Kind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.F32Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.F32Kind".into() }}
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct TableName {
@@ -833,7 +937,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Litera
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Kind {
-    #[prost(oneof = "kind::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25")]
+    #[prost(oneof = "kind::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34")]
     pub kind: ::core::option::Option<kind::Kind>,
 }
 /// Nested message and enum types in `Kind`.
@@ -891,6 +995,24 @@ pub mod kind {
         Literal(super::LiteralKind),
         #[prost(message, tag = "25")]
         File(super::FileKind),
+        #[prost(message, tag = "26")]
+        I8(super::I8Kind),
+        #[prost(message, tag = "27")]
+        U8(super::U8Kind),
+        #[prost(message, tag = "28")]
+        I16(super::I16Kind),
+        #[prost(message, tag = "29")]
+        U16(super::U16Kind),
+        #[prost(message, tag = "30")]
+        I32(super::I32Kind),
+        #[prost(message, tag = "31")]
+        U32(super::U32Kind),
+        #[prost(message, tag = "32")]
+        U64(super::U64Kind),
+        #[prost(message, tag = "33")]
+        F16(super::F16Kind),
+        #[prost(message, tag = "34")]
+        F32(super::F32Kind),
     }
 }
 impl ::prost::Name for Kind {

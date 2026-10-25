@@ -59,6 +59,62 @@ impl Value {
         }
     }
 
+    /// Creates a new `Value` holding an `i8`, one of SurrealDB 4.0's sized numbers.
+    pub fn i8(value: i8) -> Self {
+        Self {
+            value: Some(ValueEnum::I8(i32::from(value))),
+        }
+    }
+
+    /// Creates a new `Value` holding a `u8`, one of SurrealDB 4.0's sized numbers.
+    pub fn u8(value: u8) -> Self {
+        Self {
+            value: Some(ValueEnum::U8(u32::from(value))),
+        }
+    }
+
+    /// Creates a new `Value` holding an `i16`, one of SurrealDB 4.0's sized numbers.
+    pub fn i16(value: i16) -> Self {
+        Self {
+            value: Some(ValueEnum::I16(i32::from(value))),
+        }
+    }
+
+    /// Creates a new `Value` holding a `u16`, one of SurrealDB 4.0's sized numbers.
+    pub fn u16(value: u16) -> Self {
+        Self {
+            value: Some(ValueEnum::U16(u32::from(value))),
+        }
+    }
+
+    /// Creates a new `Value` holding an `i32`, one of SurrealDB 4.0's sized numbers.
+    pub fn i32(value: i32) -> Self {
+        Self {
+            value: Some(ValueEnum::I32(value)),
+        }
+    }
+
+    /// Creates a new `Value` holding a `u32`, one of SurrealDB 4.0's sized numbers.
+    pub fn u32(value: u32) -> Self {
+        Self {
+            value: Some(ValueEnum::U32(value)),
+        }
+    }
+
+    /// Creates a new `Value` holding a `u64`, one of SurrealDB 4.0's sized numbers.
+    pub fn u64(value: u64) -> Self {
+        Self {
+            value: Some(ValueEnum::U64(value)),
+        }
+    }
+
+    /// Creates a new `Value` holding an `f32`, one of SurrealDB 4.0's sized numbers.
+    pub fn f32(value: f32) -> Self {
+        Self {
+            value: Some(ValueEnum::F32(value)),
+        }
+    }
+
     /// Creates a new `Value` with a `String` value.
     pub fn string(value: String) -> Self {
         Self {

@@ -31,7 +31,7 @@
 # the hex by hand. `bun run vectors:check` re-verifies the file against a server.
 
 version: 1
-server: surrealdb-3.4.0-nightly
+server: surrealdb-4.0.0-nightly
 legacy_server: surrealdb-3.3.4
 vectors:
   # --- NONE and NULL -------------------------------------------------------
@@ -197,7 +197,7 @@ vectors:
     surql: "1e300f"
     value: { $float: 1e+300 }
     cbor: fb7e37e43c8800759c
-    diag: 1e+300.0_3
+    diag: 1.0e+300_3
 
   - name: float-negative-zero
     kind: canonical
@@ -241,6 +241,122 @@ vectors:
     value: { $float: 1.5 }
     cbor: fa3fc00000
     canonical: f93e00
+
+  # --- sized numbers, widened -----------------------------------------------
+  # SurrealDB 4.0's sized kinds (i8 to u64, f16, f32) widened, as plain cbor
+  # sends them; cbor2.yaml has them tagged. `formats: [cbor]` because cbor.2
+  # sends these tagged; `since: "4.0"` because older servers cannot parse the
+  # literals.
+
+  - name: sized-i8-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: -128i8
+    value: -128
+    cbor: 387f
+    diag: "-128"
+
+  - name: sized-u8-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 255u8
+    value: 255
+    cbor: 18ff
+    diag: "255"
+
+  - name: sized-i16-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: -32768i16
+    value: -32768
+    cbor: 397fff
+    diag: "-32768"
+
+  - name: sized-u16-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 65535u16
+    value: 65535
+    cbor: 19ffff
+    diag: "65535"
+
+  - name: sized-i32-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: -2147483648i32
+    value: -2147483648
+    cbor: 3a7fffffff
+    diag: "-2147483648"
+
+  - name: sized-u32-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 4294967295u32
+    value: 4294967295
+    cbor: 1affffffff
+    diag: "4294967295"
+
+  - name: sized-u64-widens-to-int
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 9223372036854775807u64
+    value: { $int: "9223372036854775807" }
+    cbor: 1b7fffffffffffffff
+    diag: "9223372036854775807"
+
+  - name: sized-u64-past-i64-widens-to-decimal
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 18446744073709551615u64
+    value: { $decimal: "18446744073709551615" }
+    notes: An untagged integer must fit in i64, so plain cbor carries a u64 above i64::MAX as a tag 10 decimal.
+    cbor: ca743138343436373434303733373039353531363135
+    diag: 10("18446744073709551615")
+
+  - name: sized-f16-widens-to-float
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 1.5f16
+    value: { $float: 1.5 }
+    cbor: f93e00
+    diag: 1.5_1
+
+  - name: sized-f32-widens-to-float
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: 0.1f32
+    value: { $float: 0.10000000149011612 }
+    notes: The f32 nearest 0.1, as an f64. It needs a single-width float, not a double.
+    cbor: fa3dcccccd
+    diag: 0.10000000149011612_2
+
+  - name: sized-f32-nan-widens-to-float
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: <f32>NaN
+    value: { $float: "NaN" }
+    cbor: f97e00
+    diag: NaN_1
+
+  - name: sized-numbers-in-record-id-key-widen
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: "t:[5u8, 1.5f32]"
+    value: { $record: { table: t, key: [ 5, { $float: 1.5 } ] } }
+    cbor: c88261748205f93e00
+    diag: 8(["t", [5, 1.5_1]])
 
   # --- decimal -------------------------------------------------------------
 
@@ -1227,6 +1343,7 @@ vectors:
 
   - name: reject-sized-i8-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "180(1)"
     notes: >
       Tag 180 (i8) is cbor.2 only; plain cbor refuses it ("CBOR tag 180 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1234,6 +1351,7 @@ vectors:
 
   - name: reject-sized-u8-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "181(1)"
     notes: >
       Tag 181 (u8) is cbor.2 only; plain cbor refuses it ("CBOR tag 181 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1241,6 +1359,7 @@ vectors:
 
   - name: reject-sized-i16-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "182(1)"
     notes: >
       Tag 182 (i16) is cbor.2 only; plain cbor refuses it ("CBOR tag 182 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1248,6 +1367,7 @@ vectors:
 
   - name: reject-sized-u16-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "183(1)"
     notes: >
       Tag 183 (u16) is cbor.2 only; plain cbor refuses it ("CBOR tag 183 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1255,6 +1375,7 @@ vectors:
 
   - name: reject-sized-i32-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "184(1)"
     notes: >
       Tag 184 (i32) is cbor.2 only; plain cbor refuses it ("CBOR tag 184 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1262,6 +1383,7 @@ vectors:
 
   - name: reject-sized-u32-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "185(1)"
     notes: >
       Tag 185 (u32) is cbor.2 only; plain cbor refuses it ("CBOR tag 185 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1269,6 +1391,7 @@ vectors:
 
   - name: reject-sized-u64-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "186(18446744073709551615)"
     notes: >
       Tag 186 (u64) is cbor.2 only; plain cbor refuses it ("CBOR tag 186 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1276,6 +1399,7 @@ vectors:
 
   - name: reject-sized-f16-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "187(1.5)"
     notes: >
       Tag 187 (f16) is cbor.2 only; plain cbor refuses it ("CBOR tag 187 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
@@ -1283,6 +1407,7 @@ vectors:
 
   - name: reject-sized-f32-in-plain-cbor
     kind: reject
+    formats: [ cbor ]
     diag: "188(2.5)"
     notes: >
       Tag 188 (f32) is cbor.2 only; plain cbor refuses it ("CBOR tag 188 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.

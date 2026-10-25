@@ -19,6 +19,7 @@ PROTOC_GEN_PROST_VERSION := 0.5.0
 PROTOC_GEN_TONIC_VERSION := 0.5.0
 TS_PROTO_VERSION         := 2.11.5
 FLATC_VERSION            := 25.12.19
+BUF_VERSION              := 1.75.0
 
 build:
 	mkdir -p build
@@ -99,6 +100,23 @@ $(FLATC): | plugins
 	  cp "$$src" $@; \
 	  chmod +x $@
 
+# Buf
+# The release binary, checked against the release's sha256.txt, so nothing
+# needs installing beforehand. CI's own buf comes from bufbuild/buf-action; the
+# output does not depend on buf's version, only on the plugins it runs.
+BUF := plugins/buf
+$(BUF): | plugins
+	@set -e; \
+	  base="https://github.com/bufbuild/buf/releases/download/v$(BUF_VERSION)"; \
+	  bin="buf-$$(uname -s)-$$(uname -m)"; \
+	  tmp="$$(mktemp -d)"; \
+	  curl -fsSL -o "$$tmp/$$bin" "$$base/$$bin"; \
+	  curl -fsSL -o "$$tmp/sha256.txt" "$$base/sha256.txt"; \
+	  (cd "$$tmp" && grep " $$bin\$$" sha256.txt | shasum -a 256 -c -); \
+	  cp "$$tmp/$$bin" $@; \
+	  rm -rf "$$tmp"; \
+	  chmod +x $@
+
 ALL_PLUGINS := plugins/protoc-gen-prost plugins/protoc-gen-tonic plugins/protoc-gen-c plugins/protoc-gen-ts_proto
 
 ################################################################################
@@ -113,12 +131,12 @@ RUST_PROTO_GEN := \
 	gen/rust/proto/surrealdb/protocol/rpc/v1/surrealdb.protocol.rpc.v1.rs \
 	gen/rust/proto/surrealdb/protocol/v1/surrealdb.protocol.v1.rs
 
-proto-gen: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
-	buf generate
+proto-gen: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS) $(BUF)
+	$(BUF) generate
 	perl -pi -e 'if (/#\[prost\(/) { s/="/ = "/g }' $(RUST_PROTO_GEN)
 
-proto-check: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS)
-	buf lint
+proto-check: buf.yaml buf.gen.yaml $(PROTO_SCHEMA_SRCS) $(ALL_PLUGINS) $(BUF)
+	$(BUF) lint
 
 # The generated output CI diffs.
 #
@@ -135,8 +153,8 @@ gen-check: gen
 
 # Fails when value.proto and value.fbs have drifted apart.
 .PHONY: parity-check
-parity-check:
-	bun run scripts/parity.ts
+parity-check: $(BUF)
+	BUF=$(BUF) bun run scripts/parity.ts
 
 # flatc --rust-module-root-file overwrites mod.rs per input file. root.fbs
 # includes all other schemas, so its mod.rs has every type. We pass all
@@ -160,8 +178,8 @@ fb-gen: gen/rust/fb
 # Build artefact, not checked in: it is derived from the .proto files that sit
 # beside it, and committing ~200 KiB that churns on every schema edit buys
 # nothing. Regenerate with `make descriptor-gen`.
-build/descriptor.json: buf.yaml $(PROTO_SCHEMA_SRCS) | build
-	buf build -o $@
+build/descriptor.json: buf.yaml $(PROTO_SCHEMA_SRCS) $(BUF) | build
+	$(BUF) build -o $@
 
 .PHONY: descriptor-gen
 descriptor-gen: build/descriptor.json

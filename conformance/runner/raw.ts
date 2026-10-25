@@ -381,7 +381,8 @@ export class RawAdapter implements Adapter {
 		// Over HTTP this adapter keeps every session in the client and sends it
 		// as headers; only raw_rpc puts a session id on the wire there.
 		const session = ctx.session;
-		return this.rpc.request(method, params.map(toCbor), {
+		const encoded = params.map((p) => toCbor(p));
+		return this.rpc.request(method, encoded, {
 			session: this.transport === "ws" || ctx.raw ? session : undefined,
 			txn: ctx.txn,
 			stream: ctx.stream,

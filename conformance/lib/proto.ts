@@ -14,6 +14,8 @@ import {
 	normaliseDecimal,
 	normaliseUuid,
 	type Position,
+	sizedFloat,
+	sizedInt,
 	utf8Compare,
 	type Value,
 	ValueError,
@@ -44,6 +46,25 @@ function arm(v: Value): pb.Value["value"] {
 			return { $case: "int64", int64: v.v };
 		case "float":
 			return { $case: "float64", float64: v.v };
+		// Each sized kind has its own arm; the field type only has to hold it.
+		case "i8":
+			return { $case: "i8", i8: Number(v.v) };
+		case "u8":
+			return { $case: "u8", u8: Number(v.v) };
+		case "i16":
+			return { $case: "i16", i16: Number(v.v) };
+		case "u16":
+			return { $case: "u16", u16: Number(v.v) };
+		case "i32":
+			return { $case: "i32", i32: Number(v.v) };
+		case "u32":
+			return { $case: "u32", u32: Number(v.v) };
+		case "u64":
+			return { $case: "u64", u64: v.v };
+		case "f16":
+			return { $case: "f16", f16: v.v };
+		case "f32":
+			return { $case: "f32", f32: v.v };
 		case "decimal":
 			return { $case: "decimal", decimal: { value: v.v } };
 		case "string":
@@ -205,6 +226,26 @@ export function fromProto(p: pb.Value): Value {
 			return { k: "int", v: BigInt(a.int64) };
 		case "float64":
 			return { k: "float", v: a.float64 };
+		// The arm is the kind, and the value must lie within it: sint32 and
+		// uint32 carry more than an i8 or a u16 can hold.
+		case "i8":
+			return sizedInt("i8", BigInt(a.i8));
+		case "u8":
+			return sizedInt("u8", BigInt(a.u8));
+		case "i16":
+			return sizedInt("i16", BigInt(a.i16));
+		case "u16":
+			return sizedInt("u16", BigInt(a.u16));
+		case "i32":
+			return sizedInt("i32", BigInt(a.i32));
+		case "u32":
+			return sizedInt("u32", BigInt(a.u32));
+		case "u64":
+			return sizedInt("u64", BigInt(a.u64));
+		case "f16":
+			return { k: "f16", v: sizedFloat("f16", a.f16) };
+		case "f32":
+			return { k: "f32", v: a.f32 };
 		case "decimal":
 			return { k: "decimal", v: normaliseDecimal(a.decimal.value, true) };
 		case "string":

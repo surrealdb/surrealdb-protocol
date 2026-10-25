@@ -8,6 +8,8 @@
  *   42                                     int (a JSON integer within +/-2^53)
  *   {"$int": "9223372036854775807"}        int, any i64
  *   {"$float": 1.5} / {"$float": "NaN"}    float ("NaN", "Infinity", "-Infinity", "-0")
+ *   {"$u8": 5} / {"$u64": "18446744073709551615"}   sized int: $i8 $u8 $i16 $u16 $i32 $u32 $u64
+ *   {"$f32": 1.5} / {"$f16": "NaN"}        sized float: $f16 $f32, spelled as $float
  *   {"$none": null}                        NONE
  *   {"$decimal": "1.5"}                    decimal
  *   {"$bytes": "00ff"}                     bytes, as hex
@@ -30,12 +32,18 @@
  * In YAML, where the parser keeps integers and floats apart, a bare `1` is an
  * int and a bare `1.0` is a float. JSON parsers do not keep that distinction,
  * so drivers emit floats as `{"$float": ...}`.
+ *
+ * The sized kinds are SurrealDB 4.0's. `cbor.2` carries them (tags 180 to 188),
+ * as do value.proto and value.fbs (their `i8` to `f32` arms); plain `cbor`
+ * widens them to int, float or (a u64 past i64) decimal, so over it they never
+ * come back.
  */
 
 import {
 	array,
 	type CborItem,
 	FALSE,
+	f16Bits,
 	fromHex,
 	int,
 	NULL,
@@ -76,6 +84,55 @@ export const TAG = {
 	SIZED_LAST: 188n,
 } as const;
 
+/** The CBOR dialects: plain `cbor` (application/cbor) and `cbor.2` (application/cbor; v=2). */
+export type Format = "cbor" | "cbor.2";
+
+/** SurrealDB 4.0's fixed-width integer kinds, with their cbor.2 tags. */
+export const SIZED_INTS = {
+	i8: {
+		tag: 180n,
+		min: -(2n ** 7n),
+		max: 2n ** 7n - 1n,
+		range: "8-bit signed",
+	},
+	u8: { tag: 181n, min: 0n, max: 2n ** 8n - 1n, range: "8-bit unsigned" },
+	i16: {
+		tag: 182n,
+		min: -(2n ** 15n),
+		max: 2n ** 15n - 1n,
+		range: "16-bit signed",
+	},
+	u16: { tag: 183n, min: 0n, max: 2n ** 16n - 1n, range: "16-bit unsigned" },
+	i32: {
+		tag: 184n,
+		min: -(2n ** 31n),
+		max: 2n ** 31n - 1n,
+		range: "32-bit signed",
+	},
+	u32: { tag: 185n, min: 0n, max: 2n ** 32n - 1n, range: "32-bit unsigned" },
+	u64: { tag: 186n, min: 0n, max: 2n ** 64n - 1n, range: "64-bit unsigned" },
+} as const;
+
+/** SurrealDB 4.0's narrow float kinds, with their cbor.2 tags. */
+export const SIZED_FLOATS = {
+	f16: { tag: 187n },
+	f32: { tag: 188n },
+} as const;
+
+export type SizedInt = keyof typeof SIZED_INTS;
+export type SizedFloat = keyof typeof SIZED_FLOATS;
+
+const SIZED_BY_TAG = new Map<bigint, SizedInt | SizedFloat>([
+	...Object.entries(SIZED_INTS).map(
+		([k, d]) => [d.tag, k as SizedInt] as const,
+	),
+	...Object.entries(SIZED_FLOATS).map(
+		([k, d]) => [d.tag, k as SizedFloat] as const,
+	),
+]);
+
+const isSizedInt = (k: string): k is SizedInt => Object.hasOwn(SIZED_INTS, k);
+
 /** What the server says to send in place of a refused text-form tag. */
 const REFUSED: Record<string, string> = {
 	"0": "CBOR tag 0 (a datetime as text) is not accepted: send tag 12 [seconds, nanos]",
@@ -101,6 +158,8 @@ export type Value =
 	| { k: "bool"; v: boolean }
 	| { k: "int"; v: bigint }
 	| { k: "float"; v: number }
+	| { k: SizedInt; v: bigint }
+	| { k: SizedFloat; v: number }
 	| { k: "decimal"; v: string }
 	| { k: "string"; v: string }
 	| { k: "bytes"; v: Uint8Array }
@@ -140,6 +199,8 @@ const TYPED_KEYS = new Set([
 	"$none",
 	"$int",
 	"$float",
+	...Object.keys(SIZED_INTS).map((k) => `$${k}`),
+	...Object.keys(SIZED_FLOATS).map((k) => `$${k}`),
 	"$decimal",
 	"$bytes",
 	"$uuid",
@@ -191,6 +252,22 @@ export function fromJson(j: Json): Value {
 			return { k: "int", v: checkI64(BigInt(a as string | number | bigint)) };
 		case "$float":
 			return { k: "float", v: parseFloatJson(a) };
+		case "$i8":
+		case "$u8":
+		case "$i16":
+		case "$u16":
+		case "$i32":
+		case "$u32":
+		case "$u64": {
+			const k = key.slice(1) as SizedInt;
+			const { min, max } = SIZED_INTS[k];
+			return { k, v: jsonInt(a, key, min, max) };
+		}
+		case "$f16":
+		case "$f32": {
+			const k = key.slice(1) as SizedFloat;
+			return { k, v: sizedFloat(k, parseFloatJson(a)) };
+		}
 		case "$decimal":
 			return { k: "decimal", v: normaliseDecimal(String(a)) };
 		case "$bytes":
@@ -326,6 +403,28 @@ function parseFloatJson(a: Json): number {
 	);
 }
 
+/** `f` as an f16 or f32, which must hold it exactly (any NaN will do), as the server requires. */
+export function sizedFloat(k: SizedFloat, f: number): number {
+	const exact =
+		k === "f16" ? f16Bits(f) !== undefined : Object.is(Math.fround(f), f);
+	if (!exact && !Number.isNaN(f))
+		throw new ValueError(`float ${f} cannot be losslessly represented as ${k}`);
+	return f;
+}
+
+/** The `$float` spelling of `f`: a number, or a string for what JSON cannot hold. */
+function floatJson(f: number): Json {
+	return Number.isNaN(f)
+		? "NaN"
+		: f === Number.POSITIVE_INFINITY
+			? "Infinity"
+			: f === Number.NEGATIVE_INFINITY
+				? "-Infinity"
+				: Object.is(f, -0)
+					? "-0"
+					: f;
+}
+
 /** The canonical typed JSON for `v`: what a driver prints and what the vectors hold. */
 export function toJson(v: Value): Json {
 	switch (v.k) {
@@ -340,17 +439,18 @@ export function toJson(v: Value): Json {
 				? Number(v.v)
 				: { $int: v.v.toString() };
 		case "float":
-			return {
-				$float: Number.isNaN(v.v)
-					? "NaN"
-					: v.v === Number.POSITIVE_INFINITY
-						? "Infinity"
-						: v.v === Number.NEGATIVE_INFINITY
-							? "-Infinity"
-							: Object.is(v.v, -0)
-								? "-0"
-								: v.v,
-			};
+			return { $float: floatJson(v.v) };
+		case "i8":
+		case "u8":
+		case "i16":
+		case "u16":
+		case "i32":
+		case "u32":
+		case "u64":
+			return { [`$${v.k}`]: safeNum(v.v) };
+		case "f16":
+		case "f32":
+			return { [`$${v.k}`]: floatJson(v.v) };
 		case "decimal":
 			return { $decimal: v.v };
 		case "string": {
@@ -405,8 +505,12 @@ function safeNum(n: bigint): Json {
 // CBOR
 // ---------------------------------------------------------------------------
 
-/** Encodes `v` exactly as the server does. */
-export function toCbor(v: Value): CborItem {
+/**
+ * Encodes `v` exactly as the server does in `format`. Plain `cbor` widens the
+ * sized numbers, as the server does for a client that did not negotiate cbor.2.
+ */
+export function toCbor(v: Value, format: Format = "cbor"): CborItem {
+	const sub = (x: Value) => toCbor(x, format);
 	switch (v.k) {
 		case "none":
 			return tag(TAG.NONE, NULL);
@@ -418,6 +522,21 @@ export function toCbor(v: Value): CborItem {
 			return int(v.v);
 		case "float":
 			return { t: "float", v: v.v };
+		case "i8":
+		case "u8":
+		case "i16":
+		case "u16":
+		case "i32":
+		case "u32":
+		case "u64":
+			if (format === "cbor.2") return tag(SIZED_INTS[v.k].tag, int(v.v));
+			// Widened: a u64 past i64 goes as a decimal.
+			return v.v > I64_MAX ? tag(TAG.DECIMAL, text(v.v.toString())) : int(v.v);
+		case "f16":
+		case "f32":
+			return format === "cbor.2"
+				? tag(SIZED_FLOATS[v.k].tag, { t: "float", v: v.v })
+				: { t: "float", v: v.v };
 		case "decimal":
 			return tag(TAG.DECIMAL, text(v.v));
 		case "string":
@@ -444,23 +563,26 @@ export function toCbor(v: Value): CborItem {
 				),
 			);
 		case "array":
-			return array(v.v.map(toCbor));
+			return array(v.v.map(sub));
 		case "object":
 			return {
 				t: "map",
 				v: [...v.v]
 					.sort(([a], [b]) => utf8Compare(a, b))
-					.map(([k, x]) => [text(k), toCbor(x)]),
+					.map(([k, x]) => [text(k), sub(x)]),
 			};
 		case "set":
 			// A set built by hand may repeat a member; the server would drop it.
-			return tag(TAG.SET, array(distinct(v.v).map(toCbor)));
+			return tag(TAG.SET, array(distinct(v.v).map(sub)));
 		case "table":
 			return tag(TAG.TABLE, text(v.v));
 		case "record":
-			return tag(TAG.RECORD_ID, array([text(v.table), toCbor(v.key)]));
+			return tag(TAG.RECORD_ID, array([text(v.table), sub(v.key)]));
 		case "range":
-			return tag(TAG.RANGE, array([boundToCbor(v.start), boundToCbor(v.end)]));
+			return tag(
+				TAG.RANGE,
+				array([boundToCbor(v.start, format), boundToCbor(v.end, format)]),
+			);
 		case "file":
 			return tag(TAG.FILE, array([text(v.bucket), text(v.key)]));
 		case "geometry":
@@ -470,11 +592,11 @@ export function toCbor(v: Value): CborItem {
 	}
 }
 
-function boundToCbor(b: Bound): CborItem {
+function boundToCbor(b: Bound, format: Format): CborItem {
 	if (b === null) return NULL;
 	return tag(
 		b.kind === "included" ? TAG.BOUND_INCLUDED : TAG.BOUND_EXCLUDED,
-		toCbor(b.v),
+		toCbor(b.v, format),
 	);
 }
 
@@ -510,12 +632,14 @@ function geometryToCbor(g: Geometry): CborItem {
 }
 
 /**
- * Decodes `item` with the 4.0 server's plain `cbor` rules, including the
+ * Decodes `item` with the 4.0 server's rules for `format`, including the
  * string form of tag 8. Throws `ValueError` for input the server rejects: the
- * text-form tags 0, 9 and 13, the cbor.2-only tags 180 to 188, unknown tags,
- * integers outside i64, duplicate map keys and tag 6 around anything but null.
+ * text-form tags 0, 9 and 13, unknown tags, integers outside i64, duplicate
+ * map keys and tag 6 around anything but null; under plain `cbor` the tags 180
+ * to 188, and under `cbor.2` a sized number outside its kind.
  */
-export function fromCbor(item: CborItem): Value {
+export function fromCbor(item: CborItem, format: Format = "cbor"): Value {
+	const sub = (x: CborItem) => fromCbor(x, format);
 	switch (item.t) {
 		case "uint":
 		case "nint": {
@@ -531,7 +655,7 @@ export function fromCbor(item: CborItem): Value {
 		case "text":
 			return { k: "string", v: item.v };
 		case "array":
-			return { k: "array", v: item.v.map(fromCbor) };
+			return { k: "array", v: item.v.map(sub) };
 		case "map": {
 			const seen = new Set<string>();
 			return {
@@ -542,7 +666,7 @@ export function fromCbor(item: CborItem): Value {
 					if (seen.has(key.v))
 						throw new ValueError(`duplicate key ${key.v} in a CBOR map`);
 					seen.add(key.v);
-					return [key.v, fromCbor(x)] as [string, Value];
+					return [key.v, sub(x)] as [string, Value];
 				}),
 			};
 		}
@@ -554,7 +678,7 @@ export function fromCbor(item: CborItem): Value {
 		case "raw":
 			throw new ValueError("raw items cannot be decoded");
 		case "tag":
-			return fromTag(item.tag, item.v);
+			return fromTag(item.tag, item.v, format);
 	}
 }
 
@@ -572,7 +696,8 @@ const asUint = (i: CborItem | undefined, what: string, max: bigint): bigint => {
 	return i.v;
 };
 
-function fromTag(t: bigint, c: CborItem): Value {
+function fromTag(t: bigint, c: CborItem, format: Format): Value {
+	const sub = (x: CborItem) => fromCbor(x, format);
 	switch (t) {
 		case TAG.NONE:
 			if (c.t !== "simple" || c.v !== 22)
@@ -624,15 +749,19 @@ function fromTag(t: bigint, c: CborItem): Value {
 			if (a.length !== 2)
 				throw new ValueError("record id: expected [table, key]");
 			const table = asText(a[0] as CborItem, "record id table");
-			return { k: "record", table, key: recordKeyFromCbor(a[1] as CborItem) };
+			return {
+				k: "record",
+				table,
+				key: checkRecordKey(sub(a[1] as CborItem)),
+			};
 		}
 		case TAG.RANGE: {
 			const a = asArray(c, "range");
 			if (a.length !== 2) throw new ValueError("range: expected [start, end]");
 			return {
 				k: "range",
-				start: boundFromCbor(a[0] as CborItem),
-				end: boundFromCbor(a[1] as CborItem),
+				start: boundFromCbor(a[0] as CborItem, format),
+				end: boundFromCbor(a[1] as CborItem, format),
 			};
 		}
 		case TAG.FILE: {
@@ -646,7 +775,7 @@ function fromTag(t: bigint, c: CborItem): Value {
 		}
 		case TAG.SET:
 			// Sets are deduplicated on decode. Order is not significant.
-			return { k: "set", v: distinct(asArray(c, "set").map(fromCbor)) };
+			return { k: "set", v: distinct(asArray(c, "set").map(sub)) };
 		case TAG.POINT:
 		case TAG.LINE:
 		case TAG.POLYGON:
@@ -660,32 +789,66 @@ function fromTag(t: bigint, c: CborItem): Value {
 	if (refused) throw new ValueError(refused);
 	if (t === TAG.SHAPED_BLOCK)
 		throw new ValueError("CBOR tag 57 (a shaped block) is not accepted here");
-	if (t >= TAG.SIZED_FIRST && t <= TAG.SIZED_LAST)
-		throw new ValueError(`CBOR tag ${t} is not accepted here: use cbor.2`);
+	const sized = SIZED_BY_TAG.get(t);
+	if (sized) {
+		if (format !== "cbor.2")
+			throw new ValueError(`CBOR tag ${t} is not accepted here: use cbor.2`);
+		return sizedFromCbor(t, sized, c);
+	}
 	throw new ValueError(`unknown tag ${t}`);
 }
 
-function boundFromCbor(i: CborItem): Bound {
+/** A cbor.2 sized number: an integer within its kind, or a float its kind holds exactly. */
+function sizedFromCbor(
+	t: bigint,
+	k: SizedInt | SizedFloat,
+	c: CborItem,
+): Value {
+	if (isSizedInt(k)) {
+		if (c.t !== "uint" && c.t !== "nint")
+			throw new ValueError(`Expected a CBOR integer under tag ${t}`);
+		return sizedInt(k, c.t === "uint" ? c.v : -1n - c.v);
+	}
+	if (c.t !== "float")
+		throw new ValueError(`Expected a CBOR float under tag ${t}`);
+	return { k, v: sizedFloat(k, c.v) };
+}
+
+/** `n` as the sized integer kind `k`, which must hold it. */
+export function sizedInt(k: SizedInt, n: bigint): Value {
+	const { min, max, range } = SIZED_INTS[k];
+	if (n < min || n > max)
+		throw new ValueError(`integer ${n} is outside the ${range} range`);
+	return { k, v: n };
+}
+
+function boundFromCbor(i: CborItem, format: Format): Bound {
 	if (i.t === "simple" && i.v === 22) return null;
 	if (i.t === "tag" && i.tag === TAG.BOUND_INCLUDED)
-		return { kind: "included", v: fromCbor(i.v) };
+		return { kind: "included", v: fromCbor(i.v, format) };
 	if (i.t === "tag" && i.tag === TAG.BOUND_EXCLUDED)
-		return { kind: "excluded", v: fromCbor(i.v) };
+		return { kind: "excluded", v: fromCbor(i.v, format) };
 	throw new ValueError("range: expected a bound tag or null");
 }
 
-function recordKeyFromCbor(i: CborItem): Value {
-	return checkRecordKey(fromCbor(i));
-}
-
-/** A record id key, or a bound of a record id range, which must be one too. */
+/**
+ * A record id key, or a bound of a record id range, which must be one too.
+ * Keys hold an i64, so a sized integer key (cbor.2 only) is read as an int.
+ */
 function checkRecordKey(v: Value): Value {
+	if (isSizedInt(v.k)) {
+		const n = (v as { v: bigint }).v;
+		if (n > I64_MAX)
+			throw new ValueError(`integer ${n} is outside the 64-bit signed range`);
+		return { k: "int", v: n };
+	}
 	if (!["int", "string", "array", "object", "uuid", "range"].includes(v.k)) {
 		throw new ValueError(`record id key cannot be ${v.k}`);
 	}
 	if (v.k === "range") {
-		if (v.start) checkRecordKey(v.start.v);
-		if (v.end) checkRecordKey(v.end.v);
+		const bound = (b: Bound): Bound =>
+			b && { kind: b.kind, v: checkRecordKey(b.v) };
+		return { k: "range", start: bound(v.start), end: bound(v.end) };
 	}
 	return v;
 }
@@ -1134,6 +1297,13 @@ export function equal(a: Value, b: Value): boolean {
 			return true;
 		case "bool":
 		case "int":
+		case "i8":
+		case "u8":
+		case "i16":
+		case "u16":
+		case "i32":
+		case "u32":
+		case "u64":
 		case "decimal":
 		case "string":
 		case "uuid":
@@ -1141,6 +1311,8 @@ export function equal(a: Value, b: Value): boolean {
 		case "regex":
 			return a.v === (b as typeof a).v;
 		case "float":
+		case "f16":
+		case "f32":
 			return Object.is(a.v, (b as typeof a).v);
 		case "bytes":
 			return toHex(a.v) === toHex((b as typeof a).v);
