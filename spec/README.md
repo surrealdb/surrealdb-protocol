@@ -37,8 +37,8 @@ differently, the row says so. Every server since 1.5.0 reads tags 12, 37 and
 14, so an SDK that sends those in place of 0, 9 and 13 needs no version check.
 
 The table was written from the server's codec,
-`surrealdb/core/src/rpc/format/cbor/convert.rs`, on surrealdb main at
-`c63ff8cfa1` (2026-10-24). When the server's codec changes,
+`surrealdb/core/src/rpc/format/cbor/convert.rs`, on the 4.0 line as of
+2026-10-24. When the server's codec changes,
 update this file in the same release.
 
 ## Value test vectors
