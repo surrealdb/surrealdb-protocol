@@ -137,6 +137,7 @@ jobs:
             plugins/protoc-gen-prost
             plugins/protoc-gen-tonic
             plugins/flatc
+            plugins/buf
           key: plugins-${{ runner.os }}-${{ hashFiles('Makefile') }}
 
       # The Makefile installs the generators it needs, including protoc-gen-c
