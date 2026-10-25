@@ -120,8 +120,8 @@ mod tests {
     /// The taxonomy must stay identical to `ErrorDetails` in the server's
     /// surrealdb-types crate: same variants, same order, same names.
     ///
-    /// Verified against surrealdb-private#642, the crate split that gave
-    /// fourteen layers their own error types. That PR leaves
+    /// Verified against the server's crate split of 2026-07-30, which gave
+    /// fourteen layers their own error types. That change leaves
     /// `surrealdb/types/src/error.rs` byte-identical, and ten of these eleven
     /// appear in its 250-row wire snapshot -- `Context` does not, because it
     /// only ever wraps another error rather than being raised alone.

@@ -1,9 +1,9 @@
 # SurrealDB's error taxonomy, as it appears on every wire.
 #
-# Source of truth: surrealdb/types/src/error.rs on surrealdb main at 6a9bc46152,
-# which defines the kinds, the detail sub-kinds and the legacy JSON-RPC codes;
-# rechecked at c63ff8cfa1 (the 4.0 line, 2026-10-24), where the kinds, details
-# and codes are unchanged.
+# Source of truth: surrealdb/types/src/error.rs on the server's main branch as
+# of 2026-10-15, which defines the kinds, the detail sub-kinds and the legacy
+# JSON-RPC codes; rechecked on the 4.0 line as of 2026-10-24, where the kinds,
+# details and codes are unchanged.
 # `proto` is the matching ErrorKind in surrealdb/protocol/v1/error.proto.
 #
 # The error object on WebSocket and HTTP /rpc:

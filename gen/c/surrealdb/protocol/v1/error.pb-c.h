@@ -29,10 +29,10 @@ typedef struct Surrealdb__Protocol__V1__SurrealError Surrealdb__Protocol__V1__Su
  * `ErrorKind` in the JavaScript SDK, variant for variant, because the server
  * already ships that taxonomy over the CBOR and flatbuffers wires and the JS
  * SDK already parses it. A third spelling would guarantee drift.
- * Checked against surrealdb-private#642, the crate split that gave fourteen
+ * Checked against the server's crate split of 2026-07-30, which gave fourteen
  * layers their own error types: those all converge on this same taxonomy, and
  * `surrealdb/types/src/error.rs` is unchanged by it. Ten of the eleven appear
- * in that PR's 250-row wire snapshot; `CONTEXT` does not, because it only ever
+ * in that change's 250-row wire snapshot; `CONTEXT` does not, because it only ever
  * wraps another error rather than being raised on its own.
  * Decoders MUST preserve an unrecognised numeric value rather than normalising
  * it to `UNSPECIFIED`, and MUST treat it as `INTERNAL` for behavioural

@@ -11,11 +11,11 @@ server unnoticed.
 | [`http.yaml`](http.yaml) | The `Surreal-*` headers, MIME types, WebSocket subprotocols, HTTP routes (including how `/import` reports failures and what `/export` accepts) and the `/rpc` envelope. |
 | [`errors.yaml`](errors.yaml) | The error kinds and their detail sub-kinds, the legacy JSON-RPC codes each one maps to, the matching `ErrorKind` in `error.proto`, and the HTTP status codes. |
 
-Each file was read from surrealdb main at `6a9bc46152` and says which server
-source it came from. Every transport difference in `methods.yaml`, and the
-`/import` behaviour in `http.yaml`, was also checked against a running
-`3.4.0-nightly+20261014.4f7fa16`. All three were then brought up to the 4.0
-line at surrealdb main `c63ff8cfa1`; what a 3.x server lacks is marked
+Each file was read from the server's main branch as of 2026-10-15 and says
+which server source it came from. Every transport difference in
+`methods.yaml`, and the `/import` behaviour in `http.yaml`, was also checked
+against a running `3.4.0-nightly` of 2026-10-14. All three were then brought
+up to the 4.0 line as of 2026-10-24; what a 3.x server lacks is marked
 `since: "4.0"` or says "from 4.0".
 
 Points SDKs most often get wrong:
