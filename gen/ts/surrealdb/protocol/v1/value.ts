@@ -239,6 +239,19 @@ export interface Range {
  *   NONE        -> `none`, an explicit variant
  *   NULL        -> `null`
  *   absent key  -> no `KeyValue` entry for that key at all
+ *
+ * The sized numbers (`i8` to `f32`) are SurrealDB 4.0's fixed-width kinds. The
+ * arm is the kind; the field type only has to hold its range, as protobuf has
+ * no 8- or 16-bit integers and no half float:
+ *   i8, i16, i32   sint32, and MUST lie within the kind's range
+ *   u8, u16, u32   uint32, likewise
+ *   u64            uint64
+ *   f16            float, and MUST be exactly representable as an IEEE 754
+ *                  binary16 (any NaN will do); every binary16 is a float
+ *   f32            float
+ * Decoders MUST reject an out-of-range or inexact value rather than clamp or
+ * round it. A peer that predates them sends `int64`, `float64` or (a u64 above
+ * i64::MAX) `decimal` instead, as plain CBOR does.
  */
 export interface Value {
   value:
@@ -263,6 +276,15 @@ export interface Value {
     | { $case: "object"; object: Object }
     | { $case: "array"; array: Array }
     | { $case: "set"; set: Set }
+    | { $case: "i8"; i8: number }
+    | { $case: "u8"; u8: number }
+    | { $case: "i16"; i16: number }
+    | { $case: "u16"; u16: number }
+    | { $case: "i32"; i32: number }
+    | { $case: "u32"; u32: number }
+    | { $case: "u64"; u64: bigint }
+    | { $case: "f16"; f16: number }
+    | { $case: "f32"; f32: number }
     | undefined;
 }
 
@@ -360,6 +382,34 @@ export interface RegexKind {
 }
 
 export interface RangeKind {
+}
+
+/** The sized number kinds, SurrealDB 4.0's i8 to f32. */
+export interface I8Kind {
+}
+
+export interface U8Kind {
+}
+
+export interface I16Kind {
+}
+
+export interface U16Kind {
+}
+
+export interface I32Kind {
+}
+
+export interface U32Kind {
+}
+
+export interface U64Kind {
+}
+
+export interface F16Kind {
+}
+
+export interface F32Kind {
 }
 
 export interface TableName {
@@ -463,6 +513,15 @@ export interface Kind {
     | { $case: "range"; range: RangeKind }
     | { $case: "literal"; literal: LiteralKind }
     | { $case: "file"; file: FileKind }
+    | { $case: "i8"; i8: I8Kind }
+    | { $case: "u8"; u8: U8Kind }
+    | { $case: "i16"; i16: I16Kind }
+    | { $case: "u16"; u16: U16Kind }
+    | { $case: "i32"; i32: I32Kind }
+    | { $case: "u32"; u32: U32Kind }
+    | { $case: "u64"; u64: U64Kind }
+    | { $case: "f16"; f16: F16Kind }
+    | { $case: "f32"; f32: F32Kind }
     | undefined;
 }
 
@@ -2151,6 +2210,36 @@ export const Value: MessageFns<Value> = {
       case "set":
         Set.encode(message.value.set, writer.uint32(170).fork()).join();
         break;
+      case "i8":
+        writer.uint32(184).sint32(message.value.i8);
+        break;
+      case "u8":
+        writer.uint32(192).uint32(message.value.u8);
+        break;
+      case "i16":
+        writer.uint32(200).sint32(message.value.i16);
+        break;
+      case "u16":
+        writer.uint32(208).uint32(message.value.u16);
+        break;
+      case "i32":
+        writer.uint32(216).sint32(message.value.i32);
+        break;
+      case "u32":
+        writer.uint32(224).uint32(message.value.u32);
+        break;
+      case "u64":
+        if (BigInt.asUintN(64, message.value.u64) !== message.value.u64) {
+          throw new globalThis.Error("value provided for field message.value.u64 of type uint64 too large");
+        }
+        writer.uint32(232).uint64(message.value.u64);
+        break;
+      case "f16":
+        writer.uint32(245).float(message.value.f16);
+        break;
+      case "f32":
+        writer.uint32(253).float(message.value.f32);
+        break;
     }
     return writer;
   },
@@ -2330,6 +2419,78 @@ export const Value: MessageFns<Value> = {
           message.value = { $case: "set", set: Set.decode(reader, reader.uint32()) };
           continue;
         }
+        case 23: {
+          if (tag !== 184) {
+            break;
+          }
+
+          message.value = { $case: "i8", i8: reader.sint32() };
+          continue;
+        }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.value = { $case: "u8", u8: reader.uint32() };
+          continue;
+        }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.value = { $case: "i16", i16: reader.sint32() };
+          continue;
+        }
+        case 26: {
+          if (tag !== 208) {
+            break;
+          }
+
+          message.value = { $case: "u16", u16: reader.uint32() };
+          continue;
+        }
+        case 27: {
+          if (tag !== 216) {
+            break;
+          }
+
+          message.value = { $case: "i32", i32: reader.sint32() };
+          continue;
+        }
+        case 28: {
+          if (tag !== 224) {
+            break;
+          }
+
+          message.value = { $case: "u32", u32: reader.uint32() };
+          continue;
+        }
+        case 29: {
+          if (tag !== 232) {
+            break;
+          }
+
+          message.value = { $case: "u64", u64: reader.uint64() as bigint };
+          continue;
+        }
+        case 30: {
+          if (tag !== 245) {
+            break;
+          }
+
+          message.value = { $case: "f16", f16: reader.float() };
+          continue;
+        }
+        case 31: {
+          if (tag !== 253) {
+            break;
+          }
+
+          message.value = { $case: "f32", f32: reader.float() };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2387,6 +2548,24 @@ export const Value: MessageFns<Value> = {
         ? { $case: "array", array: Array.fromJSON(object.array) }
         : isSet(object.set)
         ? { $case: "set", set: Set.fromJSON(object.set) }
+        : isSet(object.i8)
+        ? { $case: "i8", i8: globalThis.Number(object.i8) }
+        : isSet(object.u8)
+        ? { $case: "u8", u8: globalThis.Number(object.u8) }
+        : isSet(object.i16)
+        ? { $case: "i16", i16: globalThis.Number(object.i16) }
+        : isSet(object.u16)
+        ? { $case: "u16", u16: globalThis.Number(object.u16) }
+        : isSet(object.i32)
+        ? { $case: "i32", i32: globalThis.Number(object.i32) }
+        : isSet(object.u32)
+        ? { $case: "u32", u32: globalThis.Number(object.u32) }
+        : isSet(object.u64)
+        ? { $case: "u64", u64: BigInt(object.u64) }
+        : isSet(object.f16)
+        ? { $case: "f16", f16: globalThis.Number(object.f16) }
+        : isSet(object.f32)
+        ? { $case: "f32", f32: globalThis.Number(object.f32) }
         : undefined,
     };
   },
@@ -2435,6 +2614,24 @@ export const Value: MessageFns<Value> = {
       obj.array = Array.toJSON(message.value.array);
     } else if (message.value?.$case === "set") {
       obj.set = Set.toJSON(message.value.set);
+    } else if (message.value?.$case === "i8") {
+      obj.i8 = Math.round(message.value.i8);
+    } else if (message.value?.$case === "u8") {
+      obj.u8 = Math.round(message.value.u8);
+    } else if (message.value?.$case === "i16") {
+      obj.i16 = Math.round(message.value.i16);
+    } else if (message.value?.$case === "u16") {
+      obj.u16 = Math.round(message.value.u16);
+    } else if (message.value?.$case === "i32") {
+      obj.i32 = Math.round(message.value.i32);
+    } else if (message.value?.$case === "u32") {
+      obj.u32 = Math.round(message.value.u32);
+    } else if (message.value?.$case === "u64") {
+      obj.u64 = message.value.u64.toString();
+    } else if (message.value?.$case === "f16") {
+      obj.f16 = message.value.f16;
+    } else if (message.value?.$case === "f32") {
+      obj.f32 = message.value.f32;
     }
     return obj;
   },
@@ -2568,6 +2765,60 @@ export const Value: MessageFns<Value> = {
       case "set": {
         if (object.value?.set !== undefined && object.value?.set !== null) {
           message.value = { $case: "set", set: Set.fromPartial(object.value.set) };
+        }
+        break;
+      }
+      case "i8": {
+        if (object.value?.i8 !== undefined && object.value?.i8 !== null) {
+          message.value = { $case: "i8", i8: object.value.i8 };
+        }
+        break;
+      }
+      case "u8": {
+        if (object.value?.u8 !== undefined && object.value?.u8 !== null) {
+          message.value = { $case: "u8", u8: object.value.u8 };
+        }
+        break;
+      }
+      case "i16": {
+        if (object.value?.i16 !== undefined && object.value?.i16 !== null) {
+          message.value = { $case: "i16", i16: object.value.i16 };
+        }
+        break;
+      }
+      case "u16": {
+        if (object.value?.u16 !== undefined && object.value?.u16 !== null) {
+          message.value = { $case: "u16", u16: object.value.u16 };
+        }
+        break;
+      }
+      case "i32": {
+        if (object.value?.i32 !== undefined && object.value?.i32 !== null) {
+          message.value = { $case: "i32", i32: object.value.i32 };
+        }
+        break;
+      }
+      case "u32": {
+        if (object.value?.u32 !== undefined && object.value?.u32 !== null) {
+          message.value = { $case: "u32", u32: object.value.u32 };
+        }
+        break;
+      }
+      case "u64": {
+        if (object.value?.u64 !== undefined && object.value?.u64 !== null) {
+          message.value = { $case: "u64", u64: object.value.u64 };
+        }
+        break;
+      }
+      case "f16": {
+        if (object.value?.f16 !== undefined && object.value?.f16 !== null) {
+          message.value = { $case: "f16", f16: object.value.f16 };
+        }
+        break;
+      }
+      case "f32": {
+        if (object.value?.f32 !== undefined && object.value?.f32 !== null) {
+          message.value = { $case: "f32", f32: object.value.f32 };
         }
         break;
       }
@@ -3736,6 +3987,393 @@ export const RangeKind: MessageFns<RangeKind> = {
   },
   fromPartial<I extends Exact<DeepPartial<RangeKind>, I>>(_: I): RangeKind {
     const message = createBaseRangeKind();
+    return message;
+  },
+};
+
+function createBaseI8Kind(): I8Kind {
+  return {};
+}
+
+export const I8Kind: MessageFns<I8Kind> = {
+  encode(_: I8Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): I8Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseI8Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): I8Kind {
+    return {};
+  },
+
+  toJSON(_: I8Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<I8Kind>, I>>(base?: I): I8Kind {
+    return I8Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<I8Kind>, I>>(_: I): I8Kind {
+    const message = createBaseI8Kind();
+    return message;
+  },
+};
+
+function createBaseU8Kind(): U8Kind {
+  return {};
+}
+
+export const U8Kind: MessageFns<U8Kind> = {
+  encode(_: U8Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): U8Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseU8Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): U8Kind {
+    return {};
+  },
+
+  toJSON(_: U8Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<U8Kind>, I>>(base?: I): U8Kind {
+    return U8Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<U8Kind>, I>>(_: I): U8Kind {
+    const message = createBaseU8Kind();
+    return message;
+  },
+};
+
+function createBaseI16Kind(): I16Kind {
+  return {};
+}
+
+export const I16Kind: MessageFns<I16Kind> = {
+  encode(_: I16Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): I16Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseI16Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): I16Kind {
+    return {};
+  },
+
+  toJSON(_: I16Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<I16Kind>, I>>(base?: I): I16Kind {
+    return I16Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<I16Kind>, I>>(_: I): I16Kind {
+    const message = createBaseI16Kind();
+    return message;
+  },
+};
+
+function createBaseU16Kind(): U16Kind {
+  return {};
+}
+
+export const U16Kind: MessageFns<U16Kind> = {
+  encode(_: U16Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): U16Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseU16Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): U16Kind {
+    return {};
+  },
+
+  toJSON(_: U16Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<U16Kind>, I>>(base?: I): U16Kind {
+    return U16Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<U16Kind>, I>>(_: I): U16Kind {
+    const message = createBaseU16Kind();
+    return message;
+  },
+};
+
+function createBaseI32Kind(): I32Kind {
+  return {};
+}
+
+export const I32Kind: MessageFns<I32Kind> = {
+  encode(_: I32Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): I32Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseI32Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): I32Kind {
+    return {};
+  },
+
+  toJSON(_: I32Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<I32Kind>, I>>(base?: I): I32Kind {
+    return I32Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<I32Kind>, I>>(_: I): I32Kind {
+    const message = createBaseI32Kind();
+    return message;
+  },
+};
+
+function createBaseU32Kind(): U32Kind {
+  return {};
+}
+
+export const U32Kind: MessageFns<U32Kind> = {
+  encode(_: U32Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): U32Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseU32Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): U32Kind {
+    return {};
+  },
+
+  toJSON(_: U32Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<U32Kind>, I>>(base?: I): U32Kind {
+    return U32Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<U32Kind>, I>>(_: I): U32Kind {
+    const message = createBaseU32Kind();
+    return message;
+  },
+};
+
+function createBaseU64Kind(): U64Kind {
+  return {};
+}
+
+export const U64Kind: MessageFns<U64Kind> = {
+  encode(_: U64Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): U64Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseU64Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): U64Kind {
+    return {};
+  },
+
+  toJSON(_: U64Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<U64Kind>, I>>(base?: I): U64Kind {
+    return U64Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<U64Kind>, I>>(_: I): U64Kind {
+    const message = createBaseU64Kind();
+    return message;
+  },
+};
+
+function createBaseF16Kind(): F16Kind {
+  return {};
+}
+
+export const F16Kind: MessageFns<F16Kind> = {
+  encode(_: F16Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): F16Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseF16Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): F16Kind {
+    return {};
+  },
+
+  toJSON(_: F16Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<F16Kind>, I>>(base?: I): F16Kind {
+    return F16Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<F16Kind>, I>>(_: I): F16Kind {
+    const message = createBaseF16Kind();
+    return message;
+  },
+};
+
+function createBaseF32Kind(): F32Kind {
+  return {};
+}
+
+export const F32Kind: MessageFns<F32Kind> = {
+  encode(_: F32Kind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): F32Kind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseF32Kind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): F32Kind {
+    return {};
+  },
+
+  toJSON(_: F32Kind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<F32Kind>, I>>(base?: I): F32Kind {
+    return F32Kind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<F32Kind>, I>>(_: I): F32Kind {
+    const message = createBaseF32Kind();
     return message;
   },
 };
@@ -4996,6 +5634,33 @@ export const Kind: MessageFns<Kind> = {
       case "file":
         FileKind.encode(message.kind.file, writer.uint32(202).fork()).join();
         break;
+      case "i8":
+        I8Kind.encode(message.kind.i8, writer.uint32(210).fork()).join();
+        break;
+      case "u8":
+        U8Kind.encode(message.kind.u8, writer.uint32(218).fork()).join();
+        break;
+      case "i16":
+        I16Kind.encode(message.kind.i16, writer.uint32(226).fork()).join();
+        break;
+      case "u16":
+        U16Kind.encode(message.kind.u16, writer.uint32(234).fork()).join();
+        break;
+      case "i32":
+        I32Kind.encode(message.kind.i32, writer.uint32(242).fork()).join();
+        break;
+      case "u32":
+        U32Kind.encode(message.kind.u32, writer.uint32(250).fork()).join();
+        break;
+      case "u64":
+        U64Kind.encode(message.kind.u64, writer.uint32(258).fork()).join();
+        break;
+      case "f16":
+        F16Kind.encode(message.kind.f16, writer.uint32(266).fork()).join();
+        break;
+      case "f32":
+        F32Kind.encode(message.kind.f32, writer.uint32(274).fork()).join();
+        break;
     }
     return writer;
   },
@@ -5207,6 +5872,78 @@ export const Kind: MessageFns<Kind> = {
           message.kind = { $case: "file", file: FileKind.decode(reader, reader.uint32()) };
           continue;
         }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.kind = { $case: "i8", i8: I8Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.kind = { $case: "u8", u8: U8Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 28: {
+          if (tag !== 226) {
+            break;
+          }
+
+          message.kind = { $case: "i16", i16: I16Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.kind = { $case: "u16", u16: U16Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.kind = { $case: "i32", i32: I32Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.kind = { $case: "u32", u32: U32Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.kind = { $case: "u64", u64: U64Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 33: {
+          if (tag !== 266) {
+            break;
+          }
+
+          message.kind = { $case: "f16", f16: F16Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 34: {
+          if (tag !== 274) {
+            break;
+          }
+
+          message.kind = { $case: "f32", f32: F32Kind.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5268,6 +6005,24 @@ export const Kind: MessageFns<Kind> = {
         ? { $case: "literal", literal: LiteralKind.fromJSON(object.literal) }
         : isSet(object.file)
         ? { $case: "file", file: FileKind.fromJSON(object.file) }
+        : isSet(object.i8)
+        ? { $case: "i8", i8: I8Kind.fromJSON(object.i8) }
+        : isSet(object.u8)
+        ? { $case: "u8", u8: U8Kind.fromJSON(object.u8) }
+        : isSet(object.i16)
+        ? { $case: "i16", i16: I16Kind.fromJSON(object.i16) }
+        : isSet(object.u16)
+        ? { $case: "u16", u16: U16Kind.fromJSON(object.u16) }
+        : isSet(object.i32)
+        ? { $case: "i32", i32: I32Kind.fromJSON(object.i32) }
+        : isSet(object.u32)
+        ? { $case: "u32", u32: U32Kind.fromJSON(object.u32) }
+        : isSet(object.u64)
+        ? { $case: "u64", u64: U64Kind.fromJSON(object.u64) }
+        : isSet(object.f16)
+        ? { $case: "f16", f16: F16Kind.fromJSON(object.f16) }
+        : isSet(object.f32)
+        ? { $case: "f32", f32: F32Kind.fromJSON(object.f32) }
         : undefined,
     };
   },
@@ -5324,6 +6079,24 @@ export const Kind: MessageFns<Kind> = {
       obj.literal = LiteralKind.toJSON(message.kind.literal);
     } else if (message.kind?.$case === "file") {
       obj.file = FileKind.toJSON(message.kind.file);
+    } else if (message.kind?.$case === "i8") {
+      obj.i8 = I8Kind.toJSON(message.kind.i8);
+    } else if (message.kind?.$case === "u8") {
+      obj.u8 = U8Kind.toJSON(message.kind.u8);
+    } else if (message.kind?.$case === "i16") {
+      obj.i16 = I16Kind.toJSON(message.kind.i16);
+    } else if (message.kind?.$case === "u16") {
+      obj.u16 = U16Kind.toJSON(message.kind.u16);
+    } else if (message.kind?.$case === "i32") {
+      obj.i32 = I32Kind.toJSON(message.kind.i32);
+    } else if (message.kind?.$case === "u32") {
+      obj.u32 = U32Kind.toJSON(message.kind.u32);
+    } else if (message.kind?.$case === "u64") {
+      obj.u64 = U64Kind.toJSON(message.kind.u64);
+    } else if (message.kind?.$case === "f16") {
+      obj.f16 = F16Kind.toJSON(message.kind.f16);
+    } else if (message.kind?.$case === "f32") {
+      obj.f32 = F32Kind.toJSON(message.kind.f32);
     }
     return obj;
   },
@@ -5481,6 +6254,60 @@ export const Kind: MessageFns<Kind> = {
       case "file": {
         if (object.kind?.file !== undefined && object.kind?.file !== null) {
           message.kind = { $case: "file", file: FileKind.fromPartial(object.kind.file) };
+        }
+        break;
+      }
+      case "i8": {
+        if (object.kind?.i8 !== undefined && object.kind?.i8 !== null) {
+          message.kind = { $case: "i8", i8: I8Kind.fromPartial(object.kind.i8) };
+        }
+        break;
+      }
+      case "u8": {
+        if (object.kind?.u8 !== undefined && object.kind?.u8 !== null) {
+          message.kind = { $case: "u8", u8: U8Kind.fromPartial(object.kind.u8) };
+        }
+        break;
+      }
+      case "i16": {
+        if (object.kind?.i16 !== undefined && object.kind?.i16 !== null) {
+          message.kind = { $case: "i16", i16: I16Kind.fromPartial(object.kind.i16) };
+        }
+        break;
+      }
+      case "u16": {
+        if (object.kind?.u16 !== undefined && object.kind?.u16 !== null) {
+          message.kind = { $case: "u16", u16: U16Kind.fromPartial(object.kind.u16) };
+        }
+        break;
+      }
+      case "i32": {
+        if (object.kind?.i32 !== undefined && object.kind?.i32 !== null) {
+          message.kind = { $case: "i32", i32: I32Kind.fromPartial(object.kind.i32) };
+        }
+        break;
+      }
+      case "u32": {
+        if (object.kind?.u32 !== undefined && object.kind?.u32 !== null) {
+          message.kind = { $case: "u32", u32: U32Kind.fromPartial(object.kind.u32) };
+        }
+        break;
+      }
+      case "u64": {
+        if (object.kind?.u64 !== undefined && object.kind?.u64 !== null) {
+          message.kind = { $case: "u64", u64: U64Kind.fromPartial(object.kind.u64) };
+        }
+        break;
+      }
+      case "f16": {
+        if (object.kind?.f16 !== undefined && object.kind?.f16 !== null) {
+          message.kind = { $case: "f16", f16: F16Kind.fromPartial(object.kind.f16) };
+        }
+        break;
+      }
+      case "f32": {
+        if (object.kind?.f32 !== undefined && object.kind?.f32 !== null) {
+          message.kind = { $case: "f32", f32: F32Kind.fromPartial(object.kind.f32) };
         }
         break;
       }

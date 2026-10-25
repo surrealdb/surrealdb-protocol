@@ -367,6 +367,141 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_i8(&self) -> Option<Int8Value<'a>> {
+    if self.value_type() == ValueType::I8 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Int8Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_u8(&self) -> Option<UInt8Value<'a>> {
+    if self.value_type() == ValueType::U8 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { UInt8Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_i16(&self) -> Option<Int16Value<'a>> {
+    if self.value_type() == ValueType::I16 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Int16Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_u16(&self) -> Option<UInt16Value<'a>> {
+    if self.value_type() == ValueType::U16 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { UInt16Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_i32(&self) -> Option<Int32Value<'a>> {
+    if self.value_type() == ValueType::I32 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Int32Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_u32(&self) -> Option<UInt32Value<'a>> {
+    if self.value_type() == ValueType::U32 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { UInt32Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_u64(&self) -> Option<UInt64Value<'a>> {
+    if self.value_type() == ValueType::U64 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { UInt64Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_f16(&self) -> Option<Float16Value<'a>> {
+    if self.value_type() == ValueType::F16 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Float16Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_f32(&self) -> Option<Float32Value<'a>> {
+    if self.value_type() == ValueType::F32 {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Float32Value::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for Value<'_> {
@@ -398,6 +533,15 @@ impl ::flatbuffers::Verifiable for Value<'_> {
           ValueType::Array => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Array>>("ValueType::Array", pos),
           ValueType::Set => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Set>>("ValueType::Set", pos),
           ValueType::None => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<NoneValue>>("ValueType::None", pos),
+          ValueType::I8 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Int8Value>>("ValueType::I8", pos),
+          ValueType::U8 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<UInt8Value>>("ValueType::U8", pos),
+          ValueType::I16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Int16Value>>("ValueType::I16", pos),
+          ValueType::U16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<UInt16Value>>("ValueType::U16", pos),
+          ValueType::I32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Int32Value>>("ValueType::I32", pos),
+          ValueType::U32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<UInt32Value>>("ValueType::U32", pos),
+          ValueType::U64 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<UInt64Value>>("ValueType::U64", pos),
+          ValueType::F16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Float16Value>>("ValueType::F16", pos),
+          ValueType::F32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Float32Value>>("ValueType::F32", pos),
           _ => Ok(()),
         }
      })?
@@ -594,6 +738,69 @@ impl ::core::fmt::Debug for Value<'_> {
         },
         ValueType::None => {
           if let Some(x) = self.value_as_none() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::I8 => {
+          if let Some(x) = self.value_as_i8() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::U8 => {
+          if let Some(x) = self.value_as_u8() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::I16 => {
+          if let Some(x) = self.value_as_i16() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::U16 => {
+          if let Some(x) = self.value_as_u16() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::I32 => {
+          if let Some(x) = self.value_as_i32() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::U32 => {
+          if let Some(x) = self.value_as_u32() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::U64 => {
+          if let Some(x) = self.value_as_u64() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::F16 => {
+          if let Some(x) = self.value_as_f16() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::F32 => {
+          if let Some(x) = self.value_as_f32() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

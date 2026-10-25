@@ -79,7 +79,10 @@ protobuf `Value`, for SDKs that speak gRPC. An SDK must decode `proto` to
 `value`, and should encode `value` to exactly `proto`. A vector with
 `proto: null` has no protobuf encoding and its `notes` say why: today that is
 only durations above i64::MAX seconds, because protobuf `Duration.seconds` is
-signed while SurrealDB durations are not.
+signed while SurrealDB durations are not. The sized-number arms (`i8` to `f32`)
+have no vectors here yet: the server still sends sized numbers over gRPC
+widened, as `int64`, `float64` or `decimal`, so the widened vectors are what it
+produces today.
 
 Neither file is written by hand. `bun run vectors:write` starts
 `surreal start memory`, runs each vector's `surql` over HTTP `/rpc` (CBOR) and
@@ -163,9 +166,11 @@ bare `1` is an int and a bare `1.0` is a float, so the vector files write floats
 as `{$float: ...}` anyway for parsers that do not. JSON parsers lose the
 distinction, so anything that prints typed JSON must use `$float` for floats.
 
-The sized kinds exist from SurrealDB 4.0 and only `cbor.2` carries them; plain
-`cbor`, JSON and protobuf widen them to int, float or (a u64 above i64::MAX)
-decimal. A `$u8` and a `5` are different values here even though the server
+The sized kinds exist from SurrealDB 4.0. `cbor.2` carries them, and so do
+`value.proto` and `value.fbs`, which give each kind its own arm (`i8` to `f32`;
+protobuf has no 8- or 16-bit integers or half float, so those arms hold a wider
+field that must stay within the kind). Plain `cbor` and JSON widen them to int,
+float or (a u64 above i64::MAX) decimal. A `$u8` and a `5` are different values here even though the server
 compares them equal, because an SDK must decode tag 181 to its u8, not its int.
 
 The reference implementation is

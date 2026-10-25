@@ -33,9 +33,10 @@
  * int and a bare `1.0` is a float. JSON parsers do not keep that distinction,
  * so drivers emit floats as `{"$float": ...}`.
  *
- * The sized kinds are SurrealDB 4.0's. Only `cbor.2` carries them (tags 180 to
- * 188); plain `cbor` and protobuf widen them to int, float or (a u64 past
- * i64) decimal, so over those formats they never come back.
+ * The sized kinds are SurrealDB 4.0's. `cbor.2` carries them (tags 180 to 188),
+ * as do value.proto and value.fbs (their `i8` to `f32` arms); plain `cbor`
+ * widens them to int, float or (a u64 past i64) decimal, so over it they never
+ * come back.
  */
 
 import {
@@ -403,7 +404,7 @@ function parseFloatJson(a: Json): number {
 }
 
 /** `f` as an f16 or f32, which must hold it exactly (any NaN will do), as the server requires. */
-function sizedFloat(k: SizedFloat, f: number): number {
+export function sizedFloat(k: SizedFloat, f: number): number {
 	const exact =
 		k === "f16" ? f16Bits(f) !== undefined : Object.is(Math.fround(f), f);
 	if (!exact && !Number.isNaN(f))
@@ -806,15 +807,19 @@ function sizedFromCbor(
 	if (isSizedInt(k)) {
 		if (c.t !== "uint" && c.t !== "nint")
 			throw new ValueError(`Expected a CBOR integer under tag ${t}`);
-		const n = c.t === "uint" ? c.v : -1n - c.v;
-		const { min, max, range } = SIZED_INTS[k];
-		if (n < min || n > max)
-			throw new ValueError(`integer ${n} is outside the ${range} range`);
-		return { k, v: n };
+		return sizedInt(k, c.t === "uint" ? c.v : -1n - c.v);
 	}
 	if (c.t !== "float")
 		throw new ValueError(`Expected a CBOR float under tag ${t}`);
 	return { k, v: sizedFloat(k, c.v) };
+}
+
+/** `n` as the sized integer kind `k`, which must hold it. */
+export function sizedInt(k: SizedInt, n: bigint): Value {
+	const { min, max, range } = SIZED_INTS[k];
+	if (n < min || n > max)
+		throw new ValueError(`integer ${n} is outside the ${range} range`);
+	return { k, v: n };
 }
 
 function boundFromCbor(i: CborItem, format: Format): Bound {

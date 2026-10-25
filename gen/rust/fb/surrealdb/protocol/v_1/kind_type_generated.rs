@@ -5,10 +5,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_KIND_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_KIND_TYPE: u8 = 25;
+pub const ENUM_MAX_KIND_TYPE: u8 = 34;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_KIND_TYPE: [KindType; 26] = [
+pub const ENUM_VALUES_KIND_TYPE: [KindType; 35] = [
   KindType::NONE,
   KindType::Any,
   KindType::Null,
@@ -35,6 +35,15 @@ pub const ENUM_VALUES_KIND_TYPE: [KindType; 26] = [
   KindType::Range,
   KindType::Literal,
   KindType::File,
+  KindType::I8,
+  KindType::U8,
+  KindType::I16,
+  KindType::U16,
+  KindType::I32,
+  KindType::U32,
+  KindType::U64,
+  KindType::F16,
+  KindType::F32,
 ];
 
 /// A union of all possible type kinds in SurrealDB's type system.
@@ -69,9 +78,18 @@ impl KindType {
   pub const Range: Self = Self(23);
   pub const Literal: Self = Self(24);
   pub const File: Self = Self(25);
+  pub const I8: Self = Self(26);
+  pub const U8: Self = Self(27);
+  pub const I16: Self = Self(28);
+  pub const U16: Self = Self(29);
+  pub const I32: Self = Self(30);
+  pub const U32: Self = Self(31);
+  pub const U64: Self = Self(32);
+  pub const F16: Self = Self(33);
+  pub const F32: Self = Self(34);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 25;
+  pub const ENUM_MAX: u8 = 34;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Any,
@@ -99,6 +117,15 @@ impl KindType {
     Self::Range,
     Self::Literal,
     Self::File,
+    Self::I8,
+    Self::U8,
+    Self::I16,
+    Self::U16,
+    Self::I32,
+    Self::U32,
+    Self::U64,
+    Self::F16,
+    Self::F32,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -129,6 +156,15 @@ impl KindType {
       Self::Range => Some("Range"),
       Self::Literal => Some("Literal"),
       Self::File => Some("File"),
+      Self::I8 => Some("I8"),
+      Self::U8 => Some("U8"),
+      Self::I16 => Some("I16"),
+      Self::U16 => Some("U16"),
+      Self::I32 => Some("I32"),
+      Self::U32 => Some("U32"),
+      Self::U64 => Some("U64"),
+      Self::F16 => Some("F16"),
+      Self::F32 => Some("F32"),
       _ => None,
     }
   }

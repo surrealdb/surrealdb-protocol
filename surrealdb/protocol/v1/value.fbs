@@ -46,6 +46,35 @@ table Int64Value { value: int64 (id: 0); }
 /// 64-bit unsigned integer value.
 table UInt64Value { value: uint64 (id: 0); }
 
+/// 8-bit signed integer value (SurrealDB 4.0's `i8`).
+table Int8Value { value: byte (id: 0); }
+
+/// 8-bit unsigned integer value (`u8`).
+table UInt8Value { value: ubyte (id: 0); }
+
+/// 16-bit signed integer value (`i16`).
+table Int16Value { value: short (id: 0); }
+
+/// 16-bit unsigned integer value (`u16`).
+table UInt16Value { value: ushort (id: 0); }
+
+/// 32-bit signed integer value (`i32`).
+table Int32Value { value: int (id: 0); }
+
+/// 32-bit unsigned integer value (`u32`).
+table UInt32Value { value: uint (id: 0); }
+
+/// Half-precision floating point value (`f16`).
+///
+/// Carried as a float, as flatbuffers has no half type and every binary16 is
+/// exactly a binary32. The value MUST be exactly representable as an IEEE 754
+/// binary16 (any NaN will do), and decoders MUST reject one that is not. The
+/// same rule as `f16` in value.proto.
+table Float16Value { value: float (id: 0); }
+
+/// 32-bit floating point value (`f32`).
+table Float32Value { value: float (id: 0); }
+
 /// 64-bit floating point value.
 table Float64Value { value: double (id: 0); }
 
@@ -196,6 +225,19 @@ union ValueType {
     Object = 18,
     Array = 19,
     Set = 20,
+    /// The sized numbers, SurrealDB 4.0's fixed-width kinds. Appended after
+    /// `None`, so 22 on; each sits one below its value.proto tag, like the
+    /// rest. A peer that predates them sends `Int64`, `Float64` or (a u64
+    /// above i64::MAX) `Decimal` instead.
+    I8: Int8Value = 22,
+    U8: UInt8Value = 23,
+    I16: Int16Value = 24,
+    U16: UInt16Value = 25,
+    I32: Int32Value = 26,
+    U32: UInt32Value = 27,
+    U64: UInt64Value = 28,
+    F16: Float16Value = 29,
+    F32: Float32Value = 30,
 }
 
 
@@ -278,6 +320,17 @@ table RegexKind {}
 
 /// Represents the 'range' type.
 table RangeKind {}
+
+/// The sized number kinds, SurrealDB 4.0's 'i8' to 'f32'.
+table I8Kind {}
+table U8Kind {}
+table I16Kind {}
+table U16Kind {}
+table I32Kind {}
+table U32Kind {}
+table U64Kind {}
+table F16Kind {}
+table F32Kind {}
 
 /// Represents the 'table' type.
 table TableKind {
@@ -407,6 +460,17 @@ union KindType {
     Range: RangeKind (id: 24),
     Literal: LiteralKind (id: 25),
     File: FileKind (id: 26),
+    // Explicit tags, unlike the `(id: N)` annotations above, which flatc
+    // ignores: File is tag 25 on the wire, so these are 26 on.
+    I8: I8Kind = 26,
+    U8: U8Kind = 27,
+    I16: I16Kind = 28,
+    U16: U16Kind = 29,
+    I32: I32Kind = 30,
+    U32: U32Kind = 31,
+    U64: U64Kind = 32,
+    F16: F16Kind = 33,
+    F32: F32Kind = 34,
 }
 
 /// A type kind container that represents a type in SurrealDB's type system.

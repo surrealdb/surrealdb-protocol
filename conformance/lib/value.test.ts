@@ -322,4 +322,32 @@ describe("value", () => {
 		});
 		expect(equal(fromJson({ $u8: 5 }), fromJson(5))).toBe(false);
 	});
+
+	test("sized numbers have their own protobuf arms", () => {
+		const hex = (j: Json) => toHex(encodeProto(fromJson(j)));
+		// Field 23, sint32: zigzag(-1) is 1.
+		expect(hex({ $i8: -1 })).toBe("b80101");
+		// Field 24, uint32.
+		expect(hex({ $u8: 255 })).toBe("c001ff01");
+		// Field 29, uint64.
+		expect(hex({ $u64: "18446744073709551615" })).toBe(
+			"e801ffffffffffffffffff01",
+		);
+		// Field 30, float (fixed32, little-endian).
+		expect(hex({ $f16: 1.5 })).toBe("f5010000c03f");
+		for (const j of [
+			{ $i16: -32768 },
+			{ $u32: 4294967295 },
+			{ $f16: "NaN" },
+			{ $f32: 0.10000000149011612 },
+		] as Json[])
+			expect(toJson(decodeProto(encodeProto(fromJson(j))))).toEqual(j);
+		// sint32 holds more than an i8 (zigzag 400 is 200), and float more than an f16.
+		expect(() => decodeProto(fromHex("b8019003"))).toThrow(
+			"outside the 8-bit signed range",
+		);
+		expect(() => decodeProto(fromHex("f501cdcccc3d"))).toThrow(
+			"cannot be losslessly represented as f16",
+		);
+	});
 });
