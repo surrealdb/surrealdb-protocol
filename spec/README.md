@@ -127,7 +127,8 @@ number and `9223372036854775807`, say), the SDK must document how it represents
 that value, and the vector must still pass through that representation.
 
 Copy or vendor the files rather than fetching them at test time, and bump them
-when this repository releases.
+when this repository releases. They are Apache-2.0, like the SDKs, so an SDK
+can commit copies.
 
 ### Typed JSON
 

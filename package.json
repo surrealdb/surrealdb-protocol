@@ -3,10 +3,10 @@
   "module": "typescript/index.ts",
   "version": "0.14.0",
   "type": "module",
-  "license": "BUSL-1.1",
+  "license": "Apache-2.0",
   "licenses": [
     {
-      "type": "BUSL-1.1",
+      "type": "Apache-2.0",
       "url": "https://github.com/surrealdb/surrealdb-protocol/blob/main/LICENSE"
     }
   ],
@@ -64,7 +64,7 @@
   "files": [
     "build/ts",
     "README.md",
-    "LICENCE",
+    "LICENSE",
     "SECURITY.md"
   ]
 }
