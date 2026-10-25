@@ -12,7 +12,7 @@
     &nbsp;
 	<a href="https://github.com/surrealdb/surrealdb/actions"><img src="https://img.shields.io/github/actions/workflow/status/surrealdb/surrealdb/nightly.yml?style=flat-square&branch=main"></a>
     &nbsp;
-    <a href="https://github.com/surrealdb/license"><img src="https://img.shields.io/badge/license-BSL_1.1-00bfff.svg?style=flat-square"></a>
+    <a href="https://github.com/surrealdb/surrealdb-protocol/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-00bfff.svg?style=flat-square"></a>
 </p>
 
 <p align="center">
