@@ -471,6 +471,11 @@ class Driver {
 	async call(op: string, args: Args): Promise<Json> {
 		switch (op) {
 			case "connect":
+				if (args.format && args.format !== "cbor")
+					throw new DriverError({
+						kind: "Unsupported",
+						message: `surrealdb.js speaks only plain cbor, not ${args.format}`,
+					});
 				await this.db.close().catch(() => {});
 				this.db = new Surreal();
 				// Handles from the old connection must not reach the new one.

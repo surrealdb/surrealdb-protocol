@@ -203,6 +203,7 @@ jobs:
 
       - run: bun install
       - run: biome check ./typescript/ ./conformance/ ./scripts/vectors.ts
+      - run: bun x tsc --noEmit
       - run: bun x tsc --noEmit -p conformance
 
   ts-test:
@@ -262,6 +263,11 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
         with:
-          bun-version: "1.1.17"
+          # The Bun the release workflow publishes with.
+          bun-version: "1.4.3"
       - run: bun install
       - run: bun run build
+      - name: Dry-run the npm publish
+        run: bun publish --dry-run --access public
+        env:
+          NPM_CONFIG_TOKEN: dry-run
