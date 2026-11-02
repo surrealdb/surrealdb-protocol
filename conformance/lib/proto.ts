@@ -111,6 +111,12 @@ function arm(v: Value): pb.Value["value"] {
 			return { $case: "geometry", geometry: geometry(v.g) };
 		case "regex":
 			return { $case: "regex", regex: v.v };
+		case "date":
+		case "time":
+		case "timestamp":
+		case "interval":
+		case "bigdecimal":
+			throw new ValueError(`${v.k} has no value.proto arm`);
 	}
 }
 

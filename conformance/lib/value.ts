@@ -22,7 +22,12 @@
  *   {"$set": [..]}                         set
  *   {"$file": {"bucket": "b", "key": "/k"}}
  *   {"$geometry": <GeoJSON geometry>}      Point, LineString, Polygon, Multi*, GeometryCollection
- *   {"$regex": "a.*"}                      regex (protobuf only; it has no CBOR encoding)
+ *   {"$date": "2024-02-29"}                date, or "infinity" / "-infinity"
+ *   {"$time": "12:34:56.789"}              time of day, up to "24:00:00"
+ *   {"$timestamp": "2024-02-29T12:34:56"}  timestamp without a zone, or "infinity" / "-infinity"
+ *   {"$interval": [14, 3, 14706500000]}    [months, days, microseconds]
+ *   {"$bigdecimal": "1.50"}                bigdecimal, its scale as written
+ *   {"$regex": "a.*"}                      regex (cbor.2 and protobuf; plain cbor has no form)
  *   {"$object": {..}} / {"$array": [..]} / {"$string": ".."}   explicit forms
  *
  * A JSON object is a typed value only when it has exactly one key and that key
@@ -37,6 +42,12 @@
  * as do value.proto and value.fbs (their `i8` to `f32` arms); plain `cbor`
  * widens them to int, float or (a u64 past i64) decimal, so over it they never
  * come back.
+ *
+ * So are date, time, timestamp, interval and bigdecimal, which `cbor.2` carries
+ * as tags 100 and 189 to 192, and regex, tag 193. Plain `cbor` widens the
+ * first five (a date or timestamp to a datetime, a time to a duration, an
+ * interval or a bigdecimal to text) and has no form for a regex. A bigdecimal
+ * that fits a decimal is sent as one in both dialects.
  */
 
 import {
@@ -82,7 +93,24 @@ export const TAG = {
 	// Sized numbers, cbor.2 only: i8, u8, i16, u16, i32, u32, u64, f16, f32.
 	SIZED_FIRST: 180n,
 	SIZED_LAST: 188n,
+	// The other cbor.2 kinds.
+	DATE: 100n,
+	TIME: 189n,
+	TIMESTAMP: 190n,
+	INTERVAL: 191n,
+	BIGDECIMAL: 192n,
+	REGEX: 193n,
 } as const;
+
+/** The tags only cbor.2 reads, beside the sized numbers. */
+const CBOR2_ONLY = new Set<bigint>([
+	TAG.DATE,
+	TAG.TIME,
+	TAG.TIMESTAMP,
+	TAG.INTERVAL,
+	TAG.BIGDECIMAL,
+	TAG.REGEX,
+]);
 
 /** The CBOR dialects: plain `cbor` (application/cbor) and `cbor.2` (application/cbor; v=2). */
 export type Format = "cbor" | "cbor.2";
@@ -166,6 +194,11 @@ export type Value =
 	| { k: "uuid"; v: string }
 	| { k: "datetime"; secs: bigint; nanos: number }
 	| { k: "duration"; secs: bigint; nanos: number }
+	| { k: "date"; days: number }
+	| { k: "time"; nanos: bigint }
+	| { k: "timestamp"; secs: bigint; nanos: number }
+	| { k: "interval"; months: number; days: number; micros: bigint }
+	| { k: "bigdecimal"; v: string }
 	| { k: "array"; v: Value[] }
 	| { k: "object"; v: [string, Value][] }
 	| { k: "set"; v: Value[] }
@@ -180,7 +213,10 @@ export class ValueError extends Error {}
 
 const I64_MIN = -(2n ** 63n);
 const I64_MAX = 2n ** 63n - 1n;
+const I32_MIN = -(2n ** 31n);
+const I32_MAX = 2n ** 31n - 1n;
 const NS = 1_000_000_000;
+const NANOS_PER_DAY = 86_400n * 1_000_000_000n;
 
 // ---------------------------------------------------------------------------
 // Typed JSON
@@ -206,6 +242,11 @@ const TYPED_KEYS = new Set([
 	"$uuid",
 	"$datetime",
 	"$duration",
+	"$date",
+	"$time",
+	"$timestamp",
+	"$interval",
+	"$bigdecimal",
 	"$table",
 	"$record",
 	"$range",
@@ -307,6 +348,26 @@ export function fromJson(j: Json): Value {
 						),
 					}
 				: { k: "duration", ...parseDuration(a as string) };
+		case "$date":
+			return { k: "date", days: parseDate(a as string) };
+		case "$time":
+			return { k: "time", nanos: parseTime(a as string) };
+		case "$timestamp":
+			return { k: "timestamp", ...parseTimestamp(a as string) };
+		case "$interval": {
+			if (!Array.isArray(a) || a.length !== 3)
+				throw new ValueError(
+					"$interval: expected [months, days, microseconds]",
+				);
+			return {
+				k: "interval",
+				months: Number(jsonInt(a[0], "interval months", I32_MIN, I32_MAX)),
+				days: Number(jsonInt(a[1], "interval days", I32_MIN, I32_MAX)),
+				micros: jsonInt(a[2], "interval microseconds", I64_MIN, I64_MAX),
+			};
+		}
+		case "$bigdecimal":
+			return { k: "bigdecimal", v: normaliseBigDecimal(String(a)) };
 		case "$table":
 			return { k: "table", v: a as string };
 		case "$record": {
@@ -464,6 +525,16 @@ export function toJson(v: Value): Json {
 			return { $datetime: formatDatetime(v.secs, v.nanos) };
 		case "duration":
 			return { $duration: [safeNum(v.secs), v.nanos] };
+		case "date":
+			return { $date: formatDate(v.days) };
+		case "time":
+			return { $time: formatTime(v.nanos) };
+		case "timestamp":
+			return { $timestamp: formatTimestamp(v.secs, v.nanos) };
+		case "interval":
+			return { $interval: [v.months, v.days, safeNum(v.micros)] };
+		case "bigdecimal":
+			return { $bigdecimal: v.v };
 		case "array":
 			return v.v.map(toJson);
 		case "object": {
@@ -507,7 +578,8 @@ function safeNum(n: bigint): Json {
 
 /**
  * Encodes `v` exactly as the server does in `format`. Plain `cbor` widens the
- * sized numbers, as the server does for a client that did not negotiate cbor.2.
+ * sized numbers and the other cbor.2 kinds, as the server does for a client
+ * that did not negotiate cbor.2, and has no form for a regex.
  */
 export function toCbor(v: Value, format: Format = "cbor"): CborItem {
 	const sub = (x: Value) => toCbor(x, format);
@@ -546,22 +618,35 @@ export function toCbor(v: Value, format: Format = "cbor"): CborItem {
 		case "uuid":
 			return tag(TAG.UUID, { t: "bytes", v: uuidBytes(v.v) });
 		case "datetime":
-			return tag(TAG.DATETIME, array([int(v.secs), int(v.nanos)]));
+			return datetimeTag(v.secs, v.nanos);
 		case "duration":
 			if (v.secs < 0n)
 				throw new ValueError(
 					`duration: tag 14 is unsigned, so ${v.secs} seconds has no CBOR form`,
 				);
-			return tag(
-				TAG.DURATION,
-				array(
-					v.secs === 0n && v.nanos === 0
-						? []
-						: v.nanos === 0
-							? [int(v.secs)]
-							: [int(v.secs), int(v.nanos)],
-				),
-			);
+			return durationTag(v.secs, v.nanos);
+		case "date":
+			return format === "cbor.2"
+				? tag(TAG.DATE, int(v.days))
+				: datetimeTag(BigInt(v.days) * 86_400n, 0);
+		case "time":
+			return format === "cbor.2"
+				? tag(TAG.TIME, int(v.nanos))
+				: durationTag(v.nanos / BigInt(NS), Number(v.nanos % BigInt(NS)));
+		case "timestamp":
+			return format === "cbor.2"
+				? tag(TAG.TIMESTAMP, array([int(v.secs), int(v.nanos)]))
+				: datetimeTag(v.secs, v.nanos);
+		case "interval":
+			return format === "cbor.2"
+				? tag(TAG.INTERVAL, array([int(v.months), int(v.days), int(v.micros)]))
+				: text(formatInterval(v.months, v.days, v.micros));
+		case "bigdecimal": {
+			// One that fits a decimal is sent as one, in either dialect.
+			const d = bigDecimalAsDecimal(v.v);
+			if (d !== undefined) return tag(TAG.DECIMAL, text(d));
+			return format === "cbor.2" ? tag(TAG.BIGDECIMAL, text(v.v)) : text(v.v);
+		}
 		case "array":
 			return array(v.v.map(sub));
 		case "object":
@@ -588,9 +673,26 @@ export function toCbor(v: Value, format: Format = "cbor"): CborItem {
 		case "geometry":
 			return geometryToCbor(v.g);
 		case "regex":
-			throw new ValueError("regex has no CBOR encoding");
+			if (format === "cbor.2") return tag(TAG.REGEX, text(v.v));
+			throw new ValueError("regex has no plain cbor encoding: use cbor.2");
 	}
 }
+
+const datetimeTag = (secs: bigint, nanos: number): CborItem =>
+	tag(TAG.DATETIME, array([int(secs), int(nanos)]));
+
+/** Tag 14 in its shortest form: [] for zero, [s] for whole seconds, else [s, ns]. */
+const durationTag = (secs: bigint, nanos: number): CborItem =>
+	tag(
+		TAG.DURATION,
+		array(
+			secs === 0n && nanos === 0
+				? []
+				: nanos === 0
+					? [int(secs)]
+					: [int(secs), int(nanos)],
+		),
+	);
 
 function boundToCbor(b: Bound, format: Format): CborItem {
 	if (b === null) return NULL;
@@ -635,8 +737,9 @@ function geometryToCbor(g: Geometry): CborItem {
  * Decodes `item` with the 4.0 server's rules for `format`, including the
  * string form of tag 8. Throws `ValueError` for input the server rejects: the
  * text-form tags 0, 9 and 13, unknown tags, integers outside i64, duplicate
- * map keys and tag 6 around anything but null; under plain `cbor` the tags 180
- * to 188, and under `cbor.2` a sized number outside its kind.
+ * map keys and tag 6 around anything but null; under plain `cbor` the tags 100
+ * and 180 to 193, and under `cbor.2` a sized number outside its kind and a
+ * date, time, timestamp or interval outside its range.
  */
 export function fromCbor(item: CborItem, format: Format = "cbor"): Value {
 	const sub = (x: CborItem) => fromCbor(x, format);
@@ -790,10 +893,103 @@ function fromTag(t: bigint, c: CborItem, format: Format): Value {
 	if (t === TAG.SHAPED_BLOCK)
 		throw new ValueError("CBOR tag 57 (a shaped block) is not accepted here");
 	const sized = SIZED_BY_TAG.get(t);
-	if (sized) {
+	if (sized || CBOR2_ONLY.has(t)) {
 		if (format !== "cbor.2")
 			throw new ValueError(`CBOR tag ${t} is not accepted here: use cbor.2`);
-		return sizedFromCbor(t, sized, c);
+		return sized ? sizedFromCbor(t, sized, c) : cbor2FromTag(t, c);
+	}
+	throw new ValueError(`unknown tag ${t}`);
+}
+
+/** An integer item's value, or `undefined` for any other item. */
+const intOf = (i: CborItem | undefined): bigint | undefined =>
+	i?.t === "uint" ? i.v : i?.t === "nint" ? -1n - i.v : undefined;
+
+/** A cbor.2 date, time, timestamp, interval, bigdecimal or regex. */
+function cbor2FromTag(t: bigint, c: CborItem): Value {
+	switch (t) {
+		case TAG.DATE: {
+			const n = intOf(c);
+			if (n === undefined)
+				throw new ValueError(`Expected a CBOR integer under tag ${t}`);
+			if (n < I32_MIN || n > I32_MAX)
+				throw new ValueError("Expected a CBOR integer that fits a date");
+			// The first and last days stand for -infinity and infinity.
+			if (n < BigInt(DATE_MIN_DAYS) || n > BigInt(DATE_MAX_DAYS))
+				throw new ValueError("Expected a valid Date value");
+			return { k: "date", days: Number(n) };
+		}
+		case TAG.TIME: {
+			const n = intOf(c);
+			if (n === undefined)
+				throw new ValueError(`Expected a CBOR integer under tag ${t}`);
+			if (n < 0n)
+				throw new ValueError(
+					"Expected a CBOR unsigned integer that fits a time",
+				);
+			if (n > NANOS_PER_DAY)
+				throw new ValueError("Expected a valid Time value");
+			return { k: "time", nanos: n };
+		}
+		case TAG.TIMESTAMP: {
+			const a = asArray(c, `tag ${t}`);
+			const secs = intOf(a[0]);
+			const nanos = intOf(a[1]);
+			if (a.length !== 2 || secs === undefined || nanos === undefined)
+				throw new ValueError(
+					`Expected a CBOR array of 2 integers under tag ${t}`,
+				);
+			if (
+				secs < I64_MIN ||
+				secs > I64_MAX ||
+				nanos < 0n ||
+				nanos > 2n ** 32n - 1n
+			)
+				throw new ValueError("Expected a CBOR integer data type");
+			// A leap second (nanoseconds of a billion or more) is refused too.
+			if (
+				nanos > 999_999_999n ||
+				secs < DATETIME_MIN_SECS ||
+				secs > DATETIME_MAX_SECS
+			)
+				throw new ValueError("Expected a valid Timestamp value");
+			return { k: "timestamp", secs, nanos: Number(nanos) };
+		}
+		case TAG.INTERVAL: {
+			const a = asArray(c, `tag ${t}`);
+			const [months, days, micros] = a.map(intOf);
+			if (
+				a.length !== 3 ||
+				months === undefined ||
+				days === undefined ||
+				micros === undefined
+			)
+				throw new ValueError(
+					`Expected a CBOR array of 3 integers under tag ${t}`,
+				);
+			if (months < I32_MIN || months > I32_MAX)
+				throw new ValueError("Expected interval months that fit 32 bits");
+			if (days < I32_MIN || days > I32_MAX)
+				throw new ValueError("Expected interval days that fit 32 bits");
+			if (micros < I64_MIN || micros > I64_MAX)
+				throw new ValueError("Expected interval microseconds that fit 64 bits");
+			return {
+				k: "interval",
+				months: Number(months),
+				days: Number(days),
+				micros,
+			};
+		}
+		case TAG.BIGDECIMAL:
+			if (c.t !== "text")
+				throw new ValueError(`Expected a CBOR text under tag ${t}`);
+			return { k: "bigdecimal", v: normaliseBigDecimal(c.v) };
+		case TAG.REGEX:
+			// The server also compiles the pattern, with the Rust regex crate, and
+			// refuses one that does not compile; that is not checked here.
+			if (c.t !== "text")
+				throw new ValueError(`Expected a CBOR text under tag ${t}`);
+			return { k: "regex", v: c.v };
 	}
 	throw new ValueError(`unknown tag ${t}`);
 }
@@ -1270,6 +1466,222 @@ export function parseDuration(s: string): { secs: bigint; nanos: number } {
 	};
 }
 
+// chrono's NaiveDate spans -262143-01-01 to +262142-12-31. The server holds
+// those two days as -infinity and infinity.
+const DATE_MIN_DAYS = -96_465_292;
+const DATE_MAX_DAYS = 95_026_236;
+
+/** Days since 1970-01-01 of a proleptic Gregorian date (Hinnant's days_from_civil). */
+function daysFromCivil(y: number, m: number, d: number): number {
+	const yy = m <= 2 ? y - 1 : y;
+	const era = Math.floor(yy / 400);
+	const yoe = yy - era * 400;
+	const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+	const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+	return era * 146_097 + doe - 719_468;
+}
+
+/** The [year, month, day] of a count of days since 1970-01-01. */
+function civilFromDays(days: number): [number, number, number] {
+	const z = days + 719_468;
+	const era = Math.floor(z / 146_097);
+	const doe = z - era * 146_097;
+	const yoe = Math.floor(
+		(doe -
+			Math.floor(doe / 1460) +
+			Math.floor(doe / 36_524) -
+			Math.floor(doe / 146_096)) /
+			365,
+	);
+	const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+	const mp = Math.floor((5 * doy + 2) / 153);
+	const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
+	const m = mp < 10 ? mp + 3 : mp - 9;
+	return [yoe + era * 400 + (m <= 2 ? 1 : 0), m, d];
+}
+
+const pad = (n: number, width: number) => String(n).padStart(width, "0");
+
+/** The fraction of a second as the server prints it: none, or 3, 6 or 9 digits. */
+function fraction(nanos: number): string {
+	if (nanos === 0) return "";
+	if (nanos % 1_000_000 === 0) return `.${pad(nanos / 1_000_000, 3)}`;
+	if (nanos % 1_000 === 0) return `.${pad(nanos / 1_000, 6)}`;
+	return `.${pad(nanos, 9)}`;
+}
+
+/** A date as chrono prints it: a year outside 0..=9999 takes a sign. */
+function formatCivil(days: number): string {
+	const [y, m, d] = civilFromDays(days);
+	const year =
+		y >= 0 && y <= 9999
+			? pad(y, 4)
+			: `${y < 0 ? "-" : "+"}${pad(Math.abs(y), 4)}`;
+	return `${year}-${pad(m, 2)}-${pad(d, 2)}`;
+}
+
+/** `$date` text: YYYY-MM-DD, or "infinity" / "-infinity" for the last and first days. */
+export function formatDate(days: number): string {
+	if (days === DATE_MAX_DAYS) return "infinity";
+	if (days === DATE_MIN_DAYS) return "-infinity";
+	return formatCivil(days);
+}
+
+/** A finite date: its first and last days are spelled "-infinity" and "infinity". */
+export function parseDate(s: string): number {
+	if (s === "infinity") return DATE_MAX_DAYS;
+	if (s === "-infinity") return DATE_MIN_DAYS;
+	const days = parseCivil(s);
+	if (days === DATE_MIN_DAYS || days === DATE_MAX_DAYS)
+		throw new ValueError(`date out of range: ${s}`);
+	return days;
+}
+
+/** YYYY-MM-DD within chrono's range, as days since 1970-01-01. */
+function parseCivil(s: string): number {
+	const m = /^([+-]?\d{4,6})-(\d{2})-(\d{2})$/.exec(s);
+	if (!m) throw new ValueError(`not a date: ${s}`);
+	const days = daysFromCivil(Number(m[1]), Number(m[2]), Number(m[3]));
+	if (formatCivil(days).replace(/^\+/, "") !== s.replace(/^\+/, ""))
+		throw new ValueError(`not a valid date: ${s}`);
+	if (days < DATE_MIN_DAYS || days > DATE_MAX_DAYS)
+		throw new ValueError(`date out of range: ${s}`);
+	return days;
+}
+
+/** `$time` text: HH:MM:SS and the fraction, up to 24:00:00. */
+export function formatTime(nanos: bigint): string {
+	const secs = Number(nanos / BigInt(NS));
+	return `${pad(Math.floor(secs / 3600), 2)}:${pad(Math.floor(secs / 60) % 60, 2)}:${pad(secs % 60, 2)}${fraction(Number(nanos % BigInt(NS)))}`;
+}
+
+/** H:MM[:SS[.fraction]], as the server reads a time. */
+export function parseTime(s: string): bigint {
+	const m = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2})(?:\.(\d{1,9}))?)?$/.exec(s);
+	if (!m) throw new ValueError(`not a time: ${s}`);
+	const [h, mi, se] = [m[1], m[2], m[3] ?? "0"].map(Number) as number[];
+	if ((h as number) > 24 || (mi as number) > 59 || (se as number) > 59)
+		throw new ValueError(`not a time: ${s}`);
+	const nanos =
+		BigInt((h as number) * 3600 + (mi as number) * 60 + (se as number)) *
+			BigInt(NS) +
+		BigInt((m[4] ?? "").padEnd(9, "0"));
+	if (nanos > NANOS_PER_DAY) throw new ValueError(`not a time: ${s}`);
+	return nanos;
+}
+
+/** `$timestamp` text: a date, T, a time, no zone; or "infinity" / "-infinity". */
+export function formatTimestamp(secs: bigint, nanos: number): string {
+	if (secs === DATETIME_MAX_SECS && nanos === 999_999_999) return "infinity";
+	if (secs === DATETIME_MIN_SECS && nanos === 0) return "-infinity";
+	const days = secs / 86_400n - (secs % 86_400n < 0n ? 1n : 0n);
+	const ofDay = secs - days * 86_400n;
+	return `${formatCivil(Number(days))}T${formatTime(ofDay * BigInt(NS) + BigInt(nanos))}`;
+}
+
+export function parseTimestamp(s: string): { secs: bigint; nanos: number } {
+	if (s === "infinity") return { secs: DATETIME_MAX_SECS, nanos: 999_999_999 };
+	if (s === "-infinity") return { secs: DATETIME_MIN_SECS, nanos: 0 };
+	const at = s.indexOf("T");
+	if (at < 0) throw new ValueError(`not a timestamp: ${s}`);
+	const days = parseCivil(s.slice(0, at));
+	const t = parseTime(s.slice(at + 1));
+	if (t >= NANOS_PER_DAY) throw new ValueError(`not a timestamp: ${s}`);
+	const secs = BigInt(days) * 86_400n + t / BigInt(NS);
+	const nanos = Number(t % BigInt(NS));
+	// The first and last instants are spelled "-infinity" and "infinity".
+	if (/infinity$/.test(formatTimestamp(secs, nanos)))
+		throw new ValueError(`timestamp out of range: ${s}`);
+	return { secs, nanos };
+}
+
+/** An interval as the server prints it, the text plain cbor sends: ISO 8601, e.g. P1Y2M3DT4H5M6.5S. */
+export function formatInterval(
+	months: number,
+	days: number,
+	micros: bigint,
+): string {
+	let out = "P";
+	const years = Math.trunc(months / 12);
+	const mons = months % 12;
+	if (years !== 0) out += `${years}Y`;
+	if (mons !== 0) out += `${mons}M`;
+	if (days !== 0) out += `${days}D`;
+	if (micros !== 0n) {
+		out += "T";
+		const sign = micros < 0n ? "-" : "";
+		const abs = micros < 0n ? -micros : micros;
+		const hours = abs / 3_600_000_000n;
+		const mins = (abs % 3_600_000_000n) / 60_000_000n;
+		const secs = (abs % 60_000_000n) / 1_000_000n;
+		const frac = abs % 1_000_000n;
+		if (hours !== 0n) out += `${sign}${hours}H`;
+		if (mins !== 0n) out += `${sign}${mins}M`;
+		if (secs !== 0n || frac !== 0n) {
+			out += `${sign}${secs}`;
+			if (frac !== 0n)
+				out += `.${frac.toString().padStart(6, "0").replace(/0+$/, "")}`;
+			out += "S";
+		}
+	}
+	return out === "P" ? "PT0S" : out;
+}
+
+/** The server's limit on a bigdecimal exponent (PostgreSQL numeric's digits). */
+const BIGDECIMAL_MAX_EXPONENT = 131_072n + 16_383n;
+
+/**
+ * Bigdecimal text as the server prints it: positional, with the scale as
+ * written ("1.50" keeps its zero) and an exponent folded in ("1.5e3" is
+ * "1500", "1.5e-3" is "0.0015"). Reads what the server's parser reads: an
+ * optional sign, digits with an optional point, an optional exponent.
+ */
+export function normaliseBigDecimal(s: string): string {
+	if (/^[+-]?(nan|inf|infinity)$/i.test(s))
+		throw new ValueError("decimal values must be finite");
+	const m = /^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/.exec(s);
+	if (!m || ((m[2] as string) === "" && (m[3] ?? "") === ""))
+		throw new ValueError("text is not a decimal number");
+	const frac = m[3] ?? "";
+	const exp = BigInt(m[4] ?? "0");
+	if (exp > BIGDECIMAL_MAX_EXPONENT || exp < -BIGDECIMAL_MAX_EXPONENT)
+		throw new ValueError("decimal exponent is out of range");
+	let coef = BigInt(`${m[2]}${frac}` || "0");
+	let scale = BigInt(frac.length) - exp;
+	if (scale < 0n) {
+		coef *= 10n ** -scale;
+		scale = 0n;
+	}
+	const digits = coef.toString();
+	const n = Number(scale);
+	const body =
+		n === 0
+			? digits
+			: digits.length > n
+				? `${digits.slice(0, digits.length - n)}.${digits.slice(digits.length - n)}`
+				: `0.${"0".repeat(n - digits.length)}${digits}`;
+	return m[1] === "-" && coef !== 0n ? `-${body}` : body;
+}
+
+/**
+ * The decimal text of a bigdecimal that fits rust_decimal (at most 28
+ * fractional digits and a 96-bit mantissa, once the trailing zeros are gone),
+ * which the server sends as tag 10; `undefined` for one that does not.
+ */
+export function bigDecimalAsDecimal(v: string): string | undefined {
+	const [whole, frac = ""] = v.replace(/^-/, "").split(".");
+	let coef = BigInt(`${whole}${frac}`);
+	let exp = -frac.length;
+	while (coef !== 0n && coef % 10n === 0n) {
+		coef /= 10n;
+		exp++;
+	}
+	if (coef === 0n) return "0";
+	if (exp < -28 || exp >= 29) return undefined;
+	if (coef * 10n ** BigInt(Math.max(exp, 0)) > DECIMAL_MAX) return undefined;
+	return normaliseDecimal(v);
+}
+
 // ---------------------------------------------------------------------------
 // Equality
 // ---------------------------------------------------------------------------
@@ -1318,9 +1730,24 @@ export function equal(a: Value, b: Value): boolean {
 			return toHex(a.v) === toHex((b as typeof a).v);
 		case "datetime":
 		case "duration":
+		case "timestamp":
 			return (
 				a.secs === (b as typeof a).secs && a.nanos === (b as typeof a).nanos
 			);
+		case "date":
+			return a.days === (b as typeof a).days;
+		case "time":
+			return a.nanos === (b as typeof a).nanos;
+		case "interval": {
+			// The components as sent, not the server's normalised comparison.
+			const y = b as typeof a;
+			return (
+				a.months === y.months && a.days === y.days && a.micros === y.micros
+			);
+		}
+		case "bigdecimal":
+			// The scale as written: 1.5 and 1.50 are different text on the wire.
+			return a.v === (b as typeof a).v;
 		case "array": {
 			const y = (b as typeof a).v;
 			return (

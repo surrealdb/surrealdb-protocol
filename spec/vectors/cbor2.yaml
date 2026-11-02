@@ -1,15 +1,18 @@
 # cbor.2 value test vectors for SurrealDB 4.0.
 #
 # cbor.2 (WebSocket subprotocol `cbor.2`, HTTP `application/cbor; v=2`) is
-# plain cbor plus the sized-number tags 180 to 188 (spec/cbor-tags.yaml): for
-# every type plain cbor has, the bytes are the same. So a cbor.2 codec MUST
+# plain cbor plus the tags for the kinds plain cbor cannot carry
+# (spec/cbor-tags.yaml): the sized numbers (180 to 188), date (100), time
+# (189), timestamp (190), interval (191), bigdecimal (192) and regex (193).
+# For every type plain cbor has, the bytes are the same. So a cbor.2 codec MUST
 # pass every vector in cbor.yaml whose `formats` does not leave out cbor.2,
 # decoding and encoding as cbor.2, and every vector here. The ones that leave
-# it out are the plain-cbor refusals of tags 180 to 188 and the widened forms
-# of the sized numbers, which cbor.2 sends tagged.
+# it out are the plain-cbor refusals of those tags and the widened forms of
+# those kinds, which cbor.2 sends tagged.
 #
 # The kinds and fields are those of cbor.yaml; `value` uses the typed JSON
-# sized forms ($i8, $u8, $i16, $u16, $i32, $u32, $u64, $f16, $f32). Servers
+# forms of the cbor.2 kinds ($i8, $u8, $i16, $u16, $i32, $u32, $u64, $f16,
+# $f32, $date, $time, $timestamp, $interval, $bigdecimal, $regex). Servers
 # before 4.0 do not speak cbor.2, so there are no `legacy` entries.
 #
 # `cbor`, `diag`, `canonical` and `server` are written by `bun run vectors:write`
@@ -303,3 +306,380 @@ vectors:
     kind: reject
     diag: '8(["t", 187(1.5)])'
     cbor: c8826174d8bbf93e00
+
+  # --- date (tag 100) -----------------------------------------------------------
+
+  - name: date
+    kind: canonical
+    surql: date"2024-02-29"
+    value: { $date: "2024-02-29" }
+    notes: Days since 1970-01-01, as RFC 8943 has it.
+    cbor: d864194d46
+    diag: 100(19782)
+
+  - name: date-epoch
+    kind: canonical
+    surql: date"1970-01-01"
+    value: { $date: "1970-01-01" }
+    cbor: d86400
+    diag: 100(0)
+
+  - name: date-pre-epoch
+    kind: canonical
+    surql: date"1969-12-31"
+    value: { $date: "1969-12-31" }
+    notes: Before 1970 the count is negative.
+    cbor: d86420
+    diag: 100(-1)
+
+  - name: date-year-10000
+    kind: canonical
+    surql: date"+10000-01-01"
+    value: { $date: "+10000-01-01" }
+    cbor: d8641a002cc0a1
+    diag: 100(2932897)
+
+  - name: date-infinity
+    kind: canonical
+    surql: date"infinity"
+    value: { $date: infinity }
+    notes: '`infinity` is chrono''s last day, +262142-12-31. A decoder SHOULD read that day as `infinity`.'
+    cbor: d8641a05a9fc3c
+    diag: 100(95026236)
+
+  - name: date-negative-infinity
+    kind: canonical
+    surql: date"-infinity"
+    value: { $date: -infinity }
+    notes: '`-infinity` is chrono''s first day, -262143-01-01.'
+    cbor: d8643a05bff18b
+    diag: 100(-96465292)
+
+  # --- time (tag 189) -----------------------------------------------------------
+
+  - name: time-midnight
+    kind: canonical
+    surql: time"00:00:00"
+    value: { $time: "00:00:00" }
+    cbor: d8bd00
+    diag: 189(0)
+
+  - name: time-milliseconds
+    kind: canonical
+    surql: time"12:34:56.789"
+    value: { $time: "12:34:56.789" }
+    notes: Nanoseconds since midnight, as one unsigned integer.
+    cbor: d8bd1b000029327b048f40
+    diag: 189(45296789000000)
+
+  - name: time-last-nanosecond
+    kind: canonical
+    surql: time"23:59:59.999999999"
+    value: { $time: "23:59:59.999999999" }
+    cbor: d8bd1b00004e94914effff
+    diag: 189(86399999999999)
+
+  - name: time-end-of-day
+    kind: canonical
+    surql: time"24:00:00"
+    value: { $time: "24:00:00" }
+    notes: 24:00:00 is a valid time, as in PostgreSQL; nothing past it is.
+    cbor: d8bd1b00004e94914f0000
+    diag: 189(86400000000000)
+
+  # --- timestamp (tag 190) ------------------------------------------------------
+
+  - name: timestamp-epoch
+    kind: canonical
+    surql: timestamp"1970-01-01T00:00:00"
+    value: { $timestamp: "1970-01-01T00:00:00" }
+    notes: >
+      [seconds, nanoseconds] as tag 12 has them, but with no zone: a wall-clock time.
+    cbor: d8be820000
+    diag: 190([0, 0])
+
+  - name: timestamp-nanosecond
+    kind: canonical
+    surql: timestamp"2024-01-01T12:00:00.000000001"
+    value: { $timestamp: "2024-01-01T12:00:00.000000001" }
+    cbor: d8be821a6592a94001
+    diag: 190([1704110400, 1])
+
+  - name: timestamp-pre-epoch-half-second
+    kind: canonical
+    surql: timestamp"1969-12-31T23:59:59.5"
+    value: { $timestamp: "1969-12-31T23:59:59.500" }
+    notes: Negative seconds and positive nanoseconds, as for tag 12.
+    cbor: d8be82201a1dcd6500
+    diag: 190([-1, 500000000])
+
+  - name: timestamp-infinity
+    kind: canonical
+    surql: timestamp"infinity"
+    value: { $timestamp: infinity }
+    notes: '`infinity` is chrono''s last instant, +262142-12-31T23:59:59.999999999.'
+    cbor: d8be821b000007779a0a6b7f1a3b9ac9ff
+    diag: 190([8210266876799, 999999999])
+
+  - name: timestamp-negative-infinity
+    kind: canonical
+    surql: timestamp"-infinity"
+    value: { $timestamp: -infinity }
+    notes: '`-infinity` is chrono''s first instant, -262143-01-01T00:00:00.'
+    cbor: d8be823b000007948cf211ff00
+    diag: 190([-8334601228800, 0])
+
+  # --- interval (tag 191) -------------------------------------------------------
+
+  - name: interval-all-parts
+    kind: canonical
+    surql: interval"P1Y2M3DT4H5M6.5S"
+    value: { $interval: [ 14, 3, 14706500000 ] }
+    notes: >
+      [months, days, microseconds], as PostgreSQL holds an interval. Years fold into months and hours into microseconds.
+    cbor: d8bf830e031b000000036c9361a0
+    diag: 191([14, 3, 14706500000])
+
+  - name: interval-zero
+    kind: canonical
+    surql: <interval> "PT0S"
+    value: { $interval: [ 0, 0, 0 ] }
+    cbor: d8bf83000000
+    diag: 191([0, 0, 0])
+
+  - name: interval-negative-months
+    kind: canonical
+    surql: interval"P-1M"
+    value: { $interval: [ -1, 0, 0 ] }
+    notes: Each part is signed on its own.
+    cbor: d8bf83200000
+    diag: 191([-1, 0, 0])
+
+  - name: interval-negative-microseconds
+    kind: canonical
+    surql: interval"PT-1.5S"
+    value: { $interval: [ 0, 0, -1500000 ] }
+    cbor: d8bf8300003a0016e35f
+    diag: 191([0, 0, -1500000])
+
+  - name: interval-week-is-days
+    kind: canonical
+    surql: interval"P1W"
+    value: { $interval: [ 0, 7, 0 ] }
+    cbor: d8bf83000700
+    diag: 191([0, 7, 0])
+
+  - name: interval-set-deduplicates-equal
+    kind: canonical
+    surql: <set> [interval"P1M", interval"P30D"]
+    value: { $set: [ { $interval: [ 1, 0, 0 ] } ] }
+    notes: The server compares intervals normalised, a month as 30 days, so these two are one member. On the wire the parts are kept as written.
+    cbor: d83881d8bf83010000
+    diag: 56([191([1, 0, 0])])
+
+  # --- bigdecimal (tag 192) -----------------------------------------------------
+
+  - name: bigdecimal-past-decimal
+    kind: canonical
+    surql: <bigdecimal> "79228162514264337593543950336"
+    value: { $bigdecimal: "79228162514264337593543950336" }
+    notes: One past the largest decimal. A bigdecimal that fits a decimal is sent as tag 10 instead (cbor.yaml has bigdecimal-fitting-a-decimal-is-decimal).
+    cbor: d8c0781d3739323238313632353134323634333337353933353433393530333336
+    diag: 192("79228162514264337593543950336")
+
+  - name: bigdecimal-negative-past-decimal
+    kind: canonical
+    surql: <bigdecimal> "-79228162514264337593543950336"
+    value: { $bigdecimal: "-79228162514264337593543950336" }
+    cbor: d8c0781e2d3739323238313632353134323634333337353933353433393530333336
+    diag: 192("-79228162514264337593543950336")
+
+  - name: bigdecimal-long-fraction
+    kind: canonical
+    surql: <bigdecimal> "12345678901234567890123456789012345678901234567890.123456789012345"
+    value: { $bigdecimal: "12345678901234567890123456789012345678901234567890.123456789012345" }
+    cbor: d8c0784231323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839302e313233343536373839303132333435
+    diag: 192("12345678901234567890123456789012345678901234567890.123456789012345")
+
+  - name: bigdecimal-scale-past-decimal
+    kind: canonical
+    surql: <bigdecimal> "0.00000000000000000000000000001"
+    value: { $bigdecimal: "0.00000000000000000000000000001" }
+    notes: 29 fractional digits, one more than a decimal holds.
+    cbor: d8c0781f302e3030303030303030303030303030303030303030303030303030303031
+    diag: 192("0.00000000000000000000000000001")
+
+  - name: bigdecimal-keeps-trailing-zeros
+    kind: canonical
+    surql: <bigdecimal> "79228162514264337593543950336.50"
+    value: { $bigdecimal: "79228162514264337593543950336.50" }
+    notes: Unlike a decimal, a bigdecimal keeps its scale as written.
+    cbor: d8c0782037393232383136323531343236343333373539333534333935303333362e3530
+    diag: 192("79228162514264337593543950336.50")
+
+  # --- regex (tag 193) ----------------------------------------------------------
+
+  - name: regex
+    kind: canonical
+    surql: <regex> "a.*"
+    value: { $regex: a.* }
+    notes: The pattern text, in the Rust regex crate's syntax. Not IANA tag 35, which names PCRE / ECMAScript syntax.
+    cbor: d8c163612e2a
+    diag: 193("a.*")
+
+  - name: regex-escapes
+    kind: canonical
+    surql: '<regex> "^\\d+$"'
+    value: { $regex: '^\d+$' }
+    cbor: d8c1655e5c642b24
+    diag: 193("^\\d+$")
+
+  - name: regex-empty
+    kind: canonical
+    surql: <regex> ""
+    value: { $regex: "" }
+    cbor: d8c160
+    diag: 193("")
+
+  # --- the cbor.2 kinds in containers -------------------------------------------
+
+  - name: cbor2-kinds-in-array
+    kind: canonical
+    surql: "[date\"2024-02-29\", time\"01:02:03\", interval\"P1D\"]"
+    value: [ { $date: "2024-02-29" }, { $time: "01:02:03" }, { $interval: [ 0, 1, 0 ] } ]
+    cbor: 83d864194d46d8bd1b00000362d417ae00d8bf83000100
+    diag: "[100(19782), 189(3723000000000), 191([0, 1, 0])]"
+
+  - name: date-range
+    kind: canonical
+    surql: date"1970-01-02"..date"1970-01-06"
+    value: { $range: { start: { included: { $date: "1970-01-02" } }, end: { excluded: { $date: "1970-01-06" } } } }
+    cbor: d83182d832d86401d833d86405
+    diag: 49([50(100(1)), 51(100(5))])
+
+  # --- bigdecimal, accepted, never produced -------------------------------------
+
+  - name: bigdecimal-exponent-folded
+    kind: decode
+    diag: '192("1e40")'
+    value: { $bigdecimal: "10000000000000000000000000000000000000000" }
+    notes: The server reads an exponent and folds it in; it sends positional text.
+    cbor: d8c06431653430
+    canonical: d8c078293130303030303030303030303030303030303030303030303030303030303030303030303030303030
+
+  - name: bigdecimal-negative-exponent-is-scale
+    kind: decode
+    diag: '192("1.5E-30")'
+    value: { $bigdecimal: "0.0000000000000000000000000000015" }
+    cbor: d8c067312e35452d3330
+    canonical: d8c07821302e30303030303030303030303030303030303030303030303030303030303135
+
+  # --- cbor.2 kinds, rejected ---------------------------------------------------
+
+  - name: reject-date-past-infinity
+    kind: reject
+    diag: '100(95026237)'
+    notes: >
+      "Expected a valid Date value": past chrono's last day.
+    cbor: d8641a05a9fc3d
+
+  - name: reject-date-before-negative-infinity
+    kind: reject
+    diag: '100(-96465293)'
+    cbor: d8643a05bff18c
+
+  - name: reject-date-past-i32
+    kind: reject
+    diag: '100(2147483648)'
+    notes: "Expected a CBOR integer that fits a date"
+    cbor: d8641a80000000
+
+  - name: reject-date-float
+    kind: reject
+    diag: '100(1.0)'
+    cbor: d864f93c00
+
+  - name: reject-date-record-id-key
+    kind: reject
+    diag: '8(["t", 100(1)])'
+    notes: A date is not a record id key type.
+    cbor: c8826174d86401
+
+  - name: reject-time-past-end-of-day
+    kind: reject
+    diag: '189(86400000000001)'
+    notes: "Expected a valid Time value"
+    cbor: d8bd1b00004e94914f0001
+
+  - name: reject-time-negative
+    kind: reject
+    diag: '189(-1)'
+    cbor: d8bd20
+
+  - name: reject-timestamp-leap-second
+    kind: reject
+    diag: '190([0, 1000000000])'
+    notes: Nanoseconds must be below a billion; a leap second is refused.
+    cbor: d8be82001a3b9aca00
+
+  - name: reject-timestamp-past-infinity
+    kind: reject
+    diag: '190([8210266876800, 0])'
+    cbor: d8be821b000007779a0a6b8000
+
+  - name: reject-timestamp-one-element
+    kind: reject
+    diag: '190([0])'
+    notes: "Expected a CBOR array of 2 integers under tag 190"
+    cbor: d8be8100
+
+  - name: reject-timestamp-negative-nanoseconds
+    kind: reject
+    diag: '190([-1, -1])'
+    cbor: d8be822020
+
+  - name: reject-interval-months-past-i32
+    kind: reject
+    diag: '191([2147483648, 0, 0])'
+    notes: "Expected interval months that fit 32 bits"
+    cbor: d8bf831a800000000000
+
+  - name: reject-interval-two-elements
+    kind: reject
+    diag: '191([0, 0])'
+    notes: "Expected a CBOR array of 3 integers under tag 191"
+    cbor: d8bf820000
+
+  - name: reject-interval-float
+    kind: reject
+    diag: '191([0, 0, 1.0])'
+    cbor: d8bf830000f93c00
+
+  - name: reject-bigdecimal-nan
+    kind: reject
+    diag: '192("NaN")'
+    notes: "decimal values must be finite"
+    cbor: d8c0634e614e
+
+  - name: reject-bigdecimal-comma
+    kind: reject
+    diag: '192("1,5")'
+    cbor: d8c063312c35
+
+  - name: reject-bigdecimal-whitespace
+    kind: reject
+    diag: '192(" 1.5")'
+    cbor: d8c06420312e35
+
+  - name: reject-bigdecimal-integer
+    kind: reject
+    diag: '192(1)'
+    notes: "Expected a CBOR text under tag 192"
+    cbor: d8c001
+
+  - name: reject-regex-integer
+    kind: reject
+    diag: '193(1)'
+    notes: >
+      "Expected a CBOR text under tag 193". The server also refuses a pattern that does not compile, such as 193("(").
+    cbor: d8c101

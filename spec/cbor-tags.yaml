@@ -5,17 +5,21 @@
 # it, and spec/vectors/cbor.yaml holds hex test vectors for every row.
 #
 # Source of truth on the server side:
-#   surrealdb/core/src/rpc/format/cbor/convert.rs  (to_value / from_value)
-#   surrealdb/rpc/src/format.rs                    (the media types)
-# checked against the 4.0 line as of 2026-10-24 (which still reports
-# 3.4.0-nightly).
+#   surrealdb/types/src/cbor/convert.rs  (to_value / from_value, and the _v2
+#                                         forms for cbor.2)
+#   surrealdb/rpc/src/format.rs          (the media types)
+# checked against the 4.0 line (main) as of 2026-11-02, which reports
+# 4.0.0-nightly.
 #
 # Formats. The server speaks three CBOR dialects; `formats` below lists them.
 #   cbor     WebSocket subprotocol `cbor`, HTTP `application/cbor`. Frozen: it
 #            keeps its exact bytes with released 3.x peers.
 #   cbor.2   WebSocket subprotocol `cbor.2`, HTTP `application/cbor; v=2`.
 #            Byte-identical to `cbor` for every type `cbor` has, plus the
-#            sized-number tags 180 to 188.
+#            tags for the kinds `cbor` cannot carry: the sized numbers (180 to
+#            188), date (100), time (189), timestamp (190), interval (191),
+#            bigdecimal (192) and regex (193). `cbor` widens those kinds
+#            instead (see each section), except regex, which it refuses.
 #   shaped   WebSocket subprotocol `shaped`, HTTP
 #            `application/vnd.surrealdb.shaped`. Requests are `cbor.2`;
 #            responses are `cbor.2` with each list of result rows written as a
@@ -25,7 +29,7 @@
 # Strict decoding. The server refuses, with a Validation (Parse) error whose
 # message names the problem, any request that holds:
 #   - a tag this table marks `refused` or `reserved`, or any tag not in it;
-#   - a tag outside its `formats` (180 to 188 under plain `cbor`);
+#   - a tag outside its `formats` (100 and 180 to 193 under plain `cbor`);
 #   - an integer outside i64 (see `untagged`);
 #   - a map with a duplicate key;
 #   - tag 6 around anything but null.
@@ -278,6 +282,36 @@ tags:
     content: "[* geometry]"
     notes: Any of tags 88 to 94, including nested collections.
 
+  # --- Date (cbor.2 only) ----------------------------------------------------
+  # SurrealDB 4.0's calendar kinds (date, time, timestamp, interval) are tags
+  # 100 and 189 to 191 under `cbor.2` (and `shaped`). Under plain `cbor` the
+  # server encodes them widened (a date or timestamp as a tag 12 datetime, a
+  # time as a tag 14 duration, an interval as its ISO 8601 text) and refuses
+  # the tags: "CBOR tag 100 is not accepted here: use cbor.2". Servers before
+  # 4.0 refuse them as unknown tags.
+  #
+  # A date or timestamp can be `infinity` or `-infinity`, as in PostgreSQL.
+  # On the wire these are the ends of chrono's range: the dates -262143-01-01
+  # and +262142-12-31, and the instants -262143-01-01T00:00:00 and
+  # +262142-12-31T23:59:59.999999999. The server decodes those ends as the
+  # infinities, so an SDK SHOULD map them to its own infinities, if it has
+  # any, in both directions. Plain `cbor` widens them to the same instants
+  # as tag 12 datetimes, where they are ordinary datetimes.
+
+  - tag: 100
+    name: date
+    status: active
+    formats: [cbor.2, shaped]
+    content: int .within -96465292..95026236  # days since 1970-01-01
+    notes: >
+      A calendar date with no zone, as days since 1970-01-01 in the proleptic
+      Gregorian calendar (RFC 8943, the IANA tag for this). 2024-02-29 is
+      100(19782) and 1969-12-31 is 100(-1). The ends of the range are
+      `-infinity` (-96465292) and `infinity` (95026236); anything past them,
+      or outside i32, is an error ("Expected a valid Date value"). A float is
+      an error. A date is not a record id key type. Plain `cbor` sends a date
+      as tag 12 at midnight UTC.
+
   # --- Sized numbers (cbor.2 only) -------------------------------------------
   # SurrealDB 4.0's fixed-width number kinds. Under `cbor.2` (and `shaped`) the
   # server wraps a value of each kind in its tag, and range-checks the item on
@@ -349,6 +383,85 @@ tags:
     content: float
     notes: The float must be exactly representable as an IEEE 754 single.
 
+  # --- Time, timestamp, interval, bigdecimal and regex (cbor.2 only) ---------
+  # See the date section above for the calendar kinds. A bigdecimal that does
+  # not fit a decimal is tag 192 under `cbor.2` and plain text under `cbor`. A
+  # regex is tag 193 under `cbor.2`; plain `cbor` has no form for one (see
+  # `not-encodable`). Plain `cbor` refuses both tags.
+
+  - tag: 189
+    name: time
+    status: active
+    formats: [cbor.2, shaped]
+    content: uint .within 0..86400000000000  # nanoseconds since midnight
+    notes: >
+      A time of day with no date or zone, as nanoseconds since midnight, from
+      00:00:00 up to and including 24:00:00 (as in PostgreSQL). Past
+      24:00:00 is an error ("Expected a valid Time value"), and so is a
+      negative integer. Plain `cbor` sends a time as a tag 14 duration since
+      midnight.
+
+  - tag: 190
+    name: timestamp
+    status: active
+    formats: [cbor.2, shaped]
+    content: "[int, uint]  # [seconds, nanoseconds] since 1970-01-01T00:00:00"
+    notes: >
+      A date and time of day with no zone: a wall-clock time, where tag 12 is
+      an instant in UTC. The content is as tag 12's: seconds (i64) and
+      nanoseconds within the second, negative seconds and positive
+      nanoseconds before 1970. Exactly two integers. Nanoseconds of a billion
+      or more (a leap second) are an error, and so is an instant outside
+      chrono's range; its ends are `-infinity` and `infinity`. Plain `cbor`
+      sends a timestamp as tag 12, reading the wall-clock time as UTC.
+
+  - tag: 191
+    name: interval
+    status: active
+    formats: [cbor.2, shaped]
+    content: "[int, int, int]  # [months (i32), days (i32), microseconds (i64)]"
+    notes: >
+      A calendar interval as PostgreSQL holds one. Years fold into months and
+      weeks into days, and hours, minutes and seconds into microseconds, so
+      P1Y2M3DT4H5M6.5S is 191([14, 3, 14706500000]). Each part is signed on
+      its own. Exactly three integers, each within its width ("Expected
+      interval months that fit 32 bits" otherwise). The server compares
+      intervals normalised (a month as 30 days, a day as 24 hours), so
+      P1M and P30D are equal and a set holds one of them, but it keeps the
+      parts as written on the wire. Plain `cbor` sends an interval as its
+      ISO 8601 text, such as "P1Y2M3DT4H5M6.5S" or "PT0S".
+
+  - tag: 192
+    name: bigdecimal
+    status: active
+    formats: [cbor.2, shaped]
+    content: tstr  # positional notation
+    notes: >
+      An arbitrary-precision decimal (up to PostgreSQL numeric's 131072 +
+      16383 digits) as text in positional notation, with the scale as
+      written: "79228162514264337593543950336.50" keeps its trailing zero.
+      A bigdecimal that fits a decimal (tag 10) is sent as tag 10, under both
+      dialects, with the decimal's normalised text, so the server only emits
+      tag 192 for a value past rust_decimal's 96-bit mantissa or 28-digit
+      scale. On decode the server reads an optional sign, digits with an
+      optional point and an optional exponent ("1e40", "1.5E-30"); it folds
+      the exponent in and sends positional text back. NaN, infinities, other
+      text and a non-text item are errors. Plain `cbor` sends a bigdecimal
+      that does not fit a decimal as plain text.
+
+  - tag: 193
+    name: regex
+    status: active
+    formats: [cbor.2, shaped]
+    content: tstr  # the pattern, in Rust regex syntax
+    notes: >
+      A SurrealQL regex, as the text of its pattern in the syntax of the Rust
+      `regex` crate, which SurrealQL regexes use. The server compiles the
+      pattern on decode and refuses one that does not compile ("Expected a
+      valid regex under tag 193"). This is not IANA tag 35, which names PCRE
+      / ECMAScript syntax that generic CBOR decoders compile with their own
+      engine. Plain `cbor` has no form for a regex.
+
 # Details of the untagged types, which are where most SDK bugs have been.
 untagged:
   int: >
@@ -376,9 +489,10 @@ untagged:
 not-encodable:
   - type: regex
     notes: >
-      A SurrealQL regex value is not CBOR-encodable. A response containing one
-      fails as a whole, with an `Internal` error "Unsupported value type: Regex",
-      rather than sending a string. SDKs cannot send one either; build it in
-      SurrealQL instead. (The protobuf Value does carry regex, as field 18.)
+      Under plain `cbor` only: a SurrealQL regex has no `cbor` form. A response
+      containing one fails as a whole rather than sending a string (the
+      server's encoder reports "Unsupported value type: Regex (cbor.2 carries
+      one as tag 193)"; over HTTP the request answers 400). `cbor.2` carries
+      it as tag 193. (The protobuf Value carries regex too, as field 18.)
   - type: closure
     notes: Functions and closures are not values on the wire.

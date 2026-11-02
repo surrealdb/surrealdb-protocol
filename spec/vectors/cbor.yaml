@@ -358,6 +358,117 @@ vectors:
     cbor: c88261748205f93e00
     diag: 8(["t", [5, 1.5_1]])
 
+  # --- date, time, timestamp, interval and bigdecimal, widened --------------
+  # SurrealDB 4.0's other kinds that cbor.2 tags (100 and 189 to 192), as plain
+  # cbor sends them: a date or timestamp as a tag 12 datetime, a time as a tag
+  # 14 duration, an interval or a bigdecimal as text. cbor2.yaml has them
+  # tagged. A regex has no plain cbor form at all: the response fails.
+
+  - name: date-widens-to-datetime
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: date"2024-02-29"
+    value: { $datetime: "2024-02-29T00:00:00Z" }
+    notes: Midnight UTC of the date.
+    cbor: cc821a65dfc90000
+    diag: 12([1709164800, 0])
+
+  - name: date-pre-epoch-widens-to-datetime
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: date"1969-12-31"
+    value: { $datetime: "1969-12-31T00:00:00Z" }
+    cbor: cc823a0001517f00
+    diag: 12([-86400, 0])
+
+  - name: date-infinity-widens-to-datetime
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: date"infinity"
+    value: { $datetime: "+262142-12-31T00:00:00Z" }
+    notes: A date holds `infinity` as chrono's last day, so plain cbor sends midnight of that day.
+    cbor: cc821b000007779a091a0000
+    diag: 12([8210266790400, 0])
+
+  - name: time-widens-to-duration
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: time"12:34:56.789"
+    value: { $duration: [ 45296, 789000000 ] }
+    notes: The time since midnight.
+    cbor: ce8219b0f01a2f072f40
+    diag: 14([45296, 789000000])
+
+  - name: time-end-of-day-widens-to-duration
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: time"24:00:00"
+    value: { $duration: [ 86400, 0 ] }
+    cbor: ce811a00015180
+    diag: 14([86400])
+
+  - name: timestamp-widens-to-datetime
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: timestamp"2024-01-01T12:00:00.000000001"
+    value: { $datetime: "2024-01-01T12:00:00.000000001Z" }
+    notes: The wall-clock time read as UTC.
+    cbor: cc821a6592a94001
+    diag: 12([1704110400, 1])
+
+  - name: timestamp-infinity-widens-to-datetime
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: timestamp"infinity"
+    value: { $datetime: "+262142-12-31T23:59:59.999999999Z" }
+    cbor: cc821b000007779a0a6b7f1a3b9ac9ff
+    diag: 12([8210266876799, 999999999])
+
+  - name: interval-widens-to-text
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: interval"P1Y2M3DT4H5M6.5S"
+    value: P1Y2M3DT4H5M6.5S
+    notes: The ISO 8601 text the server prints, which is a plain string to the client.
+    cbor: 70503159324d3344543448354d362e3553
+    diag: '"P1Y2M3DT4H5M6.5S"'
+
+  - name: interval-zero-widens-to-text
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: <interval> "PT0S"
+    value: PT0S
+    cbor: "6450543053"
+    diag: '"PT0S"'
+
+  - name: bigdecimal-widens-to-text
+    kind: canonical
+    formats: [ cbor ]
+    since: "4.0"
+    surql: <bigdecimal> "79228162514264337593543950336"
+    value: "79228162514264337593543950336"
+    notes: One past the largest decimal, so it cannot be a tag 10; plain cbor sends the positional text.
+    cbor: 781d3739323238313632353134323634333337353933353433393530333336
+    diag: '"79228162514264337593543950336"'
+
+  - name: bigdecimal-fitting-a-decimal-is-decimal
+    kind: canonical
+    since: "4.0"
+    surql: 1.50bigdec
+    value: { $decimal: "1.5" }
+    notes: A bigdecimal that fits a decimal is sent as tag 10, in plain cbor and cbor.2 alike, with the decimal's normalised text.
+    cbor: ca63312e35
+    diag: 10("1.5")
+
   # --- decimal -------------------------------------------------------------
 
   - name: decimal-simple
@@ -1412,3 +1523,51 @@ vectors:
     notes: >
       Tag 188 (f32) is cbor.2 only; plain cbor refuses it ("CBOR tag 188 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
     cbor: d8bcf94100
+
+  - name: reject-date-in-plain-cbor
+    kind: reject
+    formats: [ cbor ]
+    diag: '100(0)'
+    notes: >
+      Tag 100 (date) is cbor.2 only; plain cbor refuses it ("CBOR tag 100 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
+    cbor: d86400
+
+  - name: reject-time-in-plain-cbor
+    kind: reject
+    formats: [ cbor ]
+    diag: '189(0)'
+    notes: >
+      Tag 189 (time) is cbor.2 only; plain cbor refuses it ("CBOR tag 189 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
+    cbor: d8bd00
+
+  - name: reject-timestamp-in-plain-cbor
+    kind: reject
+    formats: [ cbor ]
+    diag: '190([0, 0])'
+    notes: >
+      Tag 190 (timestamp) is cbor.2 only; plain cbor refuses it ("CBOR tag 190 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
+    cbor: d8be820000
+
+  - name: reject-interval-in-plain-cbor
+    kind: reject
+    formats: [ cbor ]
+    diag: '191([0, 0, 0])'
+    notes: >
+      Tag 191 (interval) is cbor.2 only; plain cbor refuses it ("CBOR tag 191 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
+    cbor: d8bf83000000
+
+  - name: reject-bigdecimal-in-plain-cbor
+    kind: reject
+    formats: [ cbor ]
+    diag: '192("1e40")'
+    notes: >
+      Tag 192 (bigdecimal) is cbor.2 only; plain cbor refuses it ("CBOR tag 192 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
+    cbor: d8c06431653430
+
+  - name: reject-regex-in-plain-cbor
+    kind: reject
+    formats: [ cbor ]
+    diag: '193("a.*")'
+    notes: >
+      Tag 193 (regex) is cbor.2 only; plain cbor refuses it ("CBOR tag 193 is not accepted here: use cbor.2"), as servers before 4.0 do for an unknown tag.
+    cbor: d8c163612e2a

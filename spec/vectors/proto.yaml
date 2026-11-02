@@ -241,6 +241,72 @@ vectors:
     value: { $record: { table: t, key: [ 5, { $float: 1.5 } ] } }
     proto: 72160a01741211220f0a0220050a0929000000000000f83f
 
+  - name: date-widens-to-datetime
+    kind: canonical
+    surql: date"2024-02-29"
+    value: { $datetime: 2024-02-29T00:00:00Z }
+    proto: 5206088092ffae06
+
+  - name: date-pre-epoch-widens-to-datetime
+    kind: canonical
+    surql: date"1969-12-31"
+    value: { $datetime: 1969-12-31T00:00:00Z }
+    proto: 520b0880ddfaffffffffffff01
+
+  - name: date-infinity-widens-to-datetime
+    kind: canonical
+    surql: date"infinity"
+    value: { $datetime: +262142-12-31T00:00:00Z }
+    proto: 52080880b4a4d0f9ee01
+
+  - name: time-widens-to-duration
+    kind: canonical
+    surql: time"12:34:56.789"
+    value: { $duration: [ 45296, 789000000 ] }
+    proto: 4a0a08f0e10210c0de9cf802
+
+  - name: time-end-of-day-widens-to-duration
+    kind: canonical
+    surql: time"24:00:00"
+    value: { $duration: [ 86400, 0 ] }
+    proto: 4a040880a305
+
+  - name: timestamp-widens-to-datetime
+    kind: canonical
+    surql: timestamp"2024-01-01T12:00:00.000000001"
+    value: { $datetime: 2024-01-01T12:00:00.000000001Z }
+    proto: 520808c0d2caac061001
+
+  - name: timestamp-infinity-widens-to-datetime
+    kind: canonical
+    surql: timestamp"infinity"
+    value: { $datetime: +262142-12-31T23:59:59.999999999Z }
+    proto: 520e08ffd6a9d0f9ee0110ff93ebdc03
+
+  - name: interval-widens-to-text
+    kind: canonical
+    surql: interval"P1Y2M3DT4H5M6.5S"
+    value: P1Y2M3DT4H5M6.5S
+    proto: 3a10503159324d3344543448354d362e3553
+
+  - name: interval-zero-widens-to-text
+    kind: canonical
+    surql: <interval> "PT0S"
+    value: PT0S
+    proto: 3a0450543053
+
+  - name: bigdecimal-widens-to-text
+    kind: canonical
+    surql: <bigdecimal> "79228162514264337593543950336"
+    value: "79228162514264337593543950336"
+    proto: 3a1d3739323238313632353134323634333337353933353433393530333336
+
+  - name: bigdecimal-fitting-a-decimal-is-decimal
+    kind: canonical
+    surql: 1.50bigdec
+    value: { $decimal: "1.5" }
+    proto: 32050a03312e35
+
   - name: decimal-simple
     kind: canonical
     surql: 1.5dec

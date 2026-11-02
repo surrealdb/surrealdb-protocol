@@ -8,7 +8,10 @@
 # Brought up to the 4.0 line as of 2026-10-24: no
 # method was added or removed; `query`, `query_stream` and `begin` gained
 # options, the protected names shrank to four, `run` takes ext::, and HTTP
-# attached sessions moved into the datastore.
+# attached sessions moved into the datastore. Brought up to main as of
+# 2026-11-02 (4.0.0-nightly): `pgsql` and `mysql` were added, `gql` takes the
+# same batches, `begin` takes SQL isolation level names and `read_only: true`,
+# and `run` can no longer call ml:: (SurrealML was removed).
 #
 # Fields:
 #   name        The method string, as sent in the request's `method` field.
@@ -181,9 +184,10 @@ methods:
       only. Honours `txn`.
 
       4.0 adds `options`: { read_only?: { max_staleness?: duration (default
-      0s), strict?: bool (default false) } / null }. Any other key, here or
-      inside read_only, is InvalidParams ("Unknown query option `x`"), and so
-      is `isolation`, which only `begin` takes. A read-only call runs as
+      0s), strict?: bool (default false) } / bool / null }; `true` is `{}`
+      and `false` asks for nothing. Any other key, here or inside read_only,
+      is InvalidParams ("Unknown query option `x`"), and so is `isolation`,
+      which only `begin` takes. A read-only call runs as
       `BEGIN READ ONLY MAX STALENESS <d> [STRICT]; <sql>; COMMIT;`, so its
       result list has the BEGIN result first ({ position: bytes / NONE, age:
       duration, stale: bool }, the snapshot read) and the COMMIT result last:
@@ -227,7 +231,8 @@ methods:
     result: NONE
     since: "3.3.0"
     notes: >
-      Cancels the query_stream started with request id `id`, which must have
+      Cancels the query_stream, or (4.0) the `pgsql` or `mysql` call, started
+      with request id `id`, which must have
       the same type as the original id (1 is not "1"). The cancelled stream
       still ends with an `end` frame carrying an error. Cancelling an id with
       nothing in flight is InvalidParams.
@@ -239,15 +244,18 @@ methods:
     result: any
     grpc: Run
     notes: >
-      Calls fn::, ml:: (version required) or mod::/silo:: functions (4.0 also
-      takes ext::<name>, the same as mod::<name>), and
+      Calls fn:: or mod::/silo:: functions (4.0 also takes ext::<name>, the
+      same as mod::<name>), and
       built-ins such as string::len. SDKs MUST call this method, passing the
       name through unaltered, rather than compiling `RETURN fn::name(...)` into
       a `query` (rpc.proto, rpc Run): a synthesised query bypasses a deny list
       that denies `run`, binds arguments through a text round-trip, and moves
       name resolution into the SDK. The server ignores `txn` for it on
       WebSocket and HTTP, so a call inside an interactive transaction runs
-      outside it.
+      outside it. SurrealML was removed in 4.0: the server still parses an
+      ml:: name (and still requires `version` for one, InvalidParams without
+      it), but every call fails with Internal (-32000) "Problem with machine
+      learning computation. Machine learning computation is not enabled."
 
   - name: graphql
     status: stable
@@ -262,12 +270,83 @@ methods:
     status: stable
     transports: { ws: true, http: true }
     since: "3.2.0"
-    params: "[query: tstr, vars?: object]"
+    params: "[statements: tstr / [* tstr / { text: tstr, vars?: object }], vars?: object / null, options?: object / null]"
     result: "[* statement-result]"
     notes: >
       GQL, the ISO graph query language, which is NOT GraphQL: `gql` and
       `graphql` are different methods. Enabled by default from 3.3 (checked
       against 3.3.4 and 3.4 nightly); 3.2 needed --allow-experimental gql.
+      From 4.0 `statements` may be a batch, as for `pgsql`, and the results of
+      every entry come back in one array. None of the `pgsql` options apply:
+      any of them is InvalidParams ("The options are not supported for gql").
+
+  - name: pgsql
+    status: stable
+    transports: { ws: true, http: true }
+    since: "4.0.0"
+    params: "[statements: tstr / [* tstr / { text: tstr, vars?: object }], vars?: object / null, options?: sql-options / null]"
+    result: "{ statements: [* sql-statement], params?: [* { type }], transaction: { status: \"idle\" / \"active\" / \"failed\", committed?: bool } }"
+    notes: >
+      Runs PostgreSQL text on the session, as `query` runs SurrealQL. The
+      server's doc/design/sql-dialect-rpc-methods.md is the normative
+      contract; this is its outline.
+
+      `statements` is a string, which may hold several `;`-separated
+      statements, or a batch: an array of strings and { text, vars? }
+      objects, run in order. `vars` is layered over the session's variables;
+      a positional parameter `$n` binds to the variable `_n`
+      ({ "_1": "Tobie" }), and in a batch an entry's own vars win. `options`
+      (every field optional): describe: bool (describe the last statement of
+      each entry instead of running it), rowMode: "object" (default) /
+      "array", valueMode: "native" (default) / "text", atomic: bool (one
+      transaction for the whole call), and, only with atomic, isolation:
+      "snapshot" / "serializable" / a SQL level name, and readOnly: bool.
+      An unknown option or value is InvalidParams ("Unknown option `x`"), and
+      so is atomic with describe.
+
+      Each statement answers an entry: { status: "OK", time, command: { tag,
+      rows_affected, last_insert_id, warnings }, columns: [* { name, type: {
+      name, oid }, nullable, table, column }], rows } or { status: "ERR",
+      error: { message, severity, sqlstate, errno: null, position } }. A
+      statement error is an ERR entry and the call still succeeds; within
+      one string the first failing statement stops the rest, while a failing
+      batch entry does not stop the entries after it. `params` is present
+      only for describe.
+
+      Gated three ways, each refusing the call with NotAllowed (-32602): the
+      RPC method allow and deny lists (`--deny-rpc pgsql`, which covers
+      describe, batches and every option), the per-subject arbitrary-query
+      gate, as for `query`, and the `postgres` route capability (`--deny-http
+      postgres`). Malformed params are InvalidParams. Authentication,
+      permissions, namespace, database and variables are the session's.
+
+      Over WebSocket an entry that is only BEGIN / START TRANSACTION (with
+      modes), COMMIT or ROLLBACK opens or ends the session's transaction, and
+      later calls run inside it without a `txn`; `transaction.status` reports
+      it, and a failing statement makes it "failed" until it ends. The
+      envelope `txn` is honoured too (WebSocket only). Over HTTP the status is
+      always "idle" and a transaction-control entry is an ERR entry; use
+      atomic. A call over WebSocket is cancelled with `query_cancel` and the
+      call's request id; over HTTP, by closing the request. Native row values
+      are encoded as `query` encodes them, except that a record id is its
+      bare key.
+
+  - name: mysql
+    status: stable
+    transports: { ws: true, http: true }
+    since: "4.0.0"
+    params: "[statements: tstr / [* tstr / { text: tstr, vars?: object }], vars?: object / null, options?: sql-options / null]"
+    result: "{ statements: [* sql-statement], params?: [* { type }], transaction: { status: \"idle\" / \"active\", committed?: bool } }"
+    notes: >
+      Runs MySQL text on the session, exactly as `pgsql` runs PostgreSQL text
+      (see it for the params, options, gates, transactions and cancelling),
+      with these differences. The n-th `?` binds to the variable `_n`. A
+      column's `type` is { name, mysql_type } (the protocol type code), and an
+      ERR entry's `errno` is the MySQL error number. The route capability is
+      `mysql` (`--deny-http mysql`). An entry that is only `USE name` switches
+      the session database inside the session namespace, as the `use` method
+      does. MySQL has no failed transaction state, so the status stays
+      "active" after a failing statement.
 
   # --- Live queries --------------------------------------------------------
 
@@ -361,7 +440,7 @@ methods:
     status: stable
     transports: { ws: true, http: false }
     http_error: { code: -32601, kind: NotFound, details: { kind: Method } }
-    params: "[] / [{ isolation?: \"snapshot\" / \"serializable\" / null, read_only?: { max_staleness?: duration, strict?: bool } }]"
+    params: "[] / [{ isolation?: \"snapshot\" / \"serializable\" / tstr / null, read_only?: { max_staleness?: duration, strict?: bool } / bool / null }]"
     result: "uuid / { id: uuid, isolation: \"snapshot\" / \"serializable\", snapshot?: { position: bytes / NONE, age: duration, stale: bool } }"
     grpc: BeginTransaction
     since: "3.0.0"
@@ -376,10 +455,15 @@ methods:
       many open transactions". An unknown `txn` is InvalidParams "Transaction
       not found".
 
-      4.0 takes an options object (isolation matched case-insensitively). With
-      no options, or options equal to the defaults, the result is still the
-      bare uuid; otherwise it is an object, which is how a client knows the
-      server understood them, carrying `snapshot` for a read-only transaction.
+      4.0 takes an options object. `isolation` is matched case-insensitively
+      and also takes the SQL level names: "repeatable read", "read committed"
+      and "read uncommitted" all mean snapshot, which the SQL standard allows
+      (anything else is InvalidParams). `read_only: true` is `read_only: {}`
+      and `false` asks for nothing, as for `query`. These are the modes a
+      `pgsql` or `mysql` BEGIN opens with. With no options, or options equal
+      to the defaults, the result is still the bare uuid; otherwise it is
+      { id, isolation }, which is how a client knows the server understood
+      them, with `snapshot` added for a read-only transaction.
       SERIALIZABLE with a MAX STALENESS above zero, a level the datastore does
       not offer (SurrealKV and TiKV offer only SNAPSHOT), a staleness above the
       datastore's maximum and, with strict, a snapshot that is too stale are
