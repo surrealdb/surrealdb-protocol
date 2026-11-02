@@ -15,8 +15,8 @@ Each file was read from the server's main branch as of 2026-10-15 and says
 which server source it came from. Every transport difference in
 `methods.yaml`, and the `/import` behaviour in `http.yaml`, was also checked
 against a running `3.4.0-nightly` of 2026-10-14. All three were then brought
-up to the 4.0 line as of 2026-10-24, and to main (4.0.0-nightly) as of
-2026-11-02, which added the `pgsql` and `mysql` methods and the scoped and
+up to the 4.0 line as of 2026-10-24, and to SurrealDB 4.0 (nightly,
+2026-11-02), which added the `pgsql` and `mysql` methods and the scoped and
 bucket HTTP routes and removed the `/ml` routes; what a 3.x server lacks is
 marked `since: "4.0"` or says "from 4.0".
 

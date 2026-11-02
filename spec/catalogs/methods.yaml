@@ -8,8 +8,8 @@
 # Brought up to the 4.0 line as of 2026-10-24: no
 # method was added or removed; `query`, `query_stream` and `begin` gained
 # options, the protected names shrank to four, `run` takes ext::, and HTTP
-# attached sessions moved into the datastore. Brought up to main as of
-# 2026-11-02 (4.0.0-nightly): `pgsql` and `mysql` were added, `gql` takes the
+# attached sessions moved into the datastore. Brought up to SurrealDB 4.0
+# (nightly, 2026-11-02): `pgsql` and `mysql` were added, `gql` takes the
 # same batches, `begin` takes SQL isolation level names and `read_only: true`,
 # and `run` can no longer call ml:: (SurrealML was removed).
 #
@@ -287,9 +287,7 @@ methods:
     params: "[statements: tstr / [* tstr / { text: tstr, vars?: object }], vars?: object / null, options?: sql-options / null]"
     result: "{ statements: [* sql-statement], params?: [* { type }], transaction: { status: \"idle\" / \"active\" / \"failed\", committed?: bool } }"
     notes: >
-      Runs PostgreSQL text on the session, as `query` runs SurrealQL. The
-      server's doc/design/sql-dialect-rpc-methods.md is the normative
-      contract; this is its outline.
+      Runs PostgreSQL text on the session, as `query` runs SurrealQL.
 
       `statements` is a string, which may hold several `;`-separated
       statements, or a batch: an array of strings and { text, vars? }

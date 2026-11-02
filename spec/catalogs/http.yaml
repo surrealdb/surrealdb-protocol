@@ -3,8 +3,8 @@
 # Source of truth: surrealdb/rpc/src/headers.rs, surrealdb/rpc/src/format.rs,
 # surrealdb/core/src/rpc/format/mod.rs and surrealdb/server/src/ntw/ on
 # the 4.0 line as of 2026-10-24; first written against the server's main
-# branch as of 2026-10-15. Brought up to main (4.0.0-nightly) as of
-# 2026-11-02: the scoped routes (surrealdb/server/src/ntw/scope.rs) and the
+# branch as of 2026-10-15. Brought up to SurrealDB 4.0 (nightly,
+# 2026-11-02): the scoped routes (surrealdb/server/src/ntw/scope.rs) and the
 # bucket routes (ntw/bucket.rs) were added, and the /ml routes removed with
 # SurrealML. Header names are case-insensitive on the wire; the canonical
 # spelling is given. `since: "4.0"` marks what a 3.x server lacks.
@@ -363,8 +363,7 @@ bucket_notes: >
   When both a signature and a session are present the signature wins. The
   `bucket` route capability gates all of them (403 when denied).
 
-# Scoped routes, from 4.0 (surrealdb/server/src/ntw/scope.rs; the server's
-# doc/design/scoped-http-routes.md is the design).
+# Scoped routes, from 4.0 (surrealdb/server/src/ntw/scope.rs).
 scoped_routes:
   grammar:
     - "/ns/{ns}/{method}/{...rest}"
