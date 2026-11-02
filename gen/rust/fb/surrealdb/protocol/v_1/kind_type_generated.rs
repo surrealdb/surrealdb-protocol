@@ -5,10 +5,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_KIND_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_KIND_TYPE: u8 = 34;
+pub const ENUM_MAX_KIND_TYPE: u8 = 39;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_KIND_TYPE: [KindType; 35] = [
+pub const ENUM_VALUES_KIND_TYPE: [KindType; 40] = [
   KindType::NONE,
   KindType::Any,
   KindType::Null,
@@ -44,6 +44,11 @@ pub const ENUM_VALUES_KIND_TYPE: [KindType; 35] = [
   KindType::U64,
   KindType::F16,
   KindType::F32,
+  KindType::Date,
+  KindType::Time,
+  KindType::Timestamp,
+  KindType::Interval,
+  KindType::BigDecimal,
 ];
 
 /// A union of all possible type kinds in SurrealDB's type system.
@@ -87,9 +92,14 @@ impl KindType {
   pub const U64: Self = Self(32);
   pub const F16: Self = Self(33);
   pub const F32: Self = Self(34);
+  pub const Date: Self = Self(35);
+  pub const Time: Self = Self(36);
+  pub const Timestamp: Self = Self(37);
+  pub const Interval: Self = Self(38);
+  pub const BigDecimal: Self = Self(39);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 34;
+  pub const ENUM_MAX: u8 = 39;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Any,
@@ -126,6 +136,11 @@ impl KindType {
     Self::U64,
     Self::F16,
     Self::F32,
+    Self::Date,
+    Self::Time,
+    Self::Timestamp,
+    Self::Interval,
+    Self::BigDecimal,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -165,6 +180,11 @@ impl KindType {
       Self::U64 => Some("U64"),
       Self::F16 => Some("F16"),
       Self::F32 => Some("F32"),
+      Self::Date => Some("Date"),
+      Self::Time => Some("Time"),
+      Self::Timestamp => Some("Timestamp"),
+      Self::Interval => Some("Interval"),
+      Self::BigDecimal => Some("BigDecimal"),
       _ => None,
     }
   }

@@ -24,6 +24,33 @@ table Datetime {
     nanos: uint32 (id: 1);
 }
 
+/// A calendar date with no zone (SurrealDB 4.0's `date`): days since
+/// 1970-01-01, within [-96465292, 95026236]. The same rules as `PlainDate` in
+/// value.proto.
+table PlainDate { days: int32 (id: 0); }
+
+/// A time of day (`time`): nanoseconds since midnight, up to and including
+/// 24:00:00 (86400000000000).
+table PlainTime { nanos: uint64 (id: 0); }
+
+/// A date and time of day with no zone (`timestamp`), laid out as `Datetime`.
+table Timestamp {
+    seconds: int64 (id: 0);
+    nanos: uint32 (id: 1);
+}
+
+/// A calendar interval (`interval`): months, days and microseconds, each
+/// signed on its own.
+table Interval {
+    months: int32 (id: 0);
+    days: int32 (id: 1);
+    micros: int64 (id: 2);
+}
+
+/// An arbitrary-precision decimal (`bigdecimal`) in positional notation, the
+/// scale as written.
+table BigDecimal { value: string (id: 0); }
+
 /// UUID value.
 table Uuid {
     bytes: [ubyte] (id: 0);
@@ -238,6 +265,13 @@ union ValueType {
     U64: UInt64Value = 28,
     F16: Float16Value = 29,
     F32: Float32Value = 30,
+    /// SurrealDB 4.0's other kinds, one below their value.proto tags. A peer
+    /// that predates them sends `Datetime`, `Duration`, `String` or `Decimal`.
+    Date: PlainDate = 31,
+    Time: PlainTime = 32,
+    Timestamp: surrealdb.protocol.v1.Timestamp = 33,
+    Interval: surrealdb.protocol.v1.Interval = 34,
+    BigDecimal: surrealdb.protocol.v1.BigDecimal = 35,
 }
 
 
@@ -331,6 +365,13 @@ table U32Kind {}
 table U64Kind {}
 table F16Kind {}
 table F32Kind {}
+
+/// SurrealDB 4.0's 'date', 'time', 'timestamp', 'interval' and 'bigdecimal'.
+table DateKind {}
+table TimeKind {}
+table TimestampKind {}
+table IntervalKind {}
+table BigDecimalKind {}
 
 /// Represents the 'table' type.
 table TableKind {
@@ -471,6 +512,11 @@ union KindType {
     U64: U64Kind = 32,
     F16: F16Kind = 33,
     F32: F32Kind = 34,
+    Date: DateKind = 35,
+    Time: TimeKind = 36,
+    Timestamp: TimestampKind = 37,
+    Interval: IntervalKind = 38,
+    BigDecimal: BigDecimalKind = 39,
 }
 
 /// A type kind container that represents a type in SurrealDB's type system.

@@ -180,9 +180,12 @@ float or (a u64 above i64::MAX) decimal. A `$u8` and a `5` are different values 
 compares them equal, because an SDK must decode tag 181 to its u8, not its int.
 
 Date, time, timestamp, interval and bigdecimal exist from SurrealDB 4.0 too.
-`cbor.2` carries them as tags 100 and 189 to 192, and regex as tag 193. Plain
-`cbor` and protobuf widen them: a date or timestamp to a datetime, a
-time to a duration, an interval or a bigdecimal to a string. A bigdecimal that
+`cbor.2` carries them as tags 100 and 189 to 192, and regex as tag 193;
+`value.proto` and `value.fbs` give each its own arm (`date` to `bigdecimal`).
+Plain `cbor` widens them: a date or timestamp to a datetime, a time to a
+duration, an interval or a bigdecimal to a string. The 4.0 nightly of
+2026-11-02 also widens them over gRPC, as it does the sized numbers, so the
+protobuf vectors hold the widened forms; it predates the arms. A bigdecimal that
 fits a decimal is a decimal on every wire, so `{"$bigdecimal": ...}` only
 comes back for one that does not.
 

@@ -20,6 +20,11 @@ typedef struct Surrealdb__Protocol__V1__NoneValue Surrealdb__Protocol__V1__NoneV
 typedef struct Surrealdb__Protocol__V1__Duration Surrealdb__Protocol__V1__Duration;
 typedef struct Surrealdb__Protocol__V1__Datetime Surrealdb__Protocol__V1__Datetime;
 typedef struct Surrealdb__Protocol__V1__Decimal Surrealdb__Protocol__V1__Decimal;
+typedef struct Surrealdb__Protocol__V1__PlainDate Surrealdb__Protocol__V1__PlainDate;
+typedef struct Surrealdb__Protocol__V1__PlainTime Surrealdb__Protocol__V1__PlainTime;
+typedef struct Surrealdb__Protocol__V1__Timestamp Surrealdb__Protocol__V1__Timestamp;
+typedef struct Surrealdb__Protocol__V1__Interval Surrealdb__Protocol__V1__Interval;
+typedef struct Surrealdb__Protocol__V1__BigDecimal Surrealdb__Protocol__V1__BigDecimal;
 typedef struct Surrealdb__Protocol__V1__Uuid Surrealdb__Protocol__V1__Uuid;
 typedef struct Surrealdb__Protocol__V1__Point Surrealdb__Protocol__V1__Point;
 typedef struct Surrealdb__Protocol__V1__Line Surrealdb__Protocol__V1__Line;
@@ -67,6 +72,11 @@ typedef struct Surrealdb__Protocol__V1__U32Kind Surrealdb__Protocol__V1__U32Kind
 typedef struct Surrealdb__Protocol__V1__U64Kind Surrealdb__Protocol__V1__U64Kind;
 typedef struct Surrealdb__Protocol__V1__F16Kind Surrealdb__Protocol__V1__F16Kind;
 typedef struct Surrealdb__Protocol__V1__F32Kind Surrealdb__Protocol__V1__F32Kind;
+typedef struct Surrealdb__Protocol__V1__DateKind Surrealdb__Protocol__V1__DateKind;
+typedef struct Surrealdb__Protocol__V1__TimeKind Surrealdb__Protocol__V1__TimeKind;
+typedef struct Surrealdb__Protocol__V1__TimestampKind Surrealdb__Protocol__V1__TimestampKind;
+typedef struct Surrealdb__Protocol__V1__IntervalKind Surrealdb__Protocol__V1__IntervalKind;
+typedef struct Surrealdb__Protocol__V1__BigDecimalKind Surrealdb__Protocol__V1__BigDecimalKind;
 typedef struct Surrealdb__Protocol__V1__TableName Surrealdb__Protocol__V1__TableName;
 typedef struct Surrealdb__Protocol__V1__RecordKind Surrealdb__Protocol__V1__RecordKind;
 typedef struct Surrealdb__Protocol__V1__GeometryKind Surrealdb__Protocol__V1__GeometryKind;
@@ -155,7 +165,7 @@ struct  Surrealdb__Protocol__V1__Duration
  * A UTC instant.
  * Replaces `google.protobuf.Timestamp`, whose specification caps the range at
  * 0001-01-01 .. 9999-12-31. SurrealDB datetimes are `chrono::DateTime<Utc>`
- * and span roughly +/-262,000 years. Byte-identical to `Timestamp` in
+ * and span roughly +/-262,000 years. Byte-identical to `Datetime` in
  * value.fbs.
  */
 struct  Surrealdb__Protocol__V1__Datetime
@@ -186,6 +196,99 @@ struct  Surrealdb__Protocol__V1__Decimal
 };
 #define SURREALDB__PROTOCOL__V1__DECIMAL__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__decimal__descriptor) \
+, (char *)protobuf_c_empty_string }
+
+
+/*
+ * A calendar date with no zone (SurrealDB 4.0's `date`), as CBOR tag 100.
+ * Named `PlainDate`, not `Date`, so the generated code does not shadow a
+ * language's own date type. The first and last days of chrono's range,
+ * -262143-01-01 and +262142-12-31, stand for `-infinity` and `infinity`.
+ */
+struct  Surrealdb__Protocol__V1__PlainDate
+{
+  ProtobufCMessage base;
+  /*
+   * Days since 1970-01-01 in the proleptic Gregorian calendar. MUST be in
+   * [-96465292, 95026236].
+   */
+  int32_t days;
+};
+#define SURREALDB__PROTOCOL__V1__PLAIN_DATE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__plain_date__descriptor) \
+, 0 }
+
+
+/*
+ * A time of day with no date or zone (`time`), as CBOR tag 189.
+ */
+struct  Surrealdb__Protocol__V1__PlainTime
+{
+  ProtobufCMessage base;
+  /*
+   * Nanoseconds since midnight. MUST be in [0, 86400000000000]: 24:00:00 is
+   * a valid time, nothing past it is.
+   */
+  uint64_t nanos;
+};
+#define SURREALDB__PROTOCOL__V1__PLAIN_TIME__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__plain_time__descriptor) \
+, 0 }
+
+
+/*
+ * A date and time of day with no zone (`timestamp`), as CBOR tag 190: a
+ * wall-clock time, where `Datetime` is an instant in UTC. The same layout and
+ * rules as `Datetime`; the first and last instants of chrono's range stand
+ * for `-infinity` and `infinity`.
+ */
+struct  Surrealdb__Protocol__V1__Timestamp
+{
+  ProtobufCMessage base;
+  /*
+   * Seconds since 1970-01-01T00:00:00. May be negative.
+   */
+  int64_t seconds;
+  /*
+   * Sub-second remainder, always ADDED to `seconds`. MUST be in
+   * [0, 999999999].
+   */
+  uint32_t nanos;
+};
+#define SURREALDB__PROTOCOL__V1__TIMESTAMP__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__timestamp__descriptor) \
+, 0, 0 }
+
+
+/*
+ * A calendar interval (`interval`), as CBOR tag 191 and PostgreSQL hold one.
+ * Each part is signed on its own and kept as written; the server compares
+ * intervals normalised (a month as 30 days, a day as 24 hours).
+ */
+struct  Surrealdb__Protocol__V1__Interval
+{
+  ProtobufCMessage base;
+  int32_t months;
+  int32_t days;
+  int64_t micros;
+};
+#define SURREALDB__PROTOCOL__V1__INTERVAL__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__interval__descriptor) \
+, 0, 0, 0 }
+
+
+/*
+ * An arbitrary-precision decimal (`bigdecimal`), as CBOR tag 192: positional
+ * notation, with the scale as written ("1.50" keeps its zero). A value that
+ * fits `Decimal` SHOULD be sent as one, as the server does.
+ */
+struct  Surrealdb__Protocol__V1__BigDecimal
+{
+  ProtobufCMessage base;
+  char *value;
+};
+#define SURREALDB__PROTOCOL__V1__BIG_DECIMAL__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__big_decimal__descriptor) \
 , (char *)protobuf_c_empty_string }
 
 
@@ -535,7 +638,12 @@ typedef enum {
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_U32 = 28,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_U64 = 29,
   SURREALDB__PROTOCOL__V1__VALUE__VALUE_F16 = 30,
-  SURREALDB__PROTOCOL__V1__VALUE__VALUE_F32 = 31
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_F32 = 31,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_DATE = 32,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_TIME = 33,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_TIMESTAMP = 34,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_INTERVAL = 35,
+  SURREALDB__PROTOCOL__V1__VALUE__VALUE_BIGDECIMAL = 36
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__VALUE__VALUE__CASE)
 } Surrealdb__Protocol__V1__Value__ValueCase;
 
@@ -564,6 +672,11 @@ typedef enum {
  * Decoders MUST reject an out-of-range or inexact value rather than clamp or
  * round it. A peer that predates them sends `int64`, `float64` or (a u64 above
  * i64::MAX) `decimal` instead, as plain CBOR does.
+ * So are `date` to `bigdecimal`, SurrealDB 4.0's other kinds, which match
+ * cbor.2's tags 100 and 189 to 192. A peer that predates them sends a date or
+ * timestamp as `datetime`, a time as `duration`, an interval as `string` and
+ * a bigdecimal as `decimal` (or `string` when it does not fit one), as plain
+ * CBOR does. Decoders MUST reject a value outside its kind's range.
  */
 struct  Surrealdb__Protocol__V1__Value
 {
@@ -579,17 +692,22 @@ struct  Surrealdb__Protocol__V1__Value
     char *string_record_id;
     char *table;
     Surrealdb__Protocol__V1__Array *array;
+    Surrealdb__Protocol__V1__BigDecimal *bigdecimal;
+    Surrealdb__Protocol__V1__PlainDate *date;
     Surrealdb__Protocol__V1__Datetime *datetime;
     Surrealdb__Protocol__V1__Decimal *decimal;
     Surrealdb__Protocol__V1__Duration *duration;
     Surrealdb__Protocol__V1__File *file;
     Surrealdb__Protocol__V1__Geometry *geometry;
+    Surrealdb__Protocol__V1__Interval *interval;
     Surrealdb__Protocol__V1__NoneValue *none;
     Surrealdb__Protocol__V1__NullValue *null;
     Surrealdb__Protocol__V1__Object *object;
     Surrealdb__Protocol__V1__Range *range;
     Surrealdb__Protocol__V1__RecordId *record_id;
     Surrealdb__Protocol__V1__Set *set;
+    Surrealdb__Protocol__V1__PlainTime *time;
+    Surrealdb__Protocol__V1__Timestamp *timestamp;
     Surrealdb__Protocol__V1__Uuid *uuid;
     float f16;
     float f32;
@@ -933,6 +1051,54 @@ struct  Surrealdb__Protocol__V1__F32Kind
  }
 
 
+/*
+ * SurrealDB 4.0's date, time, timestamp, interval and bigdecimal kinds.
+ */
+struct  Surrealdb__Protocol__V1__DateKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__DATE_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__date_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__TimeKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__TIME_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__time_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__TimestampKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__TIMESTAMP_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__timestamp_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__IntervalKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__INTERVAL_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__interval_kind__descriptor) \
+ }
+
+
+struct  Surrealdb__Protocol__V1__BigDecimalKind
+{
+  ProtobufCMessage base;
+};
+#define SURREALDB__PROTOCOL__V1__BIG_DECIMAL_KIND__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&surrealdb__protocol__v1__big_decimal_kind__descriptor) \
+ }
+
+
 struct  Surrealdb__Protocol__V1__TableName
 {
   ProtobufCMessage base;
@@ -1151,7 +1317,12 @@ typedef enum {
   SURREALDB__PROTOCOL__V1__KIND__KIND_U32 = 31,
   SURREALDB__PROTOCOL__V1__KIND__KIND_U64 = 32,
   SURREALDB__PROTOCOL__V1__KIND__KIND_F16 = 33,
-  SURREALDB__PROTOCOL__V1__KIND__KIND_F32 = 34
+  SURREALDB__PROTOCOL__V1__KIND__KIND_F32 = 34,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_DATE = 35,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_TIME = 36,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_TIMESTAMP = 37,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_INTERVAL = 38,
+  SURREALDB__PROTOCOL__V1__KIND__KIND_BIGDECIMAL = 39
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(SURREALDB__PROTOCOL__V1__KIND__KIND__CASE)
 } Surrealdb__Protocol__V1__Kind__KindCase;
 
@@ -1165,8 +1336,10 @@ struct  Surrealdb__Protocol__V1__Kind
   union {
     Surrealdb__Protocol__V1__AnyKind *any;
     Surrealdb__Protocol__V1__ArrayKind *array;
+    Surrealdb__Protocol__V1__BigDecimalKind *bigdecimal;
     Surrealdb__Protocol__V1__BoolKind *bool_;
     Surrealdb__Protocol__V1__BytesKind *bytes;
+    Surrealdb__Protocol__V1__DateKind *date;
     Surrealdb__Protocol__V1__DatetimeKind *datetime;
     Surrealdb__Protocol__V1__DecimalKind *decimal;
     Surrealdb__Protocol__V1__DurationKind *duration;
@@ -1181,6 +1354,7 @@ struct  Surrealdb__Protocol__V1__Kind
     Surrealdb__Protocol__V1__I32Kind *i32;
     Surrealdb__Protocol__V1__I8Kind *i8;
     Surrealdb__Protocol__V1__IntKind *int_;
+    Surrealdb__Protocol__V1__IntervalKind *interval;
     Surrealdb__Protocol__V1__LiteralKind *literal;
     Surrealdb__Protocol__V1__NullKind *null;
     Surrealdb__Protocol__V1__NumberKind *number;
@@ -1192,6 +1366,8 @@ struct  Surrealdb__Protocol__V1__Kind
     Surrealdb__Protocol__V1__RegexKind *regex;
     Surrealdb__Protocol__V1__SetKind *set;
     Surrealdb__Protocol__V1__StringKind *string;
+    Surrealdb__Protocol__V1__TimeKind *time;
+    Surrealdb__Protocol__V1__TimestampKind *timestamp;
     Surrealdb__Protocol__V1__U16Kind *u16;
     Surrealdb__Protocol__V1__U32Kind *u32;
     Surrealdb__Protocol__V1__U64Kind *u64;
@@ -1298,6 +1474,101 @@ Surrealdb__Protocol__V1__Decimal *
                       const uint8_t       *data);
 void   surrealdb__protocol__v1__decimal__free_unpacked
                      (Surrealdb__Protocol__V1__Decimal *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__PlainDate methods */
+void   surrealdb__protocol__v1__plain_date__init
+                     (Surrealdb__Protocol__V1__PlainDate         *message);
+size_t surrealdb__protocol__v1__plain_date__get_packed_size
+                     (const Surrealdb__Protocol__V1__PlainDate   *message);
+size_t surrealdb__protocol__v1__plain_date__pack
+                     (const Surrealdb__Protocol__V1__PlainDate   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__plain_date__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__PlainDate   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__PlainDate *
+       surrealdb__protocol__v1__plain_date__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__plain_date__free_unpacked
+                     (Surrealdb__Protocol__V1__PlainDate *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__PlainTime methods */
+void   surrealdb__protocol__v1__plain_time__init
+                     (Surrealdb__Protocol__V1__PlainTime         *message);
+size_t surrealdb__protocol__v1__plain_time__get_packed_size
+                     (const Surrealdb__Protocol__V1__PlainTime   *message);
+size_t surrealdb__protocol__v1__plain_time__pack
+                     (const Surrealdb__Protocol__V1__PlainTime   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__plain_time__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__PlainTime   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__PlainTime *
+       surrealdb__protocol__v1__plain_time__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__plain_time__free_unpacked
+                     (Surrealdb__Protocol__V1__PlainTime *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Timestamp methods */
+void   surrealdb__protocol__v1__timestamp__init
+                     (Surrealdb__Protocol__V1__Timestamp         *message);
+size_t surrealdb__protocol__v1__timestamp__get_packed_size
+                     (const Surrealdb__Protocol__V1__Timestamp   *message);
+size_t surrealdb__protocol__v1__timestamp__pack
+                     (const Surrealdb__Protocol__V1__Timestamp   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__timestamp__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Timestamp   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Timestamp *
+       surrealdb__protocol__v1__timestamp__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__timestamp__free_unpacked
+                     (Surrealdb__Protocol__V1__Timestamp *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__Interval methods */
+void   surrealdb__protocol__v1__interval__init
+                     (Surrealdb__Protocol__V1__Interval         *message);
+size_t surrealdb__protocol__v1__interval__get_packed_size
+                     (const Surrealdb__Protocol__V1__Interval   *message);
+size_t surrealdb__protocol__v1__interval__pack
+                     (const Surrealdb__Protocol__V1__Interval   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__interval__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Interval   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__Interval *
+       surrealdb__protocol__v1__interval__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__interval__free_unpacked
+                     (Surrealdb__Protocol__V1__Interval *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__BigDecimal methods */
+void   surrealdb__protocol__v1__big_decimal__init
+                     (Surrealdb__Protocol__V1__BigDecimal         *message);
+size_t surrealdb__protocol__v1__big_decimal__get_packed_size
+                     (const Surrealdb__Protocol__V1__BigDecimal   *message);
+size_t surrealdb__protocol__v1__big_decimal__pack
+                     (const Surrealdb__Protocol__V1__BigDecimal   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__big_decimal__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__BigDecimal   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__BigDecimal *
+       surrealdb__protocol__v1__big_decimal__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__big_decimal__free_unpacked
+                     (Surrealdb__Protocol__V1__BigDecimal *message,
                       ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__V1__Uuid methods */
 void   surrealdb__protocol__v1__uuid__init
@@ -2192,6 +2463,101 @@ Surrealdb__Protocol__V1__F32Kind *
 void   surrealdb__protocol__v1__f32_kind__free_unpacked
                      (Surrealdb__Protocol__V1__F32Kind *message,
                       ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__DateKind methods */
+void   surrealdb__protocol__v1__date_kind__init
+                     (Surrealdb__Protocol__V1__DateKind         *message);
+size_t surrealdb__protocol__v1__date_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__DateKind   *message);
+size_t surrealdb__protocol__v1__date_kind__pack
+                     (const Surrealdb__Protocol__V1__DateKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__date_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__DateKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__DateKind *
+       surrealdb__protocol__v1__date_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__date_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__DateKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__TimeKind methods */
+void   surrealdb__protocol__v1__time_kind__init
+                     (Surrealdb__Protocol__V1__TimeKind         *message);
+size_t surrealdb__protocol__v1__time_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__TimeKind   *message);
+size_t surrealdb__protocol__v1__time_kind__pack
+                     (const Surrealdb__Protocol__V1__TimeKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__time_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__TimeKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__TimeKind *
+       surrealdb__protocol__v1__time_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__time_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__TimeKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__TimestampKind methods */
+void   surrealdb__protocol__v1__timestamp_kind__init
+                     (Surrealdb__Protocol__V1__TimestampKind         *message);
+size_t surrealdb__protocol__v1__timestamp_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__TimestampKind   *message);
+size_t surrealdb__protocol__v1__timestamp_kind__pack
+                     (const Surrealdb__Protocol__V1__TimestampKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__timestamp_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__TimestampKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__TimestampKind *
+       surrealdb__protocol__v1__timestamp_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__timestamp_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__TimestampKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__IntervalKind methods */
+void   surrealdb__protocol__v1__interval_kind__init
+                     (Surrealdb__Protocol__V1__IntervalKind         *message);
+size_t surrealdb__protocol__v1__interval_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__IntervalKind   *message);
+size_t surrealdb__protocol__v1__interval_kind__pack
+                     (const Surrealdb__Protocol__V1__IntervalKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__interval_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__IntervalKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__IntervalKind *
+       surrealdb__protocol__v1__interval_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__interval_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__IntervalKind *message,
+                      ProtobufCAllocator *allocator);
+/* Surrealdb__Protocol__V1__BigDecimalKind methods */
+void   surrealdb__protocol__v1__big_decimal_kind__init
+                     (Surrealdb__Protocol__V1__BigDecimalKind         *message);
+size_t surrealdb__protocol__v1__big_decimal_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__BigDecimalKind   *message);
+size_t surrealdb__protocol__v1__big_decimal_kind__pack
+                     (const Surrealdb__Protocol__V1__BigDecimalKind   *message,
+                      uint8_t             *out);
+size_t surrealdb__protocol__v1__big_decimal_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__BigDecimalKind   *message,
+                      ProtobufCBuffer     *buffer);
+Surrealdb__Protocol__V1__BigDecimalKind *
+       surrealdb__protocol__v1__big_decimal_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   surrealdb__protocol__v1__big_decimal_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__BigDecimalKind *message,
+                      ProtobufCAllocator *allocator);
 /* Surrealdb__Protocol__V1__TableName methods */
 void   surrealdb__protocol__v1__table_name__init
                      (Surrealdb__Protocol__V1__TableName         *message);
@@ -2494,6 +2860,21 @@ typedef void (*Surrealdb__Protocol__V1__Datetime_Closure)
 typedef void (*Surrealdb__Protocol__V1__Decimal_Closure)
                  (const Surrealdb__Protocol__V1__Decimal *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__PlainDate_Closure)
+                 (const Surrealdb__Protocol__V1__PlainDate *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__PlainTime_Closure)
+                 (const Surrealdb__Protocol__V1__PlainTime *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Timestamp_Closure)
+                 (const Surrealdb__Protocol__V1__Timestamp *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__Interval_Closure)
+                 (const Surrealdb__Protocol__V1__Interval *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__BigDecimal_Closure)
+                 (const Surrealdb__Protocol__V1__BigDecimal *message,
+                  void *closure_data);
 typedef void (*Surrealdb__Protocol__V1__Uuid_Closure)
                  (const Surrealdb__Protocol__V1__Uuid *message,
                   void *closure_data);
@@ -2635,6 +3016,21 @@ typedef void (*Surrealdb__Protocol__V1__F16Kind_Closure)
 typedef void (*Surrealdb__Protocol__V1__F32Kind_Closure)
                  (const Surrealdb__Protocol__V1__F32Kind *message,
                   void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__DateKind_Closure)
+                 (const Surrealdb__Protocol__V1__DateKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__TimeKind_Closure)
+                 (const Surrealdb__Protocol__V1__TimeKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__TimestampKind_Closure)
+                 (const Surrealdb__Protocol__V1__TimestampKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__IntervalKind_Closure)
+                 (const Surrealdb__Protocol__V1__IntervalKind *message,
+                  void *closure_data);
+typedef void (*Surrealdb__Protocol__V1__BigDecimalKind_Closure)
+                 (const Surrealdb__Protocol__V1__BigDecimalKind *message,
+                  void *closure_data);
 typedef void (*Surrealdb__Protocol__V1__TableName_Closure)
                  (const Surrealdb__Protocol__V1__TableName *message,
                   void *closure_data);
@@ -2691,6 +3087,11 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__none_value__des
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__duration__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__datetime__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__decimal__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__plain_date__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__plain_time__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__timestamp__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__interval__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__big_decimal__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__uuid__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__point__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__line__descriptor;
@@ -2738,6 +3139,11 @@ extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__u32_kind__descr
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__u64_kind__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__f16_kind__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__f32_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__date_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__time_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__timestamp_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__interval_kind__descriptor;
+extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__big_decimal_kind__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__table_name__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__record_kind__descriptor;
 extern const ProtobufCMessageDescriptor surrealdb__protocol__v1__geometry_kind__descriptor;

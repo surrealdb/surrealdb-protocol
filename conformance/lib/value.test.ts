@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import * as pb from "../../gen/ts/surrealdb/protocol/v1/value";
 import { decode, encode, fromHex, toHex } from "./cbor";
 import { decodeProto, encodeProto, fromProto } from "./proto";
 import {
@@ -375,6 +376,30 @@ describe("value", () => {
 		expect(() => fromJson({ $date: "+262142-12-31" })).toThrow("range");
 		expect(() => fromJson({ $time: "24:00:01" })).toThrow("time");
 		expect(() => fromJson({ $bigdecimal: "NaN" })).toThrow("finite");
+	});
+
+	test("the other 4.0 kinds have their own protobuf arms", () => {
+		for (const j of [
+			{ $date: "1969-12-31" },
+			{ $time: "24:00:00" },
+			{ $timestamp: "1969-12-31T23:59:59.500" },
+			{ $interval: [14, 3, -1500000] },
+			{ $bigdecimal: "79228162514264337593543950336.50" },
+		] as Json[])
+			expect(toJson(decodeProto(encodeProto(fromJson(j))))).toEqual(j);
+		// Field 32, PlainDate { days: -1 } as a varint int32.
+		expect(toHex(encodeProto(fromJson({ $date: "1969-12-31" })))).toBe(
+			"82020b08ffffffffffffffffff01",
+		);
+		// A bigdecimal that fits a decimal goes as one.
+		expect(
+			toJson(decodeProto(encodeProto(fromJson({ $bigdecimal: "1.50" })))),
+		).toEqual({ $decimal: "1.5" });
+		// Decoders hold each arm to its kind's range.
+		const past = pb.Value.encode({
+			value: { $case: "time", time: { nanos: 86_400_000_000_001n } },
+		}).finish();
+		expect(() => decodeProto(past)).toThrow("Expected a valid Time value");
 	});
 
 	test("typed sized numbers are range-checked", () => {

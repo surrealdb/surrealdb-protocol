@@ -562,6 +562,81 @@ impl<'a> Kind<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_date(&self) -> Option<DateKind<'a>> {
+    if self.kind_type() == KindType::Date {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { DateKind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_time(&self) -> Option<TimeKind<'a>> {
+    if self.kind_type() == KindType::Time {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { TimeKind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_timestamp(&self) -> Option<TimestampKind<'a>> {
+    if self.kind_type() == KindType::Timestamp {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { TimestampKind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_interval(&self) -> Option<IntervalKind<'a>> {
+    if self.kind_type() == KindType::Interval {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { IntervalKind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn kind_as_big_decimal(&self) -> Option<BigDecimalKind<'a>> {
+    if self.kind_type() == KindType::BigDecimal {
+      self.kind().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { BigDecimalKind::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for Kind<'_> {
@@ -606,6 +681,11 @@ impl ::flatbuffers::Verifiable for Kind<'_> {
           KindType::U64 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<U64Kind>>("KindType::U64", pos),
           KindType::F16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<F16Kind>>("KindType::F16", pos),
           KindType::F32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<F32Kind>>("KindType::F32", pos),
+          KindType::Date => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<DateKind>>("KindType::Date", pos),
+          KindType::Time => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<TimeKind>>("KindType::Time", pos),
+          KindType::Timestamp => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<TimestampKind>>("KindType::Timestamp", pos),
+          KindType::Interval => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<IntervalKind>>("KindType::Interval", pos),
+          KindType::BigDecimal => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<BigDecimalKind>>("KindType::BigDecimal", pos),
           _ => Ok(()),
         }
      })?
@@ -893,6 +973,41 @@ impl ::core::fmt::Debug for Kind<'_> {
         },
         KindType::F32 => {
           if let Some(x) = self.kind_as_f32() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::Date => {
+          if let Some(x) = self.kind_as_date() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::Time => {
+          if let Some(x) = self.kind_as_time() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::Timestamp => {
+          if let Some(x) = self.kind_as_timestamp() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::Interval => {
+          if let Some(x) = self.kind_as_interval() {
+            ds.field("kind", &x)
+          } else {
+            ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        KindType::BigDecimal => {
+          if let Some(x) = self.kind_as_big_decimal() {
             ds.field("kind", &x)
           } else {
             ds.field("kind", &"InvalidFlatbuffer: Union discriminant does not match value.")

@@ -7,15 +7,20 @@ import * as pb from "../../gen/ts/surrealdb/protocol/v1/value";
 import { fromHex, toHex } from "./cbor";
 import {
 	type Bound,
+	bigDecimalAsDecimal,
 	checkDatetimeSecs,
 	closeRing,
+	dateValue,
 	distinct,
 	type Geometry,
+	normaliseBigDecimal,
 	normaliseDecimal,
 	normaliseUuid,
 	type Position,
 	sizedFloat,
 	sizedInt,
+	timestampValue,
+	timeValue,
 	utf8Compare,
 	type Value,
 	ValueError,
@@ -111,12 +116,28 @@ function arm(v: Value): pb.Value["value"] {
 			return { $case: "geometry", geometry: geometry(v.g) };
 		case "regex":
 			return { $case: "regex", regex: v.v };
+		// SurrealDB 4.0's other kinds have their own arms, as the sized ones do.
 		case "date":
+			return { $case: "date", date: { days: v.days } };
 		case "time":
+			return { $case: "time", time: { nanos: v.nanos } };
 		case "timestamp":
+			return {
+				$case: "timestamp",
+				timestamp: { seconds: v.secs, nanos: v.nanos },
+			};
 		case "interval":
-		case "bigdecimal":
-			throw new ValueError(`${v.k} has no value.proto arm`);
+			return {
+				$case: "interval",
+				interval: { months: v.months, days: v.days, micros: v.micros },
+			};
+		case "bigdecimal": {
+			// One that fits a decimal is sent as one, as in CBOR.
+			const d = bigDecimalAsDecimal(v.v);
+			return d === undefined
+				? { $case: "bigdecimal", bigdecimal: { value: v.v } }
+				: { $case: "decimal", decimal: { value: d } };
+		}
 	}
 }
 
@@ -254,6 +275,24 @@ export function fromProto(p: pb.Value): Value {
 			return { k: "f32", v: a.f32 };
 		case "decimal":
 			return { k: "decimal", v: normaliseDecimal(a.decimal.value, true) };
+		case "date":
+			return dateValue(BigInt(a.date.days));
+		case "time":
+			return timeValue(BigInt(a.time.nanos));
+		case "timestamp":
+			return timestampValue(
+				BigInt(a.timestamp.seconds),
+				BigInt(a.timestamp.nanos),
+			);
+		case "interval":
+			return {
+				k: "interval",
+				months: a.interval.months,
+				days: a.interval.days,
+				micros: BigInt(a.interval.micros),
+			};
+		case "bigdecimal":
+			return { k: "bigdecimal", v: normaliseBigDecimal(a.bigdecimal.value) };
 		case "string":
 			return { k: "string", v: a.string };
 		case "bytes":

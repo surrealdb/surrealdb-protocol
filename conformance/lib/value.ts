@@ -44,7 +44,8 @@
  * come back.
  *
  * So are date, time, timestamp, interval and bigdecimal, which `cbor.2` carries
- * as tags 100 and 189 to 192, and regex, tag 193. Plain `cbor` widens the
+ * as tags 100 and 189 to 192 (and value.proto and value.fbs as their `date` to
+ * `bigdecimal` arms), and regex, tag 193. Plain `cbor` widens the
  * first five (a date or timestamp to a datetime, a time to a duration, an
  * interval or a bigdecimal to text) and has no form for a regex. A bigdecimal
  * that fits a decimal is sent as one in both dialects.
@@ -905,6 +906,33 @@ function fromTag(t: bigint, c: CborItem, format: Format): Value {
 const intOf = (i: CborItem | undefined): bigint | undefined =>
 	i?.t === "uint" ? i.v : i?.t === "nint" ? -1n - i.v : undefined;
 
+/** A date of `days` since 1970-01-01, which must lie within chrono's range. */
+export function dateValue(days: bigint): Value {
+	// The first and last days stand for -infinity and infinity.
+	if (days < BigInt(DATE_MIN_DAYS) || days > BigInt(DATE_MAX_DAYS))
+		throw new ValueError("Expected a valid Date value");
+	return { k: "date", days: Number(days) };
+}
+
+/** A time of `nanos` since midnight, up to and including 24:00:00. */
+export function timeValue(nanos: bigint): Value {
+	if (nanos < 0n || nanos > NANOS_PER_DAY)
+		throw new ValueError("Expected a valid Time value");
+	return { k: "time", nanos };
+}
+
+/** A timestamp within chrono's range; a leap second's nanoseconds are refused. */
+export function timestampValue(secs: bigint, nanos: bigint): Value {
+	if (
+		nanos < 0n ||
+		nanos > 999_999_999n ||
+		secs < DATETIME_MIN_SECS ||
+		secs > DATETIME_MAX_SECS
+	)
+		throw new ValueError("Expected a valid Timestamp value");
+	return { k: "timestamp", secs, nanos: Number(nanos) };
+}
+
 /** A cbor.2 date, time, timestamp, interval, bigdecimal or regex. */
 function cbor2FromTag(t: bigint, c: CborItem): Value {
 	switch (t) {
@@ -914,10 +942,7 @@ function cbor2FromTag(t: bigint, c: CborItem): Value {
 				throw new ValueError(`Expected a CBOR integer under tag ${t}`);
 			if (n < I32_MIN || n > I32_MAX)
 				throw new ValueError("Expected a CBOR integer that fits a date");
-			// The first and last days stand for -infinity and infinity.
-			if (n < BigInt(DATE_MIN_DAYS) || n > BigInt(DATE_MAX_DAYS))
-				throw new ValueError("Expected a valid Date value");
-			return { k: "date", days: Number(n) };
+			return dateValue(n);
 		}
 		case TAG.TIME: {
 			const n = intOf(c);
@@ -927,9 +952,7 @@ function cbor2FromTag(t: bigint, c: CborItem): Value {
 				throw new ValueError(
 					"Expected a CBOR unsigned integer that fits a time",
 				);
-			if (n > NANOS_PER_DAY)
-				throw new ValueError("Expected a valid Time value");
-			return { k: "time", nanos: n };
+			return timeValue(n);
 		}
 		case TAG.TIMESTAMP: {
 			const a = asArray(c, `tag ${t}`);
@@ -946,14 +969,7 @@ function cbor2FromTag(t: bigint, c: CborItem): Value {
 				nanos > 2n ** 32n - 1n
 			)
 				throw new ValueError("Expected a CBOR integer data type");
-			// A leap second (nanoseconds of a billion or more) is refused too.
-			if (
-				nanos > 999_999_999n ||
-				secs < DATETIME_MIN_SECS ||
-				secs > DATETIME_MAX_SECS
-			)
-				throw new ValueError("Expected a valid Timestamp value");
-			return { k: "timestamp", secs, nanos: Number(nanos) };
+			return timestampValue(secs, nanos);
 		}
 		case TAG.INTERVAL: {
 			const a = asArray(c, `tag ${t}`);
