@@ -5,10 +5,10 @@ use super::*;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_VALUE_TYPE: u8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_VALUE_TYPE: u8 = 30;
+pub const ENUM_MAX_VALUE_TYPE: u8 = 35;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 31] = [
+pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 36] = [
   ValueType::NONE,
   ValueType::Null,
   ValueType::Bool,
@@ -40,6 +40,11 @@ pub const ENUM_VALUES_VALUE_TYPE: [ValueType; 31] = [
   ValueType::U64,
   ValueType::F16,
   ValueType::F32,
+  ValueType::Date,
+  ValueType::Time,
+  ValueType::Timestamp,
+  ValueType::Interval,
+  ValueType::BigDecimal,
 ];
 
 /// A union of all possible value types in SurrealDB.
@@ -101,9 +106,16 @@ impl ValueType {
   pub const U64: Self = Self(28);
   pub const F16: Self = Self(29);
   pub const F32: Self = Self(30);
+  /// SurrealDB 4.0's other kinds, one below their value.proto tags. A peer
+  /// that predates them sends `Datetime`, `Duration`, `String` or `Decimal`.
+  pub const Date: Self = Self(31);
+  pub const Time: Self = Self(32);
+  pub const Timestamp: Self = Self(33);
+  pub const Interval: Self = Self(34);
+  pub const BigDecimal: Self = Self(35);
 
   pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 30;
+  pub const ENUM_MAX: u8 = 35;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::NONE,
     Self::Null,
@@ -136,6 +148,11 @@ impl ValueType {
     Self::U64,
     Self::F16,
     Self::F32,
+    Self::Date,
+    Self::Time,
+    Self::Timestamp,
+    Self::Interval,
+    Self::BigDecimal,
   ];
   /// Returns the variant's name or "" if unknown.
   pub fn variant_name(self) -> Option<&'static str> {
@@ -171,6 +188,11 @@ impl ValueType {
       Self::U64 => Some("U64"),
       Self::F16 => Some("F16"),
       Self::F32 => Some("F32"),
+      Self::Date => Some("Date"),
+      Self::Time => Some("Time"),
+      Self::Timestamp => Some("Timestamp"),
+      Self::Interval => Some("Interval"),
+      Self::BigDecimal => Some("BigDecimal"),
       _ => None,
     }
   }

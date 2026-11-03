@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import * as pb from "../../gen/ts/surrealdb/protocol/v1/value";
 import { decode, encode, fromHex, toHex } from "./cbor";
 import { decodeProto, encodeProto, fromProto } from "./proto";
 import {
@@ -311,6 +312,94 @@ describe("value", () => {
 		expect(() =>
 			fromCbor(decode(fromHex("d80882617ad8ba1bffffffffffffffff")), "cbor.2"),
 		).toThrow("64-bit signed range");
+	});
+
+	test("the other cbor.2 kinds are tagged under cbor.2 and widened under cbor", () => {
+		const hex = (j: Json, format: "cbor" | "cbor.2") =>
+			toHex(encode(toCbor(fromJson(j), format)));
+		expect(hex({ $date: "1969-12-31" }, "cbor.2")).toBe("d86420");
+		expect(hex({ $date: "1969-12-31" }, "cbor")).toBe("cc823a0001517f00");
+		expect(hex({ $time: "24:00:00" }, "cbor")).toBe("ce811a00015180");
+		expect(hex({ $timestamp: "1970-01-01T00:00:00" }, "cbor.2")).toBe(
+			"d8be820000",
+		);
+		expect(hex({ $interval: [-1, 0, 0] }, "cbor.2")).toBe("d8bf83200000");
+		expect(hex({ $interval: [0, 0, -1500000] }, "cbor")).toBe(
+			"6750542d312e3553",
+		);
+		// A bigdecimal that fits a decimal is one, in either dialect.
+		expect(hex({ $bigdecimal: "1.50" }, "cbor.2")).toBe("ca63312e35");
+		// 10^29 is past a decimal's 96-bit mantissa: plain cbor sends the text.
+		expect(hex({ $bigdecimal: "1e29" }, "cbor")).toBe(
+			`781e31${"30".repeat(29)}`,
+		);
+		expect(hex({ $regex: "a" }, "cbor.2")).toBe("d8c16161");
+		expect(() => hex({ $regex: "a" }, "cbor")).toThrow("use cbor.2");
+	});
+
+	test("the cbor.2 decoder holds the calendar kinds to their ranges", () => {
+		const v = (hex: string) => toJson(fromCbor(decode(fromHex(hex)), "cbor.2"));
+		expect(v("d8641a05a9fc3c")).toEqual({ $date: "infinity" });
+		expect(v("d8bd1b00004e94914f0000")).toEqual({ $time: "24:00:00" });
+		for (const [hex, msg] of [
+			["d8641a05a9fc3d", "Expected a valid Date value"],
+			["d8bd1b00004e94914f0001", "Expected a valid Time value"],
+			["d8be82001a3b9aca00", "Expected a valid Timestamp value"],
+			["d8bf820000", "3 integers"],
+			["d8c060", "not a decimal number"],
+			["d8c101", "Expected a CBOR text under tag 193"],
+		] as const)
+			expect(() => fromCbor(decode(fromHex(hex)), "cbor.2")).toThrow(msg);
+		// Plain cbor refuses every one of the tags.
+		expect(() => fromCbor(decode(fromHex("d86400")))).toThrow("use cbor.2");
+	});
+
+	test("typed calendar kinds round-trip their text", () => {
+		for (const j of [
+			{ $date: "2024-02-29" },
+			{ $date: "+10000-01-01" },
+			{ $date: "-0001-12-31" },
+			{ $date: "-infinity" },
+			{ $time: "00:00:00" },
+			{ $time: "12:34:56.789" },
+			{ $time: "23:59:59.999999999" },
+			{ $timestamp: "1969-12-31T23:59:59.500" },
+			{ $timestamp: "+262142-12-31T23:59:59.999999998" },
+			{ $timestamp: "infinity" },
+			{ $bigdecimal: "0.0015" },
+		] as Json[])
+			expect(toJson(fromJson(j))).toEqual(j);
+		expect(toJson(fromJson({ $bigdecimal: "1.5e-3" }))).toEqual({
+			$bigdecimal: "0.0015",
+		});
+		expect(() => fromJson({ $date: "2023-02-29" })).toThrow("valid date");
+		expect(() => fromJson({ $date: "+262142-12-31" })).toThrow("range");
+		expect(() => fromJson({ $time: "24:00:01" })).toThrow("time");
+		expect(() => fromJson({ $bigdecimal: "NaN" })).toThrow("finite");
+	});
+
+	test("the other 4.0 kinds have their own protobuf arms", () => {
+		for (const j of [
+			{ $date: "1969-12-31" },
+			{ $time: "24:00:00" },
+			{ $timestamp: "1969-12-31T23:59:59.500" },
+			{ $interval: [14, 3, -1500000] },
+			{ $bigdecimal: "79228162514264337593543950336.50" },
+		] as Json[])
+			expect(toJson(decodeProto(encodeProto(fromJson(j))))).toEqual(j);
+		// Field 32, PlainDate { days: -1 } as a varint int32.
+		expect(toHex(encodeProto(fromJson({ $date: "1969-12-31" })))).toBe(
+			"82020b08ffffffffffffffffff01",
+		);
+		// A bigdecimal that fits a decimal goes as one.
+		expect(
+			toJson(decodeProto(encodeProto(fromJson({ $bigdecimal: "1.50" })))),
+		).toEqual({ $decimal: "1.5" });
+		// Decoders hold each arm to its kind's range.
+		const past = pb.Value.encode({
+			value: { $case: "time", time: { nanos: 86_400_000_000_001n } },
+		}).finish();
+		expect(() => decodeProto(past)).toThrow("Expected a valid Time value");
 	});
 
 	test("typed sized numbers are range-checked", () => {

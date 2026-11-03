@@ -532,12 +532,22 @@ async function checkFile(
 			}
 			if (format === "cbor.2") {
 				// Plain cbor widens; the reference must widen as the server does.
+				// What it cannot carry at all (a regex) must fail on both.
 				const plain = await query(server, `RETURN ${v.surql}`);
-				const widened = toHex(encode(toCbor(expected, "cbor")));
-				if (!plain.ok || toHex(plain.bytes) !== widened)
-					fail(
-						`plain cbor gives ${plain.ok ? toHex(plain.bytes) : plain.message}, the reference widens to ${widened}`,
-					);
+				let widened: string;
+				try {
+					widened = toHex(encode(toCbor(expected, "cbor")));
+				} catch (e) {
+					widened = `error: ${(e as Error).message}`;
+				}
+				const got = plain.ok
+					? toHex(plain.bytes)
+					: `error: ${plain.kind}: ${plain.message}`;
+				if (
+					plain.ok !== !widened.startsWith("error:") ||
+					(plain.ok && got !== widened)
+				)
+					fail(`plain cbor gives ${got}, the reference widens to ${widened}`);
 			}
 			set(node, "cbor", toHex(out.bytes));
 			set(node, "diag", diagnostic(decode(out.bytes)));

@@ -502,6 +502,81 @@ impl<'a> Value<'a> {
     }
   }
 
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_date(&self) -> Option<PlainDate<'a>> {
+    if self.value_type() == ValueType::Date {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { PlainDate::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_time(&self) -> Option<PlainTime<'a>> {
+    if self.value_type() == ValueType::Time {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { PlainTime::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_timestamp(&self) -> Option<Timestamp<'a>> {
+    if self.value_type() == ValueType::Timestamp {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Timestamp::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_interval(&self) -> Option<Interval<'a>> {
+    if self.value_type() == ValueType::Interval {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { Interval::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
+  #[inline]
+  #[allow(non_snake_case)]
+  pub fn value_as_big_decimal(&self) -> Option<BigDecimal<'a>> {
+    if self.value_type() == ValueType::BigDecimal {
+      self.value().map(|t| {
+       // Safety:
+       // Created from a valid Table for this object
+       // Which contains a valid union in this slot
+       unsafe { BigDecimal::init_from_table(t) }
+     })
+    } else {
+      None
+    }
+  }
+
 }
 
 impl ::flatbuffers::Verifiable for Value<'_> {
@@ -542,6 +617,11 @@ impl ::flatbuffers::Verifiable for Value<'_> {
           ValueType::U64 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<UInt64Value>>("ValueType::U64", pos),
           ValueType::F16 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Float16Value>>("ValueType::F16", pos),
           ValueType::F32 => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Float32Value>>("ValueType::F32", pos),
+          ValueType::Date => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<PlainDate>>("ValueType::Date", pos),
+          ValueType::Time => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<PlainTime>>("ValueType::Time", pos),
+          ValueType::Timestamp => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Timestamp>>("ValueType::Timestamp", pos),
+          ValueType::Interval => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<Interval>>("ValueType::Interval", pos),
+          ValueType::BigDecimal => v.verify_union_variant::<::flatbuffers::ForwardsUOffset<BigDecimal>>("ValueType::BigDecimal", pos),
           _ => Ok(()),
         }
      })?
@@ -801,6 +881,41 @@ impl ::core::fmt::Debug for Value<'_> {
         },
         ValueType::F32 => {
           if let Some(x) = self.value_as_f32() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Date => {
+          if let Some(x) = self.value_as_date() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Time => {
+          if let Some(x) = self.value_as_time() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Timestamp => {
+          if let Some(x) = self.value_as_timestamp() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::Interval => {
+          if let Some(x) = self.value_as_interval() {
+            ds.field("value", &x)
+          } else {
+            ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")
+          }
+        },
+        ValueType::BigDecimal => {
+          if let Some(x) = self.value_as_big_decimal() {
             ds.field("value", &x)
           } else {
             ds.field("value", &"InvalidFlatbuffer: Union discriminant does not match value.")

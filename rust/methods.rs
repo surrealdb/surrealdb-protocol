@@ -1,7 +1,8 @@
 use crate::proto::v1::geometry::Geometry as GeometryEnum;
 use crate::proto::v1::{
-    Array, Datetime, Decimal, Duration, File, Geometry, GeometryCollection, KeyValue, NoneValue,
-    NullValue, Object, RecordId, RecordIdKey, Set, Uuid, Value,
+    Array, BigDecimal, Datetime, Decimal, Duration, File, Geometry, GeometryCollection, Interval,
+    KeyValue, NoneValue, NullValue, Object, PlainDate, PlainTime, RecordId, RecordIdKey, Set,
+    Timestamp, Uuid, Value,
 };
 use crate::proto::v1::{Line, MultiLine, MultiPoint, MultiPolygon, Point, Polygon};
 
@@ -147,6 +148,45 @@ impl Value {
     pub fn datetime(value: Datetime) -> Self {
         Self {
             value: Some(ValueEnum::Datetime(value)),
+        }
+    }
+
+    /// Creates a new `Value` holding a `date`, as days since 1970-01-01.
+    pub fn date(days: i32) -> Self {
+        Self {
+            value: Some(ValueEnum::Date(PlainDate { days })),
+        }
+    }
+
+    /// Creates a new `Value` holding a `time`, as nanoseconds since midnight.
+    pub fn time(nanos: u64) -> Self {
+        Self {
+            value: Some(ValueEnum::Time(PlainTime { nanos })),
+        }
+    }
+
+    /// Creates a new `Value` holding a `timestamp`: a wall-clock time with no zone.
+    pub fn timestamp(seconds: i64, nanos: u32) -> Self {
+        Self {
+            value: Some(ValueEnum::Timestamp(Timestamp { seconds, nanos })),
+        }
+    }
+
+    /// Creates a new `Value` holding an `interval` of months, days and microseconds.
+    pub fn interval(months: i32, days: i32, micros: i64) -> Self {
+        Self {
+            value: Some(ValueEnum::Interval(Interval {
+                months,
+                days,
+                micros,
+            })),
+        }
+    }
+
+    /// Creates a new `Value` holding a `bigdecimal`, in positional notation.
+    pub fn bigdecimal(value: String) -> Self {
+        Self {
+            value: Some(ValueEnum::Bigdecimal(BigDecimal { value })),
         }
     }
 

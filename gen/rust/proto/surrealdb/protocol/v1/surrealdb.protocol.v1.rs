@@ -59,7 +59,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Durati
 ///
 /// Replaces `google.protobuf.Timestamp`, whose specification caps the range at
 /// 0001-01-01 .. 9999-12-31. SurrealDB datetimes are `chrono::DateTime<Utc>`
-/// and span roughly +/-262,000 years. Byte-identical to `Timestamp` in
+/// and span roughly +/-262,000 years. Byte-identical to `Datetime` in
 /// value.fbs.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
@@ -87,6 +87,85 @@ impl ::prost::Name for Decimal {
 const NAME: &'static str = "Decimal";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Decimal".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Decimal".into() }}
+/// A calendar date with no zone (SurrealDB 4.0's `date`), as CBOR tag 100.
+///
+/// Named `PlainDate`, not `Date`, so the generated code does not shadow a
+/// language's own date type. The first and last days of chrono's range,
+/// -262143-01-01 and +262142-12-31, stand for `-infinity` and `infinity`.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct PlainDate {
+    /// Days since 1970-01-01 in the proleptic Gregorian calendar. MUST be in
+    /// \[-96465292, 95026236\].
+    #[prost(int32, tag = "1")]
+    pub days: i32,
+}
+impl ::prost::Name for PlainDate {
+const NAME: &'static str = "PlainDate";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.PlainDate".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.PlainDate".into() }}
+/// A time of day with no date or zone (`time`), as CBOR tag 189.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct PlainTime {
+    /// Nanoseconds since midnight. MUST be in \[0, 86400000000000\]: 24:00:00 is
+    /// a valid time, nothing past it is.
+    #[prost(uint64, tag = "1")]
+    pub nanos: u64,
+}
+impl ::prost::Name for PlainTime {
+const NAME: &'static str = "PlainTime";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.PlainTime".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.PlainTime".into() }}
+/// A date and time of day with no zone (`timestamp`), as CBOR tag 190: a
+/// wall-clock time, where `Datetime` is an instant in UTC. The same layout and
+/// rules as `Datetime`; the first and last instants of chrono's range stand
+/// for `-infinity` and `infinity`.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct Timestamp {
+    /// Seconds since 1970-01-01T00:00:00. May be negative.
+    #[prost(int64, tag = "1")]
+    pub seconds: i64,
+    /// Sub-second remainder, always ADDED to `seconds`. MUST be in
+    /// \[0, 999999999\].
+    #[prost(uint32, tag = "2")]
+    pub nanos: u32,
+}
+impl ::prost::Name for Timestamp {
+const NAME: &'static str = "Timestamp";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Timestamp".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Timestamp".into() }}
+/// A calendar interval (`interval`), as CBOR tag 191 and PostgreSQL hold one.
+/// Each part is signed on its own and kept as written; the server compares
+/// intervals normalised (a month as 30 days, a day as 24 hours).
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct Interval {
+    #[prost(int32, tag = "1")]
+    pub months: i32,
+    #[prost(int32, tag = "2")]
+    pub days: i32,
+    #[prost(int64, tag = "3")]
+    pub micros: i64,
+}
+impl ::prost::Name for Interval {
+const NAME: &'static str = "Interval";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Interval".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.Interval".into() }}
+/// An arbitrary-precision decimal (`bigdecimal`), as CBOR tag 192: positional
+/// notation, with the scale as written ("1.50" keeps its zero). A value that
+/// fits `Decimal` SHOULD be sent as one, as the server does.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct BigDecimal {
+    #[prost(string, tag = "1")]
+    pub value: ::prost::alloc::string::String,
+}
+impl ::prost::Name for BigDecimal {
+const NAME: &'static str = "BigDecimal";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.BigDecimal".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.BigDecimal".into() }}
 /// UUID value.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
@@ -385,10 +464,16 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Range"
 /// Decoders MUST reject an out-of-range or inexact value rather than clamp or
 /// round it. A peer that predates them sends `int64`, `float64` or (a u64 above
 /// i64::MAX) `decimal` instead, as plain CBOR does.
+///
+/// So are `date` to `bigdecimal`, SurrealDB 4.0's other kinds, which match
+/// cbor.2's tags 100 and 189 to 192. A peer that predates them sends a date or
+/// timestamp as `datetime`, a time as `duration`, an interval as `string` and
+/// a bigdecimal as `decimal` (or `string` when it does not fit one), as plain
+/// CBOR does. Decoders MUST reject a value outside its kind's range.
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
-    #[prost(oneof = "value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31")]
+    #[prost(oneof = "value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36")]
     #[serde(flatten)]
     pub value: ::core::option::Option<value::Value>,
 }
@@ -457,6 +542,16 @@ pub mod value {
         F16(f32),
         #[prost(float, tag = "31")]
         F32(f32),
+        #[prost(message, tag = "32")]
+        Date(super::PlainDate),
+        #[prost(message, tag = "33")]
+        Time(super::PlainTime),
+        #[prost(message, tag = "34")]
+        Timestamp(super::Timestamp),
+        #[prost(message, tag = "35")]
+        Interval(super::Interval),
+        #[prost(message, tag = "36")]
+        Bigdecimal(super::BigDecimal),
     }
 }
 impl ::prost::Name for Value {
@@ -755,6 +850,47 @@ impl ::prost::Name for F32Kind {
 const NAME: &'static str = "F32Kind";
 const PACKAGE: &'static str = "surrealdb.protocol.v1";
 fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.F32Kind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.F32Kind".into() }}
+/// SurrealDB 4.0's date, time, timestamp, interval and bigdecimal kinds.
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct DateKind {
+}
+impl ::prost::Name for DateKind {
+const NAME: &'static str = "DateKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.DateKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.DateKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct TimeKind {
+}
+impl ::prost::Name for TimeKind {
+const NAME: &'static str = "TimeKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.TimeKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.TimeKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct TimestampKind {
+}
+impl ::prost::Name for TimestampKind {
+const NAME: &'static str = "TimestampKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.TimestampKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.TimestampKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct IntervalKind {
+}
+impl ::prost::Name for IntervalKind {
+const NAME: &'static str = "IntervalKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.IntervalKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.IntervalKind".into() }}
+#[derive(serde::Deserialize,serde::Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct BigDecimalKind {
+}
+impl ::prost::Name for BigDecimalKind {
+const NAME: &'static str = "BigDecimalKind";
+const PACKAGE: &'static str = "surrealdb.protocol.v1";
+fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.BigDecimalKind".into() }fn type_url() -> ::prost::alloc::string::String { "/surrealdb.protocol.v1.BigDecimalKind".into() }}
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct TableName {
@@ -937,7 +1073,7 @@ fn full_name() -> ::prost::alloc::string::String { "surrealdb.protocol.v1.Litera
 #[derive(serde::Deserialize,serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Kind {
-    #[prost(oneof = "kind::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34")]
+    #[prost(oneof = "kind::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39")]
     pub kind: ::core::option::Option<kind::Kind>,
 }
 /// Nested message and enum types in `Kind`.
@@ -1013,6 +1149,16 @@ pub mod kind {
         F16(super::F16Kind),
         #[prost(message, tag = "34")]
         F32(super::F32Kind),
+        #[prost(message, tag = "35")]
+        Date(super::DateKind),
+        #[prost(message, tag = "36")]
+        Time(super::TimeKind),
+        #[prost(message, tag = "37")]
+        Timestamp(super::TimestampKind),
+        #[prost(message, tag = "38")]
+        Interval(super::IntervalKind),
+        #[prost(message, tag = "39")]
+        Bigdecimal(super::BigDecimalKind),
     }
 }
 impl ::prost::Name for Kind {

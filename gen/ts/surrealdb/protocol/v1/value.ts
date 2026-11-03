@@ -60,7 +60,7 @@ export interface Duration {
  *
  * Replaces `google.protobuf.Timestamp`, whose specification caps the range at
  * 0001-01-01 .. 9999-12-31. SurrealDB datetimes are `chrono::DateTime<Utc>`
- * and span roughly +/-262,000 years. Byte-identical to `Timestamp` in
+ * and span roughly +/-262,000 years. Byte-identical to `Datetime` in
  * value.fbs.
  */
 export interface Datetime {
@@ -75,6 +75,66 @@ export interface Datetime {
 
 /** Decimal value. */
 export interface Decimal {
+  value: string;
+}
+
+/**
+ * A calendar date with no zone (SurrealDB 4.0's `date`), as CBOR tag 100.
+ *
+ * Named `PlainDate`, not `Date`, so the generated code does not shadow a
+ * language's own date type. The first and last days of chrono's range,
+ * -262143-01-01 and +262142-12-31, stand for `-infinity` and `infinity`.
+ */
+export interface PlainDate {
+  /**
+   * Days since 1970-01-01 in the proleptic Gregorian calendar. MUST be in
+   * [-96465292, 95026236].
+   */
+  days: number;
+}
+
+/** A time of day with no date or zone (`time`), as CBOR tag 189. */
+export interface PlainTime {
+  /**
+   * Nanoseconds since midnight. MUST be in [0, 86400000000000]: 24:00:00 is
+   * a valid time, nothing past it is.
+   */
+  nanos: bigint;
+}
+
+/**
+ * A date and time of day with no zone (`timestamp`), as CBOR tag 190: a
+ * wall-clock time, where `Datetime` is an instant in UTC. The same layout and
+ * rules as `Datetime`; the first and last instants of chrono's range stand
+ * for `-infinity` and `infinity`.
+ */
+export interface Timestamp {
+  /** Seconds since 1970-01-01T00:00:00. May be negative. */
+  seconds: bigint;
+  /**
+   * Sub-second remainder, always ADDED to `seconds`. MUST be in
+   * [0, 999999999].
+   */
+  nanos: number;
+}
+
+/**
+ * A calendar interval (`interval`), as CBOR tag 191 and PostgreSQL hold one.
+ * Each part is signed on its own and kept as written; the server compares
+ * intervals normalised (a month as 30 days, a day as 24 hours).
+ */
+export interface Interval {
+  months: number;
+  days: number;
+  micros: bigint;
+}
+
+/**
+ * An arbitrary-precision decimal (`bigdecimal`), as CBOR tag 192: positional
+ * notation, with the scale as written ("1.50" keeps its zero). A value that
+ * fits `Decimal` SHOULD be sent as one, as the server does.
+ */
+export interface BigDecimal {
   value: string;
 }
 
@@ -252,6 +312,12 @@ export interface Range {
  * Decoders MUST reject an out-of-range or inexact value rather than clamp or
  * round it. A peer that predates them sends `int64`, `float64` or (a u64 above
  * i64::MAX) `decimal` instead, as plain CBOR does.
+ *
+ * So are `date` to `bigdecimal`, SurrealDB 4.0's other kinds, which match
+ * cbor.2's tags 100 and 189 to 192. A peer that predates them sends a date or
+ * timestamp as `datetime`, a time as `duration`, an interval as `string` and
+ * a bigdecimal as `decimal` (or `string` when it does not fit one), as plain
+ * CBOR does. Decoders MUST reject a value outside its kind's range.
  */
 export interface Value {
   value:
@@ -285,6 +351,11 @@ export interface Value {
     | { $case: "u64"; u64: bigint }
     | { $case: "f16"; f16: number }
     | { $case: "f32"; f32: number }
+    | { $case: "date"; date: PlainDate }
+    | { $case: "time"; time: PlainTime }
+    | { $case: "timestamp"; timestamp: Timestamp }
+    | { $case: "interval"; interval: Interval }
+    | { $case: "bigdecimal"; bigdecimal: BigDecimal }
     | undefined;
 }
 
@@ -412,6 +483,22 @@ export interface F16Kind {
 export interface F32Kind {
 }
 
+/** SurrealDB 4.0's date, time, timestamp, interval and bigdecimal kinds. */
+export interface DateKind {
+}
+
+export interface TimeKind {
+}
+
+export interface TimestampKind {
+}
+
+export interface IntervalKind {
+}
+
+export interface BigDecimalKind {
+}
+
 export interface TableName {
   name: string;
 }
@@ -522,6 +609,11 @@ export interface Kind {
     | { $case: "u64"; u64: U64Kind }
     | { $case: "f16"; f16: F16Kind }
     | { $case: "f32"; f32: F32Kind }
+    | { $case: "date"; date: DateKind }
+    | { $case: "time"; time: TimeKind }
+    | { $case: "timestamp"; timestamp: TimestampKind }
+    | { $case: "interval"; interval: IntervalKind }
+    | { $case: "bigdecimal"; bigdecimal: BigDecimalKind }
     | undefined;
 }
 
@@ -822,6 +914,357 @@ export const Decimal: MessageFns<Decimal> = {
   },
   fromPartial<I extends Exact<DeepPartial<Decimal>, I>>(object: I): Decimal {
     const message = createBaseDecimal();
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePlainDate(): PlainDate {
+  return { days: 0 };
+}
+
+export const PlainDate: MessageFns<PlainDate> = {
+  encode(message: PlainDate, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.days !== 0) {
+      writer.uint32(8).int32(message.days);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlainDate {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlainDate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.days = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlainDate {
+    return { days: isSet(object.days) ? globalThis.Number(object.days) : 0 };
+  },
+
+  toJSON(message: PlainDate): unknown {
+    const obj: any = {};
+    if (message.days !== 0) {
+      obj.days = Math.round(message.days);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PlainDate>, I>>(base?: I): PlainDate {
+    return PlainDate.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PlainDate>, I>>(object: I): PlainDate {
+    const message = createBasePlainDate();
+    message.days = object.days ?? 0;
+    return message;
+  },
+};
+
+function createBasePlainTime(): PlainTime {
+  return { nanos: 0n };
+}
+
+export const PlainTime: MessageFns<PlainTime> = {
+  encode(message: PlainTime, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.nanos !== 0n) {
+      if (BigInt.asUintN(64, message.nanos) !== message.nanos) {
+        throw new globalThis.Error("value provided for field message.nanos of type uint64 too large");
+      }
+      writer.uint32(8).uint64(message.nanos);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlainTime {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlainTime();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.nanos = reader.uint64() as bigint;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlainTime {
+    return { nanos: isSet(object.nanos) ? BigInt(object.nanos) : 0n };
+  },
+
+  toJSON(message: PlainTime): unknown {
+    const obj: any = {};
+    if (message.nanos !== 0n) {
+      obj.nanos = message.nanos.toString();
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PlainTime>, I>>(base?: I): PlainTime {
+    return PlainTime.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PlainTime>, I>>(object: I): PlainTime {
+    const message = createBasePlainTime();
+    message.nanos = object.nanos ?? 0n;
+    return message;
+  },
+};
+
+function createBaseTimestamp(): Timestamp {
+  return { seconds: 0n, nanos: 0 };
+}
+
+export const Timestamp: MessageFns<Timestamp> = {
+  encode(message: Timestamp, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.seconds !== 0n) {
+      if (BigInt.asIntN(64, message.seconds) !== message.seconds) {
+        throw new globalThis.Error("value provided for field message.seconds of type int64 too large");
+      }
+      writer.uint32(8).int64(message.seconds);
+    }
+    if (message.nanos !== 0) {
+      writer.uint32(16).uint32(message.nanos);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Timestamp {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTimestamp();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.seconds = reader.int64() as bigint;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nanos = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Timestamp {
+    return {
+      seconds: isSet(object.seconds) ? BigInt(object.seconds) : 0n,
+      nanos: isSet(object.nanos) ? globalThis.Number(object.nanos) : 0,
+    };
+  },
+
+  toJSON(message: Timestamp): unknown {
+    const obj: any = {};
+    if (message.seconds !== 0n) {
+      obj.seconds = message.seconds.toString();
+    }
+    if (message.nanos !== 0) {
+      obj.nanos = Math.round(message.nanos);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Timestamp>, I>>(base?: I): Timestamp {
+    return Timestamp.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Timestamp>, I>>(object: I): Timestamp {
+    const message = createBaseTimestamp();
+    message.seconds = object.seconds ?? 0n;
+    message.nanos = object.nanos ?? 0;
+    return message;
+  },
+};
+
+function createBaseInterval(): Interval {
+  return { months: 0, days: 0, micros: 0n };
+}
+
+export const Interval: MessageFns<Interval> = {
+  encode(message: Interval, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.months !== 0) {
+      writer.uint32(8).int32(message.months);
+    }
+    if (message.days !== 0) {
+      writer.uint32(16).int32(message.days);
+    }
+    if (message.micros !== 0n) {
+      if (BigInt.asIntN(64, message.micros) !== message.micros) {
+        throw new globalThis.Error("value provided for field message.micros of type int64 too large");
+      }
+      writer.uint32(24).int64(message.micros);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Interval {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInterval();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.months = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.days = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.micros = reader.int64() as bigint;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Interval {
+    return {
+      months: isSet(object.months) ? globalThis.Number(object.months) : 0,
+      days: isSet(object.days) ? globalThis.Number(object.days) : 0,
+      micros: isSet(object.micros) ? BigInt(object.micros) : 0n,
+    };
+  },
+
+  toJSON(message: Interval): unknown {
+    const obj: any = {};
+    if (message.months !== 0) {
+      obj.months = Math.round(message.months);
+    }
+    if (message.days !== 0) {
+      obj.days = Math.round(message.days);
+    }
+    if (message.micros !== 0n) {
+      obj.micros = message.micros.toString();
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Interval>, I>>(base?: I): Interval {
+    return Interval.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Interval>, I>>(object: I): Interval {
+    const message = createBaseInterval();
+    message.months = object.months ?? 0;
+    message.days = object.days ?? 0;
+    message.micros = object.micros ?? 0n;
+    return message;
+  },
+};
+
+function createBaseBigDecimal(): BigDecimal {
+  return { value: "" };
+}
+
+export const BigDecimal: MessageFns<BigDecimal> = {
+  encode(message: BigDecimal, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.value !== "") {
+      writer.uint32(10).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BigDecimal {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBigDecimal();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BigDecimal {
+    return { value: isSet(object.value) ? globalThis.String(object.value) : "" };
+  },
+
+  toJSON(message: BigDecimal): unknown {
+    const obj: any = {};
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BigDecimal>, I>>(base?: I): BigDecimal {
+    return BigDecimal.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BigDecimal>, I>>(object: I): BigDecimal {
+    const message = createBaseBigDecimal();
     message.value = object.value ?? "";
     return message;
   },
@@ -2240,6 +2683,21 @@ export const Value: MessageFns<Value> = {
       case "f32":
         writer.uint32(253).float(message.value.f32);
         break;
+      case "date":
+        PlainDate.encode(message.value.date, writer.uint32(258).fork()).join();
+        break;
+      case "time":
+        PlainTime.encode(message.value.time, writer.uint32(266).fork()).join();
+        break;
+      case "timestamp":
+        Timestamp.encode(message.value.timestamp, writer.uint32(274).fork()).join();
+        break;
+      case "interval":
+        Interval.encode(message.value.interval, writer.uint32(282).fork()).join();
+        break;
+      case "bigdecimal":
+        BigDecimal.encode(message.value.bigdecimal, writer.uint32(290).fork()).join();
+        break;
     }
     return writer;
   },
@@ -2491,6 +2949,46 @@ export const Value: MessageFns<Value> = {
           message.value = { $case: "f32", f32: reader.float() };
           continue;
         }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.value = { $case: "date", date: PlainDate.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 33: {
+          if (tag !== 266) {
+            break;
+          }
+
+          message.value = { $case: "time", time: PlainTime.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 34: {
+          if (tag !== 274) {
+            break;
+          }
+
+          message.value = { $case: "timestamp", timestamp: Timestamp.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 35: {
+          if (tag !== 282) {
+            break;
+          }
+
+          message.value = { $case: "interval", interval: Interval.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 36: {
+          if (tag !== 290) {
+            break;
+          }
+
+          message.value = { $case: "bigdecimal", bigdecimal: BigDecimal.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2566,6 +3064,16 @@ export const Value: MessageFns<Value> = {
         ? { $case: "f16", f16: globalThis.Number(object.f16) }
         : isSet(object.f32)
         ? { $case: "f32", f32: globalThis.Number(object.f32) }
+        : isSet(object.date)
+        ? { $case: "date", date: PlainDate.fromJSON(object.date) }
+        : isSet(object.time)
+        ? { $case: "time", time: PlainTime.fromJSON(object.time) }
+        : isSet(object.timestamp)
+        ? { $case: "timestamp", timestamp: Timestamp.fromJSON(object.timestamp) }
+        : isSet(object.interval)
+        ? { $case: "interval", interval: Interval.fromJSON(object.interval) }
+        : isSet(object.bigdecimal)
+        ? { $case: "bigdecimal", bigdecimal: BigDecimal.fromJSON(object.bigdecimal) }
         : undefined,
     };
   },
@@ -2632,6 +3140,16 @@ export const Value: MessageFns<Value> = {
       obj.f16 = message.value.f16;
     } else if (message.value?.$case === "f32") {
       obj.f32 = message.value.f32;
+    } else if (message.value?.$case === "date") {
+      obj.date = PlainDate.toJSON(message.value.date);
+    } else if (message.value?.$case === "time") {
+      obj.time = PlainTime.toJSON(message.value.time);
+    } else if (message.value?.$case === "timestamp") {
+      obj.timestamp = Timestamp.toJSON(message.value.timestamp);
+    } else if (message.value?.$case === "interval") {
+      obj.interval = Interval.toJSON(message.value.interval);
+    } else if (message.value?.$case === "bigdecimal") {
+      obj.bigdecimal = BigDecimal.toJSON(message.value.bigdecimal);
     }
     return obj;
   },
@@ -2819,6 +3337,36 @@ export const Value: MessageFns<Value> = {
       case "f32": {
         if (object.value?.f32 !== undefined && object.value?.f32 !== null) {
           message.value = { $case: "f32", f32: object.value.f32 };
+        }
+        break;
+      }
+      case "date": {
+        if (object.value?.date !== undefined && object.value?.date !== null) {
+          message.value = { $case: "date", date: PlainDate.fromPartial(object.value.date) };
+        }
+        break;
+      }
+      case "time": {
+        if (object.value?.time !== undefined && object.value?.time !== null) {
+          message.value = { $case: "time", time: PlainTime.fromPartial(object.value.time) };
+        }
+        break;
+      }
+      case "timestamp": {
+        if (object.value?.timestamp !== undefined && object.value?.timestamp !== null) {
+          message.value = { $case: "timestamp", timestamp: Timestamp.fromPartial(object.value.timestamp) };
+        }
+        break;
+      }
+      case "interval": {
+        if (object.value?.interval !== undefined && object.value?.interval !== null) {
+          message.value = { $case: "interval", interval: Interval.fromPartial(object.value.interval) };
+        }
+        break;
+      }
+      case "bigdecimal": {
+        if (object.value?.bigdecimal !== undefined && object.value?.bigdecimal !== null) {
+          message.value = { $case: "bigdecimal", bigdecimal: BigDecimal.fromPartial(object.value.bigdecimal) };
         }
         break;
       }
@@ -4378,6 +4926,221 @@ export const F32Kind: MessageFns<F32Kind> = {
   },
 };
 
+function createBaseDateKind(): DateKind {
+  return {};
+}
+
+export const DateKind: MessageFns<DateKind> = {
+  encode(_: DateKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DateKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDateKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DateKind {
+    return {};
+  },
+
+  toJSON(_: DateKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DateKind>, I>>(base?: I): DateKind {
+    return DateKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DateKind>, I>>(_: I): DateKind {
+    const message = createBaseDateKind();
+    return message;
+  },
+};
+
+function createBaseTimeKind(): TimeKind {
+  return {};
+}
+
+export const TimeKind: MessageFns<TimeKind> = {
+  encode(_: TimeKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TimeKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTimeKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): TimeKind {
+    return {};
+  },
+
+  toJSON(_: TimeKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TimeKind>, I>>(base?: I): TimeKind {
+    return TimeKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TimeKind>, I>>(_: I): TimeKind {
+    const message = createBaseTimeKind();
+    return message;
+  },
+};
+
+function createBaseTimestampKind(): TimestampKind {
+  return {};
+}
+
+export const TimestampKind: MessageFns<TimestampKind> = {
+  encode(_: TimestampKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TimestampKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTimestampKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): TimestampKind {
+    return {};
+  },
+
+  toJSON(_: TimestampKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TimestampKind>, I>>(base?: I): TimestampKind {
+    return TimestampKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TimestampKind>, I>>(_: I): TimestampKind {
+    const message = createBaseTimestampKind();
+    return message;
+  },
+};
+
+function createBaseIntervalKind(): IntervalKind {
+  return {};
+}
+
+export const IntervalKind: MessageFns<IntervalKind> = {
+  encode(_: IntervalKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IntervalKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIntervalKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): IntervalKind {
+    return {};
+  },
+
+  toJSON(_: IntervalKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IntervalKind>, I>>(base?: I): IntervalKind {
+    return IntervalKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<IntervalKind>, I>>(_: I): IntervalKind {
+    const message = createBaseIntervalKind();
+    return message;
+  },
+};
+
+function createBaseBigDecimalKind(): BigDecimalKind {
+  return {};
+}
+
+export const BigDecimalKind: MessageFns<BigDecimalKind> = {
+  encode(_: BigDecimalKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BigDecimalKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBigDecimalKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): BigDecimalKind {
+    return {};
+  },
+
+  toJSON(_: BigDecimalKind): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BigDecimalKind>, I>>(base?: I): BigDecimalKind {
+    return BigDecimalKind.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BigDecimalKind>, I>>(_: I): BigDecimalKind {
+    const message = createBaseBigDecimalKind();
+    return message;
+  },
+};
+
 function createBaseTableName(): TableName {
   return { name: "" };
 }
@@ -5661,6 +6424,21 @@ export const Kind: MessageFns<Kind> = {
       case "f32":
         F32Kind.encode(message.kind.f32, writer.uint32(274).fork()).join();
         break;
+      case "date":
+        DateKind.encode(message.kind.date, writer.uint32(282).fork()).join();
+        break;
+      case "time":
+        TimeKind.encode(message.kind.time, writer.uint32(290).fork()).join();
+        break;
+      case "timestamp":
+        TimestampKind.encode(message.kind.timestamp, writer.uint32(298).fork()).join();
+        break;
+      case "interval":
+        IntervalKind.encode(message.kind.interval, writer.uint32(306).fork()).join();
+        break;
+      case "bigdecimal":
+        BigDecimalKind.encode(message.kind.bigdecimal, writer.uint32(314).fork()).join();
+        break;
     }
     return writer;
   },
@@ -5944,6 +6722,46 @@ export const Kind: MessageFns<Kind> = {
           message.kind = { $case: "f32", f32: F32Kind.decode(reader, reader.uint32()) };
           continue;
         }
+        case 35: {
+          if (tag !== 282) {
+            break;
+          }
+
+          message.kind = { $case: "date", date: DateKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 36: {
+          if (tag !== 290) {
+            break;
+          }
+
+          message.kind = { $case: "time", time: TimeKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 37: {
+          if (tag !== 298) {
+            break;
+          }
+
+          message.kind = { $case: "timestamp", timestamp: TimestampKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 38: {
+          if (tag !== 306) {
+            break;
+          }
+
+          message.kind = { $case: "interval", interval: IntervalKind.decode(reader, reader.uint32()) };
+          continue;
+        }
+        case 39: {
+          if (tag !== 314) {
+            break;
+          }
+
+          message.kind = { $case: "bigdecimal", bigdecimal: BigDecimalKind.decode(reader, reader.uint32()) };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6023,6 +6841,16 @@ export const Kind: MessageFns<Kind> = {
         ? { $case: "f16", f16: F16Kind.fromJSON(object.f16) }
         : isSet(object.f32)
         ? { $case: "f32", f32: F32Kind.fromJSON(object.f32) }
+        : isSet(object.date)
+        ? { $case: "date", date: DateKind.fromJSON(object.date) }
+        : isSet(object.time)
+        ? { $case: "time", time: TimeKind.fromJSON(object.time) }
+        : isSet(object.timestamp)
+        ? { $case: "timestamp", timestamp: TimestampKind.fromJSON(object.timestamp) }
+        : isSet(object.interval)
+        ? { $case: "interval", interval: IntervalKind.fromJSON(object.interval) }
+        : isSet(object.bigdecimal)
+        ? { $case: "bigdecimal", bigdecimal: BigDecimalKind.fromJSON(object.bigdecimal) }
         : undefined,
     };
   },
@@ -6097,6 +6925,16 @@ export const Kind: MessageFns<Kind> = {
       obj.f16 = F16Kind.toJSON(message.kind.f16);
     } else if (message.kind?.$case === "f32") {
       obj.f32 = F32Kind.toJSON(message.kind.f32);
+    } else if (message.kind?.$case === "date") {
+      obj.date = DateKind.toJSON(message.kind.date);
+    } else if (message.kind?.$case === "time") {
+      obj.time = TimeKind.toJSON(message.kind.time);
+    } else if (message.kind?.$case === "timestamp") {
+      obj.timestamp = TimestampKind.toJSON(message.kind.timestamp);
+    } else if (message.kind?.$case === "interval") {
+      obj.interval = IntervalKind.toJSON(message.kind.interval);
+    } else if (message.kind?.$case === "bigdecimal") {
+      obj.bigdecimal = BigDecimalKind.toJSON(message.kind.bigdecimal);
     }
     return obj;
   },
@@ -6308,6 +7146,36 @@ export const Kind: MessageFns<Kind> = {
       case "f32": {
         if (object.kind?.f32 !== undefined && object.kind?.f32 !== null) {
           message.kind = { $case: "f32", f32: F32Kind.fromPartial(object.kind.f32) };
+        }
+        break;
+      }
+      case "date": {
+        if (object.kind?.date !== undefined && object.kind?.date !== null) {
+          message.kind = { $case: "date", date: DateKind.fromPartial(object.kind.date) };
+        }
+        break;
+      }
+      case "time": {
+        if (object.kind?.time !== undefined && object.kind?.time !== null) {
+          message.kind = { $case: "time", time: TimeKind.fromPartial(object.kind.time) };
+        }
+        break;
+      }
+      case "timestamp": {
+        if (object.kind?.timestamp !== undefined && object.kind?.timestamp !== null) {
+          message.kind = { $case: "timestamp", timestamp: TimestampKind.fromPartial(object.kind.timestamp) };
+        }
+        break;
+      }
+      case "interval": {
+        if (object.kind?.interval !== undefined && object.kind?.interval !== null) {
+          message.kind = { $case: "interval", interval: IntervalKind.fromPartial(object.kind.interval) };
+        }
+        break;
+      }
+      case "bigdecimal": {
+        if (object.kind?.bigdecimal !== undefined && object.kind?.bigdecimal !== null) {
+          message.kind = { $case: "bigdecimal", bigdecimal: BigDecimalKind.fromPartial(object.kind.bigdecimal) };
         }
         break;
       }

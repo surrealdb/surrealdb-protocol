@@ -3,7 +3,10 @@
 # Source of truth: surrealdb/rpc/src/headers.rs, surrealdb/rpc/src/format.rs,
 # surrealdb/core/src/rpc/format/mod.rs and surrealdb/server/src/ntw/ on
 # the 4.0 line as of 2026-10-24; first written against the server's main
-# branch as of 2026-10-15. Header names are case-insensitive on the wire; the canonical
+# branch as of 2026-10-15. Brought up to SurrealDB 4.0 (nightly,
+# 2026-11-02): the scoped routes (surrealdb/server/src/ntw/scope.rs) and the
+# bucket routes (ntw/bucket.rs) were added, and the /ml routes removed with
+# SurrealML. Header names are case-insensitive on the wire; the canonical
 # spelling is given. `since: "4.0"` marks what a 3.x server lacks.
 
 version: 1
@@ -84,7 +87,7 @@ mime:
     description: FlatBuffers, surrealdb/protocol/v1/*.fbs.
   - type: application/octet-stream
     rpc: false
-    description: Raw bytes, for /import and /export bodies and /ml.
+    description: Raw bytes, for /import and /export bodies and the /bucket routes.
   - type: text/plain
     rpc: false
     description: SurrealQL text, for /sql, /import, /export and /version; /signin returns the bare token with Accept text/plain.
@@ -269,8 +272,62 @@ routes:
   - { path: "/key/{table}/{id}", method: PUT, capability: key, description: "Legacy REST CRUD: update one record." }
   - { path: "/key/{table}/{id}", method: PATCH, capability: key, description: "Legacy REST CRUD: MERGE into one record." }
   - { path: "/key/{table}/{id}", method: DELETE, capability: key, description: "Legacy REST CRUD: delete one record." }
-  - { path: /ml/import, method: POST, capability: ml }
-  - { path: "/ml/export/{name}/{version}", method: GET, capability: ml }
+  - path: "/bucket/{ns}/{db}/{name}/{*path}"
+    method: GET
+    capability: bucket
+    since: "4.0"
+    description: >
+      Reads one object of a bucket, as file::get does. A single
+      `Range: bytes=` request answers 206 (416 when it cannot be met; several
+      ranges are answered whole). Honours If-None-Match (304). The object is
+      served with its stored Content-Type (else application/octet-stream),
+      ETag, Last-Modified, X-Content-Type-Options: nosniff and a sandbox
+      Content-Security-Policy. 404 when there is no object.
+  - path: "/bucket/{ns}/{db}/{name}/{*path}"
+    method: HEAD
+    capability: bucket
+    since: "4.0"
+    description: The headers GET would send, with no body. 404 when there is no object.
+  - path: "/bucket/{ns}/{db}/{name}/{*path}"
+    method: PUT
+    capability: bucket
+    since: "4.0"
+    description: >
+      Writes the body as the object, as file::put does, storing the request's
+      Content-Type (absent or application/octet-stream stores none; a type
+      the bucket's backend cannot keep is 415). 201 when written.
+      `If-None-Match: *` writes only when there is no object yet (412
+      otherwise); any other If-None-Match is 400. 413 past the upload limit
+      a presigned URL carries, or past SURREAL_HTTP_MAX_BUCKET_BODY_SIZE
+      (default 5 GiB).
+  - path: "/bucket/{ns}/{db}/{name}/{*path}"
+    method: DELETE
+    capability: bucket
+    since: "4.0"
+    description: Removes the object, as file::delete does. 204.
+  - path: "/bucket/{ns}/{db}/{name}/{*path}"
+    method: POST
+    capability: bucket
+    since: "4.0"
+    description: >
+      Copies or renames the object within the bucket, as file::copy,
+      file::rename and their _if_not_exists forms do. The body, JSON or CBOR
+      by Content-Type (else 415), is { action: "copy" / "rename", target:
+      tstr (the new key), overwrite?: bool (default true) }. 201 when done,
+      404 when there is nothing at the source, 412 when the target exists
+      and overwrite is false, 400 for any other body. A presigned URL cannot
+      authorise it.
+  - path: "/bucket/{ns}/{db}/{name}/"
+    method: GET
+    capability: bucket
+    since: "4.0"
+    description: >
+      Lists the bucket (also without the trailing slash), as file::list does,
+      taking its options as query parameters: prefix, delimiter, start and
+      limit; any other parameter is 400. Each entry is { key, size, updated,
+      etag? } for an object, or { prefix } for a group under delimiter=/,
+      as JSON or CBOR by Accept. A listing is never presigned, and is refused
+      for guests and record users.
   - { path: "/api/{ns}/{db}/{path}", capability: api, description: User-defined API endpoints. }
   - { path: /graphql, method: POST, capability: graphql }
   - path: /graphql
@@ -292,6 +349,86 @@ routes:
   - { path: /mcp, method: GET, capability: mcp, description: "Model Context Protocol: the server-sent event stream." }
   - { path: /mcp, method: DELETE, capability: mcp, description: "Model Context Protocol: ends the MCP session." }
   - { path: /sync, capability: sync, description: A stub. Do not use. }
+
+bucket_notes: >
+  The namespace and database are in the /bucket path, not in headers,
+  because a presigned URL arrives from a browser with no session to carry
+  them. Every request is judged by the bucket's PERMISSIONS clause, as the
+  file:: function it mirrors is, with the request's session as the
+  credential. A presigned URL authenticates instead: its signed query
+  parameters cover the whole query string, so a URL with an unknown,
+  repeated or malformed parameter, or only part of a signature, is 401
+  rather than being tried as unsigned; a signature that does not authorise
+  this request is 403, and one that has expired is 410 (mint a new one).
+  When both a signature and a session are present the signature wins. The
+  `bucket` route capability gates all of them (403 when denied).
+
+# Scoped routes, from 4.0 (surrealdb/server/src/ntw/scope.rs).
+scoped_routes:
+  grammar:
+    - "/ns/{ns}/{method}/{...rest}"
+    - "/ns/{ns}/db/{db}/{method}/{...rest}"
+    - "/ac/{ac}/{method}/{...rest}"
+    - "/ns/{ns}/ac/{ac}/{method}/{...rest}"
+    - "/ns/{ns}/db/{db}/ac/{ac}/{method}/{...rest}"
+  description: >
+    The namespace, database and access method taken from the URL path, as an
+    alternative to the Surreal-NS and Surreal-DB headers and to the NS, DB
+    and AC fields of signin and signup credentials. The server rewrites the
+    path to the unscoped route before routing (/ns/foo/db/bar/sql runs
+    /sql), so the request passes through the same middleware, rate limits
+    included, as an unscoped one. `ns`, `db` and `ac` are reserved: no
+    top-level route uses them. Segments are percent-decoded once, so the
+    namespace `a/b` is sent as /ns/a%2Fb/.... An SDK can put the scope in its
+    endpoint (wss://host/ns/foo/db/bar/rpc) and send no headers and no
+    initial `use`.
+  scopable:
+    ns_db: [sql, rpc, import, export, key, gql, graphql, mcp, api]
+    ac: [signin, signup]
+    notes: >
+      `signin` and `signup` (and their /cookie forms) take every scope,
+      `ac` included; the routes in `ns_db` take a namespace and database but
+      not an access method. Any other route under a scope is 404, and so is
+      an `ac` scope on a route in `ns_db`, an empty or malformed segment,
+      and a scoped `api` path with no database: the scope is never ignored.
+      /signout and /refresh are not scopable, since the credential they act
+      on names its own level; nor are /health, /version, /status, /ready,
+      /metrics, /kvexport, /sync and /bucket. The scoped form of `api` is
+      /ns/{ns}/db/{db}/api/{path}, the same handler as /api/{ns}/{db}/{path}.
+      (`ml` is still in the server's scopable list, but the /ml routes are
+      gone, so it is 404 too.)
+  resolution: >
+    The path never silently overrides a header or the credentials, and they
+    never override the path. A Surreal-NS or Surreal-DB header that repeats
+    the path is accepted, and one that differs is 400 (ScopeConflict below).
+    A namespace scope with no database leaves the Surreal-DB header free to
+    pick one. The authenticated principal must belong to the scope (a
+    namespace principal to its namespace, a database or record principal
+    also to its database when the path names one), else 401; a root
+    principal may use any scope.
+  credentials: >
+    Under a scope, /signin and /signup complete the body's NS, DB and AC from
+    the path before checking it: POST /ns/foo/db/bar/ac/users/signin with
+    { email } signs in with { NS: foo, DB: bar, AC: users, email }. A body
+    field that repeats the path is accepted (when the body names a level
+    under both aliases, NS and ns, both must repeat it), one that names
+    something else is 400, and so is a namespace or database the path leaves
+    out: /ac/admins/signin is a root access method and /ns/foo/signin a
+    namespace signin, whatever the body adds. Without an `ac` in the path
+    the body may still name an access method at the path's level.
+  session_pin: >
+    A request whose path names a namespace runs on a session pinned to that
+    scope; the pin comes from the URL on every connection and request and is
+    never stored. While pinned, the session's namespace and database cannot
+    leave the scope: a SurrealQL USE, the `use` RPC or a signin that would
+    select another namespace (or, under a database scope, another database)
+    is refused (NsNotAllowed / DbNotAllowed), while a database the path
+    leaves open may still be chosen. `reset` returns to the pinned namespace
+    and database rather than to none. A WebSocket `attach` starts the new
+    session in the connection's pin. An HTTP request on an attached session
+    runs it pinned to that request's scope, and is refused if the stored
+    session selected another namespace or database. An MCP session is bound
+    to the scope of its initialize request.
 
 # Cookie authentication for browsers, from 4.0 (surrealdb/server/src/ntw/auth.rs).
 cookie_auth:
@@ -322,6 +459,17 @@ cookie_auth:
 
 # Statuses any route can answer that are not error kinds (errors.yaml has those).
 statuses:
+  - status: 400
+    when: >
+      ScopeConflict: a scoped route (see scoped_routes) whose path names a
+      namespace, database or access method that a header or the signin or
+      signup credentials name differently, or credentials that add a level
+      the path leaves out.
+    body: '{ code: 400, details: "Request problems detected", description: "There is a problem with your request. Refer to the documentation for further information.", information: "The namespace in the URL path does not match the namespace the request names" }'
+    retry: false
+    since: "4.0"
+    notes: '`information` names the level: namespace, database or access method.'
+
   - status: 503
     when: The memory guard refuses a POST /rpc (tracked memory above SURREAL_MEMORY_THRESHOLD).
     headers: { Retry-After: "1" }

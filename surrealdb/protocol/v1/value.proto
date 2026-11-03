@@ -43,7 +43,7 @@ message Duration {
 //
 // Replaces `google.protobuf.Timestamp`, whose specification caps the range at
 // 0001-01-01 .. 9999-12-31. SurrealDB datetimes are `chrono::DateTime<Utc>`
-// and span roughly +/-262,000 years. Byte-identical to `Timestamp` in
+// and span roughly +/-262,000 years. Byte-identical to `Datetime` in
 // value.fbs.
 message Datetime {
     // Seconds since the Unix epoch. May be negative.
@@ -55,6 +55,52 @@ message Datetime {
 
 // Decimal value.
 message Decimal {
+    string value = 1;
+}
+
+// A calendar date with no zone (SurrealDB 4.0's `date`), as CBOR tag 100.
+//
+// Named `PlainDate`, not `Date`, so the generated code does not shadow a
+// language's own date type. The first and last days of chrono's range,
+// -262143-01-01 and +262142-12-31, stand for `-infinity` and `infinity`.
+message PlainDate {
+    // Days since 1970-01-01 in the proleptic Gregorian calendar. MUST be in
+    // [-96465292, 95026236].
+    int32 days = 1;
+}
+
+// A time of day with no date or zone (`time`), as CBOR tag 189.
+message PlainTime {
+    // Nanoseconds since midnight. MUST be in [0, 86400000000000]: 24:00:00 is
+    // a valid time, nothing past it is.
+    uint64 nanos = 1;
+}
+
+// A date and time of day with no zone (`timestamp`), as CBOR tag 190: a
+// wall-clock time, where `Datetime` is an instant in UTC. The same layout and
+// rules as `Datetime`; the first and last instants of chrono's range stand
+// for `-infinity` and `infinity`.
+message Timestamp {
+    // Seconds since 1970-01-01T00:00:00. May be negative.
+    int64 seconds = 1;
+    // Sub-second remainder, always ADDED to `seconds`. MUST be in
+    // [0, 999999999].
+    uint32 nanos = 2;
+}
+
+// A calendar interval (`interval`), as CBOR tag 191 and PostgreSQL hold one.
+// Each part is signed on its own and kept as written; the server compares
+// intervals normalised (a month as 30 days, a day as 24 hours).
+message Interval {
+    int32 months = 1;
+    int32 days = 2;
+    int64 micros = 3;
+}
+
+// An arbitrary-precision decimal (`bigdecimal`), as CBOR tag 192: positional
+// notation, with the scale as written ("1.50" keeps its zero). A value that
+// fits `Decimal` SHOULD be sent as one, as the server does.
+message BigDecimal {
     string value = 1;
 }
 
@@ -225,6 +271,12 @@ message Range {
 // Decoders MUST reject an out-of-range or inexact value rather than clamp or
 // round it. A peer that predates them sends `int64`, `float64` or (a u64 above
 // i64::MAX) `decimal` instead, as plain CBOR does.
+//
+// So are `date` to `bigdecimal`, SurrealDB 4.0's other kinds, which match
+// cbor.2's tags 100 and 189 to 192. A peer that predates them sends a date or
+// timestamp as `datetime`, a time as `duration`, an interval as `string` and
+// a bigdecimal as `decimal` (or `string` when it does not fit one), as plain
+// CBOR does. Decoders MUST reject a value outside its kind's range.
 message Value {
     // Skipped so that every arm stays one above its `ValueType` tag in
     // value.fbs, where 21 is `None` (see parity.toml).
@@ -261,6 +313,11 @@ message Value {
         uint64 u64 = 29;
         float f16 = 30;
         float f32 = 31;
+        PlainDate date = 32;
+        PlainTime time = 33;
+        Timestamp timestamp = 34;
+        Interval interval = 35;
+        BigDecimal bigdecimal = 36;
     }
 }
 
@@ -332,6 +389,12 @@ message U32Kind {}
 message U64Kind {}
 message F16Kind {}
 message F32Kind {}
+// SurrealDB 4.0's date, time, timestamp, interval and bigdecimal kinds.
+message DateKind {}
+message TimeKind {}
+message TimestampKind {}
+message IntervalKind {}
+message BigDecimalKind {}
 
 message TableName { 
     string name = 1; 
@@ -443,5 +506,10 @@ message Kind {
         U64Kind u64 = 32;
         F16Kind f16 = 33;
         F32Kind f32 = 34;
+        DateKind date = 35;
+        TimeKind time = 36;
+        TimestampKind timestamp = 37;
+        IntervalKind interval = 38;
+        BigDecimalKind bigdecimal = 39;
     }
 }

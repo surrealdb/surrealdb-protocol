@@ -232,6 +232,231 @@ void   surrealdb__protocol__v1__decimal__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__v1__decimal__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   surrealdb__protocol__v1__plain_date__init
+                     (Surrealdb__Protocol__V1__PlainDate         *message)
+{
+  static const Surrealdb__Protocol__V1__PlainDate init_value = SURREALDB__PROTOCOL__V1__PLAIN_DATE__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__plain_date__get_packed_size
+                     (const Surrealdb__Protocol__V1__PlainDate *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_date__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__plain_date__pack
+                     (const Surrealdb__Protocol__V1__PlainDate *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_date__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__plain_date__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__PlainDate *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_date__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__PlainDate *
+       surrealdb__protocol__v1__plain_date__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__PlainDate *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__plain_date__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__plain_date__free_unpacked
+                     (Surrealdb__Protocol__V1__PlainDate *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_date__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__plain_time__init
+                     (Surrealdb__Protocol__V1__PlainTime         *message)
+{
+  static const Surrealdb__Protocol__V1__PlainTime init_value = SURREALDB__PROTOCOL__V1__PLAIN_TIME__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__plain_time__get_packed_size
+                     (const Surrealdb__Protocol__V1__PlainTime *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_time__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__plain_time__pack
+                     (const Surrealdb__Protocol__V1__PlainTime *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_time__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__plain_time__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__PlainTime *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_time__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__PlainTime *
+       surrealdb__protocol__v1__plain_time__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__PlainTime *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__plain_time__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__plain_time__free_unpacked
+                     (Surrealdb__Protocol__V1__PlainTime *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__plain_time__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__timestamp__init
+                     (Surrealdb__Protocol__V1__Timestamp         *message)
+{
+  static const Surrealdb__Protocol__V1__Timestamp init_value = SURREALDB__PROTOCOL__V1__TIMESTAMP__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__timestamp__get_packed_size
+                     (const Surrealdb__Protocol__V1__Timestamp *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__timestamp__pack
+                     (const Surrealdb__Protocol__V1__Timestamp *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__timestamp__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Timestamp *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__Timestamp *
+       surrealdb__protocol__v1__timestamp__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__Timestamp *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__timestamp__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__timestamp__free_unpacked
+                     (Surrealdb__Protocol__V1__Timestamp *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__interval__init
+                     (Surrealdb__Protocol__V1__Interval         *message)
+{
+  static const Surrealdb__Protocol__V1__Interval init_value = SURREALDB__PROTOCOL__V1__INTERVAL__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__interval__get_packed_size
+                     (const Surrealdb__Protocol__V1__Interval *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__interval__pack
+                     (const Surrealdb__Protocol__V1__Interval *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__interval__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__Interval *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__Interval *
+       surrealdb__protocol__v1__interval__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__Interval *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__interval__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__interval__free_unpacked
+                     (Surrealdb__Protocol__V1__Interval *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__big_decimal__init
+                     (Surrealdb__Protocol__V1__BigDecimal         *message)
+{
+  static const Surrealdb__Protocol__V1__BigDecimal init_value = SURREALDB__PROTOCOL__V1__BIG_DECIMAL__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__big_decimal__get_packed_size
+                     (const Surrealdb__Protocol__V1__BigDecimal *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__big_decimal__pack
+                     (const Surrealdb__Protocol__V1__BigDecimal *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__big_decimal__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__BigDecimal *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__BigDecimal *
+       surrealdb__protocol__v1__big_decimal__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__BigDecimal *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__big_decimal__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__big_decimal__free_unpacked
+                     (Surrealdb__Protocol__V1__BigDecimal *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   surrealdb__protocol__v1__uuid__init
                      (Surrealdb__Protocol__V1__Uuid         *message)
 {
@@ -2347,6 +2572,231 @@ void   surrealdb__protocol__v1__f32_kind__free_unpacked
   assert(message->base.descriptor == &surrealdb__protocol__v1__f32_kind__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   surrealdb__protocol__v1__date_kind__init
+                     (Surrealdb__Protocol__V1__DateKind         *message)
+{
+  static const Surrealdb__Protocol__V1__DateKind init_value = SURREALDB__PROTOCOL__V1__DATE_KIND__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__date_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__DateKind *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__date_kind__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__date_kind__pack
+                     (const Surrealdb__Protocol__V1__DateKind *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__date_kind__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__date_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__DateKind *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__date_kind__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__DateKind *
+       surrealdb__protocol__v1__date_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__DateKind *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__date_kind__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__date_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__DateKind *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__date_kind__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__time_kind__init
+                     (Surrealdb__Protocol__V1__TimeKind         *message)
+{
+  static const Surrealdb__Protocol__V1__TimeKind init_value = SURREALDB__PROTOCOL__V1__TIME_KIND__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__time_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__TimeKind *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__time_kind__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__time_kind__pack
+                     (const Surrealdb__Protocol__V1__TimeKind *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__time_kind__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__time_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__TimeKind *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__time_kind__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__TimeKind *
+       surrealdb__protocol__v1__time_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__TimeKind *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__time_kind__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__time_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__TimeKind *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__time_kind__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__timestamp_kind__init
+                     (Surrealdb__Protocol__V1__TimestampKind         *message)
+{
+  static const Surrealdb__Protocol__V1__TimestampKind init_value = SURREALDB__PROTOCOL__V1__TIMESTAMP_KIND__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__timestamp_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__TimestampKind *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp_kind__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__timestamp_kind__pack
+                     (const Surrealdb__Protocol__V1__TimestampKind *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp_kind__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__timestamp_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__TimestampKind *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp_kind__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__TimestampKind *
+       surrealdb__protocol__v1__timestamp_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__TimestampKind *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__timestamp_kind__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__timestamp_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__TimestampKind *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__timestamp_kind__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__interval_kind__init
+                     (Surrealdb__Protocol__V1__IntervalKind         *message)
+{
+  static const Surrealdb__Protocol__V1__IntervalKind init_value = SURREALDB__PROTOCOL__V1__INTERVAL_KIND__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__interval_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__IntervalKind *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval_kind__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__interval_kind__pack
+                     (const Surrealdb__Protocol__V1__IntervalKind *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval_kind__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__interval_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__IntervalKind *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval_kind__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__IntervalKind *
+       surrealdb__protocol__v1__interval_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__IntervalKind *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__interval_kind__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__interval_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__IntervalKind *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__interval_kind__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   surrealdb__protocol__v1__big_decimal_kind__init
+                     (Surrealdb__Protocol__V1__BigDecimalKind         *message)
+{
+  static const Surrealdb__Protocol__V1__BigDecimalKind init_value = SURREALDB__PROTOCOL__V1__BIG_DECIMAL_KIND__INIT;
+  *message = init_value;
+}
+size_t surrealdb__protocol__v1__big_decimal_kind__get_packed_size
+                     (const Surrealdb__Protocol__V1__BigDecimalKind *message)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal_kind__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t surrealdb__protocol__v1__big_decimal_kind__pack
+                     (const Surrealdb__Protocol__V1__BigDecimalKind *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal_kind__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t surrealdb__protocol__v1__big_decimal_kind__pack_to_buffer
+                     (const Surrealdb__Protocol__V1__BigDecimalKind *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal_kind__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Surrealdb__Protocol__V1__BigDecimalKind *
+       surrealdb__protocol__v1__big_decimal_kind__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Surrealdb__Protocol__V1__BigDecimalKind *)
+     protobuf_c_message_unpack (&surrealdb__protocol__v1__big_decimal_kind__descriptor,
+                                allocator, len, data);
+}
+void   surrealdb__protocol__v1__big_decimal_kind__free_unpacked
+                     (Surrealdb__Protocol__V1__BigDecimalKind *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &surrealdb__protocol__v1__big_decimal_kind__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   surrealdb__protocol__v1__table_name__init
                      (Surrealdb__Protocol__V1__TableName         *message)
 {
@@ -3198,6 +3648,235 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__decimal__descriptor =
   (ProtobufCMessageInit) surrealdb__protocol__v1__decimal__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__plain_date__field_descriptors[1] =
+{
+  {
+    "days",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__PlainDate, days),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned surrealdb__protocol__v1__plain_date__field_indices_by_name[] = {
+  0,   /* field[0] = days */
+};
+static const ProtobufCIntRange surrealdb__protocol__v1__plain_date__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__plain_date__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.PlainDate",
+  "PlainDate",
+  "Surrealdb__Protocol__V1__PlainDate",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__PlainDate),
+  1,
+  surrealdb__protocol__v1__plain_date__field_descriptors,
+  surrealdb__protocol__v1__plain_date__field_indices_by_name,
+  1,  surrealdb__protocol__v1__plain_date__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__plain_date__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__plain_time__field_descriptors[1] =
+{
+  {
+    "nanos",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__PlainTime, nanos),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned surrealdb__protocol__v1__plain_time__field_indices_by_name[] = {
+  0,   /* field[0] = nanos */
+};
+static const ProtobufCIntRange surrealdb__protocol__v1__plain_time__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__plain_time__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.PlainTime",
+  "PlainTime",
+  "Surrealdb__Protocol__V1__PlainTime",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__PlainTime),
+  1,
+  surrealdb__protocol__v1__plain_time__field_descriptors,
+  surrealdb__protocol__v1__plain_time__field_indices_by_name,
+  1,  surrealdb__protocol__v1__plain_time__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__plain_time__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__timestamp__field_descriptors[2] =
+{
+  {
+    "seconds",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT64,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__Timestamp, seconds),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "nanos",
+    2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__Timestamp, nanos),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned surrealdb__protocol__v1__timestamp__field_indices_by_name[] = {
+  1,   /* field[1] = nanos */
+  0,   /* field[0] = seconds */
+};
+static const ProtobufCIntRange surrealdb__protocol__v1__timestamp__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__timestamp__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.Timestamp",
+  "Timestamp",
+  "Surrealdb__Protocol__V1__Timestamp",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__Timestamp),
+  2,
+  surrealdb__protocol__v1__timestamp__field_descriptors,
+  surrealdb__protocol__v1__timestamp__field_indices_by_name,
+  1,  surrealdb__protocol__v1__timestamp__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__timestamp__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__interval__field_descriptors[3] =
+{
+  {
+    "months",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__Interval, months),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "days",
+    2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__Interval, days),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "micros",
+    3,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT64,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__Interval, micros),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned surrealdb__protocol__v1__interval__field_indices_by_name[] = {
+  1,   /* field[1] = days */
+  2,   /* field[2] = micros */
+  0,   /* field[0] = months */
+};
+static const ProtobufCIntRange surrealdb__protocol__v1__interval__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__interval__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.Interval",
+  "Interval",
+  "Surrealdb__Protocol__V1__Interval",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__Interval),
+  3,
+  surrealdb__protocol__v1__interval__field_descriptors,
+  surrealdb__protocol__v1__interval__field_indices_by_name,
+  1,  surrealdb__protocol__v1__interval__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__interval__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__big_decimal__field_descriptors[1] =
+{
+  {
+    "value",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(Surrealdb__Protocol__V1__BigDecimal, value),
+    NULL,
+    &protobuf_c_empty_string,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned surrealdb__protocol__v1__big_decimal__field_indices_by_name[] = {
+  0,   /* field[0] = value */
+};
+static const ProtobufCIntRange surrealdb__protocol__v1__big_decimal__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__big_decimal__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.BigDecimal",
+  "BigDecimal",
+  "Surrealdb__Protocol__V1__BigDecimal",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__BigDecimal),
+  1,
+  surrealdb__protocol__v1__big_decimal__field_descriptors,
+  surrealdb__protocol__v1__big_decimal__field_indices_by_name,
+  1,  surrealdb__protocol__v1__big_decimal__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__big_decimal__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const ProtobufCFieldDescriptor surrealdb__protocol__v1__uuid__field_descriptors[1] =
 {
   {
@@ -4026,7 +4705,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__range__descriptor =
   (ProtobufCMessageInit) surrealdb__protocol__v1__range__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_descriptors[30] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_descriptors[35] =
 {
   {
     "none",
@@ -4388,11 +5067,73 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__value__field_desc
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "date",
+    32,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, date),
+    &surrealdb__protocol__v1__plain_date__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "time",
+    33,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, time),
+    &surrealdb__protocol__v1__plain_time__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "timestamp",
+    34,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, timestamp),
+    &surrealdb__protocol__v1__timestamp__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "interval",
+    35,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, interval),
+    &surrealdb__protocol__v1__interval__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "bigdecimal",
+    36,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Value, value_case),
+    offsetof(Surrealdb__Protocol__V1__Value, bigdecimal),
+    &surrealdb__protocol__v1__big_decimal__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned surrealdb__protocol__v1__value__field_indices_by_name[] = {
   19,   /* field[19] = array */
+  34,   /* field[34] = bigdecimal */
   2,   /* field[2] = bool */
   7,   /* field[7] = bytes */
+  30,   /* field[30] = date */
   9,   /* field[9] = datetime */
   5,   /* field[5] = decimal */
   8,   /* field[8] = duration */
@@ -4405,6 +5146,7 @@ static const unsigned surrealdb__protocol__v1__value__field_indices_by_name[] = 
   25,   /* field[25] = i32 */
   21,   /* field[21] = i8 */
   3,   /* field[3] = int64 */
+  33,   /* field[33] = interval */
   0,   /* field[0] = none */
   1,   /* field[1] = null */
   18,   /* field[18] = object */
@@ -4415,6 +5157,8 @@ static const unsigned surrealdb__protocol__v1__value__field_indices_by_name[] = 
   6,   /* field[6] = string */
   14,   /* field[14] = string_record_id */
   12,   /* field[12] = table */
+  31,   /* field[31] = time */
+  32,   /* field[32] = timestamp */
   24,   /* field[24] = u16 */
   26,   /* field[26] = u32 */
   27,   /* field[27] = u64 */
@@ -4425,7 +5169,7 @@ static const ProtobufCIntRange surrealdb__protocol__v1__value__number_ranges[2 +
 {
   { 1, 0 },
   { 23, 21 },
-  { 0, 30 }
+  { 0, 35 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor =
 {
@@ -4435,7 +5179,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__value__descriptor =
   "Surrealdb__Protocol__V1__Value",
   "surrealdb.protocol.v1",
   sizeof(Surrealdb__Protocol__V1__Value),
-  30,
+  35,
   surrealdb__protocol__v1__value__field_descriptors,
   surrealdb__protocol__v1__value__field_indices_by_name,
   2,  surrealdb__protocol__v1__value__number_ranges,
@@ -5174,6 +5918,96 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__f32_kind__descriptor =
   (ProtobufCMessageInit) surrealdb__protocol__v1__f32_kind__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+#define surrealdb__protocol__v1__date_kind__field_descriptors NULL
+#define surrealdb__protocol__v1__date_kind__field_indices_by_name NULL
+#define surrealdb__protocol__v1__date_kind__number_ranges NULL
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__date_kind__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.DateKind",
+  "DateKind",
+  "Surrealdb__Protocol__V1__DateKind",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__DateKind),
+  0,
+  surrealdb__protocol__v1__date_kind__field_descriptors,
+  surrealdb__protocol__v1__date_kind__field_indices_by_name,
+  0,  surrealdb__protocol__v1__date_kind__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__date_kind__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+#define surrealdb__protocol__v1__time_kind__field_descriptors NULL
+#define surrealdb__protocol__v1__time_kind__field_indices_by_name NULL
+#define surrealdb__protocol__v1__time_kind__number_ranges NULL
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__time_kind__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.TimeKind",
+  "TimeKind",
+  "Surrealdb__Protocol__V1__TimeKind",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__TimeKind),
+  0,
+  surrealdb__protocol__v1__time_kind__field_descriptors,
+  surrealdb__protocol__v1__time_kind__field_indices_by_name,
+  0,  surrealdb__protocol__v1__time_kind__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__time_kind__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+#define surrealdb__protocol__v1__timestamp_kind__field_descriptors NULL
+#define surrealdb__protocol__v1__timestamp_kind__field_indices_by_name NULL
+#define surrealdb__protocol__v1__timestamp_kind__number_ranges NULL
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__timestamp_kind__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.TimestampKind",
+  "TimestampKind",
+  "Surrealdb__Protocol__V1__TimestampKind",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__TimestampKind),
+  0,
+  surrealdb__protocol__v1__timestamp_kind__field_descriptors,
+  surrealdb__protocol__v1__timestamp_kind__field_indices_by_name,
+  0,  surrealdb__protocol__v1__timestamp_kind__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__timestamp_kind__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+#define surrealdb__protocol__v1__interval_kind__field_descriptors NULL
+#define surrealdb__protocol__v1__interval_kind__field_indices_by_name NULL
+#define surrealdb__protocol__v1__interval_kind__number_ranges NULL
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__interval_kind__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.IntervalKind",
+  "IntervalKind",
+  "Surrealdb__Protocol__V1__IntervalKind",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__IntervalKind),
+  0,
+  surrealdb__protocol__v1__interval_kind__field_descriptors,
+  surrealdb__protocol__v1__interval_kind__field_indices_by_name,
+  0,  surrealdb__protocol__v1__interval_kind__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__interval_kind__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+#define surrealdb__protocol__v1__big_decimal_kind__field_descriptors NULL
+#define surrealdb__protocol__v1__big_decimal_kind__field_indices_by_name NULL
+#define surrealdb__protocol__v1__big_decimal_kind__number_ranges NULL
+const ProtobufCMessageDescriptor surrealdb__protocol__v1__big_decimal_kind__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "surrealdb.protocol.v1.BigDecimalKind",
+  "BigDecimalKind",
+  "Surrealdb__Protocol__V1__BigDecimalKind",
+  "surrealdb.protocol.v1",
+  sizeof(Surrealdb__Protocol__V1__BigDecimalKind),
+  0,
+  surrealdb__protocol__v1__big_decimal_kind__field_descriptors,
+  surrealdb__protocol__v1__big_decimal_kind__field_indices_by_name,
+  0,  surrealdb__protocol__v1__big_decimal_kind__number_ranges,
+  (ProtobufCMessageInit) surrealdb__protocol__v1__big_decimal_kind__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const ProtobufCFieldDescriptor surrealdb__protocol__v1__table_name__field_descriptors[1] =
 {
   {
@@ -5888,7 +6722,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__literal_kind__descript
   (ProtobufCMessageInit) surrealdb__protocol__v1__literal_kind__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor surrealdb__protocol__v1__kind__field_descriptors[34] =
+static const ProtobufCFieldDescriptor surrealdb__protocol__v1__kind__field_descriptors[39] =
 {
   {
     "any",
@@ -6298,12 +7132,74 @@ static const ProtobufCFieldDescriptor surrealdb__protocol__v1__kind__field_descr
     PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "date",
+    35,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Kind, kind_case),
+    offsetof(Surrealdb__Protocol__V1__Kind, date),
+    &surrealdb__protocol__v1__date_kind__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "time",
+    36,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Kind, kind_case),
+    offsetof(Surrealdb__Protocol__V1__Kind, time),
+    &surrealdb__protocol__v1__time_kind__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "timestamp",
+    37,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Kind, kind_case),
+    offsetof(Surrealdb__Protocol__V1__Kind, timestamp),
+    &surrealdb__protocol__v1__timestamp_kind__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "interval",
+    38,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Kind, kind_case),
+    offsetof(Surrealdb__Protocol__V1__Kind, interval),
+    &surrealdb__protocol__v1__interval_kind__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "bigdecimal",
+    39,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Surrealdb__Protocol__V1__Kind, kind_case),
+    offsetof(Surrealdb__Protocol__V1__Kind, bigdecimal),
+    &surrealdb__protocol__v1__big_decimal_kind__descriptor,
+    NULL,
+    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned surrealdb__protocol__v1__kind__field_indices_by_name[] = {
   0,   /* field[0] = any */
   20,   /* field[20] = array */
+  38,   /* field[38] = bigdecimal */
   2,   /* field[2] = bool */
   3,   /* field[3] = bytes */
+  34,   /* field[34] = date */
   4,   /* field[4] = datetime */
   5,   /* field[5] = decimal */
   6,   /* field[6] = duration */
@@ -6318,6 +7214,7 @@ static const unsigned surrealdb__protocol__v1__kind__field_indices_by_name[] = {
   29,   /* field[29] = i32 */
   25,   /* field[25] = i8 */
   8,   /* field[8] = int */
+  37,   /* field[37] = interval */
   23,   /* field[23] = literal */
   1,   /* field[1] = null */
   9,   /* field[9] = number */
@@ -6329,6 +7226,8 @@ static const unsigned surrealdb__protocol__v1__kind__field_indices_by_name[] = {
   14,   /* field[14] = regex */
   19,   /* field[19] = set */
   12,   /* field[12] = string */
+  35,   /* field[35] = time */
+  36,   /* field[36] = timestamp */
   28,   /* field[28] = u16 */
   30,   /* field[30] = u32 */
   31,   /* field[31] = u64 */
@@ -6338,7 +7237,7 @@ static const unsigned surrealdb__protocol__v1__kind__field_indices_by_name[] = {
 static const ProtobufCIntRange surrealdb__protocol__v1__kind__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 34 }
+  { 0, 39 }
 };
 const ProtobufCMessageDescriptor surrealdb__protocol__v1__kind__descriptor =
 {
@@ -6348,7 +7247,7 @@ const ProtobufCMessageDescriptor surrealdb__protocol__v1__kind__descriptor =
   "Surrealdb__Protocol__V1__Kind",
   "surrealdb.protocol.v1",
   sizeof(Surrealdb__Protocol__V1__Kind),
-  34,
+  39,
   surrealdb__protocol__v1__kind__field_descriptors,
   surrealdb__protocol__v1__kind__field_indices_by_name,
   1,  surrealdb__protocol__v1__kind__number_ranges,
